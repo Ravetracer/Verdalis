@@ -16,7 +16,7 @@ tonality = 0.285
 impact = 0.343
 splash = 0.66
 level_spread = 0.6
-chirp = 0.8
+chirp = 0.5
 surface = Puddle
 note_tracking = 0.5
 
@@ -49,6 +49,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 0.897
+gain = -0.097
 max_droplets = 512
 seed = 0

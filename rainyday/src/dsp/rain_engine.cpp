@@ -28,30 +28,32 @@ struct SurfaceProfile {
 // Wet surfaces trap an air bubble, so their tone swells in a few milliseconds
 // behind the splash; a rigid surface starts ringing the instant it is struck.
 //
-// The chirp column is small on purpose. Tracking the instantaneous frequency of
-// isolated drops in real recordings puts the bend at around +-0.02 octaves,
-// with the largest bubbles reaching perhaps a tenth of an octave -- a couple of
-// per cent, not the octave-wide swoop the textbook description of bubble
-// entrainment suggests. These figures are about twice the measured maximum, so
-// Chirp at 100 % is stylised but still reads as water rather than as a cartoon,
-// and the default lands inside the measured range.
+// The chirp column is very small on purpose. Tracking the instantaneous
+// frequency of isolated drops in real recordings, across the 80 ms or so that a
+// drop is actually audible, puts the bend between 0.01 and 0.09 octaves. It is
+// a couple of per cent, not the octave-wide swoop the textbook description of
+// bubble entrainment suggests. Chirp at 100 % now sits at the top of that
+// measured range rather than above it: past roughly a tenth of an octave a
+// droplet stops sounding like water and starts sounding like a laser.
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
-   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.25f, 1.00f, 1.00f, 1.00f},
-   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.40f, 0.85f, 1.15f, 1.30f},
-   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.05f, 0.70f, 0.35f, 0.35f},
-   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.08f, 0.90f, 0.80f, 0.25f},
-   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.03f, 1.60f, 1.30f, 0.12f},
-   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.05f, 1.90f, 1.10f, 0.12f},
-   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.03f, 0.80f, 0.40f, 0.25f},
+   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f},
+   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f},
+   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f},
+   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f},
+   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f},
+   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f},
+   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f},
 };
 
-// Fraction of the ring time over which the pitch bend is spent, and the
-// absolute window it is held to. A real bubble has finished bending within a
-// few tens of milliseconds however long it goes on ringing afterwards, so the
-// sweep must not be tied to the decay the way a simple linear chirp would.
-constexpr float kChirpTauFraction = 0.30f;
-constexpr float kChirpTauMinSec = 0.002f;
-constexpr float kChirpTauMaxSec = 0.030f;
+// Time constant of the pitch bend, as a fraction of the droplet's ring time and
+// as an absolute window. Spread across the ring rather than crammed into its
+// first few milliseconds: the recordings show the frequency drifting gently
+// over the drop's whole audible life, and concentrating the same small bend
+// into the attack is exactly what makes it read as a swoop instead of as the
+// pitch of a bubble settling.
+constexpr float kChirpTauFraction = 1.0f;
+constexpr float kChirpTauMinSec = 0.005f;
+constexpr float kChirpTauMaxSec = 0.120f;
 
 // Rise time of the tonal layer, as a fraction of its own ring time and as an
 // absolute window. Capped against the ring time so the rise is always clearly

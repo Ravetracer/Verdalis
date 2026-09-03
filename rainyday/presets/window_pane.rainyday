@@ -49,6 +49,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = -4.62
+gain = -4.49
 max_droplets = 512
 seed = 0

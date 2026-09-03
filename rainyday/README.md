@@ -225,13 +225,20 @@ the real thing. Three parts of the model were wrong in the same direction:
   half the upward one.
 
 **A drop's pitch bend is a fiftieth of what the model was doing.** Tracking the
-instantaneous frequency of isolated drops in the recordings puts the sweep at
-about ±0.02 octaves — a couple of per cent, over a ring that lasts 30 to 40 ms.
-RainyDay was sweeping 0.42 octaves at its default setting and two full octaves
-on Puddle. The textbook description of bubble entrainment says the pitch rises,
-and it does, but nothing like that far. The per-surface chirp figures are now
-set at roughly twice the measured maximum, so `Chirp` at 100 % is stylised but
-still reads as water rather than as a cartoon.
+instantaneous frequency of isolated drops in the recordings, across the 80 ms
+or so that a drop is actually audible, puts the bend between 0.01 and 0.09
+octaves. It is a couple of per cent. RainyDay was sweeping 0.42 octaves at its
+default setting and two full octaves on Puddle; measured the same way, a Cave
+Drips droplet climbed 0.40 octaves while the reference drifted 0.008. The
+textbook description of bubble entrainment says the pitch rises, and it does,
+but nothing like that far, and past roughly a tenth of an octave a droplet
+stops sounding like water and starts sounding like a laser.
+
+The shape mattered as much as the size. The bend used to be front-loaded, on
+the reasoning that a bubble finishes shrinking long before the tone finishes
+ringing — but the recordings show the frequency drifting gently across the
+drop's whole audible life, and cramming even a small bend into the attack is
+what makes it read as a swoop. It is now spread across the ring.
 
 **One droplet in seven was being flattened against a ceiling.** Droplet
 amplitude is drawn as `u^k · (k+1)`, which has mean 1 and a natural maximum of
