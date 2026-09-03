@@ -48,7 +48,10 @@ so the new preset appears in the browser immediately.
   matched to the nearest neighbour rather than to themselves. A true far-field
   recording, a downspout, rain on a tent and rain on a water surface would each
   earn their keep.
-- **Fit the space controls properly.** The reverb in the drip recordings is
-  currently approximated by hand. Fitting a feedback delay network against a
-  measured decay would need a reverberation-time feature per band, which the
-  analysis code does not have yet.
+- **Teach the fit to tell a droplet from a room.** The objective in
+  `tools/analysis/` has no feature that separates a long droplet ring from a
+  long reverb tail, and on Cave Drips it put the cavern inside the droplet:
+  `drop_decay` was fitted to 260 ms with `space_amount` at 0.07, which reads as
+  a synthetic swoop rather than a drip in a cave. It needs a per-band
+  reverberation-time feature, and probably a ceiling on `drop_decay` relative to
+  the surface, before the space controls can be fitted at all.

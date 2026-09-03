@@ -2,7 +2,7 @@
 format = 1
 name = Cave Drips
 author = RainyDay
-description = Slow isolated drips falling into a deep stone cavern. Very sparse, with a long reverberant tail.
+description = Slow isolated drips falling into a deep stone cavern. Very sparse, each drop short and hard against a long space.
 features = ambient, texture, cave, sparse, drone
 
 # Rain
@@ -10,7 +10,7 @@ density = 2.17
 clumping = 0.22
 drop_pitch = 2371
 pitch_spread = 3.85
-drop_decay = 260
+drop_decay = 55
 decay_spread = 0.5
 tonality = 0.285
 impact = 0.343
@@ -49,6 +49,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = -0.097
+gain = 3.13
 max_droplets = 512
 seed = 0
