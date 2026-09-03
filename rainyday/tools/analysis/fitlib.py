@@ -137,7 +137,19 @@ W_IMP = 0.55
 W_TFLAT = 14.0
 W_CREST = 0.15
 W_MOD = 1.2
-W_FLAT = 8.0
+# Long-term spectral flatness is deliberately not used. It is the feature that
+# misled the fit into buzzing: `multiple_water_drops` is three isolated drops in
+# a quiet room and measures 0.03, so matching that number actively demands a
+# dense cloud of tones. Per-frame flatness above measures what this was meant to
+# measure, and measures it correctly.
+W_FLAT = 0.0
+# Per-frame flatness carries the heaviest weight of any single number here. It
+# is the only feature that separates a noise band from a dense cloud of pitched
+# droplets, and the two have the same long-term spectrum, so without it the fit
+# will match a spectrum with the wrong microstructure and buzz. At this weight a
+# preset that is right to within a few per cent pays almost nothing, while one
+# that is an order of magnitude too tonal pays as much as a bad spectrum does.
+W_FFLAT = 4000.0
 
 
 def distance(a, b, band_weight=None):
@@ -149,5 +161,5 @@ def distance(a, b, band_weight=None):
     d += W_CREST * (a['crest'] - b['crest']) ** 2
     m = [v if np.isfinite(v) else 0.0 for v in (a['mod_db'], b['mod_db'])]
     d += W_MOD * (m[0] - m[1]) ** 2
-    d += W_FLAT * (a['flatness'] - b['flatness']) ** 2 * 100
+    d += W_FFLAT * (a.get('fflat', 0.0) - b.get('fflat', 0.0)) ** 2
     return float(d)

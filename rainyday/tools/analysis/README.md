@@ -28,13 +28,24 @@ so on. Any sample rate and any of 16/24/32-bit PCM or 32-bit float will do.
 | Feature | What it pins down |
 |---|---|
 | Energy in nine log bands | Spectral shape — the spine of the match |
+| Per-frame spectral flatness | Noise against a cloud of tones |
 | Impulsiveness per band | Continuous wash against separate impacts |
 | Temporal flatness per band | The texture in between those two extremes |
 | Windowed crest factor | Dynamic contrast, independent of duration |
 | Slow envelope modulation | Surges and lulls |
-| Spectral flatness | Noisy against pitched |
 
-Two details matter more than they look. References are **noise-floor
+Flatness is measured **per frame and then averaged**, never on the average
+spectrum, and this is the single most important detail here. A few hundred
+randomly pitched droplets per second average out to a perfectly smooth
+spectrum, so long-term flatness cannot tell them from a noise band of the same
+shape — `multiple_water_drops` measures 0.03 over its whole length and 0.13 per
+frame. Fitting against the long-term figure drove Tonality up until the rain
+buzzed: Gutter Trickle reached 0.92, which is 245 pitched plinks a second in a
+1.7-octave band, and sounds like it. Per-frame flatness is now the most heavily
+weighted single number in the objective, and the long-term one is not used at
+all.
+
+Two further details matter more than they look. References are **noise-floor
 compensated**: a per-band floor is estimated from the 10th percentile of the
 short-time energy and subtracted, because field recordings carry room tone and
 preamp hiss that RainyDay is not trying to reproduce, and without this the fit

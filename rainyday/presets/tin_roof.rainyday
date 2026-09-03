@@ -6,14 +6,14 @@ description = Rain on corrugated metal. Every impact rings with a bright metalli
 features = ambient, texture, metallic, bright
 
 # Rain
-density = 396
+density = 950
 clumping = 0.453
-drop_pitch = 3629
-pitch_spread = 3.77
-drop_decay = 22.9
-decay_spread = 0.68
-tonality = 0.378
-impact = 1
+drop_pitch = 9000
+pitch_spread = 4.43
+drop_decay = 14.8
+decay_spread = 0.82
+tonality = 0.28
+impact = 0.797
 splash = 0.819
 level_spread = 0.6
 chirp = 0.35
@@ -23,13 +23,13 @@ note_tracking = 0.5
 # Bed
 bed_level = -23.5
 bed_tone = 0.433
-bed_body = 0.023
+bed_body = 0
 bed_drift = 0.454
 
 # Space
 width = 0.85
 distance = 0.228
-air = 0.577
+air = 0.423
 space_amount = 0.25
 space_size = 0.35
 space_damping = 0.3
@@ -49,6 +49,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 5.34
+gain = 8.65
 max_droplets = 512
 seed = 0

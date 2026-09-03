@@ -246,6 +246,17 @@ amplitude is drawn as `u^k · (k+1)`, which has mean 1 and a natural maximum of
 default Level Spread it was not catching freak drops, it was truncating the top
 of the intended distribution 14 % of the time.
 
+**Rain is noise, not a chord.** The first fit drove `Tonality` up until the
+denser presets buzzed — Gutter Trickle reached 92 %, which is 245 pitched
+plinks a second inside a 1.7-octave band and sounds exactly like that. The
+cause was in the measurement rather than the model: flatness was being computed
+on the *average* spectrum, and a few hundred randomly pitched droplets average
+out perfectly smooth. Measured per frame instead, where any 20 ms window holds
+only a handful of droplets, the two are easy to tell apart, and the presets
+that were buzzing stand out by an order of magnitude. Setting `Tonality` from
+that measurement puts Steady Rain at 0.30 — its original hand-dialled value,
+before fitting, was 0.28.
+
 None of these is audible as a defect on its own. Together they were the
 difference between a filtered noise wash and rain.
 

@@ -66,6 +66,39 @@ def spectral_flatness(x, sr):
     return float(np.exp(np.log(p).mean()) / p.mean())
 
 
+def frame_flatness(x, sr):
+    """Spectral flatness per frame, then averaged -- not flatness of the average.
+
+    This is the difference between noise and a cloud of tones. A few hundred
+    randomly pitched droplets per second average out to a perfectly smooth
+    spectrum, so long-term flatness cannot tell them from a noise band of the
+    same shape: `multiple_water_drops` measures 0.03 flat over its whole length
+    but is full of peaks in any single frame. Getting this wrong is what let the
+    fit drive Tonality up until the rain buzzed.
+
+    Two guards keep it honest. Only bins within 30 dB of the strongest one are
+    counted, so a heavily lowpassed recording is measured where it has content
+    rather than in the noise floor above it; and frames below the 30th
+    percentile of energy are skipped, so gaps between drops do not count either.
+    """
+    S, f = _stft(x, sr, win=1024, hop=512)
+    band = (f > 200) & (f < min(16000, sr / 2))
+    if S.shape[0] < 4 or not band.any():
+        return 0.0
+    longterm = (S ** 2).mean(axis=0)
+    peak = longterm[band].max()
+    sel = band & (longterm >= peak * 1.0e-3)
+    if sel.sum() < 8:
+        return 0.0
+    p = S[:, sel] ** 2 + 1e-20
+    energy = p.sum(axis=1)
+    p = p[energy >= np.percentile(energy, 30)]
+    if p.shape[0] < 2:
+        return 0.0
+    flat = np.exp(np.log(p).mean(axis=1)) / p.mean(axis=1)
+    return float(np.median(flat))
+
+
 def band_envelopes(x, sr, hop_ms=5.0):
     """Short-time energy per octave band -- the basis of the texture features."""
     S, f = _stft(x, sr, win=512, hop=int(sr * hop_ms / 1000))
@@ -231,6 +264,7 @@ def extract(x, sr, label='', denoise=False):
         'bands': db,
         'centroid': centroid,
         'flatness': spectral_flatness(x, sr),
+        'fflat': frame_flatness(x, sr),
         'tflat': temporal_flatness(x, sr),
         'imp': impulsiveness(x, sr),
         'onset_rate': rate,
