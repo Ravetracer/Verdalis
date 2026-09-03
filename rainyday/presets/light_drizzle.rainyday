@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Light Drizzle
+author = RainyDay
+description = Fine mist-like drizzle, mostly high-frequency ticking with a soft bright wash.
+features = ambient, texture, noise, soft
+
+# Rain
+density = 375
+clumping = 0.53
+drop_pitch = 8302
+pitch_spread = 0.329
+drop_decay = 7.75
+decay_spread = 0.22
+tonality = 0.715
+impact = 0.45
+splash = 0.208
+level_spread = 0.74
+chirp = 0.35
+surface = Concrete
+note_tracking = 0.5
+
+# Bed
+bed_level = -20
+bed_tone = 0.72
+bed_body = 0.035
+bed_drift = 0.35
+
+# Space
+width = 0.95
+distance = 0.617
+air = 0.427
+space_amount = 0.18
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 900
+decay = 600
+sustain = 1
+release = 2200
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 4.1
+max_droplets = 512
+seed = 0

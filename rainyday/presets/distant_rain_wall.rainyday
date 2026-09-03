@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Distant Rain Wall
+author = RainyDay
+description = A heavy downpour heard from far away. All transients lost to air absorption.
+features = ambient, texture, dark, distant, pad
+
+# Rain
+density = 3000
+clumping = 0.25
+drop_pitch = 1680
+pitch_spread = 2.53
+drop_decay = 38.9
+decay_spread = 0.5
+tonality = 0
+impact = 0.822
+splash = 0.953
+level_spread = 0.7
+chirp = 0.35
+surface = Concrete
+note_tracking = 0.5
+
+# Bed
+bed_level = -6
+bed_tone = 0.75
+bed_body = 0.453
+bed_drift = 0.5
+
+# Space
+width = 1
+distance = 0.95
+air = 0.75
+space_amount = 0.4
+space_size = 0.8
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 6000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 2000
+decay = 600
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = -4.19
+max_droplets = 1024
+seed = 0

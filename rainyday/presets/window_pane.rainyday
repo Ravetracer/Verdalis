@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Window Pane
+author = RainyDay
+description = Close-up rain against glass. Hard, bright, glassy ticks right in front of you.
+features = ambient, texture, bright, glassy, close
+
+# Rain
+density = 420
+clumping = 0.25
+drop_pitch = 529
+pitch_spread = 2.43
+drop_decay = 15.7
+decay_spread = 0.5
+tonality = 1
+impact = 0.425
+splash = 0.448
+level_spread = 0.6
+chirp = 0.35
+surface = Glass
+note_tracking = 0.5
+
+# Bed
+bed_level = -34.7
+bed_tone = 0.745
+bed_body = 0
+bed_drift = 0.3
+
+# Space
+width = 0.7
+distance = 0.047
+air = 0.146
+space_amount = 0.15
+space_size = 0.3
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 14000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 250
+decay = 600
+sustain = 1
+release = 1500
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = -4.62
+max_droplets = 512
+seed = 0

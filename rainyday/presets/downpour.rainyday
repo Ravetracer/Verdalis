@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Downpour
+author = RainyDay
+description = Heavy, saturated rainfall. Thousands of impacts per second blurring into a wall of water.
+features = ambient, texture, noise, loud
+
+# Rain
+density = 2600
+clumping = 0.25
+drop_pitch = 1680
+pitch_spread = 2.53
+drop_decay = 38.9
+decay_spread = 0.5
+tonality = 0
+impact = 0.822
+splash = 0.953
+level_spread = 0.7
+chirp = 0.35
+surface = Water
+note_tracking = 0.5
+
+# Bed
+bed_level = -17.2
+bed_tone = 0.473
+bed_body = 0.453
+bed_drift = 0.35
+
+# Space
+width = 1
+distance = 0.019
+air = 0.183
+space_amount = 0.22
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 800
+decay = 600
+sustain = 1
+release = 2400
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = -1.69
+max_droplets = 1024
+seed = 0

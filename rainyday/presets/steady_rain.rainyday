@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Steady Rain
+author = RainyDay
+description = Well-behaved everyday rain. The reference point for the whole library.
+features = ambient, texture, noise
+
+# Rain
+density = 292
+clumping = 0.39
+drop_pitch = 4561
+pitch_spread = 4.07
+drop_decay = 12.5
+decay_spread = 0.64
+tonality = 0.679
+impact = 0.5
+splash = 0.884
+level_spread = 0.515
+chirp = 0.35
+surface = Water
+note_tracking = 0.5
+
+# Bed
+bed_level = -14
+bed_tone = 0.64
+bed_body = 0
+bed_drift = 0.3
+
+# Space
+width = 0.9
+distance = 0.137
+air = 0.537
+space_amount = 0.2
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 600
+decay = 600
+sustain = 1
+release = 2000
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = -1.16
+max_droplets = 512
+seed = 0

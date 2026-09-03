@@ -1,0 +1,22 @@
+# Build output
+/build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Python bytecode from tools/analysis
+__pycache__/
+*.py[cod]
+
+# Local reference material: recordings and screenshots supplied for comparison
+# while working on the plugin. Not part of the project, and not ours to ship.
+# The leading "!" has to be escaped or git reads it as a negation.
+/\!dev/
+
+# Editor and OS noise
+*.swp
+*~
+.DS_Store
+.vscode/
+.idea/

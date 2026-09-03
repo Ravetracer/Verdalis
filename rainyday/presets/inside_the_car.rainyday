@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Inside The Car
+author = RainyDay
+description = Muffled rain heard through a windscreen, low-passed and boxy.
+features = ambient, texture, dark, muffled, lofi
+
+# Rain
+density = 532
+clumping = 0.187
+drop_pitch = 1200
+pitch_spread = 4.17
+drop_decay = 7.06
+decay_spread = 0.297
+tonality = 0.345
+impact = 1
+splash = 0.672
+level_spread = 0.6
+chirp = 0.35
+surface = Glass
+note_tracking = 0.5
+
+# Bed
+bed_level = -42.7
+bed_tone = 0.108
+bed_body = 0.038
+bed_drift = 0.58
+
+# Space
+width = 0.75
+distance = 0.461
+air = 0.297
+space_amount = 0.28
+space_size = 0.2
+space_damping = 0.8
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 1400
+filter_reso = 0.2
+filter_key_track = 0
+
+# Envelope
+attack = 500
+decay = 600
+sustain = 1
+release = 1800
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 11.6
+max_droplets = 512
+seed = 0

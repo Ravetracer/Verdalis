@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = First Drops
+author = RainyDay
+description = The first scattered drops hitting dry pavement before the real rain arrives.
+features = ambient, texture, sparse, foley
+
+# Rain
+density = 14
+clumping = 0.55
+drop_pitch = 3791
+pitch_spread = 2.31
+drop_decay = 14.1
+decay_spread = 0.5
+tonality = 0.308
+impact = 0.166
+splash = 0.047
+level_spread = 0.6
+chirp = 0.35
+surface = Concrete
+note_tracking = 0.5
+
+# Bed
+bed_level = -12.2
+bed_tone = 0.69
+bed_body = 0
+bed_drift = 0.3
+
+# Space
+width = 0.9
+distance = 0.21
+air = 0.717
+space_amount = 0.25
+space_size = 0.55
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 60
+decay = 600
+sustain = 1
+release = 1600
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 0.362
+max_droplets = 512
+seed = 0

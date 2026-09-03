@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Cave Drips
+author = RainyDay
+description = Slow isolated drips falling into a deep stone cavern. Very sparse, with a long reverberant tail.
+features = ambient, texture, cave, sparse, drone
+
+# Rain
+density = 2.17
+clumping = 0.22
+drop_pitch = 2371
+pitch_spread = 3.85
+drop_decay = 260
+decay_spread = 0.5
+tonality = 0.285
+impact = 0.343
+splash = 0.66
+level_spread = 0.6
+chirp = 0.8
+surface = Puddle
+note_tracking = 0.5
+
+# Bed
+bed_level = -44.9
+bed_tone = 0.717
+bed_body = 0.556
+bed_drift = 0.3
+
+# Space
+width = 0.9
+distance = 0.17
+air = 0.953
+space_amount = 0.069
+space_size = 0.792
+space_damping = 0.142
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 7543
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 20
+decay = 120
+sustain = 1
+release = 2600
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 0.897
+max_droplets = 512
+seed = 0

@@ -1,0 +1,441 @@
+# RainyDay
+
+A native Linux **CLAP** instrument that generates rain — entirely by synthesis.
+There are no samples anywhere in this project: every droplet, every splash and
+the whole background wash are computed from noise, oscillators and filters at
+run time. Two instances never produce the same rain.
+
+Play a MIDI note and it rains for as long as you hold it.
+
+- 36 parameters covering droplet statistics, impact surface, stereo field,
+  distance, space, filter and a full ADSR
+- 16 factory presets from a single drip in a cave to a tropical monsoon, each
+  fitted against a real recording of the thing it is imitating
+- Exposed to the host through CLAP preset discovery, so presets appear in the
+  host's own browser
+- Sample-accurate note and parameter handling, host modulation support,
+  bounded CPU cost
+- A plugin window drawn with X11 and Cairo: every parameter, a preset browser
+  and a droplet-activity meter, with no toolkit dependency
+
+## Build and install
+
+Requires a C++17 compiler, CMake ≥ 3.16 and the CLAP headers.
+
+```sh
+./install.sh
+```
+
+That configures, builds, runs the self-test and installs to
+`~/.clap/RainyDay/`. Override the destination with
+`RAINYDAY_PREFIX=/some/where ./install.sh`.
+
+Manually, if you prefer:
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+      -DCLAP_INCLUDE_DIR=/path/to/clap/include
+cmake --build build
+cmake --install build            # defaults to ~/.clap
+```
+
+`CLAP_INCLUDE_DIR` is auto-detected from a few common locations (including
+`../CLAP/clap/include` next to this repo); pass it explicitly if the configure
+step cannot find `clap/clap.h`.
+
+The installed layout matters: the plugin locates its factory presets by looking
+for a `presets` directory **next to its own binary**, so keep them together.
+
+```
+~/.clap/RainyDay/RainyDay.clap
+~/.clap/RainyDay/presets/*.rainyday
+```
+
+### Bitwig Studio
+
+`~/.clap` is scanned by default. After installing, restart Bitwig or rescan
+under *Settings → Locations → Plug-in Locations*. RainyDay then shows up as an
+instrument (`RainyDay Audio`), and the factory presets are indexed through
+CLAP's preset-discovery mechanism.
+
+Drop it on an instrument track, add a long note, and it rains.
+
+## The plugin window
+
+RainyDay draws its own window with raw **X11** and **Cairo** — no toolkit, so
+the plugin stays one self-contained `.clap` file and needs nothing a Linux
+audio machine does not already have. It is embedded in the host's window
+through `CLAP_EXT_GUI` (X11 API, non-floating) and repainted from the host's
+timer, at a fixed 912×648.
+
+The layout is generated from the parameter table in `src/params.cpp`: panels
+are the modules, cells are the parameters, and the help line at the bottom is
+the parameter's own `tip`. Adding a parameter there puts it on screen here with
+no GUI change.
+
+| Gesture | Effect |
+|---|---|
+| Drag a knob up/down | Change the value |
+| Shift-drag | Fine control (a fifth of the travel) |
+| Double-click or right-click | Back to the default |
+| Scroll wheel | Step the value |
+| Click a selector's left/right half | Step through the choices |
+| Click the preset name | Open the browser |
+| `◀` / `▶` next to the name | Previous / next preset |
+
+The browser lists the factory library followed by anything in
+`~/.config/RainyDay/presets`, marked `USER`. Loading goes through the same
+`clap.preset-load` path a host uses, so there is one code path for it either
+way. A `*` after the preset name means a parameter has been touched since it
+was loaded.
+
+Knob moves leave the window as real CLAP events — a gesture-begin, the values,
+a gesture-end — so host automation recording sees them exactly as it would a
+move made in the host's own panel. The window never writes the plugin's
+parameters behind the host's back.
+
+The **ACTIVITY** panel plots how many droplets are sounding, published by the
+audio thread rather than read out of the engine. Its scale is compressed: rain
+that uses 3 % of the droplet ceiling is perfectly ordinary, and a linear meter
+would show nothing at all for it.
+
+Build it out with `-DRAINYDAY_BUILD_GUI=OFF`, or let CMake drop it
+automatically if X11 and Cairo are missing; the plugin then falls back to the
+host's generic parameter view.
+
+
+## How it is synthesised
+
+Rain is not one sound, it is a very large number of small independent impacts
+plus the collective wash they add up to. RainyDay models exactly that.
+
+### 1. Droplet arrival — a Cox process
+
+Droplets are scheduled as a **Poisson point process**: the waiting time until
+the next impact is drawn as `-ln(U)/rate`, which is the exact inter-arrival
+distribution for events happening independently at a constant average rate.
+That is what makes the result sound organic rather than like a machine gun with
+jitter added.
+
+`Clumping` turns that rate into a random variable of its own (a *Cox process*,
+or doubly stochastic Poisson process), modulated by a band-limited Gaussian
+random walk. The log-normal modulation is mean-compensated by
+`exp(-σ²/2)`, so the average density stays exactly where you set it while the
+rain gains natural surges and lulls.
+
+### 2. A single droplet — three layers
+
+Each impact is a short event assembled from:
+
+| Layer | Model | Controlled by |
+|---|---|---|
+| Tonal | Phase-accumulated sine, a difference of two exponentials for its amplitude, plus a per-droplet pitch sweep | `Tonality`, `Chirp`, `Drop Decay` |
+| Wet | White-noise burst through a resonant state-variable bandpass tuned to the droplet's pitch | `Splash`, `Tonality` |
+| Impact | Very short broadband noise transient (0.4–3 ms) | `Impact` |
+
+The result passes through a one-pole lowpass standing in for air absorption,
+then gets equal-power panned into the stereo field.
+
+The `Chirp` layer is real physics: a droplet hitting water entrains an air
+bubble whose resonant frequency **rises** as it shrinks, which is why a drip
+into a puddle goes "plink" with an upward bend rather than a flat tone.
+
+Two details of that model matter more than they look:
+
+- **The bend is fast, and independent of the ring time.** A bubble finishes
+  bending within a few tens of milliseconds however long it goes on ringing
+  afterwards. So the chirp is not spread evenly across the decay: the
+  per-sample frequency multiplier starts high and relaxes back towards 1 with
+  its own short time constant, capped at 30 ms. The total sweep still comes to
+  `Chirp × surface` octaves, it just arrives in the first few milliseconds.
+  Spreading it evenly instead makes every drop sound like a slow siren.
+- **The tone arrives behind the splash.** The impact happens first and the
+  bubble is only entrained afterwards, so the tonal layer's envelope is
+  `e^(-t/decay) − e^(-t/rise)` rather than a decay from full level. That gives
+  it a short swell instead of a hard onset, and how long the swell takes is a
+  property of the surface: water and puddles trap bubbles, metal and glass just
+  ring on contact.
+
+### 3. Droplet size follows from physics
+
+Rather than randomising amplitude and pitch independently, RainyDay draws a
+single **size** per droplet from a Marshall–Palmer-like skewed distribution
+(many small drops, few large ones — `Level Spread` sets the skew). Everything
+else is derived from it:
+
+- amplitude scales with volume, so with radius cubed
+- resonant pitch scales with `1/radius` — big drops plop low, fine drops tick high
+- ring time scales with radius — big drops ring longer
+
+So a fat drop is automatically loud, low and long, and a fine one is quiet, high
+and short. No parameter tweaking required for that to hold.
+
+### 4. The bed
+
+Individually inaudible far-field droplets are not synthesised one by one, they
+are summed statistically into a **noise bed**: two decorrelated white sources
+mixed to the requested width (`a·n₁ + b·n₂` / `a·n₁ − b·n₂` with `a² + b² = 1`,
+so the channel correlation is `cos(width·π/2)` with no level change), shaped by
+a resonant lowpass and a highpass, and modulated by a slow random walk
+(`Bed Drift`).
+
+### 5. Space and distance
+
+`Distance` attenuates and darkens, with `Air Absorption` setting how quickly
+the high end is lost — near drops are bright and loud, far ones are dull and
+soft, per droplet. `Space` is a 4-line **feedback delay network** with an
+orthonormal Hadamard mixing matrix, mutually prime delay lengths and per-line
+damping. Orthonormal mixing means the feedback gain alone determines decay, so
+the tank mathematically cannot blow up.
+
+### 6. Level behaviour
+
+Total loudness is normalised against the *expected number of simultaneously
+ringing droplets* (`rate × mean ring time`). Incoherent sources sum as `√N`, so
+each droplet is scaled by `1/√N`. That makes `Density` a texture control rather
+than a disguised volume control: sweeping it from a drizzle to a downpour
+changes the character, not the level. Sparse settings are never scaled *up*, so
+an isolated drip keeps its natural amplitude. A soft clipper above 0.8 sits at
+the very end purely as a safety net.
+
+### 7. Matched against recordings
+
+The model and the preset library were both tuned against a set of reference
+recordings: measure the recording and RainyDay's own output with the same code,
+then move values until the two agree. `tools/analysis/` holds that machinery and
+its README explains how to run it. Three things came out of it that listening
+alone had not made obvious.
+
+**Real rain has almost nothing below 200 Hz.** Measured against their own peak,
+the recordings sit 30 to 50 dB down at 100 Hz. RainyDay was only 10 to 15 dB
+down, and that single error accounted for most of the distance between it and
+the real thing. Three parts of the model were wrong in the same direction:
+
+- The noise bed was a lowpass, and a lowpass passes everything below its corner
+  flat. It is now a band: a 12 dB/oct highpass tracks the lowpass corner about
+  two and a half octaves below it.
+- Droplets had no radiation rolloff at all. A droplet is a small source and
+  radiates poorly below its own resonance -- radiated power falls as f² once the
+  source is much smaller than the wavelength -- so each droplet now runs through
+  a 12 dB/oct highpass at 0.45x its own pitch.
+- The pitch spread was symmetric in octaves, throwing as many droplets two
+  octaves down as up. Drop size is skewed heavily towards small and pitch goes
+  as 1/radius, so the real distribution has a long tail upwards and a short one
+  down. The spread is now lopsided to match, and the downward reach is less than
+  half the upward one.
+
+**A drop's pitch bend is a fiftieth of what the model was doing.** Tracking the
+instantaneous frequency of isolated drops in the recordings puts the sweep at
+about ±0.02 octaves — a couple of per cent, over a ring that lasts 30 to 40 ms.
+RainyDay was sweeping 0.42 octaves at its default setting and two full octaves
+on Puddle. The textbook description of bubble entrainment says the pitch rises,
+and it does, but nothing like that far. The per-surface chirp figures are now
+set at roughly twice the measured maximum, so `Chirp` at 100 % is stylised but
+still reads as water rather than as a cartoon.
+
+**One droplet in seven was being flattened against a ceiling.** Droplet
+amplitude is drawn as `u^k · (k+1)`, which has mean 1 and a natural maximum of
+`k+1`. The guard clamping it at 2.0 therefore sat *below* that maximum: at the
+default Level Spread it was not catching freak drops, it was truncating the top
+of the intended distribution 14 % of the time.
+
+None of these is audible as a defect on its own. Together they were the
+difference between a filtered noise wash and rain.
+
+
+## Parameters
+
+### Rain
+
+| Parameter | Range | What it does |
+|---|---|---|
+| Density | 0.2 – 5000 drops/s | Average droplet arrival rate |
+| Clumping | 0 – 100 % | How much the rate itself fluctuates (surges and lulls) |
+| Drop Pitch | 40 Hz – 9 kHz | Base resonant frequency of a droplet |
+| Pitch Spread | 0 – 5 oct | Random octave spread on top of the physical size coupling |
+| Drop Decay | 1 – 1200 ms | Base ring time |
+| Decay Spread | 0 – 100 % | Randomisation of ring time |
+| Tonality | 0 – 100 % | Noisy splat ↔ pitched plink |
+| Impact | 0 – 100 % | Broadband click at the moment of impact |
+| Splash | 0 – 100 % | Length and weight of the wet noise burst |
+| Level Spread | 0 – 100 % | Drop-size distribution skew (and so amplitude, pitch and decay spread) |
+| Chirp | −100 – +100 % | Per-droplet pitch sweep; positive rises, as bubbles in water do |
+| Surface | 7 choices | Water, Puddle, Leaves, Wood, Metal, Glass, Concrete |
+| Note Tracking | 0 – 100 % | How far the MIDI note transposes droplet pitch |
+
+`Surface` biases ring time, resonator Q, click and splash weighting, chirp
+depth and brightness together — it is a whole material model, not one filter
+setting.
+
+### Bed
+
+| Parameter | Range | What it does |
+|---|---|---|
+| Bed Level | −inf – +6 dB | Level of the statistical far-field wash |
+| Bed Tone | 0 – 100 % | Lowpass corner, dark to bright (level-compensated) |
+| Bed Body | 0 – 100 % | Resonance at that corner |
+| Bed Drift | 0 – 100 % | Slow intensity drift of both bed and density |
+
+### Space
+
+| Parameter | Range | What it does |
+|---|---|---|
+| Stereo Width | 0 – 100 % | Droplet panning spread and bed decorrelation |
+| Distance | 0 – 100 % | Pushes the whole rain field away |
+| Air Absorption | 0 – 100 % | How much high end distance costs |
+| Space Amount | 0 – 100 % | Feedback delay network mix |
+| Space Size | 0 – 100 % | Delay lengths and decay time |
+| Space Damping | 0 – 100 % | Bright stone ↔ soft absorbent surfaces |
+
+### Filter
+
+State-variable filter across the whole output: `Filter Type`
+(Lowpass/Bandpass/Highpass/Notch), `Filter Cutoff` (20 Hz – 20 kHz),
+`Filter Resonance` and `Filter Key Track`. A wide-open lowpass is bypassed
+outright, costing neither CPU nor colouration.
+
+### Envelope
+
+`Attack`, `Decay`, `Sustain`, `Release` gate the rain from MIDI. The envelope
+scales droplet amplitude *and* partially scales density, so a long attack
+sounds like rain moving in rather than a fade-in on a finished loop.
+`Velocity to Level` and `Velocity to Density` route note velocity.
+
+### System
+
+- `Output Gain` — final level, and how the factory presets are loudness matched
+- `Max Droplets` — hard ceiling on simultaneously ringing droplets (32 – 2048).
+  This is the CPU dial. When the pool is full, new droplets are dropped rather
+  than stealing an audible voice, so it never clicks.
+- `Random Seed` — `0` means a fresh random seed per plugin instance, so stacked
+  copies decorrelate. Any other value renders identically every time.
+
+## Presets
+
+| Preset | Character |
+|---|---|
+| Cave Drips | Sparse tonal drips in a deep reverberant cavern |
+| Dripping Faucet | One near-regular tap, tight and close |
+| First Drops | Scattered first drops on dry pavement |
+| Light Drizzle | Fine high-frequency mist |
+| Steady Rain | Everyday rain, the reference point |
+| Concrete Alley | Hard flat urban surfaces |
+| Rain On Leaves | Soft, dull forest canopy |
+| Tin Roof | Bright ringing metal impacts |
+| Window Pane | Close, hard, glassy ticks |
+| Puddle Plinks | Fat drops landing in standing water |
+| Gutter Trickle | Narrow, wet, gurgling downspout |
+| Inside The Car | Muffled through a windscreen |
+| Downpour | Heavy saturated rainfall |
+| Storm Front | Violent gusting squall line |
+| Tropical Monsoon | Dark, dense and relentless |
+| Distant Rain Wall | A downpour heard from far away |
+
+Nine of these were fitted numerically against a recording of the thing they are
+imitating, and the rest had their tone corrected against the nearest one, using
+`tools/analysis/`. Across the library that moved the mean distance to the
+reference recordings down by about 18x, with the dense rain presets landing
+within a few dB in every band. Fitting is not allowed to touch Surface, Chirp,
+the space controls or the envelope: those are what make a preset itself rather
+than a solution.
+
+Every preset's Output Gain is then matched so the library plays at a consistent
+level, targeting -22 dBFS RMS and backing off where that would push the peak
+past -4 dBFS. Sparse presets are peak-limited by nature and end up quieter in
+RMS terms, which is correct -- a dripping tap is not as loud as a downpour.
+
+### Preset format
+
+Presets are plain text, in real-world units, and are read both from disk and
+from copies embedded in the plugin binary:
+
+```ini
+name = Steady Rain
+description = Well-behaved everyday rain.
+features = ambient, texture, noise
+
+density = 700          # drops per second
+drop_pitch = 900       # Hz
+drop_decay = 30        # ms
+surface = Water        # by name
+tonality = 0.28        # 0..1 ratios
+release = 2000         # ms
+```
+
+Unknown keys are ignored and missing keys keep their current value, so
+hand-editing is safe. Drop your own `.rainyday` files into
+`~/.config/RainyDay/presets/` and they are indexed as user content — the
+directory is only declared to the host if it already exists, so create it
+yourself first.
+
+## Verification
+
+The repo ships a small CLAP host used to test the plugin without a DAW. It
+drives the real preset-discovery factory the way a host does.
+
+```sh
+./build/rainyday-render --selftest                  # 30 host-contract checks
+./build/rainyday-render --list                      # walk preset discovery
+./build/rainyday-render --preset downpour --out /tmp/rain.wav --seconds 10
+./build/rainyday-render --all --outdir /tmp/rain     # render the whole library
+./build/rainyday-render --preset tin_roof --param "Density=2500" \
+                        --param "Random Seed=7" --out /tmp/x.wav
+```
+
+`--param` accepts parameter names or numeric ids, with values in display units
+(`"Filter Cutoff=2.5k"`), routed through the plugin's own `text_to_value`.
+
+The self-test covers parameter metadata, text round-tripping, state
+save/load/restore equality, garbage-state rejection, parameter clamping, all
+parameters at their extremes, odd block sizes, silence before the first note,
+and activate/deactivate cycles.
+
+`clap-validator` is the other useful check, but version 0.4.1 requires
+rustc ≥ 1.95.
+
+## Layout
+
+```
+src/plugin.cpp           CLAP entry, extensions, parameters, state, events
+src/preset_provider.cpp  CLAP preset-discovery factory
+src/preset.cpp           preset text parser, path resolution
+src/params.cpp           the parameter table, its tips and unit conversions
+src/gui/gui.cpp          the plugin window: X11, Cairo, layout, interaction
+src/dsp/rain_engine.*    voices, droplet pool, scheduling, the noise bed
+src/dsp/filters.h        state-variable and one-pole filters
+src/dsp/reverb.h         delay line, allpass, feedback delay network
+src/dsp/rng.h            xoshiro128+, uniform/Gaussian/exponential draws
+src/dsp/adsr.h           the envelope
+src/dsp/fastmath.h       fast sine, decay coefficients
+presets/*.rainyday       the factory library, also embedded at build time
+tools/render.cpp         the offline verification host
+tools/fithost.cpp        renders presets back to back for the fitting loop
+tools/analysis/          measures recordings and renders, and fits presets to them
+```
+
+`!dev/` is not tracked. It holds local reference material used while working on
+the plugin — rain recordings to fit the presets against, screenshots of other
+plugins' interfaces — none of which is ours to redistribute. Point
+`RAINYDAY_SOUNDS` at your own directory of recordings to run the analysis
+tools; `tools/analysis/README.md` says what they need to be called.
+
+## Notes and limits
+
+- Linux/x86-64, tested with GCC 13. State is stored little-endian.
+- 16 voices; droplets live in one shared pool so held-note count cannot
+  multiply the CPU cost without bound.
+- Host parameter modulation (`CLAP_EVENT_PARAM_MOD`) is supported globally.
+  Per-note modulation and note expressions are ignored.
+- `Filter Key Track` follows the most recently played note, since the filter is
+  a single global stage rather than per voice.
+- Deliberately built without `-ffast-math`: on x86 GCC that links
+  `crtfastmath.o`, which would flip FTZ/DAZ for the entire host process.
+- No wind, no thunder — this is rain only.
+
+## License
+
+MIT. See `LICENSE`.
+
+RainyDay contains no samples and no third-party code. The only external
+dependency is the CLAP headers, which are MIT licensed, plus X11 and Cairo for
+the plugin window.

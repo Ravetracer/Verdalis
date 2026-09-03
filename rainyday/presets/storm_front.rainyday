@@ -1,0 +1,54 @@
+# RainyDay preset
+format = 1
+name = Storm Front
+author = RainyDay
+description = A squall line moving through: violent, gusting rainfall that surges and eases.
+features = ambient, texture, noise, loud, evolving
+
+# Rain
+density = 3600
+clumping = 0.5
+drop_pitch = 711
+pitch_spread = 3.16
+drop_decay = 28.7
+decay_spread = 0.7
+tonality = 0.035
+impact = 0.808
+splash = 0.79
+level_spread = 0.8
+chirp = 0.35
+surface = Water
+note_tracking = 0.5
+
+# Bed
+bed_level = -13.7
+bed_tone = 0.722
+bed_body = 0.015
+bed_drift = 0.75
+
+# Space
+width = 1
+distance = 0.482
+air = 0.45
+space_amount = 0.3
+space_size = 0.65
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 1500
+decay = 600
+sustain = 1
+release = 3500
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 2.63
+max_droplets = 1536
+seed = 0
