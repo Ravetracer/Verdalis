@@ -147,6 +147,17 @@ if(RAINYDAY_BUILD_TOOLS)
    # Renders preset files back to back inside one process, which is what makes
    # fitting the library against reference recordings practical. See
    # tools/analysis/.
+   find_package(PkgConfig QUIET)
+   if(PkgConfig_FOUND)
+      pkg_check_modules(GUIHOST_X11 QUIET x11)
+   endif()
+   if(GUIHOST_X11_FOUND)
+      add_executable(rainyday-guihost tools/guihost.cpp)
+      target_include_directories(rainyday-guihost PRIVATE "${CLAP_INCLUDE_DIR}" ${GUIHOST_X11_INCLUDE_DIRS})
+      target_compile_options(rainyday-guihost PRIVATE -Wall -Wextra)
+      target_link_libraries(rainyday-guihost PRIVATE ${CMAKE_DL_LIBS} ${GUIHOST_X11_LIBRARIES})
+   endif()
+
    add_executable(rainyday-fithost tools/fithost.cpp)
    target_include_directories(rainyday-fithost PRIVATE "${CLAP_INCLUDE_DIR}")
    target_compile_options(rainyday-fithost PRIVATE -Wall -Wextra)

@@ -44,6 +44,8 @@ constexpr int kHelpH = 24;
 
 constexpr int kWindowW = kContentW + 2 * kMargin;
 constexpr int kWindowH = 648;
+constexpr double kMenuRowH = 20.0;
+constexpr double kMenuPad = 4.0;
 
 constexpr double kKnobR = 21.0;
 constexpr double kArcStart = 0.75 * M_PI;
@@ -482,6 +484,8 @@ private:
       drawHelpLine(cr);
       if (mBrowserOpen)
          drawBrowser(cr);
+      if (mMenuParam >= 0)
+         drawMenu(cr);
 
       cairo_restore(cr);
 
@@ -788,7 +792,8 @@ private:
             msg = list[static_cast<size_t>(cur)].description.c_str();
       }
       if (!msg)
-         msg = "Drag a knob to edit, double-click to reset, shift-drag for fine control.";
+         msg = "Drag a knob to edit, double-click to reset, shift-drag for fine "
+               "control. Click a menu to pick from the list, its arrows to step.";
 
       setColor(cr, kTextMute);
       drawText(cr, kMargin, mHelpY + kHelpH - 8, msg, 10, false, Align::Left);
@@ -822,6 +827,76 @@ private:
       r.x = p.x + kBrowserPad + col * r.w;
       r.y = p.y + 40 + row * r.h;
       return r;
+   }
+
+   // An enum chip opens a list anchored to itself. Stepping one value per click
+   // never reaches the far end of a seven-way enum without a lot of clicking,
+   // and the value the user wants is always visible this way.
+   Rect menuPanel() const {
+      const ParamDesc &d = paramTable()[mMenuParam];
+      const Rect &c = cellRectFor(static_cast<uint32_t>(mMenuParam));
+      Rect r;
+      r.w = std::max(c.w - 10.0, 96.0);
+      r.h = d.enumCount * kMenuRowH + 2 * kMenuPad;
+      r.x = c.x + 5;
+      r.y = c.y + 58; // just under the chip
+      // Flip above the chip rather than run off the bottom of the window.
+      if (r.y + r.h > kWindowH - 8)
+         r.y = c.y + 32 - r.h;
+      if (r.y < kHeaderH + 4)
+         r.y = kHeaderH + 4;
+      return r;
+   }
+
+   Rect menuItemRect(int index) const {
+      const Rect p = menuPanel();
+      Rect r;
+      r.x = p.x + kMenuPad;
+      r.w = p.w - 2 * kMenuPad;
+      r.h = kMenuRowH;
+      r.y = p.y + kMenuPad + index * kMenuRowH;
+      return r;
+   }
+
+   int menuItemAt(double x, double y) const {
+      if (mMenuParam < 0)
+         return -1;
+      const ParamDesc &d = paramTable()[mMenuParam];
+      for (int i = 0; i < static_cast<int>(d.enumCount); ++i)
+         if (menuItemRect(i).contains(x, y))
+            return i;
+      return -1;
+   }
+
+   void closeMenu() {
+      mMenuParam = -1;
+      mMenuHover = -1;
+   }
+
+   void drawMenu(cairo_t *cr) {
+      const ParamDesc &d = paramTable()[mMenuParam];
+      const Rect p = menuPanel();
+      setColor(cr, kPanelFill);
+      roundedRect(cr, p.x, p.y, p.w, p.h, 5);
+      cairo_fill_preserve(cr);
+      setColor(cr, kAccent, 0.5);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+
+      const int cur = static_cast<int>(
+         std::floor(mDelegate.guiParamValue(static_cast<uint32_t>(mMenuParam)) + 0.5));
+      for (int i = 0; i < static_cast<int>(d.enumCount); ++i) {
+         const Rect r = menuItemRect(i);
+         const bool hot = mMenuHover == i;
+         const bool sel = cur == i;
+         if (hot || sel) {
+            setColor(cr, kAccent, hot ? 0.20 : 0.10);
+            roundedRect(cr, r.x, r.y, r.w, r.h, 3);
+            cairo_fill(cr);
+         }
+         setColor(cr, sel ? kAccent : kText, hot ? 1.0 : 0.85);
+         drawText(cr, r.x + 8, r.y + r.h * 0.5 + 4, d.enumNames[i], 10, sel, Align::Left);
+      }
    }
 
    void drawBrowser(cairo_t *cr) {
@@ -895,8 +970,9 @@ private:
             }
             break;
          case KeyPress:
-            if (mBrowserOpen) {
+            if (mBrowserOpen || mMenuParam >= 0) {
                mBrowserOpen = false;
+               closeMenu();
                mDirty = true;
             }
             break;
@@ -920,6 +996,23 @@ private:
    void onButtonPress(const XButtonEvent &be) {
       const double x = be.x / mScale;
       const double y = be.y / mScale;
+
+      if (mMenuParam >= 0) {
+         if (be.button == Button1) {
+            const int item = menuItemAt(x, y);
+            const bool inside = menuPanel().contains(x, y);
+            if (item >= 0) {
+               const uint32_t id = static_cast<uint32_t>(mMenuParam);
+               mDelegate.guiBeginEdit(id);
+               mDelegate.guiSetParam(id, static_cast<double>(item));
+               mDelegate.guiEndEdit(id);
+            }
+            if (item >= 0 || !inside)
+               closeMenu();
+         }
+         mDirty = true;
+         return;
+      }
 
       if (mBrowserOpen) {
          if (be.button == Button1) {
@@ -952,6 +1045,7 @@ private:
       if (mNameRect.contains(x, y)) {
          mBrowserOpen = true;
          mBrowserHover = -1;
+         closeMenu();
          mDirty = true;
          return;
       }
@@ -967,7 +1061,7 @@ private:
       mLastClickParam = id;
       mLastClickTime = be.time;
 
-      if (be.button == Button3 || doubleClick) {
+      if (be.button == Button3 || (doubleClick && !isChip(d))) {
          mDelegate.guiBeginEdit(static_cast<uint32_t>(id));
          mDelegate.guiSetParam(static_cast<uint32_t>(id), d.def);
          mDelegate.guiEndEdit(static_cast<uint32_t>(id));
@@ -979,9 +1073,20 @@ private:
          return;
 
       if (isChip(d)) {
-         // Left half steps down, right half steps up.
+         // The two arrows still step by one; the name between them opens the
+         // full list.
          const Rect &r = cellRectFor(static_cast<uint32_t>(id));
-         nudge(static_cast<uint32_t>(id), x < r.x + r.w * 0.5 ? -1 : 1, false);
+         const double chipX = r.x + 5;
+         const double chipW = r.w - 10;
+         if (x < chipX + 18.0) {
+            nudge(static_cast<uint32_t>(id), -1, false);
+         } else if (x > chipX + chipW - 18.0) {
+            nudge(static_cast<uint32_t>(id), 1, false);
+         } else {
+            mMenuParam = id;
+            mMenuHover = menuItemAt(x, y);
+            mDirty = true;
+         }
          return;
       }
 
@@ -1012,6 +1117,15 @@ private:
          v = std::min(d.max, std::max(d.min, v));
          mDelegate.guiSetParam(id, v);
          mDirty = true;
+         return;
+      }
+
+      if (mMenuParam >= 0) {
+         const int item = menuItemAt(x, y);
+         if (item != mMenuHover) {
+            mMenuHover = item;
+            mDirty = true;
+         }
          return;
       }
 
@@ -1125,6 +1239,8 @@ private:
 
    bool mBrowserOpen = false;
    int mBrowserHover = -1;
+   int mMenuParam = -1; // enum parameter whose dropdown is open, or -1
+   int mMenuHover = -1;
 
    double mShown[kNumParams];
    uint32_t mLastDropCount = 0;

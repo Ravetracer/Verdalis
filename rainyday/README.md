@@ -77,9 +77,10 @@ no GUI change.
 |---|---|
 | Drag a knob up/down | Change the value |
 | Shift-drag | Fine control (a fifth of the travel) |
-| Double-click or right-click | Back to the default |
+| Double-click a knob, or right-click anything | Back to the default |
 | Scroll wheel | Step the value |
-| Click a selector's left/right half | Step through the choices |
+| Click a selector's name | Open its list and pick a value |
+| Click a selector's `◀` / `▶` arrow | Step one choice |
 | Click the preset name | Open the browser |
 | `◀` / `▶` next to the name | Previous / next preset |
 
