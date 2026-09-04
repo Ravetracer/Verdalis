@@ -357,6 +357,7 @@ private:
          plug->mValues[id].store(clampv(value, d->min, d->max), std::memory_order_relaxed);
       }
       plug->mParamsDirty.store(true, std::memory_order_release);
+      plug->notifyParamValuesChanged();
       return true;
    }
 
@@ -370,14 +371,19 @@ private:
          mValues[kv.first].store(clampv(kv.second, d->min, d->max), std::memory_order_relaxed);
       }
       mParamsDirty.store(true, std::memory_order_release);
+      notifyParamValuesChanged();
+   }
 
-      // Tell the host to re-read every parameter value it is showing.
-      if (mHost) {
-         auto *hostParams = static_cast<const clap_host_params_t *>(
-            mHost->get_extension(mHost, CLAP_EXT_PARAMS));
-         if (hostParams && hostParams->rescan)
-            hostParams->rescan(mHost, CLAP_PARAM_RESCAN_VALUES | CLAP_PARAM_RESCAN_TEXT);
-      }
+   // Any path that moves parameters behind the host's back -- loading a preset,
+   // loading saved state -- has to ask the host to re-read them, or it goes on
+   // showing and automating the values it last knew about. [main-thread]
+   void notifyParamValuesChanged() {
+      if (!mHost)
+         return;
+      auto *hostParams =
+         static_cast<const clap_host_params_t *>(mHost->get_extension(mHost, CLAP_EXT_PARAMS));
+      if (hostParams && hostParams->rescan)
+         hostParams->rescan(mHost, CLAP_PARAM_RESCAN_VALUES | CLAP_PARAM_RESCAN_TEXT);
    }
 
    void reportPresetError(uint32_t locationKind, const char *location, const char *loadKey,

@@ -84,6 +84,11 @@ save/change/restore equality, garbage-state rejection, out-of-range clamping,
 all parameters at their extremes, odd block sizes, silence before the first
 note, activate/deactivate cycles).
 
+It also passes `clap-validator` 0.4.1: 44 tests run, 38 passed, 0 failed. The
+six skips are all "not applicable" -- no 64-bit audio path, no input audio port
+for the denormals test, and three optional port-layout extensions the plugin
+does not implement.
+
 ## Pick it up here
 
 ```sh
@@ -105,10 +110,13 @@ long note.
 - `Filter Key Track` follows the most recently played note (single global
   filter stage).
 - Per-note parameter modulation and note expressions are ignored.
-- Not yet run through `clap-validator`: version 0.4.1 requires rustc >= 1.95
-  and this machine has 1.90.
 - The sparse drip presets match their references less closely than the dense
   rain ones. Isolated drops in a room are dominated by the room, and the
   reference recordings carry reverb the synth has to approximate with a single
   feedback delay network.
-- Not under version control yet — no git repository was initialised.
+- `Seed` does not fully determine the output. Rendering the same preset at the
+  same seed gives different audio depending on which preset the instance
+  rendered before it, so some engine state survives a preset or state load.
+  Individual numbers in `tools/analysis/match.py report` carry that history
+  dependence; the totals are still comparable because every run measures the
+  library in the same order.
