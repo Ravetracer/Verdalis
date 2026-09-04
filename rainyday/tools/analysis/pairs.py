@@ -1,10 +1,12 @@
 """Which reference recording each preset is trying to be.
 
 The recordings themselves are not in the repository -- point --sounds at your
-own directory of mono WAVs named after the keys used here. Presets listed with
-TONE keep the density and rhythm that give them their identity and only have
-their spectral character corrected; there is no recording of a tropical monsoon
-in the reference set, but its tone should still follow real rain.
+own directory of WAVs named after the keys used here (mono or stereo, any
+of the PCM depths wavio reads; stereo is summed to mono on load). Presets
+listed with TONE keep the density and rhythm that give them their identity and
+only have their spectral character corrected; there is no recording of a
+tropical monsoon in the reference set, but its tone should still follow real
+rain.
 
 Distant Rain Wall is deliberately absent. Nothing in the reference set is a
 far-field recording, and fitting it to a close one inverts what it is: the fit
@@ -25,7 +27,7 @@ PAIRS = [
     ('inside_the_car',    'rain_in_car',                 FULL),
     ('puddle_plinks',     'multiple_water_drops',        FULL),
     ('dripping_faucet',   'multiple_water_drops_faucet', FULL),
-    ('cave_drips',        'water_drops_cave_reverb',     FULL),
+    ('cave_drips',        'long_real_cave_drops',        FULL),
     ('downpour',          'rain_on_concrete',            TONE),
     ('storm_front',       'rain_on_concrete',            TONE),
     ('tropical_monsoon',  'rain_on_roof',                TONE),
