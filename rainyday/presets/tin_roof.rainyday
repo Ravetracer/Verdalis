@@ -7,16 +7,16 @@ features = ambient, texture, metallic, bright
 
 # Rain
 density = 613
-clumping = 0.453
-drop_pitch = 6322
+clumping = 0.516
+drop_pitch = 3000
 pitch_spread = 3.26
-drop_decay = 9.55
+drop_decay = 3.98
 decay_spread = 0.96
-tonality = 0.191
-bubble = 1
-impact = 0.993
+tonality = 0.268
+bubble = 0.5
+impact = 0.9
 splash = 0.772
-level_spread = 0.6
+level_spread = 0.88
 chirp = 0.35
 surface = Metal
 note_tracking = 0.5
@@ -24,16 +24,16 @@ note_tracking = 0.5
 # Bed
 bed_level = -23.5
 bed_tone = 0.433
-bed_body = 0.14
-bed_drift = 0.454
+bed_body = 0
+bed_drift = 0.174
 bed_width = 0.85
 bed_pan = 0
 
 # Space
 width = 0.85
 drop_pan = 0
-distance = 0.205
-air = 0.423
+distance = 0.268
+air = 0.458
 space_amount = 0.25
 space_size = 0.35
 space_damping = 0.3
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 7.93
+gain = 3.98
 max_droplets = 512
 seed = 0

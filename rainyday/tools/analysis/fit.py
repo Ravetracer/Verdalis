@@ -45,6 +45,25 @@ SPACE = {
     'filter_reso':   ('add', 0.0, 1.0),
 }
 
+# Per-preset overrides of SPACE, for the cases where the objective is happy with
+# something that does not sound like rain.
+#
+# Tin Roof is the one that needed this. The Metal surface triples the ring time,
+# raises the resonator Q, boosts the tonal layer by 30 % and cuts the wet splash
+# to 45 %. Give that a high centre pitch and a Bubble Chance of 1 and every one
+# of six hundred drops a second becomes a bright, tuned, 30 ms bell with the
+# water taken out of it -- which measures perfectly respectably and sounds like
+# breaking icicles. The objective has no feature that can tell those apart, so
+# the bounds say it instead: a water drop on a panel is not a 6 kHz bell, and
+# most impacts do not entrain a ringing bubble at all.
+PRESET_BOUNDS = {
+    'tin_roof': {
+        'drop_pitch': ('mul', 60.0, 3000.0),
+        'bubble':     ('add', 0.0, 0.5),
+        'splash':     ('add', 0.5, 1.0),
+    },
+}
+
 # The full set, and the subset used for presets that only need their tone
 # corrected without losing the density and rhythm that define them. Surface,
 # Chirp, the space controls and the envelope are never fitted: those are the
@@ -62,8 +81,8 @@ TONE_PARAMS = ['drop_pitch', 'pitch_spread', 'drop_decay', 'tonality', 'bubble',
         'impact', 'splash', 'bed_level', 'bed_tone', 'bed_body', 'distance', 'air']
 
 
-def candidates(name, value, scale):
-    kind, lo, hi = SPACE[name]
+def candidates(name, value, scale, bounds=None):
+    kind, lo, hi = (bounds or {}).get(name, SPACE[name])
     if kind == 'mul':
         f = 1.0 + 1.4 * scale
         vals = [value / f, value / np.sqrt(f), value, value * np.sqrt(f), value * f]
@@ -94,8 +113,13 @@ class Fitter:
             total += d
         return total / len(seeds)
 
-    def run(self, params, meta, target, names, passes=4, log=None):
+    def run(self, params, meta, target, names, passes=4, log=None, bounds=None):
         cur = dict(params)
+        # A bound that the preset already violates has to be honoured before the
+        # search starts, or the first pass simply keeps the offending value.
+        for name, (_, lo, hi) in (bounds or {}).items():
+            if name in cur:
+                cur[name] = float(np.clip(float(cur[name]), lo, hi))
         best = self.score(cur, meta, target)
         for p in range(passes):
             scale = 1.0 * (0.55 ** p)
@@ -107,7 +131,7 @@ class Fitter:
                     base = float(cur[name])
                 except (TypeError, ValueError):
                     continue
-                for v in candidates(name, base, scale):
+                for v in candidates(name, base, scale, bounds):
                     if abs(v - base) < 1e-9:
                         continue
                     trial = dict(cur)
@@ -130,9 +154,11 @@ def fit_preset(fitter, preset, reference, names, out_dir):
     def log(m):
         print(m, flush=True)
 
+    bounds = PRESET_BOUNDS.get(preset)
     before = fitter.score(params, meta, target)
-    print(f'  {preset} <- {reference}   start {before:.1f}', flush=True)
-    tuned, after = fitter.run(params, meta, target, names, log=log)
+    print(f'  {preset} <- {reference}   start {before:.1f}'
+          f'{"   (bounded)" if bounds else ""}', flush=True)
+    tuned, after = fitter.run(params, meta, target, names, log=log, bounds=bounds)
 
     checks = [fitter.score(tuned, meta, target, seed=s) for s in VERIFY_SEEDS]
     base_checks = [fitter.score(params, meta, target, seed=s) for s in VERIFY_SEEDS]
