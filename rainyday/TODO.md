@@ -10,9 +10,10 @@ statistical far field -- so what follows is only the difference. Ranked by how
 much realism each is likely to buy.
 
 Every one of these changes the sound of every preset and so costs a full re-fit
-(about 50 minutes). None is started.
+(about 50 minutes). **1a is done** (commit b2432b6); 1b, 1c and 1d are not
+started.
 
-### 1a. Amplitude should follow impact energy, not drop mass
+### 1a. Amplitude should follow impact energy, not drop mass -- DONE
 
 The engine sets droplet amplitude proportional to volume, i.e. to mass. drip
 uses `E_acoustic = 0.001 x (1/2 m v^2)`: about a tenth of a per cent of the
@@ -27,6 +28,11 @@ where the velocity has saturated at both ends). If that is right, RainyDay is ex
 by an order of magnitude, which would read as isolated loud plonks over a bed
 rather than as rain. **This is the most suspicious single thing in the engine**
 and it is cheap to test: it is one expression in `spawnDroplet`.
+
+Built 2026-09-04. Measured rather than assumed: over the range the engine draws,
+the old law spread loudest against quietest by 130:1 and the energy law gives
+45:1; over 0.5 to 5 mm it is 1000:1 against 143:1. So the order of magnitude was
+right. Mean loudness still holds within half a decibel across Level Spread.
 
 ### 1b. The impact frequency is drawn at random, and should not be
 
@@ -72,7 +78,30 @@ wind. That is a real finding, and it is also exactly the scope this project has
 decided against. Worth remembering when a preset sounds thin for no reason the
 measurements can explain.
 
-## 2. GUI follow-ups
+## 2. The fit overfits its own seeds, and it is costing real presets
+
+Each candidate is scored on two seeds (`FIT_SEEDS` in `fit.py`) and verified on
+three others. On the sparse presets the gap between the two is enormous, because
+a seven-second render of a preset at one drip a second contains about a dozen
+audible events and the objective is averaging over noise: Dripping Faucet
+reached 28.7 on the seeds it was fitted against and 732.1 on unseen ones, Storm
+Front 23.4 and 194.9.
+
+The immediate consequence is that six of the fifteen fitted presets in the last
+run had to be thrown away, having measured worse on seeds the fit never saw. The
+work was done and then discarded.
+
+The fix is not subtle -- average more seeds per candidate -- and it costs
+proportionally more time, which is why it has not simply been done: the last
+full fit already took 68 minutes at two seeds. Worth measuring first how many
+seeds it actually takes for the sparse presets to stabilise, rather than
+guessing, since the dense ones clearly do not need it. A per-preset seed count
+would buy most of it for very little.
+
+`dripping_faucet` at 436.6 is now the worst preset in the library by a wide
+margin and is the obvious test case.
+
+## 3. GUI follow-ups
 
 - **Text entry on a knob.** `paramTextToValue()` already parses everything the
   display prints, including `k` multipliers and seconds on millisecond fields.
@@ -105,7 +134,7 @@ measurements can explain.
 gets checked. It opens a window on the current display, so it is not something
 to run unannounced.
 
-## 3. Later / nice to have
+## 4. Later / nice to have
 
 - **Wind and thunder.** Explicitly out of scope for now; the plugin is rain
   only. When added, they belong as separate parameter groups, and thunder needs
