@@ -112,7 +112,37 @@ wind. That is a real finding, and it is also exactly the scope this project has
 decided against. Worth remembering when a preset sounds thin for no reason the
 measurements can explain.
 
-## 2. The fit overfits its own seeds, and it is costing real presets
+## 2. What the library's residual says the engine is missing
+
+Measured 2026-09-04 across all sixteen fitted presets, against nine different
+reference recordings. The point of doing it this way: a preset that measures
+badly may simply be pointed wrong, but a bias that survives sixteen independent
+fits against different targets cannot be a preset's fault. That is the engine.
+
+    band        mean    spread   presets leaning the same way
+    200-400   -1.98 dB    2.57      13 of 16
+    3.2-6.3k  +2.69 dB    2.89      13 of 16
+    12-20k    -3.84 dB    6.46      12 of 16   (spread too wide to trust)
+
+So the engine is consistently **thin between 200 and 400 Hz and heavy between
+3 and 6 kHz**: a tilt, not a level error. Two things point at the impact layer
+as the cause of the upper half. It is the widest-band part of a droplet and the
+least constrained by anything physical; and 3 to 6 kHz is exactly where the
+drop-derived impact frequency from 1b now sits, scaled by surface brightness.
+Inside the Car regressed in that same band when 1b landed.
+
+Worth trying, in order:
+
+- Check whether the 3 to 6 kHz excess predates 1b by measuring the residual
+  against the engine at commit 007aa2f's parent. If 1b caused it, the impact
+  weighting per surface is the thing to revisit rather than the frequency.
+- The 200 to 400 Hz shortfall is where a struck *surface* rings rather than a
+  droplet. The engine models a droplet radiating into air and the surface only
+  as a set of scaling factors, so a panel or a pavement having modes of its own
+  is simply absent. That is the largest missing mechanism in the model and it
+  would be a real piece of work.
+
+## 3. The fit overfits its own seeds, and it is costing real presets
 
 Each candidate is scored on two seeds (`FIT_SEEDS` in `fit.py`) and verified on
 three others. On the sparse presets the gap between the two is enormous, because
@@ -135,7 +165,7 @@ would buy most of it for very little.
 `dripping_faucet` at 436.6 is now the worst preset in the library by a wide
 margin and is the obvious test case.
 
-## 3. GUI follow-ups
+## 4. GUI follow-ups
 
 - **Text entry on a knob.** `paramTextToValue()` already parses everything the
   display prints, including `k` multipliers and seconds on millisecond fields.
@@ -168,7 +198,7 @@ margin and is the obvious test case.
 gets checked. It opens a window on the current display, so it is not something
 to run unannounced.
 
-## 4. Later / nice to have
+## 5. Later / nice to have
 
 - **Wind and thunder.** Explicitly out of scope for now; the plugin is rain
   only. When added, they belong as separate parameter groups, and thunder needs
