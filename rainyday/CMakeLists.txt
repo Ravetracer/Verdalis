@@ -72,13 +72,27 @@ add_custom_target(rainyday_presets DEPENDS "${RAINYDAY_GENERATED_HEADER}")
 set(RAINYDAY_GUI_SOURCES "")
 # pkg-config on this machine describes this machine, so a cross build must not
 # consult it: it would report the host's X11 and Cairo and drag /usr/include
-# into a Windows compile. The window is X11-only in any case.
+# into a Windows compile. Point RAINYDAY_WIN_CAIRO at a Cairo cross-built with
+# its win32 backend instead (see cmake/build-windows-cairo.sh).
 if(RAINYDAY_BUILD_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
-   set(RAINYDAY_BUILD_GUI OFF)
-   message(STATUS "RainyDay: Windows build, no window yet (the host shows its own)")
+   if(NOT RAINYDAY_WIN_CAIRO OR NOT EXISTS "${RAINYDAY_WIN_CAIRO}/lib/libcairo.a")
+      set(RAINYDAY_BUILD_GUI OFF)
+      message(WARNING "RainyDay: no Windows Cairo at RAINYDAY_WIN_CAIRO, building without a window")
+   else()
+      set(RAINYDAY_GUI_DEPS_INCLUDE_DIRS "${RAINYDAY_WIN_CAIRO}/include" "${RAINYDAY_WIN_CAIRO}/include/cairo")
+      set(RAINYDAY_GUI_DEPS_LIBRARY_DIRS "${RAINYDAY_WIN_CAIRO}/lib")
+      # Cairo's win32 backend draws through GDI and measures text with it.
+      set(RAINYDAY_GUI_DEPS_LIBRARIES cairo pixman-1 gdi32 msimg32 user32)
+      set(RAINYDAY_GUI_SOURCES src/gui/gui.cpp)
+      # Cairo's headers declare everything dllimport unless told the library is
+      # static, which is how it is built here.
+      set(RAINYDAY_GUI_DEFINES CAIRO_WIN32_STATIC_BUILD)
+      set(RAINYDAY_GUI_FOUND_WIN TRUE)
+      message(STATUS "RainyDay: building the plugin window (Win32 + Cairo)")
+   endif()
 endif()
 
-if(RAINYDAY_BUILD_GUI)
+if(RAINYDAY_BUILD_GUI AND NOT RAINYDAY_GUI_FOUND_WIN)
    find_package(PkgConfig QUIET)
    if(PkgConfig_FOUND)
       pkg_check_modules(RAINYDAY_GUI_DEPS QUIET x11 cairo)
@@ -122,7 +136,7 @@ target_compile_options(RainyDay PRIVATE
 target_link_libraries(RainyDay PRIVATE ${CMAKE_DL_LIBS})
 
 if(RAINYDAY_BUILD_GUI)
-   target_compile_definitions(RainyDay PRIVATE RAINYDAY_WITH_GUI)
+   target_compile_definitions(RainyDay PRIVATE RAINYDAY_WITH_GUI ${RAINYDAY_GUI_DEFINES})
    target_include_directories(RainyDay PRIVATE ${RAINYDAY_GUI_DEPS_INCLUDE_DIRS})
    target_link_libraries(RainyDay PRIVATE ${RAINYDAY_GUI_DEPS_LIBRARIES})
    target_link_directories(RainyDay PRIVATE ${RAINYDAY_GUI_DEPS_LIBRARY_DIRS})
@@ -176,7 +190,13 @@ if(RAINYDAY_BUILD_TOOLS)
    # Renders preset files back to back inside one process, which is what makes
    # fitting the library against reference recordings practical. See
    # tools/analysis/.
-   if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+   if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      if(RAINYDAY_BUILD_GUI)
+         set(GUIHOST_X11_FOUND TRUE)
+         set(GUIHOST_X11_INCLUDE_DIRS "")
+         set(GUIHOST_X11_LIBRARIES user32 gdi32)
+      endif()
+   else()
       find_package(PkgConfig QUIET)
       if(PkgConfig_FOUND)
          pkg_check_modules(GUIHOST_X11 QUIET x11)

@@ -9,13 +9,17 @@
 
 #include <clap/clap.h>
 
-#include <X11/Xlib.h>
+#if defined(_WIN32)
+#   include <windows.h>
+#else
+#   include <X11/Xlib.h>
+#   include <dlfcn.h>
+#endif
 #include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <dlfcn.h>
 #include <string>
 #include <thread>
 #include <vector>
@@ -38,12 +42,21 @@ int main(int argc, char **argv) {
    const char *presetPath = (argc > 2 && argv[2][0]) ? argv[2] : nullptr;
    const int liveSeconds = argc > 3 ? std::atoi(argv[3]) : 600;
 
+#if defined(_WIN32)
+   HMODULE lib = LoadLibraryA(pluginPath.c_str());
+   if (!lib) {
+      std::fprintf(stderr, "LoadLibrary failed: %lu\n", GetLastError());
+      return 1;
+   }
+   auto *entry = reinterpret_cast<const clap_plugin_entry_t *>(GetProcAddress(lib, "clap_entry"));
+#else
    void *lib = dlopen(pluginPath.c_str(), RTLD_NOW | RTLD_LOCAL);
    if (!lib) {
       std::fprintf(stderr, "dlopen failed: %s\n", dlerror());
       return 1;
    }
    auto *entry = static_cast<const clap_plugin_entry_t *>(dlsym(lib, "clap_entry"));
+#endif
    if (!entry || !entry->init(pluginPath.c_str())) {
       std::fprintf(stderr, "no usable clap_entry\n");
       return 1;
@@ -97,6 +110,40 @@ int main(int argc, char **argv) {
    uint32_t w = 900, h = 648;
    gui->get_size(plug, &w, &h);
 
+#if defined(_WIN32)
+   // A plain top-level window standing in for the host's, with the plugin's
+   // own window parented into it exactly as a DAW would.
+   WNDCLASSEXW wc{};
+   wc.cbSize = sizeof(wc);
+   wc.lpfnWndProc = DefWindowProcW;
+   wc.hInstance = GetModuleHandleW(nullptr);
+   wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+   wc.lpszClassName = L"RainyDayGuiHost";
+   RegisterClassExW(&wc);
+
+   RECT wanted{0, 0, static_cast<LONG>(w), static_cast<LONG>(h)};
+   AdjustWindowRect(&wanted, WS_OVERLAPPEDWINDOW, FALSE);
+   HWND hostWindow = CreateWindowExW(0, L"RainyDayGuiHost", L"RainyDay", WS_OVERLAPPEDWINDOW,
+                               CW_USEDEFAULT, CW_USEDEFAULT, wanted.right - wanted.left,
+                               wanted.bottom - wanted.top, nullptr, nullptr,
+                               GetModuleHandleW(nullptr), nullptr);
+   if (!hostWindow) {
+      std::fprintf(stderr, "could not create the host window\n");
+      return 1;
+   }
+   ShowWindow(hostWindow, SW_SHOW);
+
+   clap_window_t parent{};
+   parent.api = CLAP_WINDOW_API_WIN32;
+   parent.win32 = hostWindow;
+   if (!gui->set_parent(plug, &parent)) {
+      std::fprintf(stderr, "set_parent failed\n");
+      return 1;
+   }
+   gui->show(plug);
+   std::printf("window %p  %ux%u\n", static_cast<void *>(hostWindow), w, h);
+   std::fflush(stdout);
+#else
    Display *dpy = XOpenDisplay(nullptr);
    if (!dpy) {
       std::fprintf(stderr, "no X display\n");
@@ -119,6 +166,9 @@ int main(int argc, char **argv) {
    }
    gui->show(plug);
    XFlush(dpy);
+   std::printf("window 0x%lx  %ux%u\n", win, w, h);
+   std::fflush(stdout);
+#endif
 
    // The editor publishes its parameter edits through process(), so the audio
    // thread has to keep turning for the interface to behave as it does in a host.
@@ -147,15 +197,25 @@ int main(int argc, char **argv) {
       }
    });
 
-   std::printf("window 0x%lx  %ux%u\n", win, w, h);
-   std::fflush(stdout);
-
    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(liveSeconds);
    while (std::chrono::steady_clock::now() < deadline) {
+#if defined(_WIN32)
+      MSG msg;
+      while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
+         TranslateMessage(&msg);
+         DispatchMessageW(&msg);
+      }
+      // The plugin's window is repainted from the host's timer in a DAW; here
+      // there is no timer, so the host drives it.
+      if (auto *timer = static_cast<const clap_plugin_timer_support_t *>(
+             plug->get_extension(plug, CLAP_EXT_TIMER_SUPPORT)))
+         timer->on_timer(plug, 0);
+#else
       while (XPending(dpy)) {
          XEvent ev;
          XNextEvent(dpy, &ev);
       }
+#endif
       std::this_thread::sleep_for(std::chrono::milliseconds(16));
    }
 
@@ -166,6 +226,8 @@ int main(int argc, char **argv) {
    plug->deactivate(plug);
    plug->destroy(plug);
    entry->deinit();
+#if !defined(_WIN32)
    XCloseDisplay(dpy);
+#endif
    return 0;
 }

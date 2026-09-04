@@ -727,6 +727,20 @@ private:
    }
 
 #ifdef RAINYDAY_WITH_GUI
+   // Which windowing system this build's window speaks, and how the host's
+   // parent handle reaches it. The window itself is in src/gui/gui.cpp.
+#if defined(_WIN32)
+   static constexpr const char *kWindowApi = CLAP_WINDOW_API_WIN32;
+   static uintptr_t nativeHandle(const clap_window_t &w) {
+      return reinterpret_cast<uintptr_t>(w.win32);
+   }
+#else
+   static constexpr const char *kWindowApi = CLAP_WINDOW_API_X11;
+   static uintptr_t nativeHandle(const clap_window_t &w) {
+      return static_cast<uintptr_t>(w.x11);
+   }
+#endif
+
    // -------------------------------------------------------- GuiDelegate
 
    double guiParamValue(uint32_t id) const override {
@@ -822,11 +836,11 @@ private:
    static bool guiIsApiSupported(const clap_plugin_t *, const char *api, bool isFloating) {
       // Embedded X11 only. A floating window would mean owning a top-level
       // window and its focus behaviour, which is the host's job here.
-      return !isFloating && api && std::strcmp(api, CLAP_WINDOW_API_X11) == 0;
+      return !isFloating && api && std::strcmp(api, kWindowApi) == 0;
    }
 
    static bool guiGetPreferredApi(const clap_plugin_t *, const char **api, bool *isFloating) {
-      *api = CLAP_WINDOW_API_X11;
+      *api = kWindowApi;
       *isFloating = false;
       return true;
    }
@@ -885,16 +899,16 @@ private:
 
    static bool guiSetParent(const clap_plugin_t *p, const clap_window_t *window) {
       RainyDayPlugin *plug = self(p);
-      if (!plug->mGui || !window || std::strcmp(window->api, CLAP_WINDOW_API_X11) != 0)
+      if (!plug->mGui || !window || std::strcmp(window->api, kWindowApi) != 0)
          return false;
-      return plug->mGui->embed(static_cast<unsigned long>(window->x11));
+      return plug->mGui->embed(nativeHandle(*window));
    }
 
    static bool guiSetTransient(const clap_plugin_t *p, const clap_window_t *window) {
       RainyDayPlugin *plug = self(p);
-      if (!plug->mGui || !window || std::strcmp(window->api, CLAP_WINDOW_API_X11) != 0)
+      if (!plug->mGui || !window || std::strcmp(window->api, kWindowApi) != 0)
          return false;
-      return plug->mGui->setTransientFor(static_cast<unsigned long>(window->x11));
+      return plug->mGui->setTransientFor(nativeHandle(*window));
    }
 
    static void guiSuggestTitle(const clap_plugin_t *p, const char *title) {

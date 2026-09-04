@@ -1,8 +1,11 @@
 // RainyDay's plugin window.
 //
-// Raw X11 for the window, Cairo for everything drawn inside it. No toolkit, so
-// the plugin stays one .clap file and pulls in nothing a Linux audio machine
-// does not already have.
+// Cairo for everything drawn inside it, and the platform's own windowing under
+// that: X11 on Linux, Win32 on Windows. No toolkit, so the plugin stays one
+// .clap file and pulls in nothing a machine that can run a DAW does not already
+// have. Everything between the window and the drawing -- the layout, the hit
+// testing, the overlays -- is shared, and the two platforms differ only in how
+// a window is made, how events arrive and where the finished frame is blitted.
 //
 // The whole layout is generated from the parameter table in params.cpp: the
 // panels are the modules, the cells are the parameters, and the help line is
@@ -15,11 +18,22 @@
 #include <cstdio>
 #include <cstring>
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <cairo/cairo-xlib.h>
 #include <cairo/cairo.h>
+
+#if defined(_WIN32)
+#   include <cairo-win32.h>
+#   include <windows.h>
+#   include <windowsx.h> // GET_X_LPARAM
+// MinGW's <cmath> hides M_PI unless this is asked for, and the knob arcs need it.
+#   ifndef M_PI
+#      define M_PI 3.14159265358979323846
+#   endif
+#else
+#   include <X11/Xlib.h>
+#   include <X11/Xutil.h>
+#   include <X11/keysym.h>
+#   include <cairo/cairo-xlib.h>
+#endif
 
 #include "params.h"
 
@@ -197,12 +211,21 @@ void roundedRect(cairo_t *cr, double x, double y, double w, double h, double r) 
    cairo_close_path(cr);
 }
 
+// Button numbers follow X11's, which is what the shared code was written
+// against; the Win32 side translates into them.
+constexpr unsigned kButtonLeft = 1;
+constexpr unsigned kButtonRight = 3;
+constexpr unsigned kWheelUp = 4;
+constexpr unsigned kWheelDown = 5;
+
 enum class Align { Left, Center, Right };
 
+#if !defined(_WIN32)
 // Asking an embedded window for the keyboard focus can fail for reasons that
 // are none of the plugin's business. A failure must not reach Xlib's default
 // handler, which exits the host.
 int ignoreXError(Display *, XErrorEvent *) { return 0; }
+#endif
 
 // Drawn rather than typed: a glyph like U+25C0 is not in every sans font, and
 // a missing-glyph box in the preset bar would look like a bug.
@@ -299,6 +322,63 @@ public:
 
    ~X11Gui() override { closeWindow(); }
 
+#if defined(_WIN32)
+   static LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
+
+   static const wchar_t *windowClassName() { return L"RainyDayWindow"; }
+
+   bool open() override {
+      if (mWindow)
+         return true;
+      static bool registered = false;
+      if (!registered) {
+         WNDCLASSEXW wc{};
+         wc.cbSize = sizeof(wc);
+         wc.style = CS_OWNDC;
+         wc.lpfnWndProc = &X11Gui::wndProc;
+         wc.hInstance = GetModuleHandleW(nullptr);
+         wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+         wc.hbrBackground = nullptr; // every pixel is painted, so never erase
+         wc.lpszClassName = windowClassName();
+         if (!RegisterClassExW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
+            return false;
+         registered = true;
+      }
+      // Created as a child with no parent yet: the host supplies one through
+      // embed(), which is the only way a CLAP window is ever shown.
+      mWindow = CreateWindowExW(0, windowClassName(), L"RainyDay", WS_CHILD | WS_CLIPCHILDREN,
+                                0, 0, static_cast<int>(pixelW()), static_cast<int>(pixelH()),
+                                nullptr, nullptr, GetModuleHandleW(nullptr), this);
+      if (!mWindow)
+         return false;
+      mDC = GetDC(mWindow);
+      mTarget = cairo_win32_surface_create(mDC);
+      mTargetCr = cairo_create(mTarget);
+      allocateBuffer();
+      return true;
+   }
+
+   bool embed(uintptr_t parentWindow) override {
+      if (!mWindow)
+         return false;
+      SetParent(mWindow, reinterpret_cast<HWND>(parentWindow));
+      SetWindowLongPtrW(mWindow, GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_VISIBLE);
+      SetWindowPos(mWindow, nullptr, 0, 0, static_cast<int>(pixelW()),
+                   static_cast<int>(pixelH()), SWP_NOZORDER | SWP_FRAMECHANGED);
+      return true;
+   }
+
+   bool setTransientFor(uintptr_t) override {
+      // Windows has no separate transient hint for an embedded child.
+      return mWindow != nullptr;
+   }
+
+   void setTitle(const char *title) override {
+      if (mWindow && title)
+         SetWindowTextA(mWindow, title);
+   }
+
+#else
    bool open() override {
       if (mWindow)
          return true;
@@ -337,7 +417,7 @@ public:
       return true;
    }
 
-   bool embed(unsigned long parentWindow) override {
+   bool embed(uintptr_t parentWindow) override {
       if (!mWindow)
          return false;
       XReparentWindow(mDisplay, mWindow, static_cast<Window>(parentWindow), 0, 0);
@@ -345,7 +425,7 @@ public:
       return true;
    }
 
-   bool setTransientFor(unsigned long parentWindow) override {
+   bool setTransientFor(uintptr_t parentWindow) override {
       if (!mWindow)
          return false;
       XSetTransientForHint(mDisplay, mWindow, static_cast<Window>(parentWindow));
@@ -357,6 +437,7 @@ public:
       if (mWindow && title)
          XStoreName(mDisplay, mWindow, title);
    }
+#endif
 
    void setScale(double scale) override {
       if (scale < 0.5 || scale > 4.0 || std::fabs(scale - mScale) < 0.001)
@@ -364,8 +445,20 @@ public:
       mScale = scale;
       if (!mWindow)
          return;
+#if defined(_WIN32)
+      SetWindowPos(mWindow, nullptr, 0, 0, static_cast<int>(pixelW()),
+                   static_cast<int>(pixelH()), SWP_NOMOVE | SWP_NOZORDER);
+      // A win32 surface is tied to the DC's current size, so it is rebuilt.
+      if (mTargetCr)
+         cairo_destroy(mTargetCr);
+      if (mTarget)
+         cairo_surface_destroy(mTarget);
+      mTarget = cairo_win32_surface_create(mDC);
+      mTargetCr = cairo_create(mTarget);
+#else
       XResizeWindow(mDisplay, mWindow, pixelW(), pixelH());
       cairo_xlib_surface_set_size(mTarget, pixelW(), pixelH());
+#endif
       allocateBuffer();
       mDirty = true;
    }
@@ -378,8 +471,12 @@ public:
    void show() override {
       if (!mWindow)
          return;
+#if defined(_WIN32)
+      ShowWindow(mWindow, SW_SHOWNA);
+#else
       XMapWindow(mDisplay, mWindow);
       XFlush(mDisplay);
+#endif
       mDirty = true;
    }
 
@@ -388,13 +485,19 @@ public:
          return;
       if (mSaveOpen)
          closeSaveDialog();
+#if defined(_WIN32)
+      ShowWindow(mWindow, SW_HIDE);
+#else
       XUnmapWindow(mDisplay, mWindow);
       XFlush(mDisplay);
+#endif
    }
 
    void tick() override {
+#if !defined(_WIN32)
       if (!mDisplay)
          return;
+#endif
       pumpEvents();
       if (!mWindow)
          return;
@@ -433,22 +536,28 @@ private:
       mBuffer = nullptr;
       mTargetCr = nullptr;
       mTarget = nullptr;
+#if defined(_WIN32)
+      if (mWindow) {
+         releaseKeyboard();
+         if (mDC)
+            ReleaseDC(mWindow, mDC);
+         DestroyWindow(mWindow);
+      }
+      mDC = nullptr;
+      mWindow = nullptr;
+#else
       if (mDisplay) {
          // Closing the display would drop the grab anyway, but say so plainly
          // rather than depending on it: a keyboard nobody can type on is a very
          // expensive thing to leave behind.
-         if (mKeyboardGrabbed) {
-            XErrorHandler previous = XSetErrorHandler(&ignoreXError);
-            XUngrabKeyboard(mDisplay, CurrentTime);
-            XSetErrorHandler(previous);
-            mKeyboardGrabbed = false;
-         }
+         releaseKeyboard();
          if (mWindow)
             XDestroyWindow(mDisplay, mWindow);
          XCloseDisplay(mDisplay);
       }
       mWindow = 0;
       mDisplay = nullptr;
+#endif
    }
 
    // ------------------------------------------------------------------ layout
@@ -582,7 +691,9 @@ private:
       cairo_set_source_surface(mTargetCr, mBuffer, 0, 0);
       cairo_paint(mTargetCr);
       cairo_surface_flush(mTarget);
+#if !defined(_WIN32)
       XFlush(mDisplay);
+#endif
    }
 
    void drawBackground(cairo_t *cr) {
@@ -992,7 +1103,17 @@ private:
    // may hold one. The dialog says so and saving under the offered name still
    // works with the mouse.
    void grabKeyboard() {
-      if (!mDisplay || !mWindow || mKeyboardGrabbed)
+      if (!mWindow || mKeyboardGrabbed)
+         return;
+#if defined(_WIN32)
+      // Windows routes keys to whichever window holds the focus, and a child
+      // window is allowed to take it, so there is nothing here to grab. That is
+      // why this is not the ugly compromise it has to be on X11: the host keeps
+      // its shortcuts, and focus returns on its own when the dialog closes.
+      mPrevFocus = SetFocus(mWindow);
+      mKeyboardGrabbed = GetFocus() == mWindow;
+#else
+      if (!mDisplay)
          return;
       XErrorHandler previous = XSetErrorHandler(&ignoreXError);
       XSetInputFocus(mDisplay, mWindow, RevertToParent, CurrentTime);
@@ -1000,6 +1121,25 @@ private:
                                        CurrentTime) == GrabSuccess;
       XSync(mDisplay, False);
       XSetErrorHandler(previous);
+#endif
+   }
+
+   void releaseKeyboard() {
+      if (!mKeyboardGrabbed)
+         return;
+#if defined(_WIN32)
+      if (mPrevFocus && IsWindow(mPrevFocus))
+         SetFocus(mPrevFocus);
+      mPrevFocus = nullptr;
+#else
+      if (mDisplay) {
+         XErrorHandler previous = XSetErrorHandler(&ignoreXError);
+         XUngrabKeyboard(mDisplay, CurrentTime);
+         XSync(mDisplay, False);
+         XSetErrorHandler(previous);
+      }
+#endif
+      mKeyboardGrabbed = false;
    }
 
    // Every path that leaves the dialog has to come through here. A keyboard
@@ -1007,13 +1147,7 @@ private:
    // until the plugin is unloaded.
    void closeSaveDialog() {
       mSaveOpen = false;
-      if (mDisplay && mKeyboardGrabbed) {
-         XErrorHandler previous = XSetErrorHandler(&ignoreXError);
-         XUngrabKeyboard(mDisplay, CurrentTime);
-         XSync(mDisplay, False);
-         XSetErrorHandler(previous);
-      }
-      mKeyboardGrabbed = false;
+      releaseKeyboard();
       mDirty = true;
    }
 
@@ -1089,19 +1223,21 @@ private:
       dialogButton(saveOkRect(), "SAVE", true);
    }
 
-   void onSaveKey(XKeyEvent &ke) {
-      char buf[32];
-      KeySym sym = 0;
-      const int n = XLookupString(&ke, buf, sizeof(buf) - 1, &sym, nullptr);
-      if (sym == XK_Escape) {
+   // `None` is taken: X11 defines it as a macro, the same trap as Widget.
+   enum class KeyCommand { NoCommand, Escape, Accept, Backspace };
+
+   // Both window systems reduce a keystroke to the same three commands plus
+   // some text, so the field itself does not need to know which one it is on.
+   void onSaveKey(KeyCommand cmd, const char *text, int textLen) {
+      if (cmd == KeyCommand::Escape) {
          closeSaveDialog();
          return;
       }
-      if (sym == XK_Return || sym == XK_KP_Enter) {
+      if (cmd == KeyCommand::Accept) {
          commitSave();
          return;
       }
-      if (sym == XK_BackSpace) {
+      if (cmd == KeyCommand::Backspace) {
          if (!mSaveName.empty())
             mSaveName.pop_back();
          mSaveStatus.clear();
@@ -1109,14 +1245,24 @@ private:
          mDirty = true;
          return;
       }
-      for (int i = 0; i < n; ++i) {
-         const unsigned char c = static_cast<unsigned char>(buf[i]);
+      for (int i = 0; i < textLen; ++i) {
+         const unsigned char c = static_cast<unsigned char>(text[i]);
          if (c >= 0x20 && c != 0x7F && mSaveName.size() < 48)
             mSaveName.push_back(static_cast<char>(c));
       }
       mSaveStatus.clear();
       mSaveFailed = false;
       mDirty = true;
+   }
+
+   // Anything typed while an overlay other than the save field is open just
+   // dismisses it.
+   void onKeyDismiss() {
+      if (mBrowserOpen || mMenuParam >= 0) {
+         mBrowserOpen = false;
+         closeMenu();
+         mDirty = true;
+      }
    }
 
    void drawHelpLine(cairo_t *cr) {
@@ -1284,6 +1430,97 @@ private:
    // `None` is taken: X11 defines it as a macro.
    enum class Widget { NoWidget, Prev, Next, Name, Save };
 
+#if defined(_WIN32)
+   void pumpEvents() {
+      MSG msg;
+      while (mWindow && PeekMessageW(&msg, mWindow, 0, 0, PM_REMOVE)) {
+         TranslateMessage(&msg);
+         DispatchMessageW(&msg);
+      }
+   }
+
+   // Called from wndProc, which is where Windows delivers what X11 hands over
+   // through pumpEvents. Everything below this line is shared again.
+   LRESULT handleMessage(UINT msg, WPARAM wp, LPARAM lp) {
+      const bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+      switch (msg) {
+      case WM_PAINT: {
+         PAINTSTRUCT ps;
+         BeginPaint(mWindow, &ps);
+         mDirty = true;
+         paint();
+         EndPaint(mWindow, &ps);
+         return 0;
+      }
+      case WM_ERASEBKGND:
+         return 1; // every pixel is painted; erasing only causes a flicker
+      case WM_LBUTTONDOWN:
+      case WM_RBUTTONDOWN: {
+         SetCapture(mWindow);
+         const unsigned button = msg == WM_LBUTTONDOWN ? 1u : 3u;
+         onPointerDown(GET_X_LPARAM(lp), GET_Y_LPARAM(lp), button, GetMessageTime(), shift);
+         return 0;
+      }
+      case WM_LBUTTONUP:
+      case WM_RBUTTONUP:
+         ReleaseCapture();
+         onButtonRelease();
+         return 0;
+      case WM_MOUSEWHEEL: {
+         // Wheel coordinates arrive in screen space, unlike every other message.
+         POINT pt{GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
+         ScreenToClient(mWindow, &pt);
+         const unsigned button = GET_WHEEL_DELTA_WPARAM(wp) > 0 ? 4u : 5u;
+         onPointerDown(pt.x, pt.y, button, GetMessageTime(), shift);
+         return 0;
+      }
+      case WM_MOUSEMOVE: {
+         if (!mTrackingLeave) {
+            TRACKMOUSEEVENT tme{sizeof(tme), TME_LEAVE, mWindow, 0};
+            TrackMouseEvent(&tme);
+            mTrackingLeave = true;
+         }
+         onMotion(GET_X_LPARAM(lp) / mScale, GET_Y_LPARAM(lp) / mScale, shift);
+         return 0;
+      }
+      case WM_MOUSELEAVE:
+         mTrackingLeave = false;
+         if (mDrag < 0) {
+            mHover = -1;
+            mHoverWidget = Widget::NoWidget;
+            mDirty = true;
+         }
+         return 0;
+      case WM_KEYDOWN: {
+         if (!mSaveOpen) {
+            onKeyDismiss();
+            return 0;
+         }
+         KeyCommand cmd = KeyCommand::NoCommand;
+         if (wp == VK_ESCAPE)
+            cmd = KeyCommand::Escape;
+         else if (wp == VK_RETURN)
+            cmd = KeyCommand::Accept;
+         else if (wp == VK_BACK)
+            cmd = KeyCommand::Backspace;
+         if (cmd != KeyCommand::NoCommand)
+            onSaveKey(cmd, nullptr, 0);
+         return 0; // the text itself arrives as WM_CHAR
+      }
+      case WM_CHAR: {
+         if (!mSaveOpen)
+            return 0;
+         const char c = static_cast<char>(wp);
+         if (static_cast<unsigned char>(c) >= 0x20 && c != 0x7F)
+            onSaveKey(KeyCommand::NoCommand, &c, 1);
+         return 0;
+      }
+      default:
+         break;
+      }
+      return DefWindowProcW(mWindow, msg, wp, lp);
+   }
+#else
    void pumpEvents() {
       XEvent ev;
       while (XPending(mDisplay)) {
@@ -1293,13 +1530,15 @@ private:
             mDirty = true;
             break;
          case ButtonPress:
-            onButtonPress(ev.xbutton);
+            onPointerDown(ev.xbutton.x, ev.xbutton.y, ev.xbutton.button, ev.xbutton.time,
+                          (ev.xbutton.state & ShiftMask) != 0);
             break;
          case ButtonRelease:
             onButtonRelease();
             break;
          case MotionNotify:
-            onMotion(ev.xmotion.x / mScale, ev.xmotion.y / mScale, ev.xmotion.state);
+            onMotion(ev.xmotion.x / mScale, ev.xmotion.y / mScale,
+                     (ev.xmotion.state & ShiftMask) != 0);
             break;
          case LeaveNotify:
             if (mDrag < 0) {
@@ -1308,17 +1547,24 @@ private:
                mDirty = true;
             }
             break;
-         case KeyPress:
-            if (mSaveOpen) {
-               onSaveKey(ev.xkey);
+         case KeyPress: {
+            char buf[32];
+            KeySym sym = 0;
+            const int n = XLookupString(&ev.xkey, buf, sizeof(buf) - 1, &sym, nullptr);
+            if (!mSaveOpen) {
+               onKeyDismiss();
                break;
             }
-            if (mBrowserOpen || mMenuParam >= 0) {
-               mBrowserOpen = false;
-               closeMenu();
-               mDirty = true;
-            }
+            KeyCommand cmd = KeyCommand::NoCommand;
+            if (sym == XK_Escape)
+               cmd = KeyCommand::Escape;
+            else if (sym == XK_Return || sym == XK_KP_Enter)
+               cmd = KeyCommand::Accept;
+            else if (sym == XK_BackSpace)
+               cmd = KeyCommand::Backspace;
+            onSaveKey(cmd, buf, n);
             break;
+         }
          case ClientMessage:
             if (static_cast<Atom>(ev.xclient.data.l[0]) == mDeleteAtom)
                hide();
@@ -1328,6 +1574,7 @@ private:
          }
       }
    }
+#endif
 
    int cellAt(double x, double y) const {
       for (size_t i = 0; i < mCellRects.size(); ++i)
@@ -1336,12 +1583,19 @@ private:
       return -1;
    }
 
-   void onButtonPress(const XButtonEvent &be) {
-      const double x = be.x / mScale;
-      const double y = be.y / mScale;
+   // Buttons: 1 left, 2 middle, 3 right, 4/5 wheel up/down, matching X11's
+   // numbering because that is what the shared code below was written against.
+   void onPointerDown(double px, double py, unsigned button, unsigned long timeMs,
+                      bool shift) {
+      const double x = px / mScale;
+      const double y = py / mScale;
+      const struct {
+         unsigned button;
+         unsigned long time;
+      } be{button, timeMs};
 
       if (mSaveOpen) {
-         if (be.button == Button1) {
+         if (be.button == kButtonLeft) {
             if (saveOkRect().contains(x, y))
                commitSave();
             else if (saveCancelRect().contains(x, y) || !savePanel().contains(x, y))
@@ -1352,7 +1606,7 @@ private:
       }
 
       if (mMenuParam >= 0) {
-         if (be.button == Button1) {
+         if (be.button == kButtonLeft) {
             const int item = menuItemAt(x, y);
             const bool inside = menuPanel().contains(x, y);
             if (item >= 0) {
@@ -1369,7 +1623,7 @@ private:
       }
 
       if (mBrowserOpen) {
-         if (be.button == Button1) {
+         if (be.button == kButtonLeft) {
             const int item = browserItemAt(x, y);
             if (item >= 0)
                mDelegate.guiLoadPreset(item);
@@ -1380,11 +1634,11 @@ private:
          return;
       }
 
-      if (be.button == Button4 || be.button == Button5) {
+      if (be.button == kWheelUp || be.button == kWheelDown) {
          const int id = cellAt(x, y);
          if (id >= 0)
-            nudge(static_cast<uint32_t>(id), be.button == Button4 ? 1 : -1,
-                  (be.state & ShiftMask) != 0);
+            nudge(static_cast<uint32_t>(id), be.button == kWheelUp ? 1 : -1,
+                  shift);
          return;
       }
 
@@ -1415,11 +1669,11 @@ private:
 
       // Right-click and double-click both mean "put it back where it was".
       const bool doubleClick =
-         be.button == Button1 && mLastClickParam == id && be.time - mLastClickTime < 400;
+         be.button == kButtonLeft && mLastClickParam == id && be.time - mLastClickTime < 400;
       mLastClickParam = id;
       mLastClickTime = be.time;
 
-      if (be.button == Button3 || (doubleClick && !isChip(d))) {
+      if (be.button == kButtonRight || (doubleClick && !isChip(d))) {
          mDelegate.guiBeginEdit(static_cast<uint32_t>(id));
          mDelegate.guiSetParam(static_cast<uint32_t>(id), d.def);
          mDelegate.guiEndEdit(static_cast<uint32_t>(id));
@@ -1427,7 +1681,7 @@ private:
          mDirty = true;
          return;
       }
-      if (be.button != Button1)
+      if (be.button != kButtonLeft)
          return;
 
       if (isChip(d)) {
@@ -1463,12 +1717,12 @@ private:
       }
    }
 
-   void onMotion(double x, double y, unsigned int state) {
+   void onMotion(double x, double y, bool shift) {
       if (mDrag >= 0) {
          const uint32_t id = static_cast<uint32_t>(mDrag);
          const ParamDesc &d = paramTable()[id];
          const double span = d.max - d.min;
-         const double fine = (state & ShiftMask) ? 0.2 : 1.0;
+         const double fine = shift ? 0.2 : 1.0;
          double v = mDragStartValue + (mDragStartY - y) * (span / 200.0) * fine;
          if (isStepped(d))
             v = std::floor(v + 0.5);
@@ -1575,10 +1829,17 @@ private:
 
    GuiDelegate &mDelegate;
 
+#if defined(_WIN32)
+   HWND mWindow = nullptr;
+   HDC mDC = nullptr;
+   HWND mPrevFocus = nullptr;
+   bool mTrackingLeave = false;
+#else
    Display *mDisplay = nullptr;
    Window mWindow = 0;
    Visual *mVisual = nullptr;
    Atom mDeleteAtom = 0;
+#endif
    cairo_surface_t *mTarget = nullptr;
    cairo_t *mTargetCr = nullptr;
    cairo_surface_t *mBuffer = nullptr;
@@ -1598,7 +1859,7 @@ private:
    int mDrag = -1;
    double mDragStartY = 0.0, mDragStartValue = 0.0;
    int mLastClickParam = -1;
-   Time mLastClickTime = 0;
+   unsigned long mLastClickTime = 0; // X11 Time and Win32 GetMessageTime alike
 
    bool mBrowserOpen = false;
    int mBrowserHover = -1;
@@ -1620,6 +1881,26 @@ private:
 };
 
 } // namespace
+
+#if defined(_WIN32)
+// Windows hands the object back through the window's user data; the pointer is
+// planted when CreateWindowEx delivers WM_NCCREATE.
+LRESULT CALLBACK X11Gui::wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+   if (msg == WM_NCCREATE) {
+      auto *cs = reinterpret_cast<CREATESTRUCTW *>(lp);
+      SetWindowLongPtrW(hwnd, GWLP_USERDATA,
+                        reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
+      auto *self = static_cast<X11Gui *>(cs->lpCreateParams);
+      if (self)
+         self->mWindow = hwnd;
+      return DefWindowProcW(hwnd, msg, wp, lp);
+   }
+   auto *self = reinterpret_cast<X11Gui *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+   if (!self || !self->mWindow)
+      return DefWindowProcW(hwnd, msg, wp, lp);
+   return self->handleMessage(msg, wp, lp);
+}
+#endif
 
 Gui *createGui(GuiDelegate &delegate) {
    auto *gui = new X11Gui(delegate);

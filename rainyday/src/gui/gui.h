@@ -60,8 +60,10 @@ public:
 
    // Creates the window, unmapped and unparented.
    virtual bool open() = 0;
-   virtual bool embed(unsigned long parentWindow) = 0;
-   virtual bool setTransientFor(unsigned long parentWindow) = 0;
+   // A native window handle. Not `unsigned long`: that is 32 bits on 64-bit
+   // Windows, which would quietly truncate an HWND.
+   virtual bool embed(uintptr_t parentWindow) = 0;
+   virtual bool setTransientFor(uintptr_t parentWindow) = 0;
    virtual void setTitle(const char *title) = 0;
    virtual void setScale(double scale) = 0;
    virtual void size(uint32_t *width, uint32_t *height) const = 0;
