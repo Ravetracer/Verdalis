@@ -72,7 +72,7 @@ installed to `~/.clap/RainyDay/`.
   exactly one panel, no panel may hold more parameters than it has cells, and
   no row may be wider or taller than the window.
 
-**Presets**: 16 factory presets in a documented plain-text format, served both
+**Presets**: 17 factory presets in a documented plain-text format, served both
 from disk and from copies embedded in the binary, exposed via the CLAP
 preset-discovery factory (so they appear in the host's own browser).
 
@@ -155,11 +155,14 @@ long note.
   rain ones. Isolated drops in a room are dominated by the room, and the
   reference recordings carry reverb the synth has to approximate with a single
   feedback delay network.
-- The fit overfits its own seeds on the sparse presets, badly. Dripping Faucet
-  reached 28.7 on the two seeds it was fitted against and 732.1 on three it had
-  not seen; Storm Front went to 23.4 and 194.9. Roughly a dozen isolated drops
-  in a render is simply too small a sample for the objective to average over,
-  so the fitted values are accepted only where they also improve on seeds the
-  fit never touched, and six of fifteen presets were rejected on that test.
-  Averaging more seeds per candidate would fix it and cost proportionally more
-  time.
+- The fit still overfits its own seeds on the sparse presets, though far less
+  than it did. Scoring each candidate over twelve seeds instead of two took
+  Dripping Faucet from 732.1 on held-out seeds to 43.0, and Storm Front from
+  197.7 to 70.0. Fitted values are still accepted only where they also win on
+  three seeds the fit neither optimised nor verified against; six of sixteen
+  were rejected on that test.
+- Inside the Car is 91.9 against 54.6 before the impact model changed. Its
+  residual is 5 dB heavy at 3 to 6 kHz and 13 dB short at the top, which is
+  where the drop-derived impact frequency now sits, and a car roof takes that
+  at full strength. Tin Roof and Concrete Alley improved from the same change,
+  so it is not uniformly right for rigid surfaces.
