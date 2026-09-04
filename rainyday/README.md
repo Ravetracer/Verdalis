@@ -378,7 +378,9 @@ sounds like rain moving in rather than a fade-in on a finished loop.
   This is the CPU dial. When the pool is full, new droplets are dropped rather
   than stealing an audible voice, so it never clicks.
 - `Random Seed` — `0` means a fresh random seed per plugin instance, so stacked
-  copies decorrelate. Any other value renders identically every time.
+  copies decorrelate, and it never repeats itself. Any other value renders
+  identically every time: the sequence restarts whenever the host resets the
+  plugin, so bouncing the same passage twice gives the same rain.
 
 ## Presets
 
@@ -444,7 +446,7 @@ The repo ships a small CLAP host used to test the plugin without a DAW. It
 drives the real preset-discovery factory the way a host does.
 
 ```sh
-./build/rainyday-render --selftest                  # 30 host-contract checks
+./build/rainyday-render --selftest                  # 34 host-contract checks
 ./build/rainyday-render --list                      # walk preset discovery
 ./build/rainyday-render --preset downpour --out /tmp/rain.wav --seconds 10
 ./build/rainyday-render --all --outdir /tmp/rain     # render the whole library

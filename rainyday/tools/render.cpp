@@ -905,6 +905,35 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
    const RenderResult odd = renderPlugin(plugin, sampleRate, 37, 0.5, 0.5, 48, 0.5);
    check(!odd.sawNonFinite && odd.peak > 0.0f, "renders with a 37-sample block size");
 
+   // --- a fixed Random Seed has to mean the same rain every time, whatever the
+   // engine happened to render before. The droplet allocation cursor used to
+   // survive reset(), which quietly made every render depend on its history.
+   {
+      uint32_t seedId = CLAP_INVALID_ID;
+      const uint32_t seedCount = params->count(plugin);
+      for (uint32_t i = 0; i < seedCount; ++i) {
+         clap_param_info_t info{};
+         if (params->get_info(plugin, i, &info) &&
+             std::strcmp(info.name, "Random Seed") == 0) {
+            seedId = info.id;
+            break;
+         }
+      }
+      check(seedId != CLAP_INVALID_ID, "Random Seed parameter exists");
+
+      gParamOverrides.clear();
+      gParamOverrides.emplace_back(seedId, 7.0);
+      plugin->reset(plugin);
+      const RenderResult firstTake = renderPlugin(plugin, sampleRate, 512, 0.4, 0.4, 60, 1.0);
+      // Leave the engine with a history: another note, deliberately not reset.
+      renderPlugin(plugin, sampleRate, 512, 0.4, 0.4, 48, 1.0);
+      plugin->reset(plugin);
+      const RenderResult secondTake = renderPlugin(plugin, sampleRate, 512, 0.4, 0.4, 60, 1.0);
+      gParamOverrides.clear();
+      check(firstTake.interleaved == secondTake.interleaved,
+            "a fixed Random Seed renders identically after reset");
+   }
+
    // --- parameter events must be reflected by get_value, which is how a host
    // reads back what automation did.
    {

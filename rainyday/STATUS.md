@@ -6,7 +6,7 @@ Written 2026-09-03. See `README.md` for the design and parameter reference, and
 ## State: working and playable
 
 A complete, native Linux CLAP instrument that synthesises rain. Builds clean
-with GCC 13 (`-Wall -Wextra`, no warnings), passes 30 self-test checks, and is
+with GCC 13 (`-Wall -Wextra`, no warnings), passes 34 self-test checks, and is
 installed to `~/.clap/RainyDay/`.
 
 ## What is implemented
@@ -93,7 +93,7 @@ does not implement.
 
 ```sh
 ./install.sh                                        # build, self-test, install
-./build/rainyday-render --selftest                  # 30 checks
+./build/rainyday-render --selftest                  # 34 checks
 ./build/rainyday-render --list                      # preset discovery
 ./build/rainyday-render --all --outdir /tmp/rain    # render the library
 ```
@@ -114,9 +114,3 @@ long note.
   rain ones. Isolated drops in a room are dominated by the room, and the
   reference recordings carry reverb the synth has to approximate with a single
   feedback delay network.
-- `Seed` does not fully determine the output. Rendering the same preset at the
-  same seed gives different audio depending on which preset the instance
-  rendered before it, so some engine state survives a preset or state load.
-  Individual numbers in `tools/analysis/match.py report` carry that history
-  dependence; the totals are still comparable because every run measures the
-  library in the same order.

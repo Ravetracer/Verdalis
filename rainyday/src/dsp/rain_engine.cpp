@@ -149,6 +149,13 @@ inline bool noteMatches(const Voice &v, int16_t port, int16_t channel, int16_t k
 
 } // namespace
 
+// Seed 0 is the "always different" setting and has no fixed mapping; every
+// other value maps here, and only here, so that reset() and setParams() cannot
+// disagree about what a given Seed means.
+static uint32_t rngStateForSeed(int seed) {
+   return 0x9E3779B9u * static_cast<uint32_t>(seed) + 17u;
+}
+
 void RainEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
    mSampleRate = static_cast<float>(sampleRate);
    mDroplets.assign(kMaxDroplets, Droplet());
@@ -178,10 +185,22 @@ void RainEngine::reset() {
    }
    for (auto &d : mDroplets)
       d.active = false;
+   // The allocation cursor is playing state, not configuration. Left alone it
+   // decides which pool slots the next droplets land in, and the slots are
+   // summed in index order, so carrying it over makes a render depend on
+   // whatever the engine rendered before it -- at the same Seed.
+   mDropletCursor = 0;
+   mLastKey = 60;
    mFilterL.reset();
    mFilterR.reset();
    mSpace.clear();
    mSilenceCounter = 0;
+
+   // A non-zero Seed promises the same rain every time, so starting over has to
+   // start the sequence over too. Seed 0 deliberately keeps running, which is
+   // what makes it the setting that never repeats.
+   if (mP.seed != 0)
+      mRng.reseed(rngStateForSeed(mP.seed));
 }
 
 void RainEngine::setParams(const EngineParams &p) {
@@ -193,7 +212,7 @@ void RainEngine::setParams(const EngineParams &p) {
       // instances of the plugin never generate identical rain. Any other value
       // is reproducible and renders identically every time.
       if (mP.seed != 0)
-         mRng.reseed(0x9E3779B9u * static_cast<uint32_t>(mP.seed) + 17u);
+         mRng.reseed(rngStateForSeed(mP.seed));
    }
 
    const uint32_t newLimit =
