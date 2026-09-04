@@ -6,26 +6,26 @@ description = Rain drumming on a taut canopy a foot above your head. Close, blun
 features = ambient, texture, close, percussive
 
 # Rain
-density = 900
-clumping = 0.305
+density = 664
+clumping = 0.422
 drop_pitch = 1200
-pitch_spread = 2.6
+pitch_spread = 2.72
 drop_decay = 12
-decay_spread = 0.6
-tonality = 0.12
+decay_spread = 0.474
+tonality = 0
 bubble = 0.35
-impact = 0.9
-splash = 0.55
+impact = 1
+splash = 0.704
 level_spread = 0.55
 chirp = 0.35
 surface = Fabric
 note_tracking = 0.5
 
 # Bed
-bed_level = -26
-bed_tone = 0.5
-bed_body = 0.1
-bed_drift = 0.35
+bed_level = -32.6
+bed_tone = 1
+bed_body = 0.047
+bed_drift = 0.63
 bed_width = 0.8
 bed_pan = 0
 
@@ -33,7 +33,7 @@ bed_pan = 0
 width = 0.8
 drop_pan = 0
 distance = 0.05
-air = 0.15
+air = 0
 space_amount = 0.12
 space_size = 0.25
 space_damping = 0.6
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 0.736
+gain = -2.19
 max_droplets = 512
 seed = 0

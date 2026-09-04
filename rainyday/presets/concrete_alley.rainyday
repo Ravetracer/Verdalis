@@ -6,16 +6,16 @@ description = Rain in a narrow city alley, slapping off hard flat surfaces.
 features = ambient, texture, urban, reverberant
 
 # Rain
-density = 5000
+density = 1177
 clumping = 0.019
-drop_pitch = 1722
+drop_pitch = 718
 pitch_spread = 1.99
-drop_decay = 5.54
+drop_decay = 8.58
 decay_spread = 0.135
-tonality = 0
+tonality = 0.14
 bubble = 1
-impact = 0.869
-splash = 0.934
+impact = 0.666
+splash = 0.654
 level_spread = 0.88
 chirp = 0.35
 surface = Concrete
@@ -33,7 +33,7 @@ bed_pan = 0
 width = 0.9
 drop_pan = 0
 distance = 0.43
-air = 0.523
+air = 0.306
 space_amount = 0.45
 space_size = 0.7
 space_damping = 0.4
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 1.89
+gain = 1.56
 max_droplets = 512
 seed = 0

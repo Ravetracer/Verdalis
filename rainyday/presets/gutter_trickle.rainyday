@@ -6,26 +6,26 @@ description = A thin stream running off a downspout. Narrow, wet, and gurgling.
 features = texture, water, narrow, foley
 
 # Rain
-density = 158
-clumping = 0.6
-drop_pitch = 2096
+density = 650
+clumping = 0.119
+drop_pitch = 4203
 pitch_spread = 0
-drop_decay = 7.41
-decay_spread = 0.409
-tonality = 0.366
-bubble = 1
-impact = 0.091
-splash = 0.947
-level_spread = 1
+drop_decay = 8.64
+decay_spread = 0.465
+tonality = 0.128
+bubble = 0.706
+impact = 0.529
+splash = 0.606
+level_spread = 0.481
 chirp = 0.9
 surface = Puddle
 note_tracking = 0.5
 
 # Bed
-bed_level = -54.9
-bed_tone = 0.417
-bed_body = 0.19
-bed_drift = 0.3
+bed_level = -36.4
+bed_tone = 0.352
+bed_body = 0.382
+bed_drift = 0.419
 bed_width = 0.4
 bed_pan = 0
 
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = -0.704
+gain = 12
 max_droplets = 512
 seed = 0
