@@ -51,6 +51,14 @@ const SurfaceProfile kSurfaces[kNumSurfaces] = {
    /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f},
    /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f},
    /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f},
+   // Fabric: a taut canopy a foot above your head, which is an umbrella or a
+   // tent. It is a drumhead, so the impact is the loudest thing about it and
+   // carries more weight than on any other surface, but the membrane is lossy
+   // and under tension rather than rigid, so what it rings with dies almost at
+   // once and has very little pitch to it. Struck from above and radiating
+   // straight down, it is also the one surface heard from a few centimetres
+   // away rather than across a street.
+   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f},
 };
 
 // Time constant of the pitch bend, as a fraction of the droplet's ring time and

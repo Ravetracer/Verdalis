@@ -8,6 +8,16 @@ only have their spectral character corrected; there is no recording of a
 tropical monsoon in the reference set, but its tone should still follow real
 rain.
 
+A name that appears in refs.COMPOSITES is a class of recordings averaged
+together rather than a single file, so the preset is fitted to what that kind of
+rain measures like instead of to one microphone in one room on one afternoon.
+
+Window Pane and Gutter Trickle were both matched to the nearest neighbour in the
+old set for want of anything better, and now have recordings of their own: eleven
+of rain on glass and three of water running down a drain. Both move from TONE to
+FULL with them, because a recording of the thing itself is worth following in
+rhythm and density and not only in tone.
+
 Distant Rain Wall is deliberately absent. Nothing in the reference set is a
 far-field recording, and fitting it to a close one inverts what it is: the fit
 strips out the far-field wash that is the whole point of the preset. It is
@@ -32,8 +42,9 @@ PAIRS = [
     ('storm_front',       'rain_on_concrete',            TONE),
     ('tropical_monsoon',  'rain_on_roof',                TONE),
     ('first_drops',       'rain_on_concrete',            TONE),
-    ('gutter_trickle',    'multiple_water_drops',        TONE),
-    ('window_pane',       'rain_in_car',                 TONE),
+    ('gutter_trickle',    'sewer',                       FULL),
+    ('window_pane',       'window',                      FULL),
+    ('under_an_umbrella', 'umbrella',                    FULL),
 ]
 
 # Below 100 Hz a field recording is mostly wind and handling noise, which

@@ -49,10 +49,16 @@ SPACE = {
 # fit came to produce a Dripping Faucet scoring 28.7 on the seeds it optimised
 # against and 732.1 on seeds it had not seen.
 #
-# The counts differ per preset because the presets that need the most seeds are
-# the cheapest to run: one scored candidate costs 0.15 s for Dripping Faucet and
-# 5.7 s for Downpour, and Downpour was already the stable one. Each preset gets
-# as many seeds as fit in about two seconds of work.
+# The first version of this table gave two seeds to the expensive presets on the
+# reasoning that they were the stable ones. Storm Front disproved it: it costs
+# 1.0 s a candidate, got two seeds, and was the worst overfitter left in the run,
+# going from 44.4 on held-out seeds to 197.7. Expensive and unstable are not
+# opposites.
+#
+# Since candidates and seeds now run across eight workers the economics are
+# different anyway -- twelve seeds of a cheap preset finish in the time two used
+# to take -- so everything gets twelve, and only Downpour, at 5.7 s a candidate,
+# is held lower.
 #
 # This is a table rather than something timed at startup on purpose. Deriving it
 # from a measurement made the fit depend on how fast the machine happened to be
@@ -61,23 +67,9 @@ SPACE = {
 # Regenerate it if the engine's cost changes materially; the numbers below were
 # measured on 2026-09-04.
 PRESET_SEEDS = {
-    'steady_rain': 12,
-    'rain_on_leaves': 8,
-    'concrete_alley': 4,
-    'tin_roof': 5,
-    'light_drizzle': 11,
-    'inside_the_car': 9,
-    'puddle_plinks': 11,
-    'dripping_faucet': 12,
-    'cave_drips': 12,
-    'downpour': 2,
-    'storm_front': 2,
-    'tropical_monsoon': 3,
-    'first_drops': 12,
-    'gutter_trickle': 11,
-    'window_pane': 7,
+    'downpour': 6,
 }
-DEFAULT_SEEDS = 6
+DEFAULT_SEEDS = 12
 MAX_SEEDS = 12
 # Disjoint from VERIFY_SEEDS, so the held-out check stays honest however many of
 # these are used.

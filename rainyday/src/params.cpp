@@ -11,7 +11,7 @@ namespace rainyday {
 namespace {
 
 const char *const kSurfaceNames[] = {"Water", "Puddle", "Leaves",  "Wood",
-                                     "Metal", "Glass",  "Concrete"};
+                                     "Metal", "Glass",  "Concrete", "Fabric"};
 const char *const kFilterNames[] = {"Lowpass", "Bandpass", "Highpass", "Notch"};
 
 #define LIN(id, key, name, mod, lo, hi, def, unit, tip)                                            \

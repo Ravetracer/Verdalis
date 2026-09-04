@@ -71,6 +71,7 @@ enum SurfaceKind {
    kSurfaceMetal,
    kSurfaceGlass,
    kSurfaceConcrete,
+   kSurfaceFabric,
    kNumSurfaces
 };
 
