@@ -70,6 +70,14 @@ add_custom_target(rainyday_presets DEPENDS "${RAINYDAY_GENERATED_HEADER}")
 # X11 and Cairo only. Both are already on any Linux box that can run a DAW, and
 # using them directly keeps RainyDay a single self-contained .clap file.
 set(RAINYDAY_GUI_SOURCES "")
+# pkg-config on this machine describes this machine, so a cross build must not
+# consult it: it would report the host's X11 and Cairo and drag /usr/include
+# into a Windows compile. The window is X11-only in any case.
+if(RAINYDAY_BUILD_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
+   set(RAINYDAY_BUILD_GUI OFF)
+   message(STATUS "RainyDay: Windows build, no window yet (the host shows its own)")
+endif()
+
 if(RAINYDAY_BUILD_GUI)
    find_package(PkgConfig QUIET)
    if(PkgConfig_FOUND)
@@ -123,10 +131,23 @@ if(RAINYDAY_BUILD_GUI)
 endif()
 
 # Only clap_entry is exported; everything else stays internal to the DSO.
-target_link_options(RainyDay PRIVATE
-   "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/cmake/rainyday.version"
-   "-Wl,--no-undefined"
-)
+if(WIN32)
+   # A version script is an ELF idea. On Windows clap_entry carries dllexport
+   # from CLAP_EXPORT, and --exclude-all-symbols keeps the rest of the DLL to
+   # itself. The runtime is linked in so the .clap needs no MinGW DLLs beside
+   # it on a machine that has never seen a compiler.
+   target_link_options(RainyDay PRIVATE
+      "-Wl,--exclude-all-symbols"
+      "-Wl,--no-undefined"
+      "-static-libgcc" "-static-libstdc++"
+      "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic"
+   )
+else()
+   target_link_options(RainyDay PRIVATE
+      "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/cmake/rainyday.version"
+      "-Wl,--no-undefined"
+   )
+endif()
 
 set_target_properties(RainyDay PROPERTIES
    PREFIX ""
@@ -145,13 +166,21 @@ if(RAINYDAY_BUILD_TOOLS)
    )
    target_compile_options(rainyday-render PRIVATE -Wall -Wextra)
    target_link_libraries(rainyday-render PRIVATE ${CMAKE_DL_LIBS})
+   if(WIN32)
+      # Same reasoning as the plugin: the test host has to run on a machine that
+      # has never had a compiler on it.
+      target_link_options(rainyday-render PRIVATE "-static-libgcc" "-static-libstdc++"
+         "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic")
+   endif()
 
    # Renders preset files back to back inside one process, which is what makes
    # fitting the library against reference recordings practical. See
    # tools/analysis/.
-   find_package(PkgConfig QUIET)
-   if(PkgConfig_FOUND)
-      pkg_check_modules(GUIHOST_X11 QUIET x11)
+   if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      find_package(PkgConfig QUIET)
+      if(PkgConfig_FOUND)
+         pkg_check_modules(GUIHOST_X11 QUIET x11)
+      endif()
    endif()
    if(GUIHOST_X11_FOUND)
       add_executable(rainyday-guihost tools/guihost.cpp)
@@ -160,10 +189,14 @@ if(RAINYDAY_BUILD_TOOLS)
       target_link_libraries(rainyday-guihost PRIVATE ${CMAKE_DL_LIBS} ${GUIHOST_X11_LIBRARIES})
    endif()
 
+   # The fitting host and the window host are both part of the Linux analysis
+   # workflow and have no reason to exist on Windows.
+   if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
    add_executable(rainyday-fithost tools/fithost.cpp)
    target_include_directories(rainyday-fithost PRIVATE "${CLAP_INCLUDE_DIR}")
    target_compile_options(rainyday-fithost PRIVATE -Wall -Wextra)
    target_link_libraries(rainyday-fithost PRIVATE ${CMAKE_DL_LIBS})
+   endif()
 endif()
 
 # ---------------------------------------------------------------------- install

@@ -96,6 +96,33 @@ six skips are all "not applicable" -- no 64-bit audio path, no input audio port
 for the denormals test, and three optional port-layout extensions the plugin
 does not implement.
 
+## Windows
+
+Cross-compiled from Linux with MinGW-w64; the Linux build is unaffected.
+
+```sh
+cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake \
+      -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win
+```
+
+The result is `build-win/RainyDay.clap`, a PE32+ DLL exporting `clap_entry` and
+nothing else, with the C and C++ runtimes linked in so it imports only KERNEL32
+and msvcrt. It goes in `C:\Program Files\Common Files\CLAP\RainyDay\`
+alongside a `presets` folder.
+
+Verified under Wine rather than assumed: all 45 self-test checks pass against
+the Windows DLL, preset discovery finds all 17 presets, and at a fixed Random
+Seed the audio matches the Linux build to within 1 LSB on 14 samples out of
+672000, which is the two toolchains' libm rounding differently. It has not been
+run on real Windows.
+
+The porting work was four POSIX-only spots -- `dladdr` for the plugin's own
+path, `$XDG_CONFIG_HOME` for the preset folder, `dirent.h` for scanning it, and
+a hand-rolled `mkdir -p` -- which are now `std::filesystem` plus
+`GetModuleFileNameW`, and `dlopen` in the test host. No window: that is 1633
+lines of X11 and Cairo.
+
 ## Pick it up here
 
 ```sh
@@ -110,8 +137,10 @@ long note.
 
 ## Known limitations
 
-- The window is X11 only and a fixed size; under a Wayland host the plugin
-  falls back to the generic parameter view.
+- The window is X11 only and a fixed size; under a Wayland host, and on the
+  Windows build, the plugin falls back to the generic parameter view. Preset
+  saving lives in that window, so the Windows build can load presets but not
+  save them.
 - Rain only, by design. No wind, no thunder.
 - `Filter Key Track` follows the most recently played note (single global
   filter stage).

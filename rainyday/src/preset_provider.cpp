@@ -5,7 +5,7 @@
 #include <cstring>
 #include <string>
 
-#include <sys/stat.h>
+#include <filesystem>
 
 #include <clap/clap.h>
 
@@ -96,8 +96,8 @@ bool providerInit(const clap_preset_discovery_provider_t *p) {
    // The user location is only declared when it already exists, so the plugin
    // never creates directories behind the user's back.
    if (!self->userDir.empty()) {
-      struct stat st{};
-      if (stat(self->userDir.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+      std::error_code ec;
+      if (std::filesystem::is_directory(self->userDir, ec)) {
          const clap_preset_discovery_location_t location = {
             CLAP_PRESET_DISCOVERY_IS_USER_CONTENT, "RainyDay User Presets",
             CLAP_PRESET_DISCOVERY_LOCATION_FILE, self->userDir.c_str()};

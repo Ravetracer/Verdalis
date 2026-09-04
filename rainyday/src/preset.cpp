@@ -7,9 +7,13 @@
 #include <cstring>
 #include <strings.h>
 
-#include <dlfcn.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <filesystem>
+
+#if defined(_WIN32)
+#   include <windows.h>
+#else
+#   include <dlfcn.h>
+#endif
 
 #include "params.h"
 
@@ -28,26 +32,47 @@ void trim(std::string &s) {
 }
 
 bool isDirectory(const std::string &path) {
-   struct stat st{};
-   return !path.empty() && stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+   std::error_code ec;
+   return !path.empty() && std::filesystem::is_directory(path, ec);
 }
 
+#if !defined(_WIN32)
 // Anchor symbol: its address is inside this shared object, which lets dladdr
 // report the path the host actually loaded.
 void dsoAnchor() {}
+#endif
+
+// The directory the loaded plugin binary sits in. Both platforms have to ask
+// the loader where it put us, because a plugin is found by the host and cannot
+// assume anything about the working directory.
+std::string moduleDir() {
+#if defined(_WIN32)
+   HMODULE self = nullptr;
+   if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                              GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCWSTR>(&isDirectory), &self))
+      return {};
+   wchar_t buf[MAX_PATH * 4];
+   const DWORD n = GetModuleFileNameW(self, buf, static_cast<DWORD>(std::size(buf)));
+   if (n == 0 || n >= std::size(buf))
+      return {};
+   std::error_code ec;
+   return std::filesystem::path(std::wstring(buf, n)).parent_path().string();
+#else
+   Dl_info info{};
+   if (dladdr(reinterpret_cast<const void *>(&dsoAnchor), &info) == 0 || !info.dli_fname)
+      return {};
+   std::error_code ec;
+   return std::filesystem::path(info.dli_fname).parent_path().string();
+#endif
+}
 
 } // namespace
 
 std::string factoryPresetDir() {
-   Dl_info info{};
-   if (dladdr(reinterpret_cast<const void *>(&dsoAnchor), &info) == 0 || !info.dli_fname)
+   const std::string dir = moduleDir();
+   if (dir.empty())
       return {};
-
-   std::string path(info.dli_fname);
-   const size_t slash = path.rfind('/');
-   if (slash == std::string::npos)
-      return {};
-   const std::string dir = path.substr(0, slash);
 
    // Installed layout is <dir>/RainyDay.clap + <dir>/presets, but a bundle-like
    // layout is also checked so a build tree works too.
@@ -61,6 +86,13 @@ std::string factoryPresetDir() {
 }
 
 std::string userPresetDir() {
+#if defined(_WIN32)
+   // Where every other Windows plugin keeps its user data.
+   if (const char *appdata = std::getenv("APPDATA"))
+      if (appdata[0])
+         return std::string(appdata) + "\\RainyDay\\presets";
+   return {};
+#else
    const char *xdg = std::getenv("XDG_CONFIG_HOME");
    if (xdg && xdg[0] == '/')
       return std::string(xdg) + "/RainyDay/presets";
@@ -68,6 +100,7 @@ std::string userPresetDir() {
    if (home && home[0] == '/')
       return std::string(home) + "/.config/RainyDay/presets";
    return {};
+#endif
 }
 
 bool parsePreset(const char *text, size_t length, PresetData &out, std::string &error) {
@@ -312,21 +345,13 @@ std::string userPresetPath(const std::string &name) {
 bool writePresetFile(const std::string &path, const std::string &text, std::string &error) {
    // Create every directory above the file; the plugin never assumes the user
    // preset directory already exists.
-   const size_t slash = path.rfind('/');
-   if (slash != std::string::npos && slash > 0) {
-      const std::string dir = path.substr(0, slash);
-      std::string sofar;
-      size_t at = 0;
-      while (at < dir.size()) {
-         size_t next = dir.find('/', at + 1);
-         if (next == std::string::npos)
-            next = dir.size();
-         sofar = dir.substr(0, next);
-         if (!sofar.empty() && mkdir(sofar.c_str(), 0755) != 0 && errno != EEXIST) {
-            error = "cannot create " + sofar + ": " + std::strerror(errno);
-            return false;
-         }
-         at = next;
+   const std::filesystem::path parent = std::filesystem::path(path).parent_path();
+   if (!parent.empty()) {
+      std::error_code ec;
+      std::filesystem::create_directories(parent, ec);
+      if (ec && !std::filesystem::is_directory(parent)) {
+         error = "cannot create " + parent.string() + ": " + ec.message();
+         return false;
       }
    }
 

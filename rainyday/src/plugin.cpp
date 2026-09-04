@@ -20,7 +20,7 @@
 #include <chrono>
 #include <thread>
 
-#include <dirent.h>
+#include <filesystem>
 
 #include "gui/gui.h"
 #endif
@@ -657,17 +657,17 @@ private:
       }
 
       const std::string dir = userPresetDir();
-      DIR *dp = dir.empty() ? nullptr : opendir(dir.c_str());
-      if (!dp)
+      std::error_code ec;
+      if (dir.empty() || !std::filesystem::is_directory(dir, ec))
          return;
       std::vector<GuiPreset> user;
       const std::string suffix = std::string(".") + kPresetExtension;
-      while (const dirent *entry = readdir(dp)) {
-         const std::string name = entry->d_name;
+      for (const auto &entry : std::filesystem::directory_iterator(dir, ec)) {
+         const std::string name = entry.path().filename().string();
          if (name.size() <= suffix.size() ||
              name.compare(name.size() - suffix.size(), suffix.size(), suffix) != 0)
             continue;
-         const std::string path = dir + "/" + name;
+         const std::string path = entry.path().string();
          PresetData data;
          std::string error;
          if (!parsePresetFile(path, data, error))
@@ -679,7 +679,6 @@ private:
          item.userContent = true;
          user.push_back(item);
       }
-      closedir(dp);
       std::sort(user.begin(), user.end(),
                 [](const GuiPreset &a, const GuiPreset &b) { return a.name < b.name; });
       mPresets.insert(mPresets.end(), user.begin(), user.end());
@@ -708,9 +707,6 @@ private:
 #endif
    }
 
-#ifdef RAINYDAY_WITH_GUI
-   // -------------------------------------------------------- GuiDelegate
-
    // A peak meter that fell as fast as the signal would be unreadable, so the
    // published value decays towards the true peak over about 350 ms instead.
    void publishOutputPeaks(const float *l, const float *r, uint32_t frames) {
@@ -729,6 +725,9 @@ private:
       mPeakL.store(mFallingPeakL, std::memory_order_relaxed);
       mPeakR.store(mFallingPeakR, std::memory_order_relaxed);
    }
+
+#ifdef RAINYDAY_WITH_GUI
+   // -------------------------------------------------------- GuiDelegate
 
    double guiParamValue(uint32_t id) const override {
       return id < kNumParams ? mValues[id].load(std::memory_order_relaxed) : 0.0;

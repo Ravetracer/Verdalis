@@ -19,14 +19,59 @@
 #include <vector>
 
 #include <dirent.h>
-#include <dlfcn.h>
+#if defined(_WIN32)
+#   include <windows.h>
+#else
+#   include <dlfcn.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include <clap/clap.h>
 
+// The host loads the plugin the way a DAW does. That is the one thing in this
+// file that differs between platforms.
+#if defined(_WIN32)
+namespace {
+void *dlopenCompat(const char *path) {
+   return reinterpret_cast<void *>(LoadLibraryA(path));
+}
+void *dlsymCompat(void *h, const char *name) {
+   return reinterpret_cast<void *>(GetProcAddress(reinterpret_cast<HMODULE>(h), name));
+}
+void dlcloseCompat(void *h) { FreeLibrary(reinterpret_cast<HMODULE>(h)); }
+const char *dlerrorCompat() { return "see GetLastError()"; }
+} // namespace
+#   define RD_DLOPEN(p) dlopenCompat(p)
+#   define RD_DLSYM(h, n) dlsymCompat(h, n)
+#   define RD_DLCLOSE(h) dlcloseCompat(h)
+#   define RD_DLERROR() dlerrorCompat()
+#else
+#   define RD_DLOPEN(p) dlopen(p, RTLD_NOW | RTLD_LOCAL)
+#   define RD_DLSYM(h, n) dlsym(h, n)
+#   define RD_DLCLOSE(h) dlclose(h)
+#   define RD_DLERROR() dlerror()
+#endif
+
 #include "params.h"
 #include "rainyday.h"
+
+#include <filesystem>
+
+// Setting an environment variable is spelled differently on each platform, and
+// the self-test needs it to point the preset directory somewhere disposable.
+namespace {
+void setEnvVar(const char *name, const char *value) {
+#if defined(_WIN32)
+   _putenv_s(name, value ? value : "");
+#else
+   if (value)
+      setenv(name, value, 1);
+   else
+      unsetenv(name);
+#endif
+}
+} // namespace
 
 namespace {
 
@@ -677,14 +722,14 @@ int main(int argc, char **argv) {
       }
    }
 
-   void *dso = dlopen(pluginPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+   void *dso = RD_DLOPEN(pluginPath.c_str());
    if (!dso) {
-      std::fprintf(stderr, "dlopen failed: %s\n", dlerror());
+      std::fprintf(stderr, "dlopen failed: %s\n", RD_DLERROR());
       return 1;
    }
-   auto *entry = static_cast<const clap_plugin_entry_t *>(dlsym(dso, "clap_entry"));
+   auto *entry = static_cast<const clap_plugin_entry_t *>(RD_DLSYM(dso, "clap_entry"));
    if (!entry) {
-      std::fprintf(stderr, "no clap_entry symbol: %s\n", dlerror());
+      std::fprintf(stderr, "no clap_entry symbol: %s\n", RD_DLERROR());
       return 1;
    }
    if (!clap_version_is_compatible(entry->clap_version)) {
@@ -702,7 +747,7 @@ int main(int argc, char **argv) {
    if (doSelfTest) {
       rc = runSelfTest(entry, sampleRate);
       entry->deinit();
-      dlclose(dso);
+      RD_DLCLOSE(dso);
       return rc;
    }
 
@@ -715,7 +760,7 @@ int main(int argc, char **argv) {
                      p.loadKey.empty() ? "-" : p.loadKey.c_str(), p.description.c_str());
       }
       entry->deinit();
-      dlclose(dso);
+      RD_DLCLOSE(dso);
       return 0;
    }
 
@@ -738,7 +783,7 @@ int main(int argc, char **argv) {
       if (todo.empty()) {
          std::fprintf(stderr, "preset '%s' not found\n", presetSel.c_str());
          entry->deinit();
-         dlclose(dso);
+         RD_DLCLOSE(dso);
          return 1;
       }
       todo.resize(1);
@@ -789,7 +834,7 @@ int main(int argc, char **argv) {
    }
 
    entry->deinit();
-   dlclose(dso);
+   RD_DLCLOSE(dso);
    return rc;
 }
 
@@ -1155,10 +1200,22 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
 
       // Saving has to create the user preset directory and land a file that
       // reads back, on a real filesystem rather than in principle.
-      char tmpl[] = "/tmp/rainyday-selftest-XXXXXX";
-      const char *tmp = mkdtemp(tmpl);
+      const std::string tmpdir =
+         (std::filesystem::temp_directory_path() /
+          ("rainyday-selftest-" + std::to_string(
+#if defined(_WIN32)
+              static_cast<unsigned long>(GetCurrentProcessId())
+#else
+              static_cast<unsigned long>(getpid())
+#endif
+              ))).string();
+      std::error_code mkec;
+      const char *tmp = std::filesystem::create_directories(tmpdir, mkec) || !mkec
+                           ? tmpdir.c_str()
+                           : nullptr;
       if (tmp) {
-         setenv("XDG_CONFIG_HOME", tmp, 1);
+         setEnvVar("XDG_CONFIG_HOME", tmp);
+         setEnvVar("APPDATA", tmp);
          const std::string target = userPresetPath("Saved By Selftest");
          check(!target.empty(), "a save path is offered under the user config directory");
          std::string writeErr;
@@ -1167,11 +1224,10 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
          std::string readErr;
          check(parsePresetFile(target, readBack, readErr) && readBack.name == original.name,
                "a saved preset file reads back");
-         std::remove(target.c_str());
-         rmdir((std::string(tmp) + "/RainyDay/presets").c_str());
-         rmdir((std::string(tmp) + "/RainyDay").c_str());
-         rmdir(tmp);
-         unsetenv("XDG_CONFIG_HOME");
+         std::error_code rmec;
+         std::filesystem::remove_all(tmpdir, rmec);
+         setEnvVar("XDG_CONFIG_HOME", nullptr);
+         setEnvVar("APPDATA", nullptr);
       }
    }
 
