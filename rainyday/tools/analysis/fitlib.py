@@ -11,8 +11,8 @@ ROOT = os.environ.get('RAINYDAY_ROOT', os.path.dirname(os.path.dirname(os.path.d
 
 SECTIONS = [
     ('Rain', ['density', 'clumping', 'drop_pitch', 'pitch_spread', 'drop_decay',
-              'decay_spread', 'tonality', 'impact', 'splash', 'level_spread',
-              'chirp', 'surface', 'note_tracking']),
+              'decay_spread', 'tonality', 'bubble', 'impact', 'splash',
+              'level_spread', 'chirp', 'surface', 'note_tracking']),
     ('Bed', ['bed_level', 'bed_tone', 'bed_body', 'bed_drift']),
     ('Space', ['width', 'distance', 'air', 'space_amount', 'space_size',
                'space_damping']),
@@ -150,6 +150,15 @@ W_FLAT = 0.0
 # preset that is right to within a few per cent pays almost nothing, while one
 # that is an order of magnitude too tonal pays as much as a bad spectrum does.
 W_FFLAT = 4000.0
+# Ring time. `decay_ms` was measured from the very first version of this file
+# and then not used, which left the objective unable to tell a droplet that
+# rings for 30 ms from one that rings for 300 ms as long as the two had the same
+# spectrum -- and ring time is the single feature that per-droplet measurement
+# of the references pins down most sharply. Compared in the log domain, so the
+# term means "out by this factor" rather than "out by this many milliseconds":
+# a ring twice as long as the reference's costs as much as being 6 dB out in
+# every band at once.
+W_DECAY = 40.0
 
 
 def distance(a, b, band_weight=None):
@@ -162,4 +171,7 @@ def distance(a, b, band_weight=None):
     m = [v if np.isfinite(v) else 0.0 for v in (a['mod_db'], b['mod_db'])]
     d += W_MOD * (m[0] - m[1]) ** 2
     d += W_FFLAT * (a.get('fflat', 0.0) - b.get('fflat', 0.0)) ** 2
+    da, db_ = a.get('decay_ms'), b.get('decay_ms')
+    if da and db_ and np.isfinite(da) and np.isfinite(db_) and da > 0 and db_ > 0:
+        d += W_DECAY * np.log2(da / db_) ** 2
     return float(d)

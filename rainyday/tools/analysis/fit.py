@@ -29,6 +29,7 @@ SPACE = {
     'clumping':      ('add', 0.0, 1.0),
     'decay_spread':  ('add', 0.0, 1.0),
     'tonality':      ('add', 0.0, 1.0),
+    'bubble':        ('add', 0.0, 1.0),
     'impact':        ('add', 0.0, 1.0),
     'splash':        ('add', 0.0, 1.0),
     'level_spread':  ('add', 0.0, 1.0),
@@ -49,16 +50,16 @@ SPACE = {
 # Chirp, the space controls and the envelope are never fitted: those are the
 # preset's identity, not something to be solved for.
 FULL_PARAMS = ['density', 'clumping', 'drop_pitch', 'pitch_spread', 'drop_decay',
-        'decay_spread', 'tonality', 'impact', 'splash', 'level_spread',
+        'decay_spread', 'tonality', 'bubble', 'impact', 'splash', 'level_spread',
         'bed_level', 'bed_tone', 'bed_body', 'bed_drift', 'distance', 'air']
 # Sparse drip presets live or die on the single droplet and the room around it,
 # so those get the space and filter controls as well.
 DROP_PARAMS = ['density', 'clumping', 'drop_pitch', 'pitch_spread', 'drop_decay',
-               'decay_spread', 'tonality', 'impact', 'splash', 'level_spread',
-               'bed_level', 'bed_tone', 'bed_body', 'distance', 'air',
-               'space_amount', 'space_size', 'space_damping', 'filter_cutoff']
-TONE_PARAMS = ['drop_pitch', 'pitch_spread', 'drop_decay', 'tonality', 'impact',
-        'splash', 'bed_level', 'bed_tone', 'bed_body', 'distance', 'air']
+               'decay_spread', 'tonality', 'bubble', 'impact', 'splash',
+               'level_spread', 'bed_level', 'bed_tone', 'bed_body', 'distance',
+               'air', 'space_amount', 'space_size', 'space_damping', 'filter_cutoff']
+TONE_PARAMS = ['drop_pitch', 'pitch_spread', 'drop_decay', 'tonality', 'bubble',
+        'impact', 'splash', 'bed_level', 'bed_tone', 'bed_body', 'distance', 'air']
 
 
 def candidates(name, value, scale):
