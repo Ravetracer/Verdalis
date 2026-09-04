@@ -207,6 +207,10 @@ if(RAINYDAY_BUILD_TOOLS)
       target_include_directories(rainyday-guihost PRIVATE "${CLAP_INCLUDE_DIR}" ${GUIHOST_X11_INCLUDE_DIRS})
       target_compile_options(rainyday-guihost PRIVATE -Wall -Wextra)
       target_link_libraries(rainyday-guihost PRIVATE ${CMAKE_DL_LIBS} ${GUIHOST_X11_LIBRARIES})
+      if(WIN32)
+         target_link_options(rainyday-guihost PRIVATE "-static-libgcc" "-static-libstdc++"
+            "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic")
+      endif()
    endif()
 
    # The fitting host and the window host are both part of the Linux analysis

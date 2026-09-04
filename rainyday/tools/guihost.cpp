@@ -10,6 +10,12 @@
 #include <clap/clap.h>
 
 #if defined(_WIN32)
+#   define RD_WINDOW_API CLAP_WINDOW_API_WIN32
+#else
+#   define RD_WINDOW_API CLAP_WINDOW_API_X11
+#endif
+
+#if defined(_WIN32)
 #   include <windows.h>
 #else
 #   include <X11/Xlib.h>
@@ -98,11 +104,11 @@ int main(int argc, char **argv) {
    }
 
    auto *gui = static_cast<const clap_plugin_gui_t *>(plug->get_extension(plug, CLAP_EXT_GUI));
-   if (!gui || !gui->is_api_supported(plug, CLAP_WINDOW_API_X11, false)) {
-      std::fprintf(stderr, "plugin has no embedded X11 GUI\n");
+   if (!gui || !gui->is_api_supported(plug, RD_WINDOW_API, false)) {
+      std::fprintf(stderr, "plugin has no embedded GUI for %s\n", RD_WINDOW_API);
       return 1;
    }
-   if (!gui->create(plug, CLAP_WINDOW_API_X11, false)) {
+   if (!gui->create(plug, RD_WINDOW_API, false)) {
       std::fprintf(stderr, "gui create failed\n");
       return 1;
    }
@@ -158,7 +164,7 @@ int main(int argc, char **argv) {
    XFlush(dpy);
 
    clap_window_t parent{};
-   parent.api = CLAP_WINDOW_API_X11;
+   parent.api = RD_WINDOW_API;
    parent.x11 = static_cast<clap_xwnd>(win);
    if (!gui->set_parent(plug, &parent)) {
       std::fprintf(stderr, "set_parent failed\n");

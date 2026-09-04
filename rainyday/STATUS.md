@@ -106,22 +106,26 @@ cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake \
 cmake --build build-win
 ```
 
+The window needs a Cairo cross-built with its win32 backend, which
+`cmake/build-windows-cairo.sh` does; pass its prefix as `RAINYDAY_WIN_CAIRO`.
+Without it the build still works and the host draws the parameters itself.
+
 The result is `build-win/RainyDay.clap`, a PE32+ DLL exporting `clap_entry` and
-nothing else, with the C and C++ runtimes linked in so it imports only KERNEL32
-and msvcrt. It goes in `C:\Program Files\Common Files\CLAP\RainyDay\`
-alongside a `presets` folder.
+nothing else, with the runtimes and Cairo linked in so it imports only KERNEL32,
+USER32, GDI32, MSIMG32, ole32 and msvcrt. It goes in
+`C:\Program Files\Common Files\CLAP\RainyDay\` alongside a `presets` folder.
 
 Verified under Wine rather than assumed: all 45 self-test checks pass against
-the Windows DLL, preset discovery finds all 17 presets, and at a fixed Random
-Seed the audio matches the Linux build to within 1 LSB on 14 samples out of
-672000, which is the two toolchains' libm rounding differently. It has not been
-run on real Windows.
+the Windows DLL, preset discovery finds all 17 presets, the window renders and
+is pixel-identical to the Linux one everywhere except glyph rasterisation, and
+at a fixed Random Seed the audio matches the Linux build to within 1 LSB on 14
+samples out of 672000, which is the two toolchains' libm rounding differently.
+It has not been run on real Windows.
 
 The porting work was four POSIX-only spots -- `dladdr` for the plugin's own
 path, `$XDG_CONFIG_HOME` for the preset folder, `dirent.h` for scanning it, and
 a hand-rolled `mkdir -p` -- which are now `std::filesystem` plus
-`GetModuleFileNameW`, and `dlopen` in the test host. No window: that is 1633
-lines of X11 and Cairo.
+`GetModuleFileNameW`, and `dlopen` in the test host.
 
 ## Pick it up here
 
@@ -137,10 +141,8 @@ long note.
 
 ## Known limitations
 
-- The window is X11 only and a fixed size; under a Wayland host, and on the
-  Windows build, the plugin falls back to the generic parameter view. Preset
-  saving lives in that window, so the Windows build can load presets but not
-  save them.
+- The window is a fixed size, and X11 or Win32 only; under a Wayland host the
+  plugin falls back to the host's generic parameter view.
 - Rain only, by design. No wind, no thunder.
 - `Filter Key Track` follows the most recently played note (single global
   filter stage).

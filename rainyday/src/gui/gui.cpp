@@ -344,16 +344,18 @@ public:
             return false;
          registered = true;
       }
-      // Created as a child with no parent yet: the host supplies one through
-      // embed(), which is the only way a CLAP window is ever shown.
-      mWindow = CreateWindowExW(0, windowClassName(), L"RainyDay", WS_CHILD | WS_CLIPCHILDREN,
+      // Created as an unowned popup, not as a child: WS_CHILD demands a parent
+      // at creation and CLAP does not supply one until set_parent. embed()
+      // turns it into a child once the host says where it goes.
+      mWindow = CreateWindowExW(0, windowClassName(), L"RainyDay", WS_POPUP | WS_CLIPCHILDREN,
                                 0, 0, static_cast<int>(pixelW()), static_cast<int>(pixelH()),
                                 nullptr, nullptr, GetModuleHandleW(nullptr), this);
       if (!mWindow)
          return false;
-      mDC = GetDC(mWindow);
-      mTarget = cairo_win32_surface_create(mDC);
-      mTargetCr = cairo_create(mTarget);
+      // No target surface is made here. A cached DC belongs to the window as it
+      // was when the DC was taken, and this window is reparented into the
+      // host's afterwards; the surface to draw on is the one BeginPaint hands
+      // over, which is correct by construction.
       allocateBuffer();
       return true;
    }
@@ -448,13 +450,6 @@ public:
 #if defined(_WIN32)
       SetWindowPos(mWindow, nullptr, 0, 0, static_cast<int>(pixelW()),
                    static_cast<int>(pixelH()), SWP_NOMOVE | SWP_NOZORDER);
-      // A win32 surface is tied to the DC's current size, so it is rebuilt.
-      if (mTargetCr)
-         cairo_destroy(mTargetCr);
-      if (mTarget)
-         cairo_surface_destroy(mTarget);
-      mTarget = cairo_win32_surface_create(mDC);
-      mTargetCr = cairo_create(mTarget);
 #else
       XResizeWindow(mDisplay, mWindow, pixelW(), pixelH());
       cairo_xlib_surface_set_size(mTarget, pixelW(), pixelH());
@@ -494,15 +489,26 @@ public:
    }
 
    void tick() override {
-#if !defined(_WIN32)
+#if defined(_WIN32)
+      if (!mWindow)
+         return;
+      pumpEvents();
+      // Painting happens in WM_PAINT, not here. GDI belongs to the thread that
+      // owns the window, and tick() is called from whatever clock the host
+      // offers -- in a host with no timer that is a thread of the plugin's own,
+      // which would be drawing on someone else's DC. Marking the window dirty
+      // is safe from any thread and the owning thread does the work.
+      if (needsRepaint())
+         InvalidateRect(mWindow, nullptr, FALSE);
+#else
       if (!mDisplay)
          return;
-#endif
       pumpEvents();
       if (!mWindow)
          return;
       if (needsRepaint())
          paint();
+#endif
    }
 
 private:
@@ -539,11 +545,8 @@ private:
 #if defined(_WIN32)
       if (mWindow) {
          releaseKeyboard();
-         if (mDC)
-            ReleaseDC(mWindow, mDC);
          DestroyWindow(mWindow);
       }
-      mDC = nullptr;
       mWindow = nullptr;
 #else
       if (mDisplay) {
@@ -659,6 +662,24 @@ private:
       const uint32_t drops = mDelegate.guiDropletCount();
       return drops != mLastDropCount || mMeterFill > 0.001 || mDecayFrames > 0;
    }
+
+#if defined(_WIN32)
+   // Lends paint() a target for the duration of one WM_PAINT. Everything the
+   // frame is built from is the shared code; only where it lands differs.
+   void paintToDC(HDC dc) {
+      cairo_surface_t *surface = cairo_win32_surface_create(dc);
+      cairo_t *cr = cairo_create(surface);
+      cairo_surface_t *const keptTarget = mTarget;
+      cairo_t *const keptCr = mTargetCr;
+      mTarget = surface;
+      mTargetCr = cr;
+      paint();
+      mTarget = keptTarget;
+      mTargetCr = keptCr;
+      cairo_destroy(cr);
+      cairo_surface_destroy(surface);
+   }
+#endif
 
    void paint() {
       cairo_t *cr = mBufferCr;
@@ -1446,9 +1467,9 @@ private:
       switch (msg) {
       case WM_PAINT: {
          PAINTSTRUCT ps;
-         BeginPaint(mWindow, &ps);
-         mDirty = true;
-         paint();
+         const HDC dc = BeginPaint(mWindow, &ps);
+         mDirty = true; // a paint request is not conditional on anything
+         paintToDC(dc);
          EndPaint(mWindow, &ps);
          return 0;
       }
@@ -1831,7 +1852,6 @@ private:
 
 #if defined(_WIN32)
    HWND mWindow = nullptr;
-   HDC mDC = nullptr;
    HWND mPrevFocus = nullptr;
    bool mTrackingLeave = false;
 #else
