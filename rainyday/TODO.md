@@ -1,6 +1,77 @@
 # RainyDay — open items
 
-## 1. GUI follow-ups
+## 1. Realism: what two more sources say we are still missing
+
+Added 2026-09-04 from `!dev/RealtimeSoundSimulationOfRain.pdf` (Miklavcic, Zita
+& Arvidsson, DAFx'04) and the "How it works" of `github.com/gtnoble/drip`. Both
+agree with what the engine already does -- Marshall-Palmer sizing, the entrained
+bubble as the tonal layer, only some impacts entraining one, air absorption, a
+statistical far field -- so what follows is only the difference. Ranked by how
+much realism each is likely to buy.
+
+Every one of these changes the sound of every preset and so costs a full re-fit
+(about 50 minutes). None is started.
+
+### 1a. Amplitude should follow impact energy, not drop mass
+
+The engine sets droplet amplitude proportional to volume, i.e. to mass. drip
+uses `E_acoustic = 0.001 x (1/2 m v^2)`: about a tenth of a per cent of the
+kinetic energy becomes sound. Amplitude is the square root of energy, so the law
+should be `A ~ sqrt(m) * v_term`, not `A ~ m`.
+
+Terminal velocity is itself a function of size (roughly 2 m/s at 0.5 mm rising
+to 9 m/s at 5 mm), so this is not a constant factor. Over a ten-to-one range of
+radius the present law spreads amplitude over about 1000:1 where the physical
+one gives about 95:1. If that is right, RainyDay is exaggerating its big drops
+by an order of magnitude, which would read as isolated loud plonks over a bed
+rather than as rain. **This is the most suspicious single thing in the engine**
+and it is cheap to test: it is one expression in `spawnDroplet`.
+
+### 1b. The impact frequency is drawn at random, and should not be
+
+`kImpactMinHz`..`kImpactMaxHz` draws the impact blip uniformly between 1 and
+16 kHz for every droplet, on every surface. That came from Liu, Cheng & Tong
+(2019) and is deliberate -- see the note in `src/dsp/rain_engine.cpp`.
+
+drip contradicts it for hard surfaces, where it uses `f = v / (2R)`: the impact
+frequency follows from the drop, not from a die roll. **The two sources are
+genuinely in conflict** and this is not a case of the code being wrong. But note
+which one Tin Roof failed under: four octaves of randomly tuned two-cycle blips,
+several hundred a second, is a fair description of ice. A per-surface choice --
+statistical on water, drop-derived on rigid surfaces -- would satisfy both.
+
+### 1c. Bubble pitch is a free parameter and could be anchored
+
+Both sources give Minnaert directly: `f = 3.26 / R_bubble`. RainyDay has the
+right *shape* (pitch goes as 1/radius, ring time as 1/pitch, which the 2019
+paper confirmed) but no absolute anchor: `Drop Pitch` is a free 60 Hz to 9 kHz
+control, and the fit will happily put it at 6.3 kHz. Anchoring the centre at the
+Minnaert frequency for a plausible bubble radius, and making `Drop Pitch` a trim
+around it, would make physically impossible presets unreachable rather than
+merely bounded in `fit.py` after the fact.
+
+### 1d. Distance is a gain and a filter, not a distance
+
+drip propagates properly: `1/r^2` spreading, a delay of `r / 343 m/s`, and
+frequency-dependent air absorption `alpha(f) = 0.02 (f/1000)^1.5 dB/100m`.
+RainyDay has a one-pole lowpass and an attenuation, with no delay at all, so
+every droplet in a field hundreds of metres across arrives at the same instant.
+Per-droplet delay is the cheapest depth cue there is.
+
+The DAFx paper also warns about the scheduling consequence: randomise each
+drop's *arrival* time, never its impact time, or the level ramps up at the start
+and after every parameter change while the far drops are still in flight.
+RainyDay schedules arrivals already, so this only matters if 1d is built.
+
+### 1e. Not applicable, recorded so it is not rediscovered
+
+The DAFx paper's own conclusion is that bare rain rarely sounds like rain: what
+listeners recognise is rain plus rooftops resonating, water flowing, leaves,
+wind. That is a real finding, and it is also exactly the scope this project has
+decided against. Worth remembering when a preset sounds thin for no reason the
+measurements can explain.
+
+## 2. GUI follow-ups
 
 - **Text entry on a knob.** `paramTextToValue()` already parses everything the
   display prints, including `k` multipliers and seconds on millisecond fields.
@@ -29,7 +100,7 @@
 gets checked. It opens a window on the current display, so it is not something
 to run unannounced.
 
-## 2. Later / nice to have
+## 3. Later / nice to have
 
 - **Wind and thunder.** Explicitly out of scope for now; the plugin is rain
   only. When added, they belong as separate parameter groups, and thunder needs
