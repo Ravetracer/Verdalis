@@ -4,6 +4,8 @@ Deterministic: every candidate renders with the same fixed seed, so two
 candidates differ only by their parameters and not by which droplets happened
 to fall. The winner is re-checked on unseen seeds at the end.
 """
+import atexit
+import concurrent.futures as cf
 import os
 import sys
 import time
@@ -12,29 +14,6 @@ import fitlib
 import feat
 import refs
 from pairs import BAND_WEIGHT
-
-# How many droplet realisations a candidate is scored over. Two was not close to
-# enough: measured across forty seeds, Dripping Faucet's distance to its
-# reference ranges from 45 to 1286, and Steady Rain's from 11 to 51. Averaging
-# two of those and calling the winner an improvement is how the fit came to
-# produce presets that scored 28.7 on the seeds it optimised against and 732.1
-# on seeds it had not seen.
-#
-# The number is chosen per preset rather than fixed, because the presets that
-# need the most seeds are the cheapest to render. A sparse drip costs a fiftieth
-# of what Downpour does, so a fixed budget of render time per candidate gives
-# twelve seeds to the presets whose distance is wild and two to the dense ones
-# that are both expensive and already stable. That is very nearly free: the
-# expensive presets are the ones that do not need it.
-SEED_BUDGET_SEC = 1.2
-MIN_SEEDS = 2
-MAX_SEEDS = 12
-# Disjoint from VERIFY_SEEDS, so the held-out check stays honest however many of
-# these end up being used.
-SEED_POOL = [1, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]
-FIT_SEEDS = SEED_POOL[:MIN_SEEDS]
-VERIFY_SEEDS = [2, 3, 4]
-SECONDS = 6.0
 
 # name -> (kind, low, high). 'mul' searches multiplicatively, 'add' linearly.
 SPACE = {
@@ -61,6 +40,56 @@ SPACE = {
     'space_damping': ('add', 0.0, 1.0),
     'filter_reso':   ('add', 0.0, 1.0),
 }
+
+# How many droplet realisations a candidate is scored over, per preset.
+#
+# Two was not close to enough. Measured over forty fresh seeds, Dripping Faucet's
+# distance to its reference runs from 45 to 1286 and Steady Rain's from 11 to 51.
+# Averaging two draws from that and calling the winner an improvement is how the
+# fit came to produce a Dripping Faucet scoring 28.7 on the seeds it optimised
+# against and 732.1 on seeds it had not seen.
+#
+# The counts differ per preset because the presets that need the most seeds are
+# the cheapest to run: one scored candidate costs 0.15 s for Dripping Faucet and
+# 5.7 s for Downpour, and Downpour was already the stable one. Each preset gets
+# as many seeds as fit in about two seconds of work.
+#
+# This is a table rather than something timed at startup on purpose. Deriving it
+# from a measurement made the fit depend on how fast the machine happened to be
+# and on how many workers were running, so the same preset fitted to different
+# values with one worker and with eight. A fit has to be reproducible.
+# Regenerate it if the engine's cost changes materially; the numbers below were
+# measured on 2026-09-04.
+PRESET_SEEDS = {
+    'steady_rain': 12,
+    'rain_on_leaves': 8,
+    'concrete_alley': 4,
+    'tin_roof': 5,
+    'light_drizzle': 11,
+    'inside_the_car': 9,
+    'puddle_plinks': 11,
+    'dripping_faucet': 12,
+    'cave_drips': 12,
+    'downpour': 2,
+    'storm_front': 2,
+    'tropical_monsoon': 3,
+    'first_drops': 12,
+    'gutter_trickle': 11,
+    'window_pane': 7,
+}
+DEFAULT_SEEDS = 6
+MAX_SEEDS = 12
+# Disjoint from VERIFY_SEEDS, so the held-out check stays honest however many of
+# these are used.
+SEED_POOL = [1, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]
+FIT_SEEDS = SEED_POOL[:2]
+VERIFY_SEEDS = [2, 3, 4]
+SECONDS = 6.0
+
+
+def seeds_for(preset):
+    return SEED_POOL[:min(MAX_SEEDS, PRESET_SEEDS.get(preset, DEFAULT_SEEDS))]
+
 
 # Per-preset overrides of SPACE, for the cases where the objective is happy with
 # something that does not sound like rain.
@@ -109,39 +138,109 @@ def candidates(name, value, scale, bounds=None):
     return sorted({float(np.clip(v, lo, hi)) for v in vals})
 
 
+DEFAULT_JOBS = 8
+
+# Rendering is only part of the work. Measured per candidate: Downpour spends
+# 4.74 s rendering and 0.13 s being analysed, but Cave Drips spends 0.03 s and
+# 0.14 s -- so for the sparse presets four fifths of the time is numpy in the
+# parent process, under the GIL. A thread pool therefore made the cheap presets
+# slower, not faster. Workers are processes so that the analysis parallelises
+# with the rendering.
+#
+# Each worker owns one fithost. Only the finished distance crosses back, and the
+# reference features are passed in, so no worker ever loads a recording: the
+# cave reference alone is 181 seconds and 1.6 GB once analysed.
+
+_worker_renderer = None
+
+
+def _init_worker():
+    global _worker_renderer
+    _worker_renderer = fitlib.Renderer()
+    atexit.register(_close_worker)
+
+
+def _close_worker():
+    global _worker_renderer
+    if _worker_renderer is not None:
+        try:
+            _worker_renderer.close()
+        except Exception:
+            pass
+        _worker_renderer = None
+
+
+def _score_job(params, meta, target, want_timing=False):
+    t0 = time.time()
+    x = _worker_renderer.render(params, meta, SECONDS)
+    rendered = time.time() - t0
+    d = fitlib.distance(fitlib.analyse_render(x), target, BAND_WEIGHT)
+    return (d, rendered, time.time() - t0) if want_timing else d
+
+
+class RendererPool:
+    """A pool of worker processes, each with its own fithost.
+
+    Safe to spread work across processes only because a render is fully
+    determined by its parameters and seed. The droplet allocation cursor used to
+    survive a reset, which made a render depend on whatever the same process
+    rendered before it; results would then have depended on how the work
+    happened to be shared out.
+    """
+
+    def __init__(self, jobs=DEFAULT_JOBS):
+        self.jobs = max(1, jobs)
+        self.ex = cf.ProcessPoolExecutor(max_workers=self.jobs,
+                                         initializer=_init_worker)
+
+    def submit(self, *a, **kw):
+        return self.ex.submit(_score_job, *a, **kw)
+
+    def close(self):
+        self.ex.shutdown(wait=True)
+
+
 class Fitter:
-    def __init__(self, renderer):
-        self.r = renderer
+    def __init__(self, pool):
+        self.pool = pool
         self.cache = {}
         self.seeds = list(FIT_SEEDS)
 
-    def choose_seeds(self, params, meta):
-        """Time one render and spend SEED_BUDGET_SEC of them on each candidate."""
+    @staticmethod
+    def _key(params, seed):
         p = dict(params)
-        p['seed'] = str(SEED_POOL[0])
-        t0 = time.time()
-        self.r.render(p, meta, SECONDS)
-        cost = max(1e-4, time.time() - t0)
-        n = int(SEED_BUDGET_SEC / cost)
-        n = max(MIN_SEEDS, min(MAX_SEEDS, n))
-        self.seeds = SEED_POOL[:n]
-        return cost, n
+        p['seed'] = str(seed)
+        return tuple(sorted((k, str(v)) for k, v in p.items())), p
 
     def score(self, params, meta, target, seed=None):
+        return self.score_many([params], meta, target, seed)[0]
+
+    def score_many(self, param_list, meta, target, seed=None):
+        """Score candidates together, one job per candidate and seed.
+
+        Splitting by seed as well as by candidate matters: Downpour is scored
+        over two seeds, so candidates alone would leave most of the pool idle on
+        exactly the preset that takes the longest.
+        """
+        if not param_list:
+            return []
         seeds = [seed] if seed is not None else self.seeds
-        total = 0.0
-        for s in seeds:
-            p = dict(params)
-            p['seed'] = str(s)
-            key = tuple(sorted((k, str(v)) for k, v in p.items()))
-            if key in self.cache:
-                total += self.cache[key]
-                continue
-            f = fitlib.analyse_render(self.r.render(p, meta, SECONDS))
-            d = fitlib.distance(f, target, BAND_WEIGHT)
+        totals = [0.0] * len(param_list)
+        pending = {}
+        for i, params in enumerate(param_list):
+            for s in seeds:
+                key, p = self._key(params, s)
+                hit = self.cache.get(key)
+                if hit is not None:
+                    totals[i] += hit
+                else:
+                    pending[self.pool.submit(p, meta, target)] = (i, key)
+        for fut in cf.as_completed(pending):
+            i, key = pending[fut]
+            d = fut.result()
             self.cache[key] = d
-            total += d
-        return total / len(seeds)
+            totals[i] += d
+        return [t / len(seeds) for t in totals]
 
     def run(self, params, meta, target, names, passes=4, log=None, bounds=None):
         cur = dict(params)
@@ -161,12 +260,18 @@ class Fitter:
                     base = float(cur[name])
                 except (TypeError, ValueError):
                     continue
-                for v in candidates(name, base, scale, bounds):
-                    if abs(v - base) < 1e-9:
-                        continue
+                # All of one parameter's candidates are independent, so they
+                # are rendered together and then applied in the original order.
+                # Only `best` carries between them, and it only ever falls, so
+                # the outcome is the same as testing them one at a time.
+                vals = [v for v in candidates(name, base, scale, bounds)
+                        if abs(v - base) >= 1e-9]
+                trials = []
+                for v in vals:
                     trial = dict(cur)
                     trial[name] = v
-                    d = self.score(trial, meta, target)
+                    trials.append(trial)
+                for v, d in zip(vals, self.score_many(trials, meta, target)):
                     if d < best - 1e-6:
                         best, cur[name], improved = d, v, True
             if log:
@@ -185,10 +290,9 @@ def fit_preset(fitter, preset, reference, names, out_dir):
         print(m, flush=True)
 
     bounds = PRESET_BOUNDS.get(preset)
-    cost, nseeds = fitter.choose_seeds(params, meta)
+    fitter.seeds = seeds_for(preset)
     before = fitter.score(params, meta, target)
-    print(f'  {preset} <- {reference}   start {before:.1f}   '
-          f'{nseeds} seeds ({cost:.2f}s a render)'
+    print(f'  {preset} <- {reference}   start {before:.1f}   {len(fitter.seeds)} seeds'
           f'{"   (bounded)" if bounds else ""}', flush=True)
     tuned, after = fitter.run(params, meta, target, names, log=log, bounds=bounds)
 

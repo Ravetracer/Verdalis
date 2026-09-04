@@ -60,13 +60,14 @@ def cmd_report(args):
 
 def cmd_fit(args):
     os.makedirs(args.out, exist_ok=True)
-    r = fitlib.Renderer()
-    f = fit.Fitter(r)
+    pool = fit.RendererPool(args.jobs)
+    f = fit.Fitter(pool)
+    print(f'fitting with {pool.jobs} render processes', flush=True)
     t0 = time.time()
     for preset, ref, mode in PAIRS:
         fit.fit_preset(f, preset, ref, names_for(mode), args.out)
         print(f'  [{time.time() - t0:6.0f}s] {preset}\n', flush=True)
-    r.close()
+    pool.close()
 
 
 def cmd_loudness(args):
@@ -86,6 +87,8 @@ def main():
 
     p = sub.add_parser('fit')
     p.add_argument('--out', required=True)
+    p.add_argument('--jobs', type=int, default=fit.DEFAULT_JOBS,
+                   help='render processes to run at once (default %(default)s)')
     p.set_defaults(func=cmd_fit)
 
     p = sub.add_parser('loudness')
