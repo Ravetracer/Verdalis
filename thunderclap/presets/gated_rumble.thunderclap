@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Gated Rumble
+author = ThunderClap
+description = Gated: the thunder lasts as long as the key does. Short notes for stabs of rumble, long ones for the whole roll.
+features = sfx, rhythmic, evolving
+
+# Strike
+distance = 4
+height = 6
+cloud_spread = 8
+tortuosity = 0.6
+branching = 0.5
+strokes = 3
+stroke_gap = 60
+variation = 0.5
+
+# Sound
+crack = 0.4
+weight = 0.6
+swell = 0.4
+rumble = 0.7
+rumble_tone = 0.4
+air = 0.5
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -20
+echo_count = 2
+echo_spread = 1
+echo_damping = 0.6
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = Gated
+attack = 20
+release = 400
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = 3.5
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.4
+comp_attack = 5
+comp_release = 200

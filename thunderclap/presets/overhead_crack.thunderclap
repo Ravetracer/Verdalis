@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Overhead Crack
+author = ThunderClap
+description = Right on top of you. A short, violent tear with almost no rumble: the sound of a strike two hundred metres away.
+features = sfx, loud, impact, short
+
+# Strike
+distance = 0.2
+height = 4
+cloud_spread = 1.5
+tortuosity = 0.7
+branching = 0.3
+strokes = 2
+stroke_gap = 30
+variation = 0.3
+
+# Sound
+crack = 1
+weight = 0.4
+swell = 0
+rumble = 0.3
+rumble_tone = 0.7
+air = 0.3
+scatter = 0.6
+focus = 0.8
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -20
+echo_count = 2
+echo_spread = 0.8
+echo_damping = 0.4
+
+# Space
+space_amount = 0.08
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -11.7
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0
+comp_attack = 3.16
+comp_release = 250

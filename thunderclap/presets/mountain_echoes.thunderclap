@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Mountain Echoes
+author = ThunderClap
+description = A strike in a valley: every wall throws it back, and the echoes outlast the thunder itself.
+features = sfx, ambient, evolving
+
+# Strike
+distance = 3
+height = 5
+cloud_spread = 5
+tortuosity = 0.55
+branching = 0.5
+strokes = 3
+stroke_gap = 60
+variation = 0.5
+
+# Sound
+crack = 0.55
+weight = 0.55
+swell = 0.3
+rumble = 0.5
+rumble_tone = 0.5
+air = 0.5
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -6
+echo_count = 8
+echo_spread = 6
+echo_damping = 0.6
+
+# Space
+space_amount = 0.3
+space_size = 0.9
+space_damping = 0.4
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -2.3
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.3
+comp_attack = 5
+comp_release = 500

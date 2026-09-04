@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Dry Crack
+author = ThunderClap
+description = Sharp and short: one stroke, a small channel, hardly any rumble and no echo to speak of.
+features = sfx, impact, short, bright
+
+# Strike
+distance = 0.6
+height = 3
+cloud_spread = 1
+tortuosity = 0.5
+branching = 0.1
+strokes = 1
+stroke_gap = 40
+variation = 0.3
+
+# Sound
+crack = 0.9
+weight = 0.35
+swell = 0
+rumble = 0.15
+rumble_tone = 0.8
+air = 0.3
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -30
+echo_count = 1
+echo_spread = 0.5
+echo_damping = 0.5
+
+# Space
+space_amount = 0.05
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -8.9
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0
+comp_attack = 3.16
+comp_release = 250
