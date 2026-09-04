@@ -115,9 +115,10 @@ long note.
 - Rain only, by design. No wind, no thunder.
 - `Filter Key Track` follows the most recently played note (single global
   filter stage).
-- Typing a preset name needs the host to route key events to the embedded
-  window. Where it does not, the field still opens pre-filled, so saving with
-  the mouse works but renaming does not.
+- The save dialog holds a keyboard grab for as long as it is open, so the host's
+  own shortcuts do not work while a preset name is being typed. This is how the
+  field gets keystrokes at all: an embedded window is not given the input focus
+  by every host, Bitwig among them, and CLAP has no way to ask for it.
 - Per-note parameter modulation and note expressions are ignored.
 - The sparse drip presets match their references less closely than the dense
   rain ones. Isolated drops in a room are dominated by the room, and the

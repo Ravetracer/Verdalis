@@ -90,10 +90,13 @@ no GUI change.
 browser picks the new preset up immediately. The name becomes the filename with
 anything awkward replaced, so `My Rain / 2` is saved as `My_Rain_2.rainyday`; the
 file is the same plain text format as the factory library and can be edited by
-hand afterwards. Typing the name needs key events, and an embedded plugin window
-only gets those if the host routes them through — where it does not, the field
-still opens filled in with the current preset's name, so saving with the mouse
-alone works.
+hand afterwards. While the field is open the plugin takes a keyboard grab, because an embedded
+plugin window is not given the input focus by every host and CLAP has no way to
+ask for it — Bitwig, for one, does not hand it over, and without the grab the
+field never sees a keystroke. The grab lasts only as long as the dialog, so the
+host's own shortcuts are unavailable until you press Enter or Escape or click
+outside. If another client already holds a grab the dialog says so, and saving
+under the offered name still works with the mouse.
 
 The browser lists the factory library followed by anything in
 `~/.config/RainyDay/presets`, marked `USER`. Loading goes through the same

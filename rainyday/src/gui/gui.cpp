@@ -386,6 +386,8 @@ public:
    void hide() override {
       if (!mWindow)
          return;
+      if (mSaveOpen)
+         closeSaveDialog();
       XUnmapWindow(mDisplay, mWindow);
       XFlush(mDisplay);
    }
@@ -432,6 +434,15 @@ private:
       mTargetCr = nullptr;
       mTarget = nullptr;
       if (mDisplay) {
+         // Closing the display would drop the grab anyway, but say so plainly
+         // rather than depending on it: a keyboard nobody can type on is a very
+         // expensive thing to leave behind.
+         if (mKeyboardGrabbed) {
+            XErrorHandler previous = XSetErrorHandler(&ignoreXError);
+            XUngrabKeyboard(mDisplay, CurrentTime);
+            XSetErrorHandler(previous);
+            mKeyboardGrabbed = false;
+         }
          if (mWindow)
             XDestroyWindow(mDisplay, mWindow);
          XCloseDisplay(mDisplay);
@@ -961,15 +972,48 @@ private:
       mSaveName = mDelegate.guiSuggestedPresetName();
       mSaveStatus.clear();
       mSaveFailed = false;
-      // An embedded plugin window only sees key events if the host routes them
-      // here. Asking for the focus is worth a try, and a failure to get it is
-      // not worth an X error, so the handler is muted around the request.
-      if (mDisplay && mWindow) {
+      grabKeyboard();
+      if (!mKeyboardGrabbed)
+         mSaveStatus = "Cannot reach the keyboard. SAVE stores it under this name.";
+      mDirty = true;
+   }
+
+   // An embedded plugin window is not given the input focus by every host, and
+   // there is no way in CLAP to ask for it. Bitwig does not hand it over, so
+   // XSetInputFocus alone leaves the field unable to see a single keystroke.
+   //
+   // A grab does not depend on the host at all, and a modal dialog is the one
+   // situation that genuinely warrants one: it lasts only while the field is
+   // open, and taking the keyboard is exactly what being modal means. The focus
+   // request is still made first, because where it does work it is the better
+   // behaved of the two and leaves the host's own shortcuts alone.
+   //
+   // Failing to get the grab is not an error worth propagating: another client
+   // may hold one. The dialog says so and saving under the offered name still
+   // works with the mouse.
+   void grabKeyboard() {
+      if (!mDisplay || !mWindow || mKeyboardGrabbed)
+         return;
+      XErrorHandler previous = XSetErrorHandler(&ignoreXError);
+      XSetInputFocus(mDisplay, mWindow, RevertToParent, CurrentTime);
+      mKeyboardGrabbed = XGrabKeyboard(mDisplay, mWindow, True, GrabModeAsync, GrabModeAsync,
+                                       CurrentTime) == GrabSuccess;
+      XSync(mDisplay, False);
+      XSetErrorHandler(previous);
+   }
+
+   // Every path that leaves the dialog has to come through here. A keyboard
+   // grab that outlives its dialog would leave the whole desktop unable to type
+   // until the plugin is unloaded.
+   void closeSaveDialog() {
+      mSaveOpen = false;
+      if (mDisplay && mKeyboardGrabbed) {
          XErrorHandler previous = XSetErrorHandler(&ignoreXError);
-         XSetInputFocus(mDisplay, mWindow, RevertToParent, CurrentTime);
+         XUngrabKeyboard(mDisplay, CurrentTime);
          XSync(mDisplay, False);
          XSetErrorHandler(previous);
       }
+      mKeyboardGrabbed = false;
       mDirty = true;
    }
 
@@ -992,8 +1036,7 @@ private:
          mDirty = true;
          return;
       }
-      mSaveOpen = false;
-      mDirty = true;
+      closeSaveDialog();
    }
 
    void drawSaveDialog(cairo_t *cr) {
@@ -1051,8 +1094,7 @@ private:
       KeySym sym = 0;
       const int n = XLookupString(&ke, buf, sizeof(buf) - 1, &sym, nullptr);
       if (sym == XK_Escape) {
-         mSaveOpen = false;
-         mDirty = true;
+         closeSaveDialog();
          return;
       }
       if (sym == XK_Return || sym == XK_KP_Enter) {
@@ -1303,7 +1345,7 @@ private:
             if (saveOkRect().contains(x, y))
                commitSave();
             else if (saveCancelRect().contains(x, y) || !savePanel().contains(x, y))
-               mSaveOpen = false;
+               closeSaveDialog();
          }
          mDirty = true;
          return;
@@ -1561,6 +1603,7 @@ private:
    bool mBrowserOpen = false;
    int mBrowserHover = -1;
    bool mSaveOpen = false;
+   bool mKeyboardGrabbed = false;
    bool mSaveFailed = false;
    std::string mSaveName;
    std::string mSaveStatus;

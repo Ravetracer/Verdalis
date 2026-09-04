@@ -79,10 +79,14 @@ measurements can explain.
   The save dialog now has a working text field to copy from, so what is left is
   routing a click on a value to it and deciding what happens when the host does
   not give the window key events.
-- **Keyboard focus for the embedded window.** Typing into the save field needs
-  the host to route key events through. The window asks for the focus when the
-  field opens, and pre-fills the name so mouse-only saving still works, but this
-  has only been tried outside a DAW. Worth checking in Bitwig.
+- **Keyboard focus for the embedded window.** Confirmed in Bitwig: asking for
+  the input focus does not work, so the save dialog takes a keyboard grab
+  instead. That is defensible for a modal field but it does not generalise --
+  text entry on a knob cannot grab the keyboard every time a value is clicked.
+  The principled fix is the XEmbed protocol: set `_XEMBED_INFO` on the window,
+  handle the `_XEMBED` client messages, and ask the embedder for focus with
+  `XEMBED_REQUEST_FOCUS`. Worth doing before any further text entry is added,
+  and it needs a real host to test against.
 - **Resizable window.** `can_resize` currently reports false and the layout is
   a fixed 960×740 in design pixels. Everything is already drawn through a cairo
   scale, so honouring `set_size` is mostly a matter of choosing a scale from
