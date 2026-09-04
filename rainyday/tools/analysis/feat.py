@@ -6,11 +6,31 @@ onto parameters the synth actually has: spectral shape -> Drop Pitch / Bed Tone
 / Air, onset statistics -> Density / Clumping, decay -> Drop Decay, band
 flatness -> Tonality / Bed Level.
 """
+import math
+
 import numpy as np
 
 BAND_EDGES = np.array([50, 100, 200, 400, 800, 1600, 3150, 6300, 12500, 20000.0])
 BAND_NAMES = ['50-100', '100-200', '200-400', '400-800', '.8-1.6k',
               '1.6-3.2k', '3.2-6.3k', '6.3-12k', '12-20k']
+
+
+def _window(sr, at48k):
+    """A window of constant *duration*, not of a constant number of samples.
+
+    A fixed 512-sample window is 10.7 ms at 48 kHz but only 5.3 ms at 96 kHz,
+    and its bins are then 187 Hz apart, so the 50-100 Hz band contains no bin at
+    all. Its temporal flatness then comes out as exactly 1.0 -- a value no
+    48 kHz render can ever produce, because a real band never is perfectly flat.
+    rain_on_metal is a 96 kHz file, and that phantom band was two thirds of Tin
+    Roof's whole temporal-flatness error and half its total distance: the fit
+    was spending its effort chasing a number that was not reachable.
+
+    Scaling the window with the sample rate puts a reference and a render on the
+    same time grid and the same frequency grid, which is what the rest of this
+    file already assumes. Files at 44.1 and 48 kHz keep the window they had.
+    """
+    return 1 << int(round(math.log2(max(64.0, sr * at48k / 48000.0))))
 
 
 def _stft(x, sr, win=1024, hop=256):
@@ -81,7 +101,7 @@ def frame_flatness(x, sr):
     rather than in the noise floor above it; and frames below the 30th
     percentile of energy are skipped, so gaps between drops do not count either.
     """
-    S, f = _stft(x, sr, win=1024, hop=512)
+    S, f = _stft(x, sr, win=_window(sr, 1024), hop=int(sr * 512 / 48000))
     band = (f > 200) & (f < min(16000, sr / 2))
     if S.shape[0] < 4 or not band.any():
         return 0.0
@@ -101,11 +121,18 @@ def frame_flatness(x, sr):
 
 def band_envelopes(x, sr, hop_ms=5.0):
     """Short-time energy per octave band -- the basis of the texture features."""
-    S, f = _stft(x, sr, win=512, hop=int(sr * hop_ms / 1000))
+    S, f = _stft(x, sr, win=_window(sr, 512), hop=int(sr * hop_ms / 1000))
     p = S ** 2
     envs = []
     for lo, hi in zip(BAND_EDGES[:-1], BAND_EDGES[1:]):
         sel = (f >= lo) & (f < min(hi, sr / 2))
+        if not sel.any() and lo < sr / 2:
+            # A band inside the audio bandwidth that catches no bin is a bug in
+            # the window choice, not a silent band, and it reads downstream as a
+            # perfectly flat one. Never let that pass quietly again.
+            raise RuntimeError(
+                f'no FFT bin in the {lo}-{hi} Hz band at {sr} Hz with a window of '
+                f'{(len(f) - 1) * 2} samples')
         envs.append(p[:, sel].sum(axis=1) if sel.any() else np.zeros(p.shape[0]))
     return np.array(envs)
 
@@ -128,7 +155,7 @@ def temporal_flatness(x, sr):
 def onsets(x, sr):
     """Spectral-flux onsets with an adaptive threshold. Returns times in s."""
     hop = int(sr * 0.002)
-    S, f = _stft(x, sr, win=512, hop=hop)
+    S, f = _stft(x, sr, win=_window(sr, 512), hop=hop)
     w = np.clip(f / 1000.0, 0.2, None)          # weight towards the high end
     flux = np.maximum(0.0, np.diff(S * w[None, :], axis=0)).sum(axis=1)
     if len(flux) < 10:
