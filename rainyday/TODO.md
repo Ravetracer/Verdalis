@@ -97,6 +97,14 @@ so the new preset appears in the browser immediately.
 - **A scrollbar in the browser.** Presets past the panel's height are currently
   not drawn. Sixteen factory presets in three columns fit comfortably; a large
   user library would not.
+- **The selector list has no keyboard or scroll handling.** Clicking the name
+  opens it and clicking an entry picks one, but arrow keys do not move through
+  it and the wheel does not scroll it. Fine for four and seven entries; worth
+  revisiting if a list ever gets long, which `kSurfaces` plausibly will.
+
+`tools/guihost.cpp` opens the editor outside a DAW, which is how any of this
+gets checked. It opens a window on the current display, so it is not something
+to run unannounced.
 
 ## 4. Later / nice to have
 
@@ -107,9 +115,6 @@ so the new preset appears in the browser immediately.
   per-note-id modulation is currently ignored.
 - **Per-voice filter.** `Filter Key Track` follows the most recent note
   because the state-variable filter is a single global stage.
-- **`clap-validator` run.** Version 0.4.1 needs rustc >= 1.95, the machine has
-  1.90. Worth running once the toolchain is newer; the in-repo self-test covers
-  the same contracts in the meantime.
 - **More surfaces.** The surface model is a small table in
   `src/dsp/rain_engine.cpp` (`kSurfaces`); adding e.g. canvas, water butt or
   car roof is a one-line change plus a parameter enum entry.
