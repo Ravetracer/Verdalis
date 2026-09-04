@@ -143,8 +143,11 @@ private:
       p.bedTone = static_cast<float>(realValue(kParamBedTone));
       p.bedBody = static_cast<float>(realValue(kParamBedBody));
       p.bedDrift = static_cast<float>(realValue(kParamBedDrift));
+      p.bedWidth = static_cast<float>(realValue(kParamBedWidth));
+      p.bedPan = static_cast<float>(realValue(kParamBedPan));
 
       p.width = static_cast<float>(realValue(kParamWidth));
+      p.dropPan = static_cast<float>(realValue(kParamDropPan));
       p.distance = static_cast<float>(realValue(kParamDistance));
       p.air = static_cast<float>(realValue(kParamAir));
       p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
@@ -152,6 +155,7 @@ private:
       p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
 
       p.filterType = static_cast<int>(realValue(kParamFilterType));
+      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
       p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
       p.filterReso = static_cast<float>(realValue(kParamFilterReso));
       p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
@@ -621,6 +625,7 @@ private:
       // Published for the window's activity meter; the GUI never reads engine
       // state directly.
       mDropletMeter.store(mEngine.activeDropletCount(), std::memory_order_relaxed);
+      publishOutputPeaks(outL, outR, numFrames);
 
       return mEngine.isSilent() ? CLAP_PROCESS_SLEEP : CLAP_PROCESS_CONTINUE;
    }
@@ -706,6 +711,25 @@ private:
 #ifdef RAINYDAY_WITH_GUI
    // -------------------------------------------------------- GuiDelegate
 
+   // A peak meter that fell as fast as the signal would be unreadable, so the
+   // published value decays towards the true peak over about 350 ms instead.
+   void publishOutputPeaks(const float *l, const float *r, uint32_t frames) {
+      if (frames == 0)
+         return;
+      float peakL = 0.0f;
+      float peakR = 0.0f;
+      for (uint32_t i = 0; i < frames; ++i) {
+         peakL = std::max(peakL, std::fabs(l[i]));
+         peakR = std::max(peakR, std::fabs(r[i]));
+      }
+      const double seconds = static_cast<double>(frames) / (mSampleRate > 0 ? mSampleRate : 48000.0);
+      const float fall = static_cast<float>(std::exp(-seconds / 0.35));
+      mFallingPeakL = std::max(peakL, mFallingPeakL * fall);
+      mFallingPeakR = std::max(peakR, mFallingPeakR * fall);
+      mPeakL.store(mFallingPeakL, std::memory_order_relaxed);
+      mPeakR.store(mFallingPeakR, std::memory_order_relaxed);
+   }
+
    double guiParamValue(uint32_t id) const override {
       return id < kNumParams ? mValues[id].load(std::memory_order_relaxed) : 0.0;
    }
@@ -724,6 +748,11 @@ private:
    }
 
    void guiEndEdit(uint32_t id) override { pushGuiEdit(id, 0.0, EditKind::GestureEnd); }
+
+   void guiOutputPeaks(float &left, float &right) const override {
+      left = mPeakL.load(std::memory_order_relaxed);
+      right = mPeakR.load(std::memory_order_relaxed);
+   }
 
    uint32_t guiDropletCount() const override {
       return mDropletMeter.load(std::memory_order_relaxed);
@@ -990,6 +1019,10 @@ private:
    std::atomic<double> mMods[kNumParams];
    std::atomic<bool> mParamsDirty{true};
    std::atomic<uint32_t> mDropletMeter{0};
+   std::atomic<float> mPeakL{0.0f};
+   std::atomic<float> mPeakR{0.0f};
+   float mFallingPeakL = 0.0f; // audio thread only
+   float mFallingPeakR = 0.0f;
 
    ParamEdit mEditQueue[kEditQueueSize];
    std::atomic<uint32_t> mEditWrite{0};

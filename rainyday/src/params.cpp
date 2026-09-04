@@ -63,16 +63,16 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamNoteTracking, "note_tracking", "Note Tracking", "Rain", 0.5,
        "How far the played MIDI note transposes droplet pitch."),
 
-   LIN(kParamBedLevel, "bed_level", "Bed Level", "Bed", -60.0, 6.0, -12.0, "dB",
+   LIN(kParamBedLevel, "bed_level", "Bed Level", "Distant", -60.0, 6.0, -12.0, "dB",
        "Level of the far-field wash -- the drops too distant to hear individually."),
-   PCT(kParamBedTone, "bed_tone", "Bed Tone", "Bed", 0.5,
+   PCT(kParamBedTone, "bed_tone", "Bed Tone", "Distant", 0.5,
        "Lowpass corner of the bed, dark to bright. Level compensated."),
-   PCT(kParamBedBody, "bed_body", "Bed Body", "Bed", 0.2,
+   PCT(kParamBedBody, "bed_body", "Bed Body", "Distant", 0.2,
        "Resonance at the bed's corner frequency."),
-   PCT(kParamBedDrift, "bed_drift", "Bed Drift", "Bed", 0.3,
+   PCT(kParamBedDrift, "bed_drift", "Bed Drift", "Distant", 0.3,
        "Slow intensity drift shared by the bed and the droplet rate."),
 
-   PCT(kParamWidth, "width", "Stereo Width", "Space", 0.85,
+   PCT(kParamWidth, "width", "Drop Width", "Close", 0.85,
        "How wide droplets are panned and how decorrelated the bed is."),
    PCT(kParamDistance, "distance", "Distance", "Space", 0.3,
        "Pushes the whole rain field away: quieter, duller, further back."),
@@ -115,6 +115,17 @@ const ParamDesc kParams[kNumParams] = {
    // Appended after the original 36, so the ids above keep their meaning.
    PCT(kParamBubble, "bubble", "Bubble Chance", "Rain", 1.0,
        "Fraction of droplets that ring at all. The rest are only splash and click."),
+
+   // The near droplets and the far-field bed are two layers of the same rain and
+   // used to share one width control between them. Each now has its own.
+   BIPCT(kParamDropPan, "drop_pan", "Drop Pan", "Close", 0.0,
+         "Slides the close droplets left or right without narrowing them."),
+   PCT(kParamBedWidth, "bed_width", "Bed Width", "Distant", 0.85,
+       "Stereo spread of the far-field bed, independent of the droplets."),
+   BIPCT(kParamBedPan, "bed_pan", "Bed Pan", "Distant", 0.0,
+         "Slides the far-field bed left or right without narrowing it."),
+   LOG(kParamHighpass, "highpass", "Highpass", "Filter", 0.0, 20.0, 2000.0, "Hz",
+       "Rolls off the bottom at 12 dB/oct. Off at the far left."),
 };
 
 #undef LIN
@@ -178,6 +189,37 @@ double realToParam(const ParamDesc &desc, double real) {
    return raw;
 }
 
+namespace {
+
+struct LogDisplay {
+   double value;
+   int decimals;
+   bool scaled; // shown in k, or in seconds for a millisecond parameter
+};
+
+// Rounding can push a value across the very boundary that chose its precision:
+// 99.96 shows as "100.0" with one decimal, and reading that back shows "100"
+// with none, so a host that round-trips the text sees the value drift. Decide
+// the format from the number as it will actually be printed, which takes at
+// most a couple of passes to settle.
+LogDisplay chooseLogDisplay(double real) {
+   LogDisplay d{real, 2, false};
+   for (int pass = 0; pass < 4; ++pass) {
+      d.scaled = real >= 1000.0;
+      d.value = d.scaled ? real * 0.001 : real;
+      d.decimals = d.scaled ? 2 : (d.value >= 100.0 ? 0 : (d.value >= 10.0 ? 1 : 2));
+      const double scale = std::pow(10.0, d.decimals);
+      d.value = std::round(d.value * scale) / scale;
+      const double shown = d.scaled ? d.value * 1000.0 : d.value;
+      if (shown == real)
+         break;
+      real = shown;
+   }
+   return d;
+}
+
+} // namespace
+
 bool paramValueToText(const ParamDesc &desc, double raw, char *out, uint32_t outSize) {
    if (!out || outSize == 0)
       return false;
@@ -197,20 +239,23 @@ bool paramValueToText(const ParamDesc &desc, double raw, char *out, uint32_t out
    case ParamKind::Percent:
       n = std::snprintf(out, outSize, "%.1f %%", real * 100.0);
       break;
-   case ParamKind::Log:
+   case ParamKind::Log: {
       // Milliseconds roll over into seconds; everything else takes a k prefix.
       // "1.20 kms" is not a unit anybody uses.
-      if (real >= 1000.0 && std::strcmp(desc.unit, "ms") == 0)
-         n = std::snprintf(out, outSize, "%.2f s", real * 0.001);
-      else if (real >= 1000.0)
-         n = std::snprintf(out, outSize, "%.2f k%s", real * 0.001, desc.unit);
-      else if (real >= 100.0)
-         n = std::snprintf(out, outSize, "%.0f %s", real, desc.unit);
-      else if (real >= 10.0)
-         n = std::snprintf(out, outSize, "%.1f %s", real, desc.unit);
-      else
-         n = std::snprintf(out, outSize, "%.2f %s", real, desc.unit);
+      const LogDisplay d = chooseLogDisplay(real);
+      const char *unit = desc.unit;
+      char scaled[16];
+      if (d.scaled) {
+         if (std::strcmp(desc.unit, "ms") == 0) {
+            unit = "s";
+         } else {
+            std::snprintf(scaled, sizeof(scaled), "k%s", desc.unit);
+            unit = scaled;
+         }
+      }
+      n = std::snprintf(out, outSize, "%.*f %s", d.decimals, d.value, unit);
       break;
+   }
    case ParamKind::Linear:
    default:
       if (real <= -59.95 && std::strcmp(desc.unit, "dB") == 0)

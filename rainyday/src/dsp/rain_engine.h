@@ -35,8 +35,11 @@ struct EngineParams {
    float bedTone = 0.5f;
    float bedBody = 0.2f;
    float bedDrift = 0.3f;
+   float bedWidth = 0.85f;
+   float bedPan = 0.0f;
 
-   float width = 0.85f;
+   float width = 0.85f; // droplet width; the bed has its own
+   float dropPan = 0.0f;
    float distance = 0.3f;
    float air = 0.5f;
    float spaceAmount = 0.2f;
@@ -44,6 +47,7 @@ struct EngineParams {
    float spaceDamping = 0.5f;
 
    int filterType = 0;
+   float highpassHz = 20.0f;
    float filterCutoffHz = 20000.0f;
    float filterReso = 0.1f;
    float filterKeyTrack = 0.0f;
@@ -165,6 +169,11 @@ private:
    uint32_t mDropletCursor = 0;
 
    Svf mFilterL, mFilterR;
+   // A permanent 12 dB/oct highpass, separate from the multimode filter above:
+   // that one is a tone control every preset already uses as a lowpass, and this
+   // project turned out to be largely about rain having no low end.
+   Hp2 mHighpassL, mHighpassR;
+   bool mHighpassBypass = true;
    Fdn mSpace;
    int mLastKey = 60;
 
@@ -179,6 +188,8 @@ private:
    // Stereo decorrelation weights for the noise bed (a^2 + b^2 = 1, so the
    // channel correlation is cos(width * pi/2) with no level change).
    float mBedMixA = 1.0f, mBedMixB = 0.0f;
+   // Equal-power balance applied to the bed after it is decorrelated.
+   float mBedPanL = 1.0f, mBedPanR = 1.0f;
 
    // Control-rate random-walk coefficients and their unit-variance
    // normalisation factors.

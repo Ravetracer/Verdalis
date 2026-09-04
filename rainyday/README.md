@@ -7,7 +7,7 @@ run time. Two instances never produce the same rain.
 
 Play a MIDI note and it rains for as long as you hold it.
 
-- 37 parameters covering droplet statistics, impact surface, stereo field,
+- 41 parameters covering droplet statistics, impact surface, stereo field,
   distance, space, filter and a full ADSR
 - 16 factory presets from a single drip in a cave to a tropical monsoon, each
   fitted against a real recording of the thing it is imitating
@@ -66,7 +66,7 @@ RainyDay draws its own window with raw **X11** and **Cairo** — no toolkit, so
 the plugin stays one self-contained `.clap` file and needs nothing a Linux
 audio machine does not already have. It is embedded in the host's window
 through `CLAP_EXT_GUI` (X11 API, non-floating) and repainted from the host's
-timer, at a fixed 912×648.
+timer, at a fixed 960×740.
 
 The layout is generated from the parameter table in `src/params.cpp`: panels
 are the modules, cells are the parameters, and the help line at the bottom is
@@ -349,7 +349,11 @@ difference between a filtered noise wash and rain.
 depth and brightness together — it is a whole material model, not one filter
 setting.
 
-### Bed
+### Distant and Close
+
+The near droplets and the far-field bed are two layers of the same rain, and
+each is placed in the stereo field on its own. Width spreads a layer; pan slides
+it without narrowing it.
 
 | Parameter | Range | What it does |
 |---|---|---|
@@ -357,12 +361,19 @@ setting.
 | Bed Tone | 0 – 100 % | Lowpass corner, dark to bright (level-compensated) |
 | Bed Body | 0 – 100 % | Resonance at that corner |
 | Bed Drift | 0 – 100 % | Slow intensity drift of both bed and density |
+| Bed Width | 0 – 100 % | Stereo spread of the bed |
+| Bed Pan | −100 – +100 % | Slides the bed across, at equal power |
+| Drop Width | 0 – 100 % | Stereo spread of the close droplets |
+| Drop Pan | −100 – +100 % | Slides the droplets across |
+
+`Drop Width` is the parameter that used to be called `Stereo Width` and drove
+both layers at once. It keeps its `width` key, so presets written before the
+split still load; they simply gain a `bed_width` of their own.
 
 ### Space
 
 | Parameter | Range | What it does |
 |---|---|---|
-| Stereo Width | 0 – 100 % | Droplet panning spread and bed decorrelation |
 | Distance | 0 – 100 % | Pushes the whole rain field away |
 | Air Absorption | 0 – 100 % | How much high end distance costs |
 | Space Amount | 0 – 100 % | Feedback delay network mix |
@@ -375,6 +386,12 @@ State-variable filter across the whole output: `Filter Type`
 (Lowpass/Bandpass/Highpass/Notch), `Filter Cutoff` (20 Hz – 20 kHz),
 `Filter Resonance` and `Filter Key Track`. A wide-open lowpass is bypassed
 outright, costing neither CPU nor colouration.
+
+Alongside it, and independent of it, `Highpass` (20 Hz – 2 kHz) is a permanent
+12 dB/oct rolloff on the output, bypassed at the far left. It does not replace
+the multimode filter, which every preset already uses as its lowpass. Given how
+much of this project turned out to be about rain having no low end, a highpass
+that is always there earns its place next to one that is a tone control.
 
 ### Envelope
 

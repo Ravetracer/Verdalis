@@ -193,6 +193,8 @@ void RainEngine::reset() {
    mLastKey = 60;
    mFilterL.reset();
    mFilterR.reset();
+   mHighpassL.reset();
+   mHighpassR.reset();
    mSpace.clear();
    mSilenceCounter = 0;
 
@@ -227,6 +229,16 @@ void RainEngine::setParams(const EngineParams &p) {
    if (mDropletCursor >= mDropletLimit)
       mDropletCursor = 0;
 
+   // Below about 25 Hz the highpass is doing nothing audible, so it steps aside
+   // rather than spending two biquads per sample on every preset that leaves it
+   // where it starts.
+   mHighpassBypass = mP.highpassHz <= 25.0f;
+   if (!mHighpassBypass) {
+      const float hp = clampv(mP.highpassHz, 20.0f, 0.45f * mSampleRate);
+      mHighpassL.setCutoff(hp, mSampleRate);
+      mHighpassR.setCutoff(hp, mSampleRate);
+   }
+
    mSpace.setSize(mP.spaceSize);
    mSpace.setDamping(mP.spaceDamping);
 
@@ -259,9 +271,13 @@ void RainEngine::setParams(const EngineParams &p) {
       mDensityNorm = 1.0f / std::sqrt(std::max(1.0f, concurrency));
    }
 
-   const float widthAngle = mP.width * 0.785398163f; // width * pi/4
+   const float widthAngle = mP.bedWidth * 0.785398163f; // width * pi/4
    mBedMixA = std::cos(widthAngle);
    mBedMixB = std::sin(widthAngle);
+   // Equal power, so sliding the bed across does not change how loud it is.
+   const float bedPanAngle = (clampv(mP.bedPan, -1.0f, 1.0f) + 1.0f) * 0.785398163f;
+   mBedPanL = std::cos(bedPanAngle) * 1.41421356f;
+   mBedPanR = std::sin(bedPanAngle) * 1.41421356f;
 
    const float modRate = mSampleRate / static_cast<float>(kModInterval);
    mDriftCoef = clampv(onePoleCoef(1.2f, modRate), 1.0e-5f, 1.0f);
@@ -583,7 +599,7 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    d.body.setCutoff(clampv(freq * kBodyHpRatio, 30.0f, 0.4f * mSampleRate), mSampleRate);
 
    // --- Placement in the stereo field.
-   const float pan = clampv(mRng.white() * mP.width, -1.0f, 1.0f);
+   const float pan = clampv(mRng.white() * mP.width + mP.dropPan, -1.0f, 1.0f);
    const float panAngle = (pan + 1.0f) * 0.785398163f; // maps -1..1 to 0..pi/2
    d.gainL = std::cos(panAngle);
    d.gainR = std::sin(panAngle);
@@ -632,8 +648,8 @@ void RainEngine::processVoiceBed(Voice &v, float *outL, float *outR, uint32_t nu
       const float br = mBedMixA * n1 - mBedMixB * n2;
       const float driftGain = std::exp2(mP.bedDrift * 1.2f * drift);
       const float g = env * bedAmp * clampv(driftGain, 0.1f, 4.0f);
-      outL[i] += v.bedHpL.tick(v.bedLpL.lowpass(bl)) * g;
-      outR[i] += v.bedHpR.tick(v.bedLpR.lowpass(br)) * g;
+      outL[i] += v.bedHpL.tick(v.bedLpL.lowpass(bl)) * g * mBedPanL;
+      outR[i] += v.bedHpR.tick(v.bedLpR.lowpass(br)) * g * mBedPanR;
 
       // --- Droplet scheduling: a Cox process, i.e. a Poisson process whose
       // rate is itself modulated. Exponential waiting times give correct
@@ -734,6 +750,11 @@ void RainEngine::processOutputChain(float *outL, float *outR, uint32_t numSample
          l = mFilterWLp * lp + mFilterWBp * bp + mFilterWHp * hp;
          mFilterR.tick(r, lp, bp, hp);
          r = mFilterWLp * lp + mFilterWBp * bp + mFilterWHp * hp;
+      }
+
+      if (!mHighpassBypass) {
+         l = mHighpassL.tick(l);
+         r = mHighpassR.tick(r);
       }
 
       if (space) {

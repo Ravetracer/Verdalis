@@ -1111,6 +1111,43 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
                text.find("surface = 2") == std::string::npos,
             "enum parameters are written by name");
 
+      // The display text has to be stable under a round trip at every value, not
+      // just at the ones a fuzzer happens to pick. Rounding used to push a value
+      // across the boundary that chose its own precision, so 99.96 printed as
+      // "100.0" and read back as "100".
+      {
+         bool stable = true;
+         char firstText[128] = {0};
+         char againText[128] = {0};
+         const char *worstName = "";
+         double worstValue = 0.0;
+         for (uint32_t i = 0; i < kNumParams && stable; ++i) {
+            const ParamDesc &d = table[i];
+            for (int step = 0; step <= 400 && stable; ++step) {
+               const double raw = d.min + (d.max - d.min) * (step / 400.0);
+               char a[128], b[128];
+               if (!paramValueToText(d, raw, a, sizeof(a)))
+                  continue;
+               double back = 0.0;
+               if (!paramTextToValue(d, a, &back))
+                  continue;
+               if (!paramValueToText(d, back, b, sizeof(b)))
+                  continue;
+               if (std::strcmp(a, b) != 0) {
+                  stable = false;
+                  std::snprintf(firstText, sizeof(firstText), "%s", a);
+                  std::snprintf(againText, sizeof(againText), "%s", b);
+                  worstName = d.name;
+                  worstValue = raw;
+               }
+            }
+         }
+         if (!stable)
+            std::printf("       '%s' -> '%s' for %s at raw %.6f\n", firstText, againText,
+                        worstName, worstValue);
+         check(stable, "parameter text is stable across a round trip at every value");
+      }
+
       // A display name is not a filename.
       const std::string path = userPresetPath("My Rain / 2 **");
       check(path.empty() || path.find("My_Rain_2.") != std::string::npos,

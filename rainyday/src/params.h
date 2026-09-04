@@ -45,6 +45,12 @@ enum ParamId : uint32_t {
    kParamMaxDroplets,
    kParamSeed,
    kParamBubble,
+
+   // Appended for the Close / Distant split and the dedicated highpass.
+   kParamDropPan,
+   kParamBedWidth,
+   kParamBedPan,
+   kParamHighpass,
    kNumParams
 };
 

@@ -26,9 +26,12 @@ bed_level = -17.2
 bed_tone = 0.473
 bed_body = 0.453
 bed_drift = 0.35
+bed_width = 1
+bed_pan = 0
 
 # Space
 width = 1
+drop_pan = 0
 distance = 0.019
 air = 0.183
 space_amount = 0.22
@@ -37,6 +40,7 @@ space_damping = 0.5
 
 # Filter
 filter_type = Lowpass
+highpass = 20
 filter_cutoff = 20000
 filter_reso = 0.1
 filter_key_track = 0

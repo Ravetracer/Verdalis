@@ -38,13 +38,15 @@ constexpr int kPanelPad = 8;
 constexpr int kPanelTitleH = 24;
 constexpr int kMargin = 16;
 constexpr int kGap = 8;
-constexpr int kContentW = 880; // 10 cells plus the panel padding of each row
+// Ten cells wide, plus the padding and gaps of the busiest row, which is the
+// four-panel one. Rows with fewer panels stretch their last panel to match.
+constexpr int kContentW = 928;
 constexpr int kHeaderH = 66;
 constexpr int kBarH = 32;
 constexpr int kHelpH = 24;
 
 constexpr int kWindowW = kContentW + 2 * kMargin;
-constexpr int kWindowH = 648;
+constexpr int kWindowH = 740;
 constexpr double kMenuRowH = 20.0;
 constexpr double kMenuPad = 4.0;
 
@@ -70,38 +72,100 @@ struct PanelSpec {
 };
 
 // Seven per line, which is one row of the panel.
-const uint32_t kRainParams[] = {
+constexpr uint32_t kRainParams[] = {
    kParamSurface,  kParamDensity, kParamClumping, kParamDropPitch,   kParamPitchSpread,
    kParamDropDecay, kParamDecaySpread,
    kParamTonality, kParamBubble,  kParamImpact,   kParamSplash,      kParamLevelSpread,
    kParamChirp,     kParamNoteTracking,
 };
-const uint32_t kSpaceParams[] = {kParamWidth,       kParamDistance,  kParamAir,
-                                 kParamSpaceAmount, kParamSpaceSize, kParamSpaceDamping};
-const uint32_t kEnvParams[] = {kParamAttack,     kParamDecay,       kParamSustain,
+constexpr uint32_t kSpaceParams[] = {kParamDistance,  kParamAir,       kParamSpaceAmount,
+                                 kParamSpaceSize, kParamSpaceDamping};
+constexpr uint32_t kEnvParams[] = {kParamAttack,     kParamDecay,       kParamSustain,
                                kParamRelease,    kParamVelToLevel,  kParamVelToDensity};
-const uint32_t kFilterParams[] = {kParamFilterType, kParamFilterCutoff, kParamFilterReso,
-                                  kParamFilterKeyTrack};
-const uint32_t kBedParams[] = {kParamBedLevel, kParamBedTone, kParamBedBody, kParamBedDrift};
-const uint32_t kOutParams[] = {kParamGain, kParamMaxDroplets, kParamSeed};
+constexpr uint32_t kFilterParams[] = {kParamFilterType, kParamHighpass,   kParamFilterCutoff,
+                                  kParamFilterReso, kParamFilterKeyTrack};
+// The two layers of the same rain, each with its own placement.
+constexpr uint32_t kDistantParams[] = {kParamBedLevel, kParamBedTone,  kParamBedBody,
+                                   kParamBedDrift, kParamBedWidth, kParamBedPan};
+constexpr uint32_t kCloseParams[] = {kParamWidth, kParamDropPan};
+constexpr uint32_t kOutParams[] = {kParamGain, kParamMaxDroplets, kParamSeed};
 
 #define PANEL(title, cols, rows, arr)                                                              \
    { title, cols, rows, arr, static_cast<int>(sizeof(arr) / sizeof(arr[0])) }
 
-const PanelSpec kPanelSpecs[] = {
-   PANEL("RAIN", 7, 2, kRainParams),    PANEL("SPACE", 3, 2, kSpaceParams),
-   PANEL("ENVELOPE", 6, 1, kEnvParams), PANEL("FILTER", 4, 1, kFilterParams),
-   PANEL("BED", 4, 1, kBedParams),      PANEL("OUTPUT", 3, 1, kOutParams),
+constexpr PanelSpec kPanelSpecs[] = {
+   PANEL("RAIN", 7, 2, kRainParams),     PANEL("DISTANT", 3, 2, kDistantParams),
+   PANEL("ENVELOPE", 3, 2, kEnvParams),  PANEL("FILTER", 3, 2, kFilterParams),
+   PANEL("SPACE", 3, 2, kSpaceParams),   PANEL("CLOSE", 1, 2, kCloseParams),
+   PANEL("OUTPUT", 3, 1, kOutParams),
 };
 #undef PANEL
 
 constexpr int kNumPanels = static_cast<int>(sizeof(kPanelSpecs) / sizeof(kPanelSpecs[0]));
 
-// Which panels share a row, in order. The activity meter fills what is left of
-// the last row.
-const int kRowStart[] = {0, 2, 4};
-const int kRowCount[] = {2, 2, 2};
+// Which panels share a row, in order. DISTANT and CLOSE sit on the right-hand
+// edge of their rows so the two layer panels read as a pair. The activity meter
+// fills what is left of the last row.
+constexpr int kRowStart[] = {0, 2, 6};
+constexpr int kRowCount[] = {2, 4, 1};
 constexpr int kNumRows = 3;
+
+// The layout is a table, and a table is easy to break by adding a parameter to
+// a panel that has no room for it, or by forgetting to put it on a panel at
+// all. None of that should need a running window to notice, so it is checked
+// here instead.
+constexpr int panelWidth(const PanelSpec &s) { return s.cols * kCellW + 2 * kPanelPad; }
+constexpr int panelHeight(const PanelSpec &s) { return kPanelTitleH + s.rows * kCellH + kPanelPad; }
+
+constexpr int rowWidth(int row) {
+   int w = 0;
+   for (int i = 0; i < kRowCount[row]; ++i)
+      w += panelWidth(kPanelSpecs[kRowStart[row] + i]) + (i ? kGap : 0);
+   return w;
+}
+
+constexpr int contentBottom() {
+   int y = kHeaderH + kGap;
+   for (int row = 0; row < kNumRows; ++row) {
+      int h = 0;
+      for (int i = 0; i < kRowCount[row]; ++i) {
+         const int ph = panelHeight(kPanelSpecs[kRowStart[row] + i]);
+         h = ph > h ? ph : h;
+      }
+      y += h + kGap;
+   }
+   return y;
+}
+
+constexpr bool everyPanelHoldsItsParams() {
+   for (int i = 0; i < kNumPanels; ++i)
+      if (kPanelSpecs[i].cols * kPanelSpecs[i].rows < kPanelSpecs[i].count)
+         return false;
+   return true;
+}
+
+constexpr int placedParams() {
+   int n = 0;
+   for (int i = 0; i < kNumPanels; ++i)
+      n += kPanelSpecs[i].count;
+   return n;
+}
+
+constexpr bool everyPanelIsOnARow() {
+   int n = 0;
+   for (int row = 0; row < kNumRows; ++row)
+      n += kRowCount[row];
+   return n == kNumPanels;
+}
+
+static_assert(everyPanelIsOnARow(), "kRowStart / kRowCount do not cover every panel");
+static_assert(everyPanelHoldsItsParams(), "a panel has more parameters than it has cells");
+static_assert(placedParams() == static_cast<int>(kNumParams),
+              "every parameter must appear on exactly one panel");
+static_assert(rowWidth(0) <= kContentW, "row 0 is wider than the window");
+static_assert(rowWidth(1) <= kContentW, "row 1 is wider than the window");
+static_assert(rowWidth(2) <= kContentW, "row 2 is wider than the window");
+static_assert(contentBottom() + 2 + kBarH + 24 <= kWindowH, "the window is too short for its panels");
 
 // ---------------------------------------------------------------------- paint
 
@@ -396,6 +460,12 @@ private:
             p.rect.y = y;
             p.rect.w = spec.cols * kCellW + 2 * kPanelPad;
             p.rect.h = kPanelTitleH + spec.rows * kCellH + kPanelPad;
+            // Rows hold different numbers of panels and so carry different
+            // amounts of padding. The last panel of a row without the activity
+            // meter takes up the difference, which keeps every row flush with
+            // the right-hand edge instead of ending raggedly.
+            if (row != kNumRows - 1 && i == kRowCount[row] - 1)
+               p.rect.w = kMargin + kContentW - p.rect.x;
             rowH = std::max(rowH, static_cast<int>(p.rect.h));
 
             for (const Cell &cell : flowCells(spec)) {
@@ -706,7 +776,10 @@ private:
 
       const double gx = mMeter.x + kPanelPad;
       const double gy = mMeter.y + kPanelTitleH + 4;
-      const double gw = mMeter.w - 2 * kPanelPad;
+      // The right-hand strip of the panel is the output meter; the droplet
+      // history gets what is left.
+      const double outW = 54;
+      const double gw = mMeter.w - 2 * kPanelPad - outW;
       const double gh = mMeter.h - kPanelTitleH - 30;
 
       setColor(cr, kKnobFace);
@@ -740,6 +813,61 @@ private:
       drawText(cr, gx, mMeter.y + mMeter.h - 10, info, 9, false, Align::Left);
       std::snprintf(info, sizeof(info), "max %u", limit);
       drawText(cr, gx + gw, mMeter.y + mMeter.h - 10, info, 9, false, Align::Right);
+
+      drawOutputMeter(cr, gx + gw + kPanelPad, gy, outW - kPanelPad, gh);
+   }
+
+   // Two vertical bars for the output peak. Scaled in dB, because a linear peak
+   // meter spends nine tenths of its travel on the top 20 dB and tells you
+   // nothing about a quiet drizzle.
+   void drawOutputMeter(cairo_t *cr, double x, double y, double w, double h) {
+      float peakL = 0.0f;
+      float peakR = 0.0f;
+      mDelegate.guiOutputPeaks(peakL, peakR);
+
+      auto toBar = [](float peak) {
+         if (peak <= 1.0e-5f)
+            return 0.0;
+         const double db = 20.0 * std::log10(static_cast<double>(peak));
+         return std::min(1.0, std::max(0.0, (db + 60.0) / 60.0));
+      };
+
+      const double barW = (w - 4) * 0.5;
+      const double values[2] = {toBar(peakL), toBar(peakR)};
+      const float peaks[2] = {peakL, peakR};
+      for (int ch = 0; ch < 2; ++ch) {
+         const double bx = x + ch * (barW + 4);
+         setColor(cr, kKnobFace);
+         roundedRect(cr, bx, y, barW, h, 3);
+         cairo_fill(cr);
+
+         const double fh = values[ch] * (h - 4);
+         if (fh > 0.5) {
+            // Over -3 dBFS is worth seeing before the soft clipper is doing the
+            // work for you.
+            const bool hot = peaks[ch] > 0.708f;
+            setColor(cr, hot ? kText : kAccent, hot ? 0.95 : 0.85);
+            roundedRect(cr, bx + 2, y + h - 2 - fh, barW - 4, fh, 2);
+            cairo_fill(cr);
+         }
+      }
+
+      // -12 dBFS, the only gridline worth the ink at this size.
+      setColor(cr, kTrack, 0.6);
+      cairo_set_line_width(cr, 1.0);
+      const double ly = std::floor(y + h - 2 - ((-12.0 + 60.0) / 60.0) * (h - 4)) + 0.5;
+      cairo_move_to(cr, x, ly);
+      cairo_line_to(cr, x + w, ly);
+      cairo_stroke(cr);
+
+      setColor(cr, kTextDim);
+      const double loudest = std::max(values[0], values[1]);
+      char label[32];
+      if (loudest <= 0.0)
+         std::snprintf(label, sizeof(label), "-inf");
+      else
+         std::snprintf(label, sizeof(label), "%.0f", 20.0 * std::log10(std::max(peakL, peakR)));
+      drawText(cr, x + w * 0.5, y + h + 14, label, 9, false, Align::Center);
    }
 
    const char *presetLabel(char *buf, size_t size) const {

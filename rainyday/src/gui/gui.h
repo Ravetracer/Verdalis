@@ -34,6 +34,10 @@ public:
    virtual void guiSetParam(uint32_t id, double value) = 0;
    virtual void guiEndEdit(uint32_t id) = 0;
 
+   // Decaying output peak per channel, 0..1 linear, published by the audio
+   // thread.
+   virtual void guiOutputPeaks(float &left, float &right) const = 0;
+
    // Droplets currently sounding, published by the audio thread.
    virtual uint32_t guiDropletCount() const = 0;
    virtual uint32_t guiDropletLimit() const = 0;

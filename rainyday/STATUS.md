@@ -39,7 +39,7 @@ installed to `~/.clap/RainyDay/`.
 
 **Plugin side** (`src/plugin.cpp`):
 
-- 37 parameters, grouped, with real-unit display and text entry both ways.
+- 41 parameters, grouped, with real-unit display and text entry both ways.
 - Extensions: `params`, `audio-ports`, `note-ports`, `state`, `tail`,
   `voice-info`, `preset-load`, `gui`, `timer-support`.
 - Sample-accurate event handling (the block is split at every event boundary),
@@ -56,7 +56,7 @@ installed to `~/.clap/RainyDay/`.
 
 - Embedded through `CLAP_EXT_GUI` (X11, non-floating), repainted from the
   host's timer at 30 Hz, with a fallback thread for hosts that offer no timer.
-- All 37 parameters laid out from the parameter table itself, so the panels are
+- All 41 parameters laid out from the parameter table itself, so the panels are
   the modules and the help line is each parameter's own tip.
 - Preset browser over the factory library plus `~/.config/RainyDay/presets`,
   loading through the same `clap.preset-load` path a host uses, and a `SAVE`
@@ -66,7 +66,11 @@ installed to `~/.clap/RainyDay/`.
 - Knob moves leave as real `PARAM_GESTURE_BEGIN` / `PARAM_VALUE` /
   `PARAM_GESTURE_END` events, via a lock-free queue drained by `process()` and
   `params.flush()`, so host automation recording behaves.
-- Droplet-activity meter fed by an atomic the audio thread publishes.
+- Droplet-activity meter and a dB-scaled output peak meter, both fed by
+  atomics the audio thread publishes.
+- The panel grid is checked at compile time: every parameter must sit on
+  exactly one panel, no panel may hold more parameters than it has cells, and
+  no row may be wider or taller than the window.
 
 **Presets**: 16 factory presets in a documented plain-text format, served both
 from disk and from copies embedded in the binary, exposed via the CLAP
