@@ -12,25 +12,25 @@ drop_pitch = 529
 pitch_spread = 2.43
 drop_decay = 15.7
 decay_spread = 0.5
-tonality = 1
-bubble = 1
-impact = 0.425
-splash = 0.448
+tonality = 0.783
+bubble = 0.838
+impact = 0
+splash = 0.308
 level_spread = 0.6
 chirp = 0.35
 surface = Glass
 note_tracking = 0.5
 
 # Bed
-bed_level = -34.7
-bed_tone = 0.745
+bed_level = -39.8
+bed_tone = 0.888
 bed_body = 0
 bed_drift = 0.3
 
 # Space
 width = 0.7
-distance = 0.047
-air = 0.146
+distance = 0.131
+air = 0.162
 space_amount = 0.15
 space_size = 0.3
 space_damping = 0.5
@@ -50,6 +50,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = -4.49
+gain = 0.012
 max_droplets = 512
 seed = 0

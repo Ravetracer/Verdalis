@@ -8,13 +8,13 @@ features = ambient, texture, noise, loud, dark
 # Rain
 density = 4200
 clumping = 0.25
-drop_pitch = 1784
+drop_pitch = 1152
 pitch_spread = 3.43
 drop_decay = 5.13
 decay_spread = 0.5
-tonality = 0.04
+tonality = 0.18
 bubble = 1
-impact = 0.88
+impact = 0.446
 splash = 0.84
 level_spread = 0.75
 chirp = 0.35
@@ -22,15 +22,15 @@ surface = Water
 note_tracking = 0.5
 
 # Bed
-bed_level = -25
-bed_tone = 0.633
+bed_level = -43.5
+bed_tone = 0.493
 bed_body = 0.665
 bed_drift = 0.5
 
 # Space
 width = 1
-distance = 0.725
-air = 0.407
+distance = 1
+air = 0.547
 space_amount = 0.3
 space_size = 0.6
 space_damping = 0.5
@@ -50,6 +50,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 9.21
+gain = 12
 max_droplets = 1536
 seed = 0

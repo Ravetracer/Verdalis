@@ -6,16 +6,16 @@ description = Slow isolated drips falling into a deep stone cavern. Very sparse,
 features = ambient, texture, cave, sparse, drone
 
 # Rain
-density = 2.17
-clumping = 0.22
-drop_pitch = 2371
-pitch_spread = 3.85
+density = 5.21
+clumping = 0.36
+drop_pitch = 2036
+pitch_spread = 2.92
 drop_decay = 55
 decay_spread = 0.5
-tonality = 0.285
+tonality = 0.087
 bubble = 1
-impact = 0.343
-splash = 0.66
+impact = 0.023
+splash = 0.745
 level_spread = 0.6
 chirp = 0.5
 surface = Puddle
@@ -23,14 +23,14 @@ note_tracking = 0.5
 
 # Bed
 bed_level = -44.9
-bed_tone = 0.717
-bed_body = 0.556
+bed_tone = 0.654
+bed_body = 0.463
 bed_drift = 0.3
 
 # Space
 width = 0.9
-distance = 0.17
-air = 0.953
+distance = 0.107
+air = 0.884
 space_amount = 0.069
 space_size = 0.792
 space_damping = 0.142
@@ -50,6 +50,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 3.13
+gain = -0.74
 max_droplets = 512
 seed = 0

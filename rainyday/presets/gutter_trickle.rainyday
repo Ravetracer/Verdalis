@@ -9,12 +9,12 @@ features = texture, water, narrow, foley
 density = 158
 clumping = 0.6
 drop_pitch = 2096
-pitch_spread = 1
-drop_decay = 11
+pitch_spread = 0
+drop_decay = 7.41
 decay_spread = 0.409
-tonality = 0.28
+tonality = 0.366
 bubble = 1
-impact = 0.656
+impact = 0.091
 splash = 0.947
 level_spread = 1
 chirp = 0.9
@@ -22,14 +22,14 @@ surface = Puddle
 note_tracking = 0.5
 
 # Bed
-bed_level = -53.4
-bed_tone = 0.48
-bed_body = 0.308
+bed_level = -54.9
+bed_tone = 0.417
+bed_body = 0.19
 bed_drift = 0.3
 
 # Space
 width = 0.4
-distance = 0.958
+distance = 1
 air = 0
 space_amount = 0
 space_size = 0.236
@@ -50,6 +50,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 4.01
+gain = 0.091
 max_droplets = 512
 seed = 0

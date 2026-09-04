@@ -6,16 +6,16 @@ description = Fat drops landing in standing water, each with the slight upward b
 features = percussive, sparse, water, playful
 
 # Rain
-density = 38.6
+density = 59.8
 clumping = 0.633
 drop_pitch = 1958
-pitch_spread = 0.081
-drop_decay = 26
+pitch_spread = 0.212
+drop_decay = 19.5
 decay_spread = 0
 tonality = 0.308
 bubble = 1
-impact = 0.561
-splash = 0.949
+impact = 0.188
+splash = 0.767
 level_spread = 0.713
 chirp = 1
 surface = Puddle
@@ -29,7 +29,7 @@ bed_drift = 0.3
 
 # Space
 width = 0.95
-distance = 0.529
+distance = 0.865
 air = 0.197
 space_amount = 0.414
 space_size = 0.663
@@ -50,6 +50,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 0.339
+gain = 2.23
 max_droplets = 512
 seed = 0

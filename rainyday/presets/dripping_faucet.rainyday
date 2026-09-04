@@ -6,31 +6,31 @@ description = A single tap that will not stop. Nearly regular timing, tight ster
 features = percussive, sparse, water, foley
 
 # Rain
-density = 5.44
-clumping = 0
+density = 1.28
+clumping = 0.14
 drop_pitch = 3801
 pitch_spread = 0.984
-drop_decay = 75
-decay_spread = 0.573
-tonality = 0.513
+drop_decay = 48.4
+decay_spread = 0.496
+tonality = 0.548
 bubble = 1
-impact = 0.743
-splash = 0.963
+impact = 0.725
+splash = 0.9
 level_spread = 0.35
 chirp = 1
 surface = Water
 note_tracking = 0.5
 
 # Bed
-bed_level = -43.9
-bed_tone = 0.326
-bed_body = 0.052
+bed_level = -51.8
+bed_tone = 0.368
+bed_body = 0
 bed_drift = 0.3
 
 # Space
 width = 0.25
-distance = 0.248
-air = 0.184
+distance = 0.406
+air = 0.066
 space_amount = 0.2
 space_size = 0.834
 space_damping = 0.458
@@ -50,6 +50,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = -1
+gain = 2.84
 max_droplets = 512
 seed = 0
