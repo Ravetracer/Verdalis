@@ -32,8 +32,8 @@ bed_pan = 0
 # Space
 width = 0.7
 drop_pan = 0
-distance = 0.131
-air = 0.162
+distance = 0.619
+air = 0.062
 space_amount = 0.15
 space_size = 0.3
 space_damping = 0.5
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 0.012
+gain = 4.88
 max_droplets = 512
 seed = 0

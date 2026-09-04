@@ -14,7 +14,7 @@ drop_decay = 3.98
 decay_spread = 0.96
 tonality = 0.268
 bubble = 0.5
-impact = 0.9
+impact = 1
 splash = 0.772
 level_spread = 0.88
 chirp = 0.35
@@ -32,8 +32,8 @@ bed_pan = 0
 # Space
 width = 0.85
 drop_pan = 0
-distance = 0.268
-air = 0.458
+distance = 0.128
+air = 0.738
 space_amount = 0.25
 space_size = 0.35
 space_damping = 0.3
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 3.98
+gain = 1.78
 max_droplets = 512
 seed = 0

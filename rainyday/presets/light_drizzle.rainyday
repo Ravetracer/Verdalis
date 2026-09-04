@@ -6,17 +6,17 @@ description = Fine mist-like drizzle, mostly high-frequency ticking with a soft 
 features = ambient, texture, noise, soft
 
 # Rain
-density = 375
-clumping = 0.53
+density = 581
+clumping = 0.67
 drop_pitch = 8302
 pitch_spread = 0.329
 drop_decay = 7.75
 decay_spread = 0.22
-tonality = 0.715
-bubble = 1
-impact = 0.45
-splash = 0.208
-level_spread = 0.74
+tonality = 0.995
+bubble = 0.893
+impact = 0.023
+splash = 0.488
+level_spread = 1
 chirp = 0.35
 surface = Concrete
 note_tracking = 0.5
@@ -24,7 +24,7 @@ note_tracking = 0.5
 # Bed
 bed_level = -20
 bed_tone = 0.72
-bed_body = 0.035
+bed_body = 0
 bed_drift = 0.35
 bed_width = 0.95
 bed_pan = 0
@@ -32,8 +32,8 @@ bed_pan = 0
 # Space
 width = 0.95
 drop_pan = 0
-distance = 0.617
-air = 0.427
+distance = 0.725
+air = 0.327
 space_amount = 0.18
 space_size = 0.5
 space_damping = 0.5
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 3.64
+gain = 0.682
 max_droplets = 512
 seed = 0

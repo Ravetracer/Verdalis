@@ -10,12 +10,12 @@ density = 3000
 clumping = 0.25
 drop_pitch = 2603
 pitch_spread = 1.13
-drop_decay = 38.9
+drop_decay = 93.4
 decay_spread = 0.5
 tonality = 0
 bubble = 1
-impact = 1
-splash = 0.953
+impact = 0.85
+splash = 1
 level_spread = 0.7
 chirp = 0.35
 surface = Concrete
@@ -24,7 +24,7 @@ note_tracking = 0.5
 # Bed
 bed_level = -6
 bed_tone = 0.75
-bed_body = 0.453
+bed_body = 0.418
 bed_drift = 0.5
 bed_width = 1
 bed_pan = 0
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = -5.29
+gain = -4.71
 max_droplets = 1024
 seed = 0
