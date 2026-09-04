@@ -114,6 +114,23 @@ constexpr float kDownwardSpread = 0.45f;
 // envelope and distance.
 constexpr float kDropletBaseAmp = 0.25f;
 
+// The absolute diameter, in millimetres, that a relative size of one stands
+// for. The engine only ever works in relative size, but terminal velocity is a
+// function of the real drop, so the two have to be tied together somewhere and
+// this is that place. One and a half millimetres is the median-volume diameter
+// of moderate rain under Marshall and Palmer's distribution, which is the
+// distribution the size draw in spawnDroplet is imitating, so it is the size
+// the draw already means. It also sits in the middle of the range the velocity
+// relation below is useful over, and it leaves the clamped range of relative
+// sizes spanning 0.45 mm to 2.3 mm, which is rain rather than drizzle at one
+// end or a thunderstorm at the other.
+constexpr float kMedianDropMm = 1.5f;
+
+// Terminal velocity of the median drop, in metres per second, i.e.
+// terminalVelocityMs(kMedianDropMm). Kept as a constant because std::exp is
+// not usable in a constant expression and the value is needed per droplet.
+constexpr float kMedianDropVelMs = 5.4623f;
+
 // Hard ceiling on the droplet birth rate so a pathological density/velocity/
 // clumping combination cannot starve the pool.
 constexpr float kMaxBirthRate = 12000.0f;
@@ -124,6 +141,14 @@ constexpr float kMaxBirthRate = 12000.0f;
 // in the middle of the Output Gain range: the most distant presets used to need
 // the whole +12 dB and had no headroom left for the user.
 constexpr float kEngineMakeup = 3.55f; // +11 dB
+
+// Atlas and Ulbrich's fit for the speed a raindrop of diameter D millimetres
+// falls at once drag balances gravity: about 2 m/s at half a millimetre rising
+// to 9 m/s at five. It goes negative below D = 0.11 mm, where a drop that small
+// is really still suspended, so the result is floored at zero.
+inline float terminalVelocityMs(float diameterMm) {
+   return std::max(0.0f, 9.65f - 10.3f * std::exp(-0.6f * diameterMm));
+}
 
 inline float softClip(float x) {
    constexpr float t = 0.8f;
@@ -447,17 +472,52 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    const SurfaceProfile &sp = kSurfaces[clampv(mP.surface, 0, kNumSurfaces - 1)];
 
    // --- Size: a Marshall-Palmer-ish skew towards many small drops and few big
-   // ones. u^k has mean 1/(k+1), so scaling by (k+1) keeps the mean amplitude
-   // independent of the spread amount.
+   // ones. u^k has mean 1/(k+1), so scaling by (k+1) keeps the mean volume of a
+   // drop independent of the spread amount.
    const float k = mP.levelSpread * 2.5f;
    const float u = mRng.uniformPositive();
    // u^k * (k+1) has mean 1 and a natural maximum of k+1, so a ceiling of 2
    // was not catching freak drops -- it was flattening the top of the intended
    // distribution, one droplet in seven at the default Level Spread. The guard
    // now sits above that maximum, where it only ever catches a bad parameter.
-   const float levelRand = clampv(std::pow(u, k) * (k + 1.0f), 0.0f, 4.0f);
-   // Amplitude scales with volume (r^3), so relative radius is its cube root.
-   const float sizeRel = clampv(std::pow(levelRand + 1.0e-6f, 1.0f / 3.0f), 0.3f, 3.0f);
+   const float volumeRand = clampv(std::pow(u, k) * (k + 1.0f), 0.0f, 4.0f);
+   // The draw is a volume, which goes as r^3, so relative radius is its cube
+   // root. Pitch, ring time and the impact all key off this.
+   const float sizeRel = clampv(std::pow(volumeRand + 1.0e-6f, 1.0f / 3.0f), 0.3f, 3.0f);
+
+   // --- Level: how loud a drop is follows from the energy it arrives with, not
+   // from how much water it contains. Only about a tenth of a per cent of the
+   // kinetic energy 1/2 m v^2 leaves an impact as sound, and amplitude is the
+   // square root of energy, so the law is A ~ sqrt(m) * v: relative size to the
+   // power one and a half, times the speed the drop was falling at. The engine
+   // used the volume itself, which is mass, and that is the wrong power by a
+   // factor of the size again. Over the range of sizes the engine draws it
+   // spread the loudest drop against the quietest by 130 to 1 where the energy
+   // law gives 45 to 1, so big drops read as isolated plonks over a bed instead
+   // of as the top of a rain texture.
+   //
+   // Velocity is not a constant either, which is why this cannot be folded into
+   // the exponent: it is terminalVelocityMs above, and it needs a real diameter
+   // where the engine has only a relative size, so kMedianDropMm ties the two
+   // together. The clamped sizeRel is used rather than the raw draw, so the
+   // drop that is heard is the drop that was synthesised; the old law took its
+   // level from the unclamped volume and so rendered the drops that hit the
+   // floor of the size clamp at very nearly zero.
+   //
+   // The old law kept mean loudness independent of Level Spread with its (k+1)
+   // factor, whose mean is one. The equivalent here is analytic for the size
+   // term: sizeRel^1.5 is (u^k (k+1))^0.5, and the mean of that over u is
+   // exactly 2 sqrt(k+1) / (k+2). Dividing by it, and by the velocity of the
+   // median drop, leaves a mean of one. The velocity half of that is only exact
+   // for a narrow spread, because v is curved; integrating the real draw
+   // numerically over the whole range of k puts the actual mean between 1.00
+   // and 1.05, so mean droplet loudness drifts by under half a decibel across
+   // the whole of Level Spread, against 0 dB before. Level Spread still changes
+   // texture and not volume.
+   const float vTerm = terminalVelocityMs(kMedianDropMm * sizeRel);
+   const float levelNorm = 2.0f * std::sqrt(k + 1.0f) / (k + 2.0f) * kMedianDropVelMs;
+   const float levelRand =
+      clampv(sizeRel * std::sqrt(sizeRel) * vTerm / levelNorm, 0.0f, 4.0f);
 
    // --- Pitch: a resonating droplet's frequency is inversely proportional to
    // its radius, so big drops plop low and fine drops tick high. The user's

@@ -21,8 +21,9 @@ should be `A ~ sqrt(m) * v_term`, not `A ~ m`.
 
 Terminal velocity is itself a function of size (roughly 2 m/s at 0.5 mm rising
 to 9 m/s at 5 mm), so this is not a constant factor. Over a ten-to-one range of
-radius the present law spreads amplitude over about 1000:1 where the physical
-one gives about 95:1. If that is right, RainyDay is exaggerating its big drops
+radius the present law spreads amplitude over 1000:1 where the physical one
+gives about 143:1 (the 95:1 first written here was optimistic; it needs a range
+where the velocity has saturated at both ends). If that is right, RainyDay is exaggerating its big drops
 by an order of magnitude, which would read as isolated loud plonks over a bed
 rather than as rain. **This is the most suspicious single thing in the engine**
 and it is cheap to test: it is one expression in `spawnDroplet`.
