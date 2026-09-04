@@ -6,16 +6,33 @@ to fall. The winner is re-checked on unseen seeds at the end.
 """
 import os
 import sys
+import time
 import numpy as np
 import fitlib
 import feat
 import refs
 from pairs import BAND_WEIGHT
 
-# Two seeds per candidate. One is enough to rank candidates but lets the fit
-# chase the accidents of a single realisation; averaging two costs twice the
-# renders and roughly halves the gap to unseen seeds.
-FIT_SEEDS = [1, 5]
+# How many droplet realisations a candidate is scored over. Two was not close to
+# enough: measured across forty seeds, Dripping Faucet's distance to its
+# reference ranges from 45 to 1286, and Steady Rain's from 11 to 51. Averaging
+# two of those and calling the winner an improvement is how the fit came to
+# produce presets that scored 28.7 on the seeds it optimised against and 732.1
+# on seeds it had not seen.
+#
+# The number is chosen per preset rather than fixed, because the presets that
+# need the most seeds are the cheapest to render. A sparse drip costs a fiftieth
+# of what Downpour does, so a fixed budget of render time per candidate gives
+# twelve seeds to the presets whose distance is wild and two to the dense ones
+# that are both expensive and already stable. That is very nearly free: the
+# expensive presets are the ones that do not need it.
+SEED_BUDGET_SEC = 1.2
+MIN_SEEDS = 2
+MAX_SEEDS = 12
+# Disjoint from VERIFY_SEEDS, so the held-out check stays honest however many of
+# these end up being used.
+SEED_POOL = [1, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]
+FIT_SEEDS = SEED_POOL[:MIN_SEEDS]
 VERIFY_SEEDS = [2, 3, 4]
 SECONDS = 6.0
 
@@ -96,9 +113,22 @@ class Fitter:
     def __init__(self, renderer):
         self.r = renderer
         self.cache = {}
+        self.seeds = list(FIT_SEEDS)
+
+    def choose_seeds(self, params, meta):
+        """Time one render and spend SEED_BUDGET_SEC of them on each candidate."""
+        p = dict(params)
+        p['seed'] = str(SEED_POOL[0])
+        t0 = time.time()
+        self.r.render(p, meta, SECONDS)
+        cost = max(1e-4, time.time() - t0)
+        n = int(SEED_BUDGET_SEC / cost)
+        n = max(MIN_SEEDS, min(MAX_SEEDS, n))
+        self.seeds = SEED_POOL[:n]
+        return cost, n
 
     def score(self, params, meta, target, seed=None):
-        seeds = [seed] if seed is not None else FIT_SEEDS
+        seeds = [seed] if seed is not None else self.seeds
         total = 0.0
         for s in seeds:
             p = dict(params)
@@ -155,8 +185,10 @@ def fit_preset(fitter, preset, reference, names, out_dir):
         print(m, flush=True)
 
     bounds = PRESET_BOUNDS.get(preset)
+    cost, nseeds = fitter.choose_seeds(params, meta)
     before = fitter.score(params, meta, target)
-    print(f'  {preset} <- {reference}   start {before:.1f}'
+    print(f'  {preset} <- {reference}   start {before:.1f}   '
+          f'{nseeds} seeds ({cost:.2f}s a render)'
           f'{"   (bounded)" if bounds else ""}', flush=True)
     tuned, after = fitter.run(params, meta, target, names, log=log, bounds=bounds)
 
