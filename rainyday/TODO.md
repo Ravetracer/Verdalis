@@ -9,9 +9,10 @@ bubble as the tonal layer, only some impacts entraining one, air absorption, a
 statistical far field -- so what follows is only the difference. Ranked by how
 much realism each is likely to buy.
 
-Every one of these changes the sound of every preset and so costs a full re-fit
-(about 50 minutes). **1a is done** (commit b2432b6); 1b, 1c and 1d are not
-started.
+Every one of these changes the sound of every preset and so costs a full re-fit.
+1a and 1b are done, 1d is half done, and 1c is rejected -- each with the
+measurements that settled it, so none of them gets tried again on the strength
+of the same argument.
 
 ### 1a. Amplitude should follow impact energy, not drop mass -- DONE
 
@@ -34,41 +35,74 @@ the old law spread loudest against quietest by 130:1 and the energy law gives
 45:1; over 0.5 to 5 mm it is 1000:1 against 143:1. So the order of magnitude was
 right. Mean loudness still holds within half a decibel across Level Spread.
 
-### 1b. The impact frequency is drawn at random, and should not be
+### 1b. The impact frequency is drawn at random -- DONE
 
-`kImpactMinHz`..`kImpactMaxHz` draws the impact blip uniformly between 1 and
-16 kHz for every droplet, on every surface. That came from Liu, Cheng & Tong
-(2019) and is deliberate -- see the note in `src/dsp/rain_engine.cpp`.
+`kImpactMinHz`..`kImpactMaxHz` drew the impact blip uniformly between 1 and
+16 kHz for every droplet on every surface. That came from Liu, Cheng & Tong
+(2019); drip derives it for a rigid surface as `v / 2R`, the drop's speed over
+its own diameter.
 
-drip contradicts it for hard surfaces, where it uses `f = v / (2R)`: the impact
-frequency follows from the drop, not from a die roll. **The two sources are
-genuinely in conflict** and this is not a case of the code being wrong. But note
-which one Tin Roof failed under: four octaves of randomly tuned two-cycle blips,
-several hundred a second, is a fair description of ice. A per-surface choice --
-statistical on water, drop-derived on rigid surfaces -- would satisfy both.
+Built 2026-09-04. Both sources are honoured and the surface chooses: liquid
+surfaces keep the statistical draw, rigid ones derive it from the drop, and
+`impactFromDrop` blends between them in the log domain. For the sizes the engine
+draws, `v / 2R` lands between about 3 and 4 kHz, against four octaves of noise.
 
-### 1c. Bubble pitch is a free parameter and could be anchored
+One correction to drip on the way. A single deterministic frequency per drop
+measures as markedly more tonal than the recordings -- every rigid-surface
+preset fell below its reference on per-frame flatness -- which is right, because
+`v / 2R` is a characteristic contact time and the real one varies with the angle
+a drop arrives at and how far it flattens. It sets the centre of a spread
+instead. The width is a modelling choice: sweeping it from half an octave to two
+moved the flatness by under 0.01, so the measurements have no opinion.
 
-Both sources give Minnaert directly: `f = 3.26 / R_bubble`. RainyDay has the
-right *shape* (pitch goes as 1/radius, ring time as 1/pitch, which the 2019
-paper confirmed) but no absolute anchor: `Drop Pitch` is a free 60 Hz to 9 kHz
-control, and the fit will happily put it at 6.3 kHz. Anchoring the centre at the
-Minnaert frequency for a plausible bubble radius, and making `Drop Pitch` a trim
-around it, would make physically impossible presets unreachable rather than
-merely bounded in `fit.py` after the fact.
+### 1c. Anchor the bubble pitch to Minnaert -- REJECTED, the numbers refute it
 
-### 1d. Distance is a gain and a filter, not a distance
+Minnaert gives `f = 3.26 / R`, so an audible plink at 1 kHz needs a bubble of
+3.26 mm radius: a 6.5 mm bubble, larger than most raindrops entirely. Working
+the other way, a bubble entrained by a 1.5 mm drop at the 0.1 to 0.3 of drop
+radius the literature reports rings somewhere between 14 and 44 kHz, and even a
+5 mm drop only reaches 4 to 13 kHz. RainyDay's fitted `Drop Pitch` values run
+from 529 Hz to 8.3 kHz with a median of 2.1 kHz, which is where the recordings
+plainly have their tonal energy.
 
-drip propagates properly: `1/r^2` spreading, a delay of `r / 343 m/s`, and
-frequency-dependent air absorption `alpha(f) = 0.02 (f/1000)^1.5 dB/100m`.
-RainyDay has a one-pole lowpass and an attenuation, with no delay at all, so
-every droplet in a field hundreds of metres across arrives at the same instant.
-Per-droplet delay is the cheapest depth cue there is.
+So anchoring the tonal layer to Minnaert would push nearly all of it ultrasonic
+and delete the character every preset is built on. The audible pitched content
+in real rain is not a Minnaert bubble from a single raindrop; it is more likely
+cavity and surface resonance, or larger coalesced bubbles.
 
-The DAFx paper also warns about the scheduling consequence: randomise each
-drop's *arrival* time, never its impact time, or the level ramps up at the start
-and after every parameter change while the far drops are still in flight.
-RainyDay schedules arrivals already, so this only matters if 1d is built.
+It also would not buy what it promised. Minnaert relates pitch to *bubble*
+radius, and nothing fixes the bubble radius given the drop, so the freedom moves
+from "Drop Pitch in Hz" to "entrainment ratio" and the first is far more use to
+whoever is turning the knob. The `1/R` relationship the engine already has is
+the part of Minnaert that survives contact with the measurements, and the 2019
+paper confirmed it. Physically implausible values are kept out by the per-preset
+bounds in `fit.py`, which is where that belongs.
+
+### 1d. Distance is a gain and a filter, not a distance -- PARTLY DONE
+
+The propagation delay is built: a droplet's distance now sets when it is heard,
+`r / 343 m/s`, so near droplets are loud, bright and early together instead of
+the first two being asserted without the third. `startOffset` counts across
+blocks to allow it.
+
+It is worth almost nothing audibly, which is worth writing down. Delaying a
+Poisson process by independent random amounts leaves a Poisson process of the
+same rate, so a steady rain texture cannot tell the difference; measured, it
+costs about 1 dB in the first 100 ms after a note and nothing after 500 ms. It
+is kept because it is correct and free, not because it is a depth cue. The claim
+that it was "the cheapest depth cue there is" was wrong.
+
+The other two parts are **rejected**:
+
+- Inverse-square spreading. True `1/r^2` across a 30 m field with any sane near
+  limit is a 50-plus dB range, which makes Distance unusable as a control. The
+  existing `1 / (1 + 3d)` is a deliberate regularisation, not an oversight.
+- drip's air absorption, `alpha(f) = 0.02 (f/1000)^1.5 dB/100 m`. That is
+  0.19 dB at 10 kHz over the whole field, and roughly sixteen times less than
+  standard atmospheric absorption figures at every frequency checked between
+  1 and 10 kHz. Adopting it would be a large regression against the exponential
+  lowpass already there, which is more aggressive than physical absorption but
+  is an artistic control the whole library is fitted around.
 
 ### 1e. Not applicable, recorded so it is not rediscovered
 

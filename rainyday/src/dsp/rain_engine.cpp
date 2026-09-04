@@ -24,6 +24,7 @@ struct SurfaceProfile {
    float tonalMul;   // sine layer weight
    float onsetMul;   // how slowly the tone swells in after the impact
    float harmonic;   // level of the second bubble mode, relative to the first
+   float impactFromDrop; // 0 statistical, 1 derived from the drop that made it
 };
 
 // Wet surfaces trap an air bubble, so their tone swells in a few milliseconds
@@ -44,13 +45,13 @@ struct SurfaceProfile {
 // twice its breathing frequency. It belongs to the bubble, so the surfaces that
 // do not trap one do not get it.
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
-   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f, 0.11f},
-   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f, 0.11f},
-   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f},
-   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f},
-   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f},
-   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f},
-   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f},
+   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f},
+   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f},
+   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f},
+   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f},
+   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f},
+   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f},
+   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f},
    // Fabric: a taut canopy a foot above your head, which is an umbrella or a
    // tent. It is a drumhead, so the impact is the loudest thing about it and
    // carries more weight than on any other surface, but the membrane is lossy
@@ -58,7 +59,7 @@ const SurfaceProfile kSurfaces[kNumSurfaces] = {
    // once and has very little pitch to it. Struck from above and radiating
    // straight down, it is also the one surface heard from a few centimetres
    // away rather than across a street.
-   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f},
+   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f},
 };
 
 // Time constant of the pitch bend, as a fraction of the droplet's ring time and
@@ -100,6 +101,22 @@ constexpr float kBodyHpRatio = 0.45f;
 // back down. At 0.30x the skirt is 7 dB or more down by the time it reaches
 // Nyquist, which for a transient this short is inaudible; at 48 kHz that caps
 // the tick at 14.4 kHz, and at 96 kHz nothing is capped at all.
+// How far either side of v / 2R a rigid surface's impacts are scattered, in
+// octaves. An octave is a modelling choice and not a measured one: sweeping it
+// from half an octave to two moved the per-frame flatness of the rigid-surface
+// presets by under 0.01, so the measurements have no opinion on it. It is set
+// where it is because contact time plausibly varies by about that much with the
+// angle a drop arrives at and how far it flattens, and because collapsing it to
+// zero does measurably make every drop tick at the same pitch.
+constexpr float kImpactDropSpreadOct = 1.0f;
+
+// The far edge of the rain field, and how fast sound crosses it. Distance at
+// 100 % puts the furthest droplets here, which is a street's width away rather
+// than a horizon: past that the direct sound of an individual drop is gone and
+// what is left is the statistical bed, which is modelled separately.
+constexpr float kFieldRadiusM = 30.0f;
+constexpr float kSpeedOfSoundMs = 343.0f;
+
 constexpr float kImpactMinHz = 1000.0f;
 constexpr float kImpactMaxHz = 16000.0f;
 constexpr float kImpactDampPerHz = 2.0f;
@@ -552,8 +569,34 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    // --- Impact: one frequency per droplet, damped at twice that frequency.
    // decayCoef() takes the time to -60 dB, and e^(-2 f t) reaches it at
    // ln(1000) / (2 f), so a 1 kHz tick lasts 3.5 ms and a 16 kHz one 0.2 ms.
+   //
+   // Where that frequency comes from depends on what was struck, because the
+   // two sources this model is built from disagree and both are right about
+   // their own case. Liu, Cheng and Tong draw it at random over the whole range
+   // for drops on water, and a splash into a liquid really is that unruly.
+   // gtnoble/drip derives it for a rigid surface as v / 2R, the drop's speed
+   // over its own diameter, which for the sizes the engine draws lands between
+   // roughly 3 and 4 kHz and is far narrower.
+   //
+   // Both are honoured, chosen per surface, and the difference is audible: four
+   // octaves of randomly tuned two-cycle blips several hundred times a second
+   // is a fair description of breaking ice, which is exactly how Tin Roof went
+   // wrong before it was bounded. Blended in the log domain because frequency
+   // is heard that way.
+   const float impactRandomHz =
+      kImpactMinHz + (kImpactMaxHz - kImpactMinHz) * mRng.uniformPositive();
+   const float dropMm = kMedianDropMm * sizeRel;
+   // Not a single frequency: v / 2R is a characteristic contact time, and the
+   // real one varies with the angle the drop arrives at, how far it flattens
+   // and what the surface is made of, none of which the formula carries. So it
+   // sets the centre of a spread rather than the answer. The width is measured,
+   // not chosen: see kImpactDropSpreadOct.
+   const float impactDropHz = vTerm / (0.001f * dropMm) *
+                              std::exp2(kImpactDropSpreadOct * mRng.white());
+   const float impactBlend = clampv(sp.impactFromDrop, 0.0f, 1.0f);
    const float impactHz =
-      clampv((kImpactMinHz + (kImpactMaxHz - kImpactMinHz) * mRng.uniformPositive()) *
+      clampv(std::exp2((1.0f - impactBlend) * std::log2(std::max(20.0f, impactRandomHz)) +
+                       impactBlend * std::log2(std::max(20.0f, impactDropHz))) *
                 sp.brightness,
              80.0f, kImpactMaxRate * mSampleRate);
    const float clickDecaySec = 6.907755279f / (kImpactDampPerHz * impactHz);
@@ -568,6 +611,10 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    // occasional very near droplet -- louder and brighter than the rest -- is
    // what stops the texture reading as a flat, even patter.
    const float dist = mP.distance * std::sqrt(mRng.uniformPositive());
+   // How long the sound took to arrive. A near droplet is loud, bright and
+   // early; a far one is quiet, dull and late, and the three travel together
+   // rather than the first two being asserted without the third.
+   const float travelSamples = dist * kFieldRadiusM / kSpeedOfSoundMs * mSampleRate;
    const float distAtten = 1.0f / (1.0f + 3.0f * dist);
    const float airCutoff =
       clampv(18000.0f * sp.brightness * std::exp2(-6.0f * dist * mP.air), 250.0f,
@@ -679,7 +726,7 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    const float longest = std::max(ringSec, std::max(noiseDecaySec + qRing, clickDecaySec));
    d.lifeMax = static_cast<uint32_t>(clampv(1.6f * longest, 0.001f, 4.0f) * mSampleRate) + 96;
    d.life = 0;
-   d.startOffset = offset;
+   d.startOffset = offset + static_cast<uint32_t>(clampv(travelSamples, 0.0f, 0.5f * mSampleRate));
    d.active = true;
 }
 
@@ -744,6 +791,13 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
       if (!d.active)
          continue;
 
+      // startOffset is when the droplet is heard, not when it fell, so it can
+      // reach past the end of this block: sound takes a third of a second to
+      // cross a hundred metres and the field is that sort of size.
+      if (d.startOffset >= numSamples) {
+         d.startOffset -= numSamples;
+         continue;
+      }
       uint32_t i = d.startOffset;
       d.startOffset = 0;
       const uint32_t fadeStart = d.lifeMax > 64 ? d.lifeMax - 64 : 0;
