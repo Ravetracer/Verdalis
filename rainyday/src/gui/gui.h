@@ -42,6 +42,12 @@ public:
    virtual int guiCurrentPreset() const = 0;
    virtual bool guiPresetEdited() const = 0;
    virtual void guiLoadPreset(int index) = 0;
+
+   // The name to offer when the save field opens.
+   virtual std::string guiSuggestedPresetName() const = 0;
+   // Writes the current parameter values into the user preset directory and
+   // rescans it. Returns false and fills `error` if that did not work.
+   virtual bool guiSavePreset(const std::string &name, std::string &error) = 0;
 };
 
 class Gui {

@@ -136,7 +136,9 @@ set_target_properties(RainyDay PROPERTIES
 
 # ------------------------------------------------------------- offline test host
 if(RAINYDAY_BUILD_TOOLS)
-   add_executable(rainyday-render tools/render.cpp)
+   # The preset text format is linked in as well as loaded through the plugin,
+   # so the self-test can check that writing a preset and reading it back agree.
+   add_executable(rainyday-render tools/render.cpp src/preset.cpp src/params.cpp)
    target_include_directories(rainyday-render PRIVATE
       "${CLAP_INCLUDE_DIR}"
       "${CMAKE_CURRENT_SOURCE_DIR}/src"

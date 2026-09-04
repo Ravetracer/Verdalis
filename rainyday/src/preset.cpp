@@ -1,6 +1,7 @@
 #include "rainyday.h"
 
 #include <cerrno>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -160,6 +161,184 @@ bool parsePreset(const char *text, size_t length, PresetData &out, std::string &
 
    if (!sawAnything) {
       error = "preset is empty";
+      return false;
+   }
+   return true;
+}
+
+namespace {
+
+// Presets are meant to be read and hand-edited, so a written value is rounded to
+// something a person would have typed rather than printed at full precision.
+std::string formatNumber(double v) {
+   char buf[64];
+   if (v == std::floor(v) && std::fabs(v) < 1.0e9) {
+      std::snprintf(buf, sizeof(buf), "%lld", static_cast<long long>(v));
+      return buf;
+   }
+   const double a = std::fabs(v);
+   if (a >= 100.0)
+      std::snprintf(buf, sizeof(buf), "%.0f", v);
+   else if (a >= 10.0)
+      std::snprintf(buf, sizeof(buf), "%.1f", v);
+   else if (a >= 1.0)
+      std::snprintf(buf, sizeof(buf), "%.2f", v);
+   else
+      std::snprintf(buf, sizeof(buf), "%.3f", v);
+   std::string s(buf);
+   if (s.find('.') != std::string::npos) {
+      while (!s.empty() && s.back() == '0')
+         s.pop_back();
+      if (!s.empty() && s.back() == '.')
+         s.pop_back();
+   }
+   return s;
+}
+
+// One value per line is the whole format, so anything that could introduce a
+// line of its own has to go.
+std::string oneLine(const std::string &in) {
+   std::string out;
+   out.reserve(in.size());
+   for (const char c : in)
+      out.push_back((c == '\n' || c == '\r' || c == '\t') ? ' ' : c);
+   std::string trimmed = out;
+   trim(trimmed);
+   return trimmed;
+}
+
+} // namespace
+
+std::string formatPreset(const PresetData &preset) {
+   std::string out = "# RainyDay preset\nformat = 1\n";
+   if (!preset.name.empty())
+      out += "name = " + oneLine(preset.name) + "\n";
+   if (!preset.author.empty())
+      out += "author = " + oneLine(preset.author) + "\n";
+   if (!preset.description.empty())
+      out += "description = " + oneLine(preset.description) + "\n";
+   if (!preset.features.empty()) {
+      out += "features = ";
+      for (size_t i = 0; i < preset.features.size(); ++i) {
+         if (i)
+            out += ", ";
+         out += oneLine(preset.features[i]);
+      }
+      out += "\n";
+   }
+
+   // Grouped by module, each module written once, in the order the modules first
+   // appear in the parameter table. Grouping matters: parameters added later get
+   // ids at the end of the table, and walking ids alone would strand them under a
+   // second copy of their own heading.
+   const ParamDesc *table = paramTable();
+   std::vector<const char *> modules;
+   for (uint32_t i = 0; i < kNumParams; ++i) {
+      const char *m = table[i].module;
+      bool known = false;
+      for (const char *seen : modules)
+         known = known || std::strcmp(seen, m) == 0;
+      if (!known)
+         modules.push_back(m);
+   }
+
+   for (const char *module : modules) {
+      std::string body;
+      for (uint32_t i = 0; i < kNumParams; ++i) {
+         const ParamDesc &d = table[i];
+         if (std::strcmp(d.module, module) != 0)
+            continue;
+
+         bool have = false;
+         double raw = 0.0;
+         for (const auto &kv : preset.values) {
+            if (kv.first == d.id) {
+               raw = kv.second;
+               have = true;
+               break;
+            }
+         }
+         if (!have)
+            continue;
+
+         body += d.key;
+         body += " = ";
+         if (d.kind == ParamKind::Enum && d.enumNames) {
+            const long idx = static_cast<long>(raw + 0.5);
+            if (idx >= 0 && idx < static_cast<long>(d.enumCount))
+               body += d.enumNames[idx];
+            else
+               body += formatNumber(raw);
+         } else {
+            body += formatNumber(paramToReal(d, raw));
+         }
+         body += "\n";
+      }
+      if (body.empty())
+         continue;
+      out += "\n# ";
+      out += module;
+      out += "\n";
+      out += body;
+   }
+   return out;
+}
+
+std::string userPresetPath(const std::string &name) {
+   const std::string dir = userPresetDir();
+   if (dir.empty())
+      return {};
+   // A display name is not a filename: keep it recognisable, keep it safe.
+   std::string file;
+   bool lastWasDash = false;
+   for (const char c : name) {
+      const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+                      c == '-' || c == '_';
+      if (ok) {
+         file.push_back(c);
+         lastWasDash = false;
+      } else if (!lastWasDash && !file.empty()) {
+         file.push_back('_');
+         lastWasDash = true;
+      }
+   }
+   while (!file.empty() && file.back() == '_')
+      file.pop_back();
+   if (file.empty())
+      file = "preset";
+   return dir + "/" + file + "." + kPresetExtension;
+}
+
+bool writePresetFile(const std::string &path, const std::string &text, std::string &error) {
+   // Create every directory above the file; the plugin never assumes the user
+   // preset directory already exists.
+   const size_t slash = path.rfind('/');
+   if (slash != std::string::npos && slash > 0) {
+      const std::string dir = path.substr(0, slash);
+      std::string sofar;
+      size_t at = 0;
+      while (at < dir.size()) {
+         size_t next = dir.find('/', at + 1);
+         if (next == std::string::npos)
+            next = dir.size();
+         sofar = dir.substr(0, next);
+         if (!sofar.empty() && mkdir(sofar.c_str(), 0755) != 0 && errno != EEXIST) {
+            error = "cannot create " + sofar + ": " + std::strerror(errno);
+            return false;
+         }
+         at = next;
+      }
+   }
+
+   FILE *f = std::fopen(path.c_str(), "wb");
+   if (!f) {
+      error = std::string("cannot write ") + path + ": " + std::strerror(errno);
+      return false;
+   }
+   const size_t written = std::fwrite(text.data(), 1, text.size(), f);
+   const bool ok = written == text.size();
+   if (std::fclose(f) != 0 || !ok) {
+      error = std::string("could not finish writing ") + path;
       return false;
    }
    return true;

@@ -83,6 +83,17 @@ no GUI change.
 | Click a selector's `◀` / `▶` arrow | Step one choice |
 | Click the preset name | Open the browser |
 | `◀` / `▶` next to the name | Previous / next preset |
+| `SAVE` | Save the current settings as your own preset |
+
+`SAVE` writes the current parameter values to
+`~/.config/RainyDay/presets`, creating the directory if it is not there, and the
+browser picks the new preset up immediately. The name becomes the filename with
+anything awkward replaced, so `My Rain / 2` is saved as `My_Rain_2.rainyday`; the
+file is the same plain text format as the factory library and can be edited by
+hand afterwards. Typing the name needs key events, and an embedded plugin window
+only gets those if the host routes them through — where it does not, the field
+still opens filled in with the current preset's name, so saving with the mouse
+alone works.
 
 The browser lists the factory library followed by anything in
 `~/.config/RainyDay/presets`, marked `USER`. Loading goes through the same
@@ -447,7 +458,7 @@ The repo ships a small CLAP host used to test the plugin without a DAW. It
 drives the real preset-discovery factory the way a host does.
 
 ```sh
-./build/rainyday-render --selftest                  # 34 host-contract checks
+./build/rainyday-render --selftest                  # 43 host-contract checks
 ./build/rainyday-render --list                      # walk preset discovery
 ./build/rainyday-render --preset downpour --out /tmp/rain.wav --seconds 10
 ./build/rainyday-render --all --outdir /tmp/rain     # render the whole library

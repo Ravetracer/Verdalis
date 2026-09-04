@@ -40,4 +40,16 @@ struct PresetData {
 bool parsePreset(const char *text, size_t length, PresetData &out, std::string &error);
 bool parsePresetFile(const std::string &path, PresetData &out, std::string &error);
 
+// Writes a preset back out in the format parsePreset() reads: real-world units,
+// grouped under the same module headings the factory library uses.
+std::string formatPreset(const PresetData &preset);
+
+// Turns a display name into the file it should be saved as, inside the user
+// preset directory. Empty if that directory cannot be determined.
+std::string userPresetPath(const std::string &name);
+
+// Writes `text` to `path`, creating the directories above it. Returns false and
+// fills `error` on failure.
+bool writePresetFile(const std::string &path, const std::string &text, std::string &error);
+
 } // namespace rainyday

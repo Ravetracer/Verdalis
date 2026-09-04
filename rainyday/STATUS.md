@@ -6,7 +6,7 @@ Written 2026-09-03. See `README.md` for the design and parameter reference, and
 ## State: working and playable
 
 A complete, native Linux CLAP instrument that synthesises rain. Builds clean
-with GCC 13 (`-Wall -Wextra`, no warnings), passes 34 self-test checks, and is
+with GCC 13 (`-Wall -Wextra`, no warnings), passes 43 self-test checks, and is
 installed to `~/.clap/RainyDay/`.
 
 ## What is implemented
@@ -59,7 +59,10 @@ installed to `~/.clap/RainyDay/`.
 - All 37 parameters laid out from the parameter table itself, so the panels are
   the modules and the help line is each parameter's own tip.
 - Preset browser over the factory library plus `~/.config/RainyDay/presets`,
-  loading through the same `clap.preset-load` path a host uses.
+  loading through the same `clap.preset-load` path a host uses, and a `SAVE`
+  button that writes the current settings back out to that directory in the
+  same text format and rescans it.
+- Enum parameters open a list rather than only stepping one value per click.
 - Knob moves leave as real `PARAM_GESTURE_BEGIN` / `PARAM_VALUE` /
   `PARAM_GESTURE_END` events, via a lock-free queue drained by `process()` and
   `params.flush()`, so host automation recording behaves.
@@ -93,7 +96,7 @@ does not implement.
 
 ```sh
 ./install.sh                                        # build, self-test, install
-./build/rainyday-render --selftest                  # 34 checks
+./build/rainyday-render --selftest                  # 43 checks
 ./build/rainyday-render --list                      # preset discovery
 ./build/rainyday-render --all --outdir /tmp/rain    # render the library
 ```
@@ -105,10 +108,12 @@ long note.
 
 - The window is X11 only and a fixed size; under a Wayland host the plugin
   falls back to the generic parameter view.
-- Presets can be loaded but not yet saved from the plugin.
 - Rain only, by design. No wind, no thunder.
 - `Filter Key Track` follows the most recently played note (single global
   filter stage).
+- Typing a preset name needs the host to route key events to the embedded
+  window. Where it does not, the field still opens pre-filled, so saving with
+  the mouse works but renaming does not.
 - Per-note parameter modulation and note expressions are ignored.
 - The sparse drip presets match their references less closely than the dense
   rain ones. Isolated drops in a room are dominated by the room, and the

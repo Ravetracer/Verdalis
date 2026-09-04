@@ -21,8 +21,12 @@
 #include <dirent.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <clap/clap.h>
+
+#include "params.h"
+#include "rainyday.h"
 
 namespace {
 
@@ -1042,6 +1046,97 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
       static_cast<const clap_plugin_tail_t *>(plugin->get_extension(plugin, CLAP_EXT_TAIL));
    check(tailExt != nullptr, "tail extension present");
    check(tailExt && tailExt->get(plugin) > 0, "tail is a positive number of samples");
+
+   // --- the preset writer and the preset parser have to agree, or saving a
+   // preset quietly changes the sound it was saved from.
+   {
+      using namespace rainyday;
+      const ParamDesc *table = paramTable();
+
+      PresetData original;
+      original.name = "Round Trip";
+      original.author = "selftest";
+      original.description = "Written by the self-test.";
+      original.features.push_back("test");
+      for (uint32_t i = 0; i < kNumParams; ++i) {
+         const ParamDesc &d = table[i];
+         double v = d.min + 0.37 * (d.max - d.min);
+         if (d.kind == ParamKind::Enum || d.kind == ParamKind::Stepped)
+            v = std::floor(v + 0.5);
+         original.values.emplace_back(d.id, v);
+      }
+
+      const std::string text = formatPreset(original);
+      PresetData reparsed;
+      std::string err;
+      check(parsePreset(text.c_str(), text.size(), reparsed, err),
+            "a written preset parses back in");
+      check(reparsed.name == original.name && reparsed.author == original.author &&
+               reparsed.description == original.description,
+            "a written preset keeps its metadata");
+      check(reparsed.values.size() == original.values.size(),
+            "a written preset keeps every parameter");
+
+      bool valuesAgree = true;
+      double worst = 0.0;
+      const char *worstKey = "";
+      for (const auto &want : original.values) {
+         const ParamDesc *d = paramById(want.first);
+         if (!d)
+            continue;
+         bool seen = false;
+         for (const auto &got : reparsed.values) {
+            if (got.first != want.first)
+               continue;
+            seen = true;
+            const double span = d->max - d->min;
+            const double err2 = span > 0.0 ? std::fabs(got.second - want.second) / span : 0.0;
+            if (err2 > worst) {
+               worst = err2;
+               worstKey = d->key;
+            }
+            if (err2 > 0.005)
+               valuesAgree = false;
+            break;
+         }
+         if (!seen)
+            valuesAgree = false;
+      }
+      if (!valuesAgree)
+         std::printf("       worst drift %.4f on '%s'\n", worst, worstKey);
+      check(valuesAgree, "a written preset reads back with the same values");
+
+      // Enums must survive as names, which is what makes the files editable.
+      check(text.find("surface = ") != std::string::npos &&
+               text.find("surface = 2") == std::string::npos,
+            "enum parameters are written by name");
+
+      // A display name is not a filename.
+      const std::string path = userPresetPath("My Rain / 2 **");
+      check(path.empty() || path.find("My_Rain_2.") != std::string::npos,
+            "a preset name becomes a safe filename");
+
+      // Saving has to create the user preset directory and land a file that
+      // reads back, on a real filesystem rather than in principle.
+      char tmpl[] = "/tmp/rainyday-selftest-XXXXXX";
+      const char *tmp = mkdtemp(tmpl);
+      if (tmp) {
+         setenv("XDG_CONFIG_HOME", tmp, 1);
+         const std::string target = userPresetPath("Saved By Selftest");
+         check(!target.empty(), "a save path is offered under the user config directory");
+         std::string writeErr;
+         check(writePresetFile(target, text, writeErr), "a preset writes to a fresh directory");
+         PresetData readBack;
+         std::string readErr;
+         check(parsePresetFile(target, readBack, readErr) && readBack.name == original.name,
+               "a saved preset file reads back");
+         std::remove(target.c_str());
+         rmdir((std::string(tmp) + "/RainyDay/presets").c_str());
+         rmdir((std::string(tmp) + "/RainyDay").c_str());
+         rmdir(tmp);
+         unsetenv("XDG_CONFIG_HOME");
+      }
+   }
 
    plugin->deactivate(plugin);
    plugin->destroy(plugin);

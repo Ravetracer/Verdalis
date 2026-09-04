@@ -74,20 +74,17 @@ generated from `kPanelSpecs` in `src/gui/gui.cpp`, so this is a table edit plus
 Explicitly **not** doing: XY pads pairing two parameters per control. Compact,
 but a plugin should glare with quality rather than with its interface.
 
-## 2. Preset saving
-
-Reading presets is complete and the browser lists both the factory library and
-`~/.config/RainyDay/presets`. Writing one out from the plugin is now the
-obvious gap: the window has a preset bar with nowhere to save to. It needs a
-serialiser for the text format (the parser in `src/preset.cpp` defines it), a
-name-entry field in the window, and a rescan of the user directory afterwards
-so the new preset appears in the browser immediately.
-
-## 3. GUI follow-ups
+## 2. GUI follow-ups
 
 - **Text entry on a knob.** `paramTextToValue()` already parses everything the
   display prints, including `k` multipliers and seconds on millisecond fields.
-  Only the field and the keyboard focus handling are missing.
+  The save dialog now has a working text field to copy from, so what is left is
+  routing a click on a value to it and deciding what happens when the host does
+  not give the window key events.
+- **Keyboard focus for the embedded window.** Typing into the save field needs
+  the host to route key events through. The window asks for the focus when the
+  field opens, and pre-fills the name so mouse-only saving still works, but this
+  has only been tried outside a DAW. Worth checking in Bitwig.
 - **Resizable window.** `can_resize` currently reports false and the layout is
   a fixed 912×648 in design pixels. Everything is already drawn through a cairo
   scale, so honouring `set_size` is mostly a matter of choosing a scale from
@@ -106,7 +103,7 @@ so the new preset appears in the browser immediately.
 gets checked. It opens a window on the current display, so it is not something
 to run unannounced.
 
-## 4. Later / nice to have
+## 3. Later / nice to have
 
 - **Wind and thunder.** Explicitly out of scope for now; the plugin is rain
   only. When added, they belong as separate parameter groups, and thunder needs

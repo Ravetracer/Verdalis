@@ -733,6 +733,46 @@ private:
       return static_cast<uint32_t>(realValue(kParamMaxDroplets));
    }
 
+   std::string guiSuggestedPresetName() const override {
+      if (mCurrentPreset >= 0 && mCurrentPreset < static_cast<int>(mPresets.size()))
+         return mPresets[static_cast<size_t>(mCurrentPreset)].name;
+      return "My Rain";
+   }
+
+   bool guiSavePreset(const std::string &name, std::string &error) override {
+      const std::string path = userPresetPath(name);
+      if (path.empty()) {
+         error = "No user preset directory: neither XDG_CONFIG_HOME nor HOME is set.";
+         return false;
+      }
+
+      // Everything the engine is currently using, written as the user's own
+      // preset. Author and description are left out: they belong to whoever
+      // wrote the preset this was derived from, not to this copy.
+      PresetData data;
+      data.name = name;
+      for (uint32_t i = 0; i < kNumParams; ++i) {
+         const uint32_t id = paramTable()[i].id;
+         data.values.emplace_back(id, mValues[id].load(std::memory_order_relaxed));
+      }
+      if (!writePresetFile(path, formatPreset(data), error))
+         return false;
+
+      // Rescan so the browser shows it at once, and select what was just saved.
+      mPresets.clear();
+      mPresetsScanned = false;
+      ensurePresetList();
+      mCurrentPreset = -1;
+      for (size_t i = 0; i < mPresets.size(); ++i) {
+         if (mPresets[i].path == path) {
+            mCurrentPreset = static_cast<int>(i);
+            break;
+         }
+      }
+      mPresetEdited = false;
+      return true;
+   }
+
    const std::vector<GuiPreset> &guiPresets() const override { return mPresets; }
    int guiCurrentPreset() const override { return mCurrentPreset; }
    bool guiPresetEdited() const override { return mPresetEdited; }

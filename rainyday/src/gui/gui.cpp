@@ -17,6 +17,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <cairo/cairo-xlib.h>
 #include <cairo/cairo.h>
 
@@ -133,6 +134,11 @@ void roundedRect(cairo_t *cr, double x, double y, double w, double h, double r) 
 }
 
 enum class Align { Left, Center, Right };
+
+// Asking an embedded window for the keyboard focus can fail for reasons that
+// are none of the plugin's business. A failure must not reach Xlib's default
+// handler, which exits the host.
+int ignoreXError(Display *, XErrorEvent *) { return 0; }
 
 // Drawn rather than typed: a glyph like U+25C0 is not in every sans font, and
 // a missing-glyph box in the preset bar would look like a bug.
@@ -413,6 +419,7 @@ private:
       mPrevRect = {static_cast<double>(kMargin) + 62, static_cast<double>(barY), 26, kBarH};
       mNameRect = {mPrevRect.x + mPrevRect.w + 4, static_cast<double>(barY), 300, kBarH};
       mNextRect = {mNameRect.x + mNameRect.w + 4, static_cast<double>(barY), 26, kBarH};
+      mSaveRect = {mNextRect.x + mNextRect.w + 14, static_cast<double>(barY), 58, kBarH};
       mBarY = barY;
       mHelpY = barY + kBarH + 4;
    }
@@ -486,6 +493,8 @@ private:
          drawBrowser(cr);
       if (mMenuParam >= 0)
          drawMenu(cr);
+      if (mSaveOpen)
+         drawSaveDialog(cr);
 
       cairo_restore(cr);
 
@@ -778,6 +787,166 @@ private:
                Align::Center);
       setColor(cr, kTextMute);
       drawTriangle(cr, mNameRect.x + mNameRect.w - 12, mNameRect.y + mNameRect.h * 0.5, 8, 0);
+
+      const bool saveHot = mHoverWidget == Widget::Save || mSaveOpen;
+      setColor(cr, kPanelFill);
+      roundedRect(cr, mSaveRect.x, mSaveRect.y, mSaveRect.w, mSaveRect.h, 4);
+      cairo_fill_preserve(cr);
+      setColor(cr, saveHot ? kAccent : kPanelEdge, saveHot ? 0.7 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      setColor(cr, saveHot ? kAccent : kTextDim);
+      drawText(cr, mSaveRect.x + mSaveRect.w * 0.5, mSaveRect.y + 20, "SAVE", 10, true,
+               Align::Center);
+   }
+
+   // ------------------------------------------------------------ save dialog
+
+   Rect savePanel() const {
+      Rect r;
+      r.w = 420;
+      r.h = 156;
+      r.x = (kWindowW - r.w) * 0.5;
+      r.y = kHeaderH + 130;
+      return r;
+   }
+
+   Rect saveFieldRect() const {
+      const Rect p = savePanel();
+      return {p.x + 20, p.y + 54, p.w - 40, 30};
+   }
+
+   Rect saveOkRect() const {
+      const Rect p = savePanel();
+      return {p.x + p.w - 20 - 92, p.y + p.h - 20 - 28, 92, 28};
+   }
+
+   Rect saveCancelRect() const {
+      const Rect p = savePanel();
+      return {p.x + p.w - 20 - 92 - 10 - 92, p.y + p.h - 20 - 28, 92, 28};
+   }
+
+   void openSaveDialog() {
+      mBrowserOpen = false;
+      closeMenu();
+      mSaveOpen = true;
+      mSaveName = mDelegate.guiSuggestedPresetName();
+      mSaveStatus.clear();
+      mSaveFailed = false;
+      // An embedded plugin window only sees key events if the host routes them
+      // here. Asking for the focus is worth a try, and a failure to get it is
+      // not worth an X error, so the handler is muted around the request.
+      if (mDisplay && mWindow) {
+         XErrorHandler previous = XSetErrorHandler(&ignoreXError);
+         XSetInputFocus(mDisplay, mWindow, RevertToParent, CurrentTime);
+         XSync(mDisplay, False);
+         XSetErrorHandler(previous);
+      }
+      mDirty = true;
+   }
+
+   void commitSave() {
+      std::string name = mSaveName;
+      while (!name.empty() && name.front() == ' ')
+         name.erase(name.begin());
+      while (!name.empty() && name.back() == ' ')
+         name.pop_back();
+      if (name.empty()) {
+         mSaveStatus = "Give the preset a name.";
+         mSaveFailed = true;
+         mDirty = true;
+         return;
+      }
+      std::string error;
+      if (!mDelegate.guiSavePreset(name, error)) {
+         mSaveStatus = error.empty() ? std::string("Could not save the preset.") : error;
+         mSaveFailed = true;
+         mDirty = true;
+         return;
+      }
+      mSaveOpen = false;
+      mDirty = true;
+   }
+
+   void drawSaveDialog(cairo_t *cr) {
+      setColor(cr, kBgBottom, 0.88);
+      cairo_rectangle(cr, 0, 0, kWindowW, kWindowH);
+      cairo_fill(cr);
+
+      const Rect p = savePanel();
+      setColor(cr, kPanelFill);
+      roundedRect(cr, p.x, p.y, p.w, p.h, 6);
+      cairo_fill_preserve(cr);
+      setColor(cr, kAccent, 0.5);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+
+      setColor(cr, kAccent);
+      drawText(cr, p.x + 20, p.y + 26, "SAVE PRESET", 11, true, Align::Left);
+      setColor(cr, kTextMute);
+      drawText(cr, p.x + p.w - 20, p.y + 26, "to your own preset folder", 9, false, Align::Right);
+
+      const Rect f = saveFieldRect();
+      setColor(cr, kKnobFace);
+      roundedRect(cr, f.x, f.y, f.w, f.h, 3);
+      cairo_fill_preserve(cr);
+      setColor(cr, mSaveFailed ? kAccent : kPanelEdge, 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+
+      std::string shown = mSaveName;
+      shown += "_"; // a plain caret; the window has no blinking anywhere else
+      setColor(cr, kText);
+      drawText(cr, f.x + 9, f.y + 20, shown.c_str(), 12, false, Align::Left);
+
+      setColor(cr, kTextMute);
+      drawText(cr, p.x + 20, f.y + f.h + 20,
+               mSaveStatus.empty() ? "Type a name, then Enter. Esc cancels." : mSaveStatus.c_str(),
+               9, false, Align::Left);
+
+      auto dialogButton = [&](const Rect &r, const char *label, bool accent) {
+         setColor(cr, kPanelFill);
+         roundedRect(cr, r.x, r.y, r.w, r.h, 4);
+         cairo_fill_preserve(cr);
+         setColor(cr, accent ? kAccent : kPanelEdge, accent ? 0.7 : 1.0);
+         cairo_set_line_width(cr, 1.0);
+         cairo_stroke(cr);
+         setColor(cr, accent ? kAccent : kTextDim);
+         drawText(cr, r.x + r.w * 0.5, r.y + 18, label, 10, true, Align::Center);
+      };
+      dialogButton(saveCancelRect(), "CANCEL", false);
+      dialogButton(saveOkRect(), "SAVE", true);
+   }
+
+   void onSaveKey(XKeyEvent &ke) {
+      char buf[32];
+      KeySym sym = 0;
+      const int n = XLookupString(&ke, buf, sizeof(buf) - 1, &sym, nullptr);
+      if (sym == XK_Escape) {
+         mSaveOpen = false;
+         mDirty = true;
+         return;
+      }
+      if (sym == XK_Return || sym == XK_KP_Enter) {
+         commitSave();
+         return;
+      }
+      if (sym == XK_BackSpace) {
+         if (!mSaveName.empty())
+            mSaveName.pop_back();
+         mSaveStatus.clear();
+         mSaveFailed = false;
+         mDirty = true;
+         return;
+      }
+      for (int i = 0; i < n; ++i) {
+         const unsigned char c = static_cast<unsigned char>(buf[i]);
+         if (c >= 0x20 && c != 0x7F && mSaveName.size() < 48)
+            mSaveName.push_back(static_cast<char>(c));
+      }
+      mSaveStatus.clear();
+      mSaveFailed = false;
+      mDirty = true;
    }
 
    void drawHelpLine(cairo_t *cr) {
@@ -943,7 +1112,7 @@ private:
    // ----------------------------------------------------------------- events
 
    // `None` is taken: X11 defines it as a macro.
-   enum class Widget { NoWidget, Prev, Next, Name };
+   enum class Widget { NoWidget, Prev, Next, Name, Save };
 
    void pumpEvents() {
       XEvent ev;
@@ -970,6 +1139,10 @@ private:
             }
             break;
          case KeyPress:
+            if (mSaveOpen) {
+               onSaveKey(ev.xkey);
+               break;
+            }
             if (mBrowserOpen || mMenuParam >= 0) {
                mBrowserOpen = false;
                closeMenu();
@@ -996,6 +1169,17 @@ private:
    void onButtonPress(const XButtonEvent &be) {
       const double x = be.x / mScale;
       const double y = be.y / mScale;
+
+      if (mSaveOpen) {
+         if (be.button == Button1) {
+            if (saveOkRect().contains(x, y))
+               commitSave();
+            else if (saveCancelRect().contains(x, y) || !savePanel().contains(x, y))
+               mSaveOpen = false;
+         }
+         mDirty = true;
+         return;
+      }
 
       if (mMenuParam >= 0) {
          if (be.button == Button1) {
@@ -1040,6 +1224,10 @@ private:
       }
       if (mNextRect.contains(x, y)) {
          stepPreset(1);
+         return;
+      }
+      if (mSaveRect.contains(x, y)) {
+         openSaveDialog();
          return;
       }
       if (mNameRect.contains(x, y)) {
@@ -1120,6 +1308,9 @@ private:
          return;
       }
 
+      if (mSaveOpen)
+         return;
+
       if (mMenuParam >= 0) {
          const int item = menuItemAt(x, y);
          if (item != mMenuHover) {
@@ -1146,6 +1337,8 @@ private:
          w = Widget::Next;
       else if (mNameRect.contains(x, y))
          w = Widget::Name;
+      else if (mSaveRect.contains(x, y))
+         w = Widget::Save;
 
       if (id != mHover || w != mHoverWidget) {
          mHover = id;
@@ -1226,7 +1419,7 @@ private:
    std::vector<Cell> mCells;
    std::vector<Rect> mCellRects;
    Rect mMeter;
-   Rect mPrevRect, mNameRect, mNextRect;
+   Rect mPrevRect, mNameRect, mNextRect, mSaveRect;
    int mBarY = 0, mHelpY = 0;
 
    bool mDirty = true;
@@ -1239,6 +1432,10 @@ private:
 
    bool mBrowserOpen = false;
    int mBrowserHover = -1;
+   bool mSaveOpen = false;
+   bool mSaveFailed = false;
+   std::string mSaveName;
+   std::string mSaveStatus;
    int mMenuParam = -1; // enum parameter whose dropdown is open, or -1
    int mMenuHover = -1;
 
