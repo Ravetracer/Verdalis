@@ -7,7 +7,7 @@ run time. Two instances never produce the same rain.
 
 Play a MIDI note and it rains for as long as you hold it.
 
-- 36 parameters covering droplet statistics, impact surface, stereo field,
+- 37 parameters covering droplet statistics, impact surface, stereo field,
   distance, space, filter and a full ADSR
 - 16 factory presets from a single drip in a cave to a tropical monsoon, each
   fitted against a real recording of the thing it is imitating
@@ -123,18 +123,47 @@ random walk. The log-normal modulation is mean-compensated by
 `exp(-σ²/2)`, so the average density stays exactly where you set it while the
 rain gains natural surges and lulls.
 
-### 2. A single droplet — three layers
+### 2. A single droplet — four layers
 
 Each impact is a short event assembled from:
 
 | Layer | Model | Controlled by |
 |---|---|---|
-| Tonal | Phase-accumulated sine, a difference of two exponentials for its amplitude, plus a per-droplet pitch sweep | `Tonality`, `Chirp`, `Drop Decay` |
+| Bubble | Phase-accumulated sine, a difference of two exponentials for its amplitude, plus a per-droplet pitch sweep | `Tonality`, `Bubble Chance`, `Chirp`, `Drop Decay` |
+| Second mode | A quieter partial near twice the bubble frequency, decaying twice as fast | surface |
 | Wet | White-noise burst through a resonant state-variable bandpass tuned to the droplet's pitch | `Splash`, `Tonality` |
-| Impact | Very short broadband noise transient (0.4–3 ms) | `Impact` |
+| Impact | A two-cycle damped sine at a frequency drawn afresh for every droplet | `Impact` |
 
-The result passes through a one-pole lowpass standing in for air absorption,
-then gets equal-power panned into the stereo field.
+Bubble, second mode and splash all pass through the droplet's own radiation
+highpass; the impact does not, because it is the surface being struck and not
+the droplet radiating. Everything then passes through a one-pole lowpass
+standing in for air absorption, and is equal-power panned into the stereo field.
+
+**The impact is pitched, not noise.** Following Liu, Cheng and Tong (2019), the
+initial impact is modelled as `A·e^(−2f·t)·sin(2πf·t)` with `f` drawn uniformly
+between 1 and 16 kHz for each droplet and scaled by the surface's brightness.
+Damping at twice the frequency leaves about two cycles, so a single drop is a
+tick with a pitch of its own — 0.2 ms at the top of the range, 3.5 ms at the
+bottom. One drop sounds like a tick; a thousand a second are broadband, and the
+constant redrawing is what gives dense rain its shimmer. A fixed noise burst,
+which is what this used to be, gives every drop in the field an identical
+transient and measures several dB short of a real recording above 6 kHz.
+
+**Not every drop rings.** Pumphrey and Elmore's measurements, quoted in the same
+paper, have only a band of drop sizes entraining an air bubble on every impact;
+the rest of the rain is splash and tick with no pitch at all. `Bubble Chance` is
+that fraction, drawn per droplet. It is not the same control as `Tonality`:
+tonality at 50 % makes every drop half-pitched, which is a uniform mush, while
+`Bubble Chance` at 50 % makes half the drops plink clearly and leaves the other
+half dry.
+
+**There is a second bubble mode.** Measuring the isolated drops in the reference
+recordings finds a partial at 1.8 to 2.15 times the fundamental, 15 to 25 dB
+below it, on essentially every drop that lands in water — a bubble pulsating
+hard enough to be heard radiates at twice its breathing frequency as well. Its
+ratio and level are redrawn per droplet, it bends with the fundamental because
+it is a mode of the same bubble, and it decays twice as fast in dB. Surfaces
+that trap no bubble do not get it.
 
 The `Chirp` layer is real physics: a droplet hitting water entrains an air
 bubble whose resonant frequency **rises** as it shrinks, which is why a drip
@@ -142,13 +171,18 @@ into a puddle goes "plink" with an upward bend rather than a flat tone.
 
 Two details of that model matter more than they look:
 
-- **The bend is fast, and independent of the ring time.** A bubble finishes
-  bending within a few tens of milliseconds however long it goes on ringing
-  afterwards. So the chirp is not spread evenly across the decay: the
-  per-sample frequency multiplier starts high and relaxes back towards 1 with
-  its own short time constant, capped at 30 ms. The total sweep still comes to
-  `Chirp × surface` octaves, it just arrives in the first few milliseconds.
-  Spreading it evenly instead makes every drop sound like a slow siren.
+- **The bend is small, gentle, and different for every drop.** The per-sample
+  frequency multiplier starts high and relaxes back towards 1 with its own time
+  constant, taken from the droplet's ring time and capped at 120 ms, so the bend
+  drifts across the drop's whole audible life rather than being crammed into the
+  attack — cramming it in is exactly what makes it read as a swoop. The total
+  sweep comes to `Chirp × surface` octaves *on average*: the amount is drawn per
+  droplet as a uniform `2u`, because measured across the isolated drops in the
+  references the bend runs from about nothing to +0.17 octaves with a median
+  near +0.03, and a field where every drop bends by exactly the same amount does
+  not sound like any of them. That measured ceiling is also why the surface
+  column tops out at a tenth of an octave: past that a droplet stops sounding
+  like water and starts sounding like a laser.
 - **The tone arrives behind the splash.** The impact happens first and the
   bubble is only entrained afterwards, so the tonal layer's envelope is
   `e^(-t/decay) − e^(-t/rise)` rather than a decay from full level. That gives
@@ -257,6 +291,23 @@ that were buzzing stand out by an order of magnitude. Setting `Tonality` from
 that measurement puts Steady Rain at 0.30 — its original hand-dialled value,
 before fitting, was 0.28.
 
+**The objective could not hear how long a drop rings.** `decay_ms` — the median
+ring time of isolated impacts — was measured from the first version of the
+feature set and then never used in the distance, so two presets with the same
+spectrum scored identically whether their droplets rang for 30 ms or 300 ms.
+Ring time turns out to be the feature that per-droplet measurement of the
+references pins down most sharply, and adding it to the objective moved the
+library's mean distance by more than any single parameter change had. It is
+compared in the log domain, so the term means "out by this factor" rather than
+"out by this many milliseconds".
+
+**A drop's own tick has a pitch.** Measured per droplet rather than over the
+whole file, the references' onset transients carry 7 dB more energy above 6 kHz
+than RainyDay's did. The cause was that every droplet got the same broadband
+noise burst. Modelling the impact as the paper does — a two-cycle damped sine
+at a frequency drawn afresh for each droplet — supplies that energy and, more
+importantly, supplies it differently for every drop.
+
 None of these is audible as a defect on its own. Together they were the
 difference between a filtered noise wash and rain.
 
@@ -274,7 +325,8 @@ difference between a filtered noise wash and rain.
 | Drop Decay | 1 – 1200 ms | Base ring time |
 | Decay Spread | 0 – 100 % | Randomisation of ring time |
 | Tonality | 0 – 100 % | Noisy splat ↔ pitched plink |
-| Impact | 0 – 100 % | Broadband click at the moment of impact |
+| Bubble Chance | 0 – 100 % | Fraction of droplets that ring at all; the rest are splash and tick |
+| Impact | 0 – 100 % | Weight of the pitched tick at the moment of impact |
 | Splash | 0 – 100 % | Length and weight of the wet noise burst |
 | Level Spread | 0 – 100 % | Drop-size distribution skew (and so amplitude, pitch and decay spread) |
 | Chirp | −100 – +100 % | Per-droplet pitch sweep; positive rises, as bubbles in water do |
@@ -436,6 +488,23 @@ the plugin — rain recordings to fit the presets against, screenshots of other
 plugins' interfaces — none of which is ours to redistribute. Point
 `RAINYDAY_SOUNDS` at your own directory of recordings to run the analysis
 tools; `tools/analysis/README.md` says what they need to be called.
+
+## References
+
+The droplet model follows the acoustics literature rather than being dialled in
+by ear. The two that shaped it most:
+
+- Liu, Cheng and Tong, *Physically-based Statistical Simulation of Rain Sound*,
+  ACM TOG 38(4), 2019 — the two-mechanism raindrop model this engine's impact
+  and bubble layers are taken from, and the observation that a bubble is not
+  entrained on every impact.
+- Minnaert, *On musical air-bubbles and the sounds of running water*, 1933 —
+  the breathing frequency of a bubble, which is why droplet pitch goes as
+  1/radius and ring time as radius.
+
+Everything the recordings themselves settled — the size of the pitch bend, the
+ring-time spread, the second bubble mode, how much energy the onset carries
+above 6 kHz — is measured in `tools/analysis/`, not taken from either.
 
 ## Notes and limits
 

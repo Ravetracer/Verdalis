@@ -44,6 +44,7 @@ enum ParamId : uint32_t {
    kParamVelToDensity,
    kParamMaxDroplets,
    kParamSeed,
+   kParamBubble,
    kNumParams
 };
 

@@ -135,6 +135,7 @@ private:
       p.splash = static_cast<float>(realValue(kParamSplash));
       p.levelSpread = static_cast<float>(realValue(kParamLevelSpread));
       p.chirp = static_cast<float>(realValue(kParamChirp));
+      p.bubbleChance = static_cast<float>(realValue(kParamBubble));
       p.surface = static_cast<int>(realValue(kParamSurface));
       p.noteTracking = static_cast<float>(realValue(kParamNoteTracking));
 

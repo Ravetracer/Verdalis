@@ -15,9 +15,15 @@ installed to `~/.clap/RainyDay/`.
 
 - Droplets arrive as a Cox process (Poisson with a modulated rate), giving
   correct clustering statistics rather than jittered regularity.
-- Each droplet is three layers: a chirped decaying sine, a noise burst through a
-  resonant state-variable bandpass, and a short broadband impact click. Then a
-  one-pole air-absorption lowpass and equal-power panning.
+- Each droplet is four layers: a chirped decaying sine for the entrained bubble,
+  a quieter second bubble mode near twice that frequency, a noise burst through
+  a resonant state-variable bandpass, and the initial impact — a two-cycle
+  damped sine whose frequency is drawn afresh for every droplet, uniformly
+  between 1 and 16 kHz. Bubble, second mode and splash go through the droplet's
+  radiation highpass; the impact does not, because it is the surface being
+  struck. Then a one-pole air-absorption lowpass and equal-power panning.
+- Not every impact traps a bubble. `Bubble Chance` is the fraction of droplets
+  that ring at all; the rest are splash and tick with no pitch.
 - One drop **size** is drawn per droplet from a Marshall-Palmer-like skewed
   distribution, and amplitude, pitch and ring time all derive from it, so big
   drops are automatically loud, low and long.
@@ -33,7 +39,7 @@ installed to `~/.clap/RainyDay/`.
 
 **Plugin side** (`src/plugin.cpp`):
 
-- 36 parameters, grouped, with real-unit display and text entry both ways.
+- 37 parameters, grouped, with real-unit display and text entry both ways.
 - Extensions: `params`, `audio-ports`, `note-ports`, `state`, `tail`,
   `voice-info`, `preset-load`, `gui`, `timer-support`.
 - Sample-accurate event handling (the block is split at every event boundary),
@@ -50,7 +56,7 @@ installed to `~/.clap/RainyDay/`.
 
 - Embedded through `CLAP_EXT_GUI` (X11, non-floating), repainted from the
   host's timer at 30 Hz, with a fallback thread for hosts that offer no timer.
-- All 36 parameters laid out from the parameter table itself, so the panels are
+- All 37 parameters laid out from the parameter table itself, so the panels are
   the modules and the help line is each parameter's own tip.
 - Preset browser over the factory library plus `~/.config/RainyDay/presets`,
   loading through the same `clap.preset-load` path a host uses.

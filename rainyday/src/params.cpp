@@ -111,6 +111,10 @@ const ParamDesc kParams[kNumParams] = {
         "Ceiling on simultaneously sounding droplets. Trade CPU against detail."),
    STEP(kParamSeed, "seed", "Random Seed", "System", 0.0, 999.0, 0.0, "",
         "Starting point of the random sequence, for a repeatable rain."),
+
+   // Appended after the original 36, so the ids above keep their meaning.
+   PCT(kParamBubble, "bubble", "Bubble Chance", "Rain", 1.0,
+       "Fraction of droplets that ring at all. The rest are only splash and click."),
 };
 
 #undef LIN

@@ -17,12 +17,13 @@ namespace {
 struct SurfaceProfile {
    float decayMul;   // scales droplet ring time
    float resonance;  // resonator Q character, 0..1
-   float clickMul;   // broadband impact weight
+   float clickMul;   // impact weight
    float splashMul;  // wet noise-burst weight
    float chirpOct;   // maximum pitch sweep in octaves
-   float brightness; // scales the per-droplet air lowpass
+   float brightness; // scales the per-droplet air lowpass and the impact pitch
    float tonalMul;   // sine layer weight
    float onsetMul;   // how slowly the tone swells in after the impact
+   float harmonic;   // level of the second bubble mode, relative to the first
 };
 
 // Wet surfaces trap an air bubble, so their tone swells in a few milliseconds
@@ -35,14 +36,21 @@ struct SurfaceProfile {
 // bubble entrainment suggests. Chirp at 100 % now sits at the top of that
 // measured range rather than above it: past roughly a tenth of an octave a
 // droplet stops sounding like water and starts sounding like a laser.
+//
+// The harmonic column is the second bubble mode. Measuring the isolated drops
+// in the reference recordings puts a partial at 1.8 to 2.15 times the
+// fundamental, 15 to 25 dB below it, on essentially every drop that falls into
+// water; it is what a bubble pulsating hard enough to be heard radiates at
+// twice its breathing frequency. It belongs to the bubble, so the surfaces that
+// do not trap one do not get it.
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
-   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f},
-   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f},
-   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f},
-   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f},
-   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f},
-   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f},
-   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f},
+   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f, 0.11f},
+   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f, 0.11f},
+   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f},
+   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f},
+   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f},
+   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f},
+   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f},
 };
 
 // Time constant of the pitch bend, as a fraction of the droplet's ring time and
@@ -69,6 +77,34 @@ constexpr float kBedBandRatio = 0.18f;
 
 // Corner of a droplet's radiation highpass, as a fraction of its own pitch.
 constexpr float kBodyHpRatio = 0.45f;
+
+// The initial impact. Following Liu, Cheng and Tong (2019), it is not noise but
+// a damped sine at a frequency drawn afresh for every droplet, uniform over
+// this range, with a damping constant of twice that frequency so that only
+// about two cycles survive. One drop is therefore a tick with a pitch of its
+// own; a thousand of them a second are broadband, which is the point. The range
+// is scaled by the surface's brightness, so a tin roof ticks higher than
+// leaves.
+//
+// The ceiling is 0.30x the sample rate rather than something just under
+// Nyquist. Damping this hard makes the tick's spectrum about as wide as its own
+// centre frequency, so a blip placed near Nyquist folds a real part of itself
+// back down. At 0.30x the skirt is 7 dB or more down by the time it reaches
+// Nyquist, which for a transient this short is inaudible; at 48 kHz that caps
+// the tick at 14.4 kHz, and at 96 kHz nothing is capped at all.
+constexpr float kImpactMinHz = 1000.0f;
+constexpr float kImpactMaxHz = 16000.0f;
+constexpr float kImpactDampPerHz = 2.0f;
+constexpr float kImpactMaxRate = 0.30f;
+
+// Second bubble mode: a ratio spread around two, and a level spread in dB, both
+// drawn per droplet. It decays twice as fast in dB as the fundamental, which is
+// what a second harmonic riding on a decaying oscillation does.
+constexpr float kHarmonicRatio = 1.97f;
+constexpr float kHarmonicRatioSpreadOct = 0.05f;
+constexpr float kHarmonicLevelSpreadDb = 4.0f;
+constexpr float kHarmonicSpreadClamp = 2.0f; // in sigmas, so +-8 dB and +-0.1 oct
+constexpr float kHarmonicDecayRatio = 2.0f;
 
 // How far the pitch spread is allowed to reach downwards, relative to how far
 // it reaches up.
@@ -409,7 +445,15 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    const float tonalDecaySec =
       clampv(mP.dropDecaySec * sp.decayMul * decayRand * sizeRel, 0.0005f, 4.0f);
    const float noiseDecaySec = clampv(tonalDecaySec * (0.12f + 0.9f * mP.splash), 0.0003f, 4.0f);
-   const float clickDecaySec = clampv(0.0004f + 0.0025f * (1.0f - mP.impact * 0.5f), 0.0002f, 0.02f);
+
+   // --- Impact: one frequency per droplet, damped at twice that frequency.
+   // decayCoef() takes the time to -60 dB, and e^(-2 f t) reaches it at
+   // ln(1000) / (2 f), so a 1 kHz tick lasts 3.5 ms and a 16 kHz one 0.2 ms.
+   const float impactHz =
+      clampv((kImpactMinHz + (kImpactMaxHz - kImpactMinHz) * mRng.uniformPositive()) *
+                sp.brightness,
+             80.0f, kImpactMaxRate * mSampleRate);
+   const float clickDecaySec = 6.907755279f / (kImpactDampPerHz * impactHz);
 
    // --- Distance: nearer drops are louder and brighter. Air absorption sets
    // how quickly the high end is lost with distance.
@@ -428,8 +472,15 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
 
    const float amp = kDropletBaseAmp * mDensityNorm * envLevel * levelRand * distAtten;
 
+   // --- Not every impact traps a bubble. Pumphrey and Elmore's measurements,
+   // quoted by Liu et al., have only a band of drop sizes entraining one on
+   // every impact; the rest of the rain is splash and tick with no pitch at all.
+   // Bubble Chance is that fraction, and at 100 % every droplet rings, which is
+   // what the engine did before the control existed.
+   const bool hasBubble = mRng.uniformPositive() < mP.bubbleChance;
+
    // --- Layer weights.
-   const float tonal = mP.tonality * sp.tonalMul;
+   const float tonal = hasBubble ? mP.tonality * sp.tonalMul : 0.0f;
    const float wet = (1.0f - 0.7f * mP.tonality) * (0.35f + 0.9f * mP.splash) * sp.splashMul;
    const float click = mP.impact * sp.clickMul * 0.5f;
 
@@ -457,14 +508,38 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    d.phase = mRng.uniform();
    d.phaseInc = freq / mSampleRate;
 
+   // --- Second bubble mode. Its own phase and its own faster decay; the ratio
+   // and level are redrawn per droplet so no two drops ring quite alike.
+   const float harmRatio =
+      kHarmonicRatio * std::exp2(kHarmonicRatioSpreadOct *
+                                 clampv(mRng.gaussian(), -kHarmonicSpreadClamp,
+                                        kHarmonicSpreadClamp));
+   const float harmLevel =
+      sp.harmonic *
+      std::pow(10.0f, kHarmonicLevelSpreadDb *
+                         clampv(mRng.gaussian(), -kHarmonicSpreadClamp, kHarmonicSpreadClamp) /
+                         20.0f);
+   d.harmPhase = mRng.uniform();
+   d.harmPhaseInc = clampv(freq * harmRatio / mSampleRate, 1.0e-5f, 0.45f);
+   d.harmAmp = tonalPeak * harmLevel;
+   d.harmDecay = decayCoef(tonalDecaySec / kHarmonicDecayRatio, mSampleRate);
+
+   d.clickPhase = 0.0f;
+   d.clickPhaseInc = impactHz / mSampleRate;
+
    // --- Chirp: a droplet trapping an air bubble in water rises in pitch as the
-   // bubble shrinks, and it does so quickly -- the bend is over long before the
-   // tone has finished ringing. So rather than spreading `chirp * surface`
-   // octaves evenly across the ring, the per-sample frequency multiplier starts
-   // high and relaxes towards 1 with its own short time constant. The total
-   // sweep still comes to chirpOct octaves; it just gets there in the first few
-   // milliseconds, which is what makes a plink read as a plink.
-   const float chirpOct = mP.chirp * sp.chirpOct;
+   // bubble shrinks. The per-sample frequency multiplier starts high and relaxes
+   // towards 1 with its own time constant, taken from the ring time, so the
+   // total sweep comes to chirpOct octaves spread across the drop's audible
+   // life (see kChirpTauFraction: front-loading the same bend into the attack
+   // is what makes it read as a swoop rather than as a bubble settling).
+   //
+   // Drops do not all bend by the same amount. Measured across the isolated
+   // drops in the references the bend runs from about nothing to +0.17 octaves
+   // with a median near +0.03, so the setting is the mean of a uniform draw
+   // rather than a fixed amount: 2u has mean 1, which leaves Chirp meaning what
+   // it meant while no two droplets bend alike.
+   const float chirpOct = mP.chirp * sp.chirpOct * 2.0f * mRng.uniformPositive();
    const float chirpTauSec =
       clampv(tonalDecaySec * kChirpTauFraction, kChirpTauMinSec, kChirpTauMaxSec);
    const float chirpSamples = chirpTauSec * mSampleRate;
@@ -497,7 +572,8 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    // --- Lifetime: 1.6x the slowest decay is about -95 dB, plus the resonator's
    // own ring-down. A short fade at the end keeps the hard stop inaudible.
    const float qRing = (1.0f / clampv(d.resonator.k(), 0.02f, 2.0f)) / (3.14159265f * freq);
-   const float longest = std::max(tonalDecaySec, std::max(noiseDecaySec + qRing, clickDecaySec));
+   const float ringSec = hasBubble ? tonalDecaySec : 0.0f;
+   const float longest = std::max(ringSec, std::max(noiseDecaySec + qRing, clickDecaySec));
    d.lifeMax = static_cast<uint32_t>(clampv(1.6f * longest, 0.001f, 4.0f) * mSampleRate) + 96;
    d.life = 0;
    d.startOffset = offset;
@@ -571,10 +647,17 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
 
       for (; i < numSamples; ++i) {
          const float noise = mRng.white();
+         // Bubble and splash are radiated by the droplet itself, so both go
+         // through its radiation rolloff. The impact is not: it is the surface
+         // being struck, and its pitch has nothing to do with the bubble's, so
+         // rolling it off below the bubble would silence the low ticks that
+         // land under a fine drop. Air absorption applies to all of it.
          float s = (d.tonalAmp - d.tonalRise) * sin2pi(d.phase);
+         s += d.harmAmp * sin2pi(d.harmPhase);
          s += d.resonator.bandpassNormalised(noise * d.noiseAmp);
-         s += noise * d.clickAmp;
-         s = d.body.tick(d.air.tick(s));
+         s = d.body.tick(s);
+         s += d.clickAmp * sin2pi(d.clickPhase);
+         s = d.air.tick(s);
 
          if (d.life >= fadeStart)
             s *= static_cast<float>(d.lifeMax - d.life) * (1.0f / 64.0f);
@@ -585,15 +668,27 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
          d.phase += d.phaseInc;
          if (d.phase >= 1.0f)
             d.phase -= 1.0f;
+         d.harmPhase += d.harmPhaseInc;
+         if (d.harmPhase >= 1.0f)
+            d.harmPhase -= 1.0f;
+         d.clickPhase += d.clickPhaseInc;
+         if (d.clickPhase >= 1.0f)
+            d.clickPhase -= 1.0f;
+
+         // The second mode is a mode of the same bubble, so it bends with it.
          d.phaseInc *= d.chirpRate;
+         d.harmPhaseInc *= d.chirpRate;
          d.chirpRate = 1.0f + (d.chirpRate - 1.0f) * d.chirpRelax;
          if (d.phaseInc > 0.45f)
             d.phaseInc = 0.45f;
          else if (d.phaseInc < 1.0e-5f)
             d.phaseInc = 1.0e-5f;
+         if (d.harmPhaseInc > 0.45f)
+            d.harmPhaseInc = 0.45f;
 
          d.tonalAmp *= d.tonalDecay;
          d.tonalRise *= d.tonalRiseDecay;
+         d.harmAmp *= d.harmDecay;
          d.noiseAmp *= d.noiseDecay;
          d.clickAmp *= d.clickDecay;
 

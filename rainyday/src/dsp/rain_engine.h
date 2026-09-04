@@ -27,6 +27,7 @@ struct EngineParams {
    float splash = 0.35f;
    float levelSpread = 0.6f;
    float chirp = 0.35f;
+   float bubbleChance = 1.0f;
    int surface = 0;
    float noteTracking = 0.5f;
 
@@ -58,11 +59,13 @@ struct EngineParams {
    int seed = 0;
 };
 
-// A single impact. Three synthesis layers share one droplet:
+// A single impact. Four synthesis layers share one droplet:
 //   * a chirped sine that swells in and decays (the "plink" of the air bubble
 //     the impact traps, which is why it arrives just after the splash),
+//   * a second, much quieter bubble mode near twice that frequency,
 //   * a noise burst through a resonant bandpass (the wet splash),
-//   * a very short broadband click (the mechanical impact).
+//   * the initial impact: a two-cycle damped sine at a frequency drawn afresh
+//     for every droplet.
 struct Droplet {
    bool active = false;
    uint32_t startOffset = 0; // sample within the current block where it begins
@@ -76,8 +79,15 @@ struct Droplet {
    // short rise instead of switching on at full level like a beep.
    float tonalAmp = 0.0f, tonalDecay = 0.0f;
    float tonalRise = 0.0f, tonalRiseDecay = 0.0f;
+   // Second bubble mode. Near twice the fundamental but never exactly, with its
+   // own phase so it keeps drifting against it, and its own faster decay.
+   float harmPhase = 0.0f, harmPhaseInc = 0.0f;
+   float harmAmp = 0.0f, harmDecay = 0.0f;
    Svf resonator;
    float noiseAmp = 0.0f, noiseDecay = 0.0f;
+   // The impact is a damped sine, not noise: one frequency per droplet, drawn
+   // uniformly, damped hard enough that only about two cycles survive.
+   float clickPhase = 0.0f, clickPhaseInc = 0.0f;
    float clickAmp = 0.0f, clickDecay = 0.0f;
    OnePoleLp air;
    // A droplet is a small radiator: it cannot put out much energy far below its
@@ -85,7 +95,9 @@ struct Droplet {
    Hp2 body;
    float gainL = 0.0f, gainR = 0.0f;
 
-   inline float peak() const { return (tonalAmp - tonalRise) + noiseAmp + clickAmp; }
+   inline float peak() const {
+      return (tonalAmp - tonalRise) + harmAmp + noiseAmp + clickAmp;
+   }
 };
 
 // One held MIDI note. A voice owns an envelope, its own noise bed and its own

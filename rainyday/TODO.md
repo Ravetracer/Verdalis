@@ -53,18 +53,21 @@ history rather than as a panel of its own.
 
 ### 1d. Layout
 
-Four new parameters take the table from 36 to 40, which the current 10-column
+Four new parameters take the table from 37 to 41, which the current 10-column
 grid cannot hold. Worked-out arrangement, still 10 columns and 912 px wide,
 about 72 px taller:
 
 ```
-Row A (2 tall):  RAIN 7 cols (14 cells)  |  DISTANT 3 cols (6)
+Row A (2 tall):  RAIN 7 cols (14 cells, all 14 now used)  |  DISTANT 3 cols (6)
 Row B (2 tall):  ENVELOPE 3 (6) | FILTER 3 (5 of 6) | SPACE 3 (5 of 6) | CLOSE 1 (2)
 Row C (1 tall):  OUTPUT 3 (3)   | ACTIVITY 7 (droplet history + output meter)
 ```
 
 DISTANT is the renamed BED panel and CLOSE sits directly beneath it on the
-right-hand edge, so the two layer panels read as a pair. The layout is
+right-hand edge, so the two layer panels read as a pair. Note that RAIN is now
+exactly full: Bubble Chance took the cell that Surface used to occupy as its
+second column, so a fifteenth Rain parameter needs a real relayout, not another
+cell freed by a span change. The layout is
 generated from `kPanelSpecs` in `src/gui/gui.cpp`, so this is a table edit plus
 `kWindowH`, not a rewrite.
 

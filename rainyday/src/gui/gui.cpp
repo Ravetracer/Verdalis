@@ -66,11 +66,12 @@ struct PanelSpec {
    int count;
 };
 
+// Seven per line, which is one row of the panel.
 const uint32_t kRainParams[] = {
-   kParamSurface,   kParamDensity, kParamClumping, kParamDropPitch,   kParamPitchSpread,
+   kParamSurface,  kParamDensity, kParamClumping, kParamDropPitch,   kParamPitchSpread,
    kParamDropDecay, kParamDecaySpread,
-   kParamTonality,  kParamImpact,  kParamSplash,   kParamLevelSpread, kParamChirp,
-   kParamNoteTracking,
+   kParamTonality, kParamBubble,  kParamImpact,   kParamSplash,      kParamLevelSpread,
+   kParamChirp,     kParamNoteTracking,
 };
 const uint32_t kSpaceParams[] = {kParamWidth,       kParamDistance,  kParamAir,
                                  kParamSpaceAmount, kParamSpaceSize, kParamSpaceDamping};
@@ -197,10 +198,11 @@ double normalised(const ParamDesc &d, double raw) {
 
 bool isChip(const ParamDesc &d) { return d.kind == ParamKind::Enum; }
 
-// Surface has seven names to fit and is the parameter that most changes the
-// character of the instrument, so it gets two columns; everything else takes
-// one. This is also what makes the RAIN panel come out exactly full.
-int cellSpan(uint32_t id) { return id == kParamSurface ? 2 : 1; }
+// Every cell is one column wide. Surface used to take two so that its seven
+// names had room, but Filter Type already prints "Bandpass" in a single cell,
+// and giving the fourteenth Rain parameter its place is worth more than the
+// extra width. The RAIN panel still comes out exactly full.
+int cellSpan(uint32_t) { return 1; }
 bool isStepped(const ParamDesc &d) {
    return d.kind == ParamKind::Enum || d.kind == ParamKind::Stepped;
 }

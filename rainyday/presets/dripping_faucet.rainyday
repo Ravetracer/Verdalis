@@ -13,6 +13,7 @@ pitch_spread = 0.984
 drop_decay = 75
 decay_spread = 0.573
 tonality = 0.513
+bubble = 1
 impact = 0.743
 splash = 0.963
 level_spread = 0.35
