@@ -154,7 +154,7 @@ constexpr float kBlastTauMin = 0.0008f;
 constexpr float kBlastTauMax = 0.05f;
 // Peak overpressure of one pulse at Impact 100 %, against the arrival it is
 // taken from.
-constexpr float kBlastGain = 3.5f;
+constexpr float kBlastGain = 12.0f;
 // Only arrivals inside this much of the flash's start are candidates: the
 // blast belongs to the return stroke, not to whatever the cloud does ten
 // seconds later. The window is cut into as many slices as there are pulses,

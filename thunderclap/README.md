@@ -14,7 +14,7 @@ makes thunder and no rain. Put them on two tracks.
 - 44 parameters covering the lightning channel, how its shocks are heard, the
   landscape's echoes, the room, the stereo field, a filter, the trigger
   envelope and a compressor
-- 16 factory presets from a strike two hundred metres away to heat lightning on
+- 17 factory presets from a strike two hundred metres away to heat lightning on
   the horizon, measured against 38 recordings of real thunder
 - Three trigger modes: one shot, gated, and a storm that keeps flashing while
   the note is held
@@ -372,6 +372,11 @@ the spectrum through the first 300 ms — a band the elements' own N-waves, each
 one short and each arriving at its own time, cannot fill between them however
 many there are. It defaults to 0, which is the model without it.
 
+Two presets use it. Impact carries a lot of level, so both give back output
+gain to keep a hard flash off the clipper: the loudest of twelve seeds peaks
+at -0.5 dBFS on City Thunder and -0.4 dBFS on Heavy Impact. Turning Impact up
+on a preset that was matched without it will want the same treatment.
+
 ### Stereo
 
 | Parameter | Range | What it does |
@@ -430,9 +435,10 @@ not every mix wants it.
 |---|---|
 | Overhead Crack | A strike two hundred metres away: a short, violent tear |
 | Close Strike | A few hundred metres off: crack, then a long rolling decay |
+| Heavy Impact | Close enough to arrive as one blow: the blast lands first, dark, and it is over in seconds |
 | Dry Crack | One stroke, small channel, hardly any rumble or echo |
 | Single Bolt | One clean bolt a kilometre off, one clap, an honest decay |
-| City Thunder | A phone's thunder: bright open crack, wandering claps, a deep late swell |
+| City Thunder | A phone's thunder: the blast hits, claps wander the roofs, a deep late swell |
 | Rolling Thunder | Crooked, branching, several claps, twenty seconds of roll |
 | Mountain Echoes | A strike in a valley; the echoes outlast the thunder |
 | Cloud Crawler | Intracloud lightning; nothing reaches the ground, the sky rolls |
