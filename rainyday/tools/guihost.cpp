@@ -220,6 +220,23 @@ int main(int argc, char **argv) {
       while (XPending(dpy)) {
          XEvent ev;
          XNextEvent(dpy, &ev);
+         // The user resized the host window: offer the new size to the plugin
+         // the way a DAW does -- adjust_size to snap it, set_size to take it --
+         // and follow the plugin to the size it settled on.
+         if (ev.type == ConfigureNotify && gui->can_resize(plug)) {
+            uint32_t nw = static_cast<uint32_t>(ev.xconfigure.width);
+            uint32_t nh = static_cast<uint32_t>(ev.xconfigure.height);
+            if (nw != w || nh != h) {
+               gui->adjust_size(plug, &nw, &nh);
+               if (gui->set_size(plug, nw, nh)) {
+                  w = nw;
+                  h = nh;
+                  XResizeWindow(dpy, win, w, h);
+                  std::printf("resized %ux%u\n", w, h);
+                  std::fflush(stdout);
+               }
+            }
+         }
       }
 #endif
       std::this_thread::sleep_for(std::chrono::milliseconds(16));

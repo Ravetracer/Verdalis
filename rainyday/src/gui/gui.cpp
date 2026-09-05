@@ -441,8 +441,38 @@ public:
    }
 #endif
 
+   // Resizing is zooming: every coordinate in this file is a design pixel and
+   // cairo applies one scale to all of it, so a host that asks for a bigger
+   // window gets the same layout drawn larger. Nothing reflows, and nothing has
+   // to. The scale range is generous at the top for large displays and stops at
+   // half size at the bottom, where the help line becomes unreadable.
+   static constexpr double kMinScale = 0.5;
+   static constexpr double kMaxScale = 4.0;
+
+   static double scaleFor(uint32_t width, uint32_t height) {
+      const double s = std::min(width / static_cast<double>(kWindowW),
+                                height / static_cast<double>(kWindowH));
+      return std::min(kMaxScale, std::max(kMinScale, s));
+   }
+
+   void designSize(uint32_t *width, uint32_t *height) const override {
+      *width = kWindowW;
+      *height = kWindowH;
+   }
+
+   void fitSize(uint32_t *width, uint32_t *height) const override {
+      const double s = scaleFor(*width, *height);
+      *width = static_cast<uint32_t>(kWindowW * s + 0.5);
+      *height = static_cast<uint32_t>(kWindowH * s + 0.5);
+   }
+
+   bool resize(uint32_t width, uint32_t height) override {
+      setScale(scaleFor(width, height));
+      return true;
+   }
+
    void setScale(double scale) override {
-      if (scale < 0.5 || scale > 4.0 || std::fabs(scale - mScale) < 0.001)
+      if (scale < kMinScale || scale > kMaxScale || std::fabs(scale - mScale) < 0.001)
          return;
       mScale = scale;
       if (!mWindow)
@@ -480,6 +510,7 @@ public:
          return;
       if (mSaveOpen)
          closeSaveDialog();
+      closeEntry();
 #if defined(_WIN32)
       ShowWindow(mWindow, SW_HIDE);
 #else
@@ -821,6 +852,123 @@ private:
       drawText(cr, cx, r.y + 19, space + 1, 8.0, true, Align::Center);
    }
 
+   // The value under a knob is also a text field. Click it and type: whatever
+   // the display prints is accepted back, including units and multipliers
+   // ("2.2k", "500 ms", "-12 dB"), because paramTextToValue is the same parser
+   // the host's text entry goes through. Like the save field it grabs the
+   // keyboard for as long as it is open, because an embedded window is not
+   // given the focus by every host; it is a modal field and lives for one
+   // value, which is the case where a grab is defensible.
+   // Both window systems reduce a keystroke to the same few commands plus some
+   // text, so the fields do not need to know which one they are on.
+   enum class KeyCommand { NoCommand, Escape, Accept, Backspace, Up, Down };
+
+   Rect valueRect(const Rect &cell) const { return {cell.x + 6, cell.y + 74, cell.w - 12, 22}; }
+
+   void openEntry(uint32_t id) {
+      const ParamDesc &d = paramTable()[id];
+      if (isChip(d))
+         return;
+      mBrowserOpen = false;
+      closeMenu();
+      char text[128];
+      if (!paramValueToText(d, mDelegate.guiParamValue(id), text, sizeof(text)))
+         text[0] = 0;
+      mEntryParam = static_cast<int>(id);
+      mEntryText = text;
+      mEntryFailed = false;
+      mEntryFresh = true;
+      grabKeyboard();
+      mDirty = true;
+   }
+
+   // Every path that leaves the field comes through here, for the same reason
+   // as closeSaveDialog: a grab that outlives its field is a dead keyboard.
+   void closeEntry() {
+      if (mEntryParam < 0)
+         return;
+      mEntryParam = -1;
+      releaseKeyboard();
+      mDirty = true;
+   }
+
+   void commitEntry() {
+      if (mEntryParam < 0)
+         return;
+      const uint32_t id = static_cast<uint32_t>(mEntryParam);
+      double raw = 0.0;
+      if (!paramTextToValue(paramTable()[id], mEntryText.c_str(), &raw)) {
+         mEntryFailed = true;
+         mDirty = true;
+         return;
+      }
+      mDelegate.guiBeginEdit(id);
+      mDelegate.guiSetParam(id, raw);
+      mDelegate.guiEndEdit(id);
+      closeEntry();
+   }
+
+   void onEntryKey(KeyCommand cmd, const char *text, int textLen) {
+      if (cmd == KeyCommand::Escape) {
+         closeEntry();
+         return;
+      }
+      if (cmd == KeyCommand::Accept) {
+         commitEntry();
+         return;
+      }
+      // The field opens showing the current value as selected text: the first
+      // keystroke replaces it, and only then does typing append.
+      if (cmd == KeyCommand::Backspace) {
+         if (mEntryFresh)
+            mEntryText.clear();
+         else if (!mEntryText.empty())
+            mEntryText.pop_back();
+         mEntryFresh = false;
+      } else {
+         bool typed = false;
+         for (int i = 0; i < textLen; ++i) {
+            const unsigned char c = static_cast<unsigned char>(text[i]);
+            if (c < 0x20 || c == 0x7F)
+               continue;
+            if (mEntryFresh) {
+               mEntryText.clear();
+               mEntryFresh = false;
+            }
+            if (mEntryText.size() < 24)
+               mEntryText.push_back(static_cast<char>(c));
+            typed = true;
+         }
+         if (!typed && cmd == KeyCommand::NoCommand)
+            return; // a modifier or dead key: nothing to show
+      }
+      mEntryFailed = false;
+      mDirty = true;
+   }
+
+   void drawEntryField(cairo_t *cr, const Rect &cell) {
+      const Rect f = valueRect(cell);
+      setColor(cr, kKnobFace);
+      roundedRect(cr, f.x, f.y, f.w, f.h, 3);
+      cairo_fill_preserve(cr);
+      if (mEntryFailed)
+         cairo_set_source_rgb(cr, 0.85, 0.30, 0.30);
+      else
+         setColor(cr, kAccent, 0.9);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      if (mEntryFresh && !mEntryText.empty()) {
+         // Selected: the text sits on an accent bar, as a text field shows a
+         // selection, so it is clear that typing replaces it.
+         setColor(cr, kAccent, 0.35);
+         roundedRect(cr, f.x + 4, f.y + 4, f.w - 8, f.h - 8, 2);
+         cairo_fill(cr);
+      }
+      setColor(cr, kText);
+      const std::string shown = mEntryFresh ? mEntryText : mEntryText + "|";
+      drawText(cr, f.x + f.w * 0.5, f.y + f.h * 0.5 + 4, shown.c_str(), 9.5, false, Align::Center);
+   }
+
    void drawCell(cairo_t *cr, const Rect &r, uint32_t id) {
       const ParamDesc &d = paramTable()[id];
       const double raw = mDelegate.guiParamValue(id);
@@ -888,6 +1036,10 @@ private:
       cairo_line_to(cr, cx + std::cos(ang) * (kKnobR - 7), cy + std::sin(ang) * (kKnobR - 7));
       cairo_stroke(cr);
 
+      if (mEntryParam == static_cast<int>(id)) {
+         drawEntryField(cr, r);
+         return;
+      }
       setColor(cr, hot ? kAccent : kText, hot ? 1.0 : 0.85);
       drawText(cr, cx, r.y + 86, text, 9.5, false, Align::Center);
    }
@@ -1245,10 +1397,7 @@ private:
    }
 
    // `None` is taken: X11 defines it as a macro, the same trap as Widget.
-   enum class KeyCommand { NoCommand, Escape, Accept, Backspace };
 
-   // Both window systems reduce a keystroke to the same three commands plus
-   // some text, so the field itself does not need to know which one it is on.
    void onSaveKey(KeyCommand cmd, const char *text, int textLen) {
       if (cmd == KeyCommand::Escape) {
          closeSaveDialog();
@@ -1276,14 +1425,46 @@ private:
       mDirty = true;
    }
 
-   // Anything typed while an overlay other than the save field is open just
-   // dismisses it.
-   void onKeyDismiss() {
-      if (mBrowserOpen || mMenuParam >= 0) {
-         mBrowserOpen = false;
+   // A keystroke while a list is open. Up and down move through a selector
+   // list or scroll the browser, Return and Escape close them, and anything
+   // else dismisses whatever is open, which is what a key did here before the
+   // lists learnt to navigate. Whether keys arrive at all is up to the host:
+   // an embedded window is not given the focus by every one of them.
+   void onOverlayKey(KeyCommand cmd) {
+      if (mMenuParam >= 0) {
+         if (cmd == KeyCommand::Up || cmd == KeyCommand::Down) {
+            stepMenu(cmd == KeyCommand::Up ? -1 : 1);
+            return;
+         }
          closeMenu();
          mDirty = true;
+         return;
       }
+      if (mBrowserOpen) {
+         if (cmd == KeyCommand::Up || cmd == KeyCommand::Down) {
+            scrollBrowser(cmd == KeyCommand::Up ? -1 : 1);
+            return;
+         }
+         mBrowserOpen = false;
+         mDirty = true;
+      }
+   }
+
+   // Moves the open selector list's value by one entry, clamped at the ends.
+   void stepMenu(int direction) {
+      if (mMenuParam < 0)
+         return;
+      const uint32_t id = static_cast<uint32_t>(mMenuParam);
+      const ParamDesc &d = paramTable()[id];
+      const int cur = static_cast<int>(std::floor(mDelegate.guiParamValue(id) + 0.5));
+      const int next = std::min(static_cast<int>(d.enumCount) - 1, std::max(0, cur + direction));
+      if (next == cur)
+         return;
+      mDelegate.guiBeginEdit(id);
+      mDelegate.guiSetParam(id, static_cast<double>(next));
+      mDelegate.guiEndEdit(id);
+      mMenuHover = next;
+      mDirty = true;
    }
 
    void drawHelpLine(cairo_t *cr) {
@@ -1299,7 +1480,7 @@ private:
       }
       if (!msg)
          msg = "Drag a knob to edit, double-click to reset, shift-drag for fine "
-               "control. Click a menu to pick from the list, its arrows to step.";
+               "control. Click a menu to pick from the list, its arrows to step. Click a value to type one.";
 
       setColor(cr, kTextMute);
       drawText(cr, kMargin, mHelpY + kHelpH - 8, msg, 10, false, Align::Left);
@@ -1322,16 +1503,62 @@ private:
       return r;
    }
 
+   // Rows that fit in the panel. A library larger than that scrolls, one row
+   // per wheel step; the factory set fits without scrolling.
+   int browserVisibleRows() const {
+      const Rect p = browserPanel();
+      return std::max(1, static_cast<int>((p.h - 40 - kBrowserPad) / kBrowserRowH));
+   }
+
+   int browserMaxScroll() const { return std::max(0, browserRows() - browserVisibleRows()); }
+
+   void scrollBrowser(int rows) {
+      const int next = std::min(browserMaxScroll(), std::max(0, mBrowserScroll + rows));
+      if (next != mBrowserScroll) {
+         mBrowserScroll = next;
+         mDirty = true;
+      }
+   }
+
+   void openBrowser() {
+      mBrowserOpen = true;
+      mBrowserHover = -1;
+      // Open with the current preset in view.
+      const int cur = mDelegate.guiCurrentPreset();
+      const int row = cur >= 0 ? cur / kBrowserCols : 0;
+      mBrowserScroll = std::min(browserMaxScroll(),
+                                std::max(0, row - browserVisibleRows() / 2));
+      closeMenu();
+      mDirty = true;
+   }
+
+   // Row-major, so scrolling by rows keeps every column moving together. The
+   // row is relative to the scroll position; a negative or too-large row is a
+   // preset that is currently out of view and browserItemVisible() says so.
    Rect browserItemRect(int index) const {
       const Rect p = browserPanel();
-      const int rows = std::max(1, browserRows());
-      const int col = index / rows;
-      const int row = index % rows;
+      const int col = index % kBrowserCols;
+      const int row = index / kBrowserCols - mBrowserScroll;
       Rect r;
-      r.w = (p.w - 2 * kBrowserPad) / kBrowserCols;
+      r.w = (p.w - 2 * kBrowserPad - kBrowserScrollW) / kBrowserCols;
       r.h = kBrowserRowH;
       r.x = p.x + kBrowserPad + col * r.w;
       r.y = p.y + 40 + row * r.h;
+      return r;
+   }
+
+   bool browserItemVisible(int index) const {
+      const int row = index / kBrowserCols - mBrowserScroll;
+      return row >= 0 && row < browserVisibleRows();
+   }
+
+   Rect browserScrollbar() const {
+      const Rect p = browserPanel();
+      Rect r;
+      r.w = kBrowserScrollW - 6;
+      r.x = p.x + p.w - kBrowserPad - r.w;
+      r.y = p.y + 40;
+      r.h = browserVisibleRows() * kBrowserRowH;
       return r;
    }
 
@@ -1421,15 +1648,17 @@ private:
       setColor(cr, kAccent);
       drawText(cr, p.x + kBrowserPad, p.y + 24, "PRESETS", 11, true, Align::Left);
       setColor(cr, kTextMute);
-      drawText(cr, p.x + p.w - kBrowserPad, p.y + 24, "click to load, or click outside to close",
+      drawText(cr, p.x + p.w - kBrowserPad, p.y + 24,
+               browserMaxScroll() > 0 ? "click to load, wheel to scroll, click outside to close"
+                                      : "click to load, or click outside to close",
                9, false, Align::Right);
 
       const auto &list = mDelegate.guiPresets();
       const int cur = mDelegate.guiCurrentPreset();
       for (size_t i = 0; i < list.size(); ++i) {
-         const Rect r = browserItemRect(static_cast<int>(i));
-         if (r.y + r.h > p.y + p.h)
+         if (!browserItemVisible(static_cast<int>(i)))
             continue;
+         const Rect r = browserItemRect(static_cast<int>(i));
          const bool hot = mBrowserHover == static_cast<int>(i);
          const bool sel = cur == static_cast<int>(i);
          if (hot || sel) {
@@ -1443,6 +1672,22 @@ private:
             setColor(cr, kTextMute);
             drawText(cr, r.x + r.w - 10, r.y + r.h * 0.5 + 4, "USER", 8, true, Align::Right);
          }
+      }
+
+      // A scrollbar only when there is something to scroll: a track with a
+      // thumb whose length is the visible fraction of the list.
+      if (browserMaxScroll() > 0) {
+         const Rect sb = browserScrollbar();
+         setColor(cr, kText, 0.08);
+         roundedRect(cr, sb.x, sb.y, sb.w, sb.h, 3);
+         cairo_fill(cr);
+         const double frac = browserVisibleRows() / static_cast<double>(browserRows());
+         const double thumbH = std::max(18.0, sb.h * frac);
+         const double thumbY =
+            sb.y + (sb.h - thumbH) * (mBrowserScroll / static_cast<double>(browserMaxScroll()));
+         setColor(cr, kAccent, 0.55);
+         roundedRect(cr, sb.x, thumbY, sb.w, thumbH, 3);
+         cairo_fill(cr);
       }
    }
 
@@ -1513,10 +1758,6 @@ private:
          }
          return 0;
       case WM_KEYDOWN: {
-         if (!mSaveOpen) {
-            onKeyDismiss();
-            return 0;
-         }
          KeyCommand cmd = KeyCommand::NoCommand;
          if (wp == VK_ESCAPE)
             cmd = KeyCommand::Escape;
@@ -1524,16 +1765,32 @@ private:
             cmd = KeyCommand::Accept;
          else if (wp == VK_BACK)
             cmd = KeyCommand::Backspace;
-         if (cmd != KeyCommand::NoCommand)
-            onSaveKey(cmd, nullptr, 0);
+         else if (wp == VK_UP)
+            cmd = KeyCommand::Up;
+         else if (wp == VK_DOWN)
+            cmd = KeyCommand::Down;
+         if (!mSaveOpen && mEntryParam < 0) {
+            onOverlayKey(cmd);
+            return 0;
+         }
+         if (cmd != KeyCommand::NoCommand) {
+            if (mSaveOpen)
+               onSaveKey(cmd, nullptr, 0);
+            else
+               onEntryKey(cmd, nullptr, 0);
+         }
          return 0; // the text itself arrives as WM_CHAR
       }
       case WM_CHAR: {
-         if (!mSaveOpen)
+         if (!mSaveOpen && mEntryParam < 0)
             return 0;
          const char c = static_cast<char>(wp);
-         if (static_cast<unsigned char>(c) >= 0x20 && c != 0x7F)
-            onSaveKey(KeyCommand::NoCommand, &c, 1);
+         if (static_cast<unsigned char>(c) >= 0x20 && c != 0x7F) {
+            if (mSaveOpen)
+               onSaveKey(KeyCommand::NoCommand, &c, 1);
+            else
+               onEntryKey(KeyCommand::NoCommand, &c, 1);
+         }
          return 0;
       }
       default:
@@ -1572,10 +1829,6 @@ private:
             char buf[32];
             KeySym sym = 0;
             const int n = XLookupString(&ev.xkey, buf, sizeof(buf) - 1, &sym, nullptr);
-            if (!mSaveOpen) {
-               onKeyDismiss();
-               break;
-            }
             KeyCommand cmd = KeyCommand::NoCommand;
             if (sym == XK_Escape)
                cmd = KeyCommand::Escape;
@@ -1583,7 +1836,16 @@ private:
                cmd = KeyCommand::Accept;
             else if (sym == XK_BackSpace)
                cmd = KeyCommand::Backspace;
-            onSaveKey(cmd, buf, n);
+            else if (sym == XK_Up || sym == XK_KP_Up)
+               cmd = KeyCommand::Up;
+            else if (sym == XK_Down || sym == XK_KP_Down)
+               cmd = KeyCommand::Down;
+            if (mSaveOpen)
+               onSaveKey(cmd, buf, n);
+            else if (mEntryParam >= 0)
+               onEntryKey(cmd, buf, n);
+            else
+               onOverlayKey(cmd);
             break;
          }
          case ClientMessage:
@@ -1626,7 +1888,23 @@ private:
          return;
       }
 
+      if (mEntryParam >= 0) {
+         const bool inside = valueRect(cellRectFor(static_cast<uint32_t>(mEntryParam))).contains(x, y);
+         const bool second = be.button == kButtonLeft && mLastClickParam == mEntryParam &&
+                             be.time - mLastClickTime < 400;
+         if (inside && !second)
+            return; // a click in the field it is typing into
+         // Anywhere else cancels the entry, and the click then does what it
+         // would have done; a double-click on the value falls through to the
+         // reset it has always been.
+         closeEntry();
+      }
+
       if (mMenuParam >= 0) {
+         if (be.button == kWheelUp || be.button == kWheelDown) {
+            stepMenu(be.button == kWheelUp ? -1 : 1);
+            return;
+         }
          if (be.button == kButtonLeft) {
             const int item = menuItemAt(x, y);
             const bool inside = menuPanel().contains(x, y);
@@ -1644,6 +1922,10 @@ private:
       }
 
       if (mBrowserOpen) {
+         if (be.button == kWheelUp || be.button == kWheelDown) {
+            scrollBrowser(be.button == kWheelUp ? -1 : 1);
+            return;
+         }
          if (be.button == kButtonLeft) {
             const int item = browserItemAt(x, y);
             if (item >= 0)
@@ -1676,10 +1958,7 @@ private:
          return;
       }
       if (mNameRect.contains(x, y)) {
-         mBrowserOpen = true;
-         mBrowserHover = -1;
-         closeMenu();
-         mDirty = true;
+         openBrowser();
          return;
       }
 
@@ -1720,6 +1999,12 @@ private:
             mMenuHover = menuItemAt(x, y);
             mDirty = true;
          }
+         return;
+      }
+
+      if (be.button == kButtonLeft &&
+          valueRect(cellRectFor(static_cast<uint32_t>(id))).contains(x, y)) {
+         openEntry(static_cast<uint32_t>(id));
          return;
       }
 
@@ -1794,12 +2079,10 @@ private:
 
    int browserItemAt(double x, double y) const {
       const auto &list = mDelegate.guiPresets();
-      const Rect p = browserPanel();
       for (size_t i = 0; i < list.size(); ++i) {
-         const Rect r = browserItemRect(static_cast<int>(i));
-         if (r.y + r.h > p.y + p.h)
+         if (!browserItemVisible(static_cast<int>(i)))
             continue;
-         if (r.contains(x, y))
+         if (browserItemRect(static_cast<int>(i)).contains(x, y))
             return static_cast<int>(i);
       }
       return -1;
@@ -1847,6 +2130,7 @@ private:
    static constexpr int kBrowserCols = 3;
    static constexpr int kBrowserPad = 14;
    static constexpr int kBrowserRowH = 26;
+   static constexpr int kBrowserScrollW = 14;
 
    GuiDelegate &mDelegate;
 
@@ -1883,7 +2167,12 @@ private:
 
    bool mBrowserOpen = false;
    int mBrowserHover = -1;
+   int mBrowserScroll = 0; // first visible row
    bool mSaveOpen = false;
+   int mEntryParam = -1; // knob whose value is being typed, or -1
+   std::string mEntryText;
+   bool mEntryFailed = false;
+   bool mEntryFresh = false; // the current value is shown selected; typing replaces it
    bool mKeyboardGrabbed = false;
    bool mSaveFailed = false;
    std::string mSaveName;

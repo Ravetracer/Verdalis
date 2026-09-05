@@ -67,6 +67,15 @@ public:
    virtual void setTitle(const char *title) = 0;
    virtual void setScale(double scale) = 0;
    virtual void size(uint32_t *width, uint32_t *height) const = 0;
+   // The layout's own size at scale 1, which is the aspect ratio a host has to
+   // keep when it resizes the window.
+   virtual void designSize(uint32_t *width, uint32_t *height) const = 0;
+   // Snaps a requested size to one the window can take: the largest scale that
+   // fits inside it, within the scale range, at the design aspect ratio.
+   virtual void fitSize(uint32_t *width, uint32_t *height) const = 0;
+   // Resizes to the requested size by choosing the scale from it. The window
+   // ends up at fitSize() of the request.
+   virtual bool resize(uint32_t width, uint32_t height) = 0;
    virtual void show() = 0;
    virtual void hide() = 0;
 

@@ -882,19 +882,39 @@ private:
       return true;
    }
 
-   static bool guiCanResize(const clap_plugin_t *) { return false; }
+   // The window resizes by zooming: one layout, one cairo scale, so it keeps
+   // its aspect ratio and the host is told so. adjust_size snaps whatever the
+   // host proposes to the nearest size the window can take, and set_size then
+   // takes it.
+   static bool guiCanResize(const clap_plugin_t *) { return true; }
 
-   static bool guiGetResizeHints(const clap_plugin_t *, clap_gui_resize_hints_t *) {
-      return false;
+   static bool guiGetResizeHints(const clap_plugin_t *p, clap_gui_resize_hints_t *hints) {
+      RainyDayPlugin *plug = self(p);
+      if (!plug->mGui || !hints)
+         return false;
+      uint32_t w = 0, h = 0;
+      plug->mGui->designSize(&w, &h);
+      hints->can_resize_horizontally = true;
+      hints->can_resize_vertically = true;
+      hints->preserve_aspect_ratio = true;
+      hints->aspect_ratio_width = w;
+      hints->aspect_ratio_height = h;
+      return true;
    }
 
    static bool guiAdjustSize(const clap_plugin_t *p, uint32_t *width, uint32_t *height) {
-      return guiGetSize(p, width, height);
+      RainyDayPlugin *plug = self(p);
+      if (!plug->mGui || !width || !height)
+         return false;
+      plug->mGui->fitSize(width, height);
+      return true;
    }
 
    static bool guiSetSize(const clap_plugin_t *p, uint32_t width, uint32_t height) {
-      uint32_t w = 0, h = 0;
-      return guiGetSize(p, &w, &h) && w == width && h == height;
+      RainyDayPlugin *plug = self(p);
+      if (!plug->mGui)
+         return false;
+      return plug->mGui->resize(width, height);
    }
 
    static bool guiSetParent(const clap_plugin_t *p, const clap_window_t *window) {
