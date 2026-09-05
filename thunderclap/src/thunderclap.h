@@ -6,9 +6,9 @@
 
 namespace thunderclap {
 
-constexpr char kPluginId[] = "audio.rainyday.thunderclap";
+constexpr char kPluginId[] = "de.ravetracer.thunderclap";
 constexpr char kPluginName[] = "ThunderClap";
-constexpr char kPluginVendor[] = "RainyDay Audio";
+constexpr char kPluginVendor[] = "Ravetracer";
 constexpr char kPluginVersion[] = "1.0.0";
 constexpr char kPluginUrl[] = "https://github.com/";
 constexpr char kPluginDescription[] =
@@ -16,7 +16,7 @@ constexpr char kPluginDescription[] =
    "every shock wave is computed.";
 
 constexpr char kPresetExtension[] = "thunderclap";
-constexpr char kProviderId[] = "audio.rainyday.thunderclap.preset-provider";
+constexpr char kProviderId[] = "de.ravetracer.thunderclap.preset-provider";
 
 // Absolute path to the "presets" directory that sits next to the loaded
 // plugin binary, or an empty string if it cannot be determined.

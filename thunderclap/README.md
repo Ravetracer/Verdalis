@@ -62,7 +62,7 @@ for a `presets` directory **next to its own binary**, so keep them together.
 
 `~/.clap` is scanned by default. After installing, restart Bitwig or rescan
 under *Settings → Locations → Plug-in Locations*. ThunderClap then shows up as
-an instrument (`RainyDay Audio`), and the factory presets are indexed through
+an instrument (`Ravetracer`), and the factory presets are indexed through
 CLAP's preset-discovery mechanism.
 
 Drop it on an instrument track and hit a key.
