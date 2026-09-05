@@ -27,6 +27,11 @@ up, which is what "the same rain, further away" actually means.
 
 FULL = 'full'
 TONE = 'tone'
+# Sparse drips live or die on the single droplet and the room around it, and
+# where the recording is of that room, the space and filter controls are fitted
+# too. The cave reference has a measured reverberation time and a measured slap;
+# leaving Space Size to taste would be leaving the cave to taste.
+DROP = 'drop'
 
 PAIRS = [
     ('steady_rain',       'rain_on_roof',                FULL),
@@ -37,7 +42,7 @@ PAIRS = [
     ('inside_the_car',    'rain_in_car',                 FULL),
     ('puddle_plinks',     'multiple_water_drops',        FULL),
     ('dripping_faucet',   'multiple_water_drops_faucet', FULL),
-    ('cave_drips',        'long_real_cave_drops',        FULL),
+    ('cave_drips',        'long_real_cave_drops',        DROP),
     ('downpour',          'rain_on_concrete',            TONE),
     ('storm_front',       'rain_on_concrete',            TONE),
     ('tropical_monsoon',  'rain_on_roof',                TONE),

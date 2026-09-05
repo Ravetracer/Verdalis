@@ -26,13 +26,20 @@ import fit
 import fitlib
 import loudness
 import refs
-from pairs import PAIRS, BAND_WEIGHT, FULL
+from pairs import PAIRS, BAND_WEIGHT, FULL, DROP
 
 PRESETS = os.path.join(fitlib.ROOT, 'presets')
 
 
 def names_for(mode):
+    if mode == DROP:
+        return fit.DROP_PARAMS
     return fit.FULL_PARAMS if mode == FULL else fit.TONE_PARAMS
+
+
+def selected(args):
+    only = getattr(args, 'only', None)
+    return [p for p in PAIRS if not only or p[0] in only]
 
 
 def cmd_report(args):
@@ -40,21 +47,23 @@ def cmd_report(args):
     print(f"{'preset':20s} {'reference':28s} {'dist':>8s}   "
           + ' '.join(f'{n:>6s}' for n in feat.BAND_NAMES))
     total = 0.0
-    for preset, ref, _ in PAIRS:
+    pairs = selected(args)
+    for preset, ref, _ in pairs:
         params, meta = fitlib.read_preset(os.path.join(args.presets, preset + '.rainyday'))
         target = refs.reference(ref)
         ds, bands = [], []
+        seconds = max(7.0, fit.seconds_for(target))
         for seed in args.seeds:
             p = dict(params)
             p['seed'] = str(seed)
-            f = fitlib.analyse_render(r.render(p, meta, 7.0))
+            f = fitlib.analyse_render(r.render(p, meta, seconds))
             ds.append(fitlib.distance(f, target, BAND_WEIGHT))
             bands.append(f['bands'])
         err = np.mean(bands, axis=0) - target['bands']
         total += float(np.mean(ds))
         print(f'{preset:20s} {ref:28s} {np.mean(ds):8.1f}   '
               + ' '.join(f'{v:+6.1f}' for v in err))
-    print(f"\n{'mean':20s} {'':28s} {total / len(PAIRS):8.1f}")
+    print(f"\n{'mean':20s} {'':28s} {total / len(pairs):8.1f}")
     r.close()
 
 
@@ -64,7 +73,7 @@ def cmd_fit(args):
     f = fit.Fitter(pool)
     print(f'fitting with {pool.jobs} render processes', flush=True)
     t0 = time.time()
-    for preset, ref, mode in PAIRS:
+    for preset, ref, mode in selected(args):
         fit.fit_preset(f, preset, ref, names_for(mode), args.out)
         print(f'  [{time.time() - t0:6.0f}s] {preset}\n', flush=True)
     pool.close()
@@ -83,10 +92,12 @@ def main():
     p = sub.add_parser('report')
     p.add_argument('--presets', default=PRESETS)
     p.add_argument('--seeds', type=int, nargs='+', default=[21, 22, 23])
+    p.add_argument('--only', nargs='+', help='preset names to report; default all')
     p.set_defaults(func=cmd_report)
 
     p = sub.add_parser('fit')
     p.add_argument('--out', required=True)
+    p.add_argument('--only', nargs='+', help='preset names to fit; default all')
     p.add_argument('--jobs', type=int, default=fit.DEFAULT_JOBS,
                    help='render processes to run at once (default %(default)s)')
     p.set_defaults(func=cmd_fit)

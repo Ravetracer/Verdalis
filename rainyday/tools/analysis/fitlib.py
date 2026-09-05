@@ -161,6 +161,30 @@ W_FFLAT = 4000.0
 # a ring twice as long as the reference's costs as much as being 6 dB out in
 # every band at once.
 W_DECAY = 40.0
+# The room and the rhythm, from isolated events (feat.room_stats). None of the
+# features above can tell a long droplet ring from a long reverb tail, or a drop
+# every three seconds from a drop every tenth of a second once the spectrum and
+# the flatness agree, and Cave Drips was fitted to fourteen drops a second with
+# no cave as a result. Rate and late RT60 are compared as log ratios, so a
+# factor of two in either costs about as much as being 5 dB out in every band.
+# The direct-to-late ratio is in dB. All three apply only where the reference
+# has isolated events to measure them on; dense rain does not, and skips them.
+W_RATE = 60.0
+W_LATE_RT = 30.0
+W_DIRECT_LATE = 1.0
+# Per-frame flatness again, as a log ratio, for sparse references only. A cave
+# drip measures 0.001 -- one tone per frame, the room ringing at the drop's own
+# pitch -- and a render of it with a little splash noise measures 0.010. Squared,
+# that difference is nothing against the weight above, which is scaled for rain
+# at 0.1 to 0.3; heard, it is the difference between a drop and a filtered-noise
+# drum hit. A factor of ten costs about as much here as 5 dB in every band.
+W_FFLAT_LOG = 10.0
+FFLAT_FLOOR = 5.0e-4
+SPARSE_RATE_MAX = 15.0
+
+
+def _finite(v):
+    return v is not None and np.isfinite(np.float64(v))
 
 
 def distance(a, b, band_weight=None):
@@ -176,4 +200,24 @@ def distance(a, b, band_weight=None):
     da, db_ = a.get('decay_ms'), b.get('decay_ms')
     if da and db_ and np.isfinite(da) and np.isfinite(db_) and da > 0 and db_ > 0:
         d += W_DECAY * np.log2(da / db_) ** 2
+    # b is the reference. Only a sparse reference has a rhythm and a room that
+    # can be measured event by event.
+    rb = b.get('event_rate', 0.0)
+    # feat.room_stats decides what is sparse (most of the time, nothing much is
+    # happening) and it is the reference's call: a composite of recordings
+    # averages to the fraction of them that are, and half or more carries it.
+    if (b.get('sparse', 0.0) or 0.0) >= 0.5 and _finite(rb) and 0.05 <= rb <= SPARSE_RATE_MAX:
+        ra = max(float(a.get('event_rate', 0.0) or 0.0), 0.02)
+        d += W_RATE * np.log2(ra / rb) ** 2
+        ta, tb = a.get('late_rt'), b.get('late_rt')
+        if _finite(tb) and tb > 0:
+            ta = ta if (_finite(ta) and ta > 0) else 0.05
+            d += W_LATE_RT * np.log2(ta / tb) ** 2
+        la, lb = a.get('direct_late'), b.get('direct_late')
+        if _finite(lb):
+            la = la if _finite(la) else 40.0
+            d += W_DIRECT_LATE * (la - lb) ** 2
+        fa = max(float(a.get('fflat', 0.0) or 0.0), FFLAT_FLOOR)
+        fb = max(float(b.get('fflat', 0.0) or 0.0), FFLAT_FLOOR)
+        d += W_FFLAT_LOG * np.log2(fa / fb) ** 2
     return float(d)

@@ -173,8 +173,8 @@ def onsets(x, sr):
     return np.array(peaks) * hop / sr
 
 
-def onset_stats(x, sr):
-    t = onsets(x, sr)
+def onset_stats(x, sr, t=None):
+    t = onsets(x, sr) if t is None else t
     dur = len(x) / sr
     rate = len(t) / dur if dur > 0 else 0.0
     if len(t) < 8:
@@ -184,14 +184,14 @@ def onset_stats(x, sr):
     return rate, cv
 
 
-def decay_ms(x, sr, max_events=300):
+def decay_ms(x, sr, max_events=300, t=None):
     """Median -60 dB decay time of isolated impacts, in ms.
 
     The onset time from spectral flux is only approximate, so each candidate is
     snapped to the nearest envelope peak first; without that the measurement
     starts on the way up and reports nonsense.
     """
-    t = onsets(x, sr)
+    t = onsets(x, sr) if t is None else t
     if len(t) < 3:
         return float('nan')
     k = max(1, int(0.0005 * sr))
@@ -281,10 +281,138 @@ def crest_db(x, sr=48000, window_s=4.0):
     return float(np.median(out)) if out else 0.0
 
 
+def sparse_events(x, sr, holdoff=0.06, ratio=5.0, floor_mult=8.0):
+    """Onset times (in samples) of isolated events, plus the envelope and floor.
+
+    The spectral-flux detector above is tuned for rain, where onsets are dense
+    and an 8 ms hold-off is right. On a cave drip it fires two or three times
+    per drop -- once on the drop and again on each slap of the room -- and put
+    0.93 events a second on a recording that has 0.34. This one works on the
+    broadband envelope instead: an event is a rise of `ratio` over the loudest
+    thing in the preceding 30 ms, clearly above the floor, and nothing counts for
+    `holdoff` after it, which is longer than any early reflection and shorter
+    than any plausible drip. Dense rain has no such rises and yields nothing,
+    which is the right answer for it.
+    """
+    k = max(1, int(sr * 0.001))
+    e = np.convolve(np.abs(x), np.ones(k) / k, mode='same')
+    floor = np.percentile(e, 10) + 1e-9
+    hop = max(1, int(sr * 0.0005))
+    n = len(e) // hop
+    if n < 200:
+        return np.array([], dtype=int), e, floor
+    E = e[:n * hop].reshape(n, hop).max(axis=1)
+    pre, gap = 60, 8                      # 30 ms window, ending 4 ms before now
+    win = np.lib.stride_tricks.sliding_window_view(E, pre)
+    premax = win.max(axis=1)              # premax[i] covers E[i .. i+pre-1]
+    # Candidate at hop i compares against the window ending at i - gap.
+    idx = np.arange(pre + gap, n)
+    ref = premax[idx - gap - pre]
+    cand = idx[(E[idx] > ratio * ref) & (E[idx] > floor_mult * floor)]
+    out = []
+    last = -1e9
+    hold = int(holdoff * sr)
+    look = int(0.008 * sr)
+    for h in cand:
+        i = h * hop
+        if i - last < hold:
+            continue
+        pk = i + int(np.argmax(e[i:i + look]))
+        out.append(pk)
+        last = pk
+    return np.array(out, dtype=int), e, floor
+
+
+MIN_ISOLATED_EVENTS = 8
+ISOLATION_DB = 12.0
+SPARSE_DROP_DB = 12.0
+SPARSE_QUIET_FRACTION = 0.5
+
+
+def room_stats(x, sr, min_gap=0.5, max_events=80):
+    """Event rate, late reverberation time and direct-to-late ratio.
+
+    These are what separate a drop from the room it falls in, which none of the
+    features above can do: a long droplet ring and a long reverb tail have the
+    same spectrum and the same temporal flatness. Fitting Cave Drips without
+    them put the cavern inside the droplet.
+
+    Measured only on events with at least `min_gap` of clear air after them, so
+    that what follows the direct sound is the room and nothing else. The late
+    RT60 is a Schroeder backward integration of the energy from 50 ms after the
+    peak, noise floor subtracted, fitted between -5 and -25 dB. The direct-to-
+    late ratio is the first 20 ms against everything after 50 ms. Both are NaN
+    where a recording has no isolated events, and the objective then skips them.
+    """
+    t, _, _ = sparse_events(x, sr)
+    dur = len(x) / sr
+    rate = len(t) / dur if dur > 0 else 0.0
+    hop = int(0.02 * sr)
+    n = len(x) // hop
+    fe = (x[:n * hop].reshape(n, hop) ** 2).mean(axis=1) if n > 10 else np.zeros(1)
+    nf = float(np.percentile(fe, 10))
+    # Sparse means most of the time nothing much is happening: at least half
+    # of the 20 ms frames sit more than 12 dB under the loudest twentieth. A
+    # cave drip passes with room to spare, a dripping tap passes, and rain of
+    # any kind fails, gusts and lulls included -- which is the point, because
+    # rain also throws up the odd event this detector accepts, and the rhythm
+    # and room measured on those would be measured on the rain.
+    quiet = float(np.mean(fe < np.percentile(fe, 95) * 10 ** (-SPARSE_DROP_DB / 10)))
+    sparse = quiet >= SPARSE_QUIET_FRACTION and rate >= 0.05
+    if not sparse or len(t) < 3:
+        return rate, float('nan'), float('nan'), sparse
+    d20, d50 = int(0.02 * sr), int(0.05 * sr)
+    a300, a500 = int(0.3 * sr), int(0.5 * sr)
+    rts, dls = [], []
+    for j, pk in enumerate(t):
+        nxt = t[j + 1] if j + 1 < len(t) else len(x)
+        if (nxt - pk) / sr < min_gap:
+            continue
+        end = min(nxt - int(0.02 * sr), pk + int(2.0 * sr), len(x))
+        seg = x[pk:end] ** 2
+        if len(seg) < a500 + int(0.05 * sr):
+            continue
+        # Clear air, not merely no other detected event: what is left 300 to
+        # 500 ms after the peak has to be well below the peak itself. A cave
+        # tail is 20 dB down by then; steady rain is 3 dB down, because it is
+        # still raining, and a "room" measured on it would be the rain.
+        peak = seg[:int(0.005 * sr)].max()
+        later = seg[a300:a500].mean()
+        if later > peak * 10 ** (-ISOLATION_DB / 10):
+            continue
+        direct = seg[:d20].sum()
+        late = (seg[d50:] - nf).clip(0)
+        dls.append(10 * np.log10((direct + 1e-20) / (late.sum() + 1e-20)))
+        edc = np.cumsum(late[::-1])[::-1]
+        edc = 10 * np.log10(edc / (edc[0] + 1e-30) + 1e-30)
+        i0 = np.where(edc <= -5)[0]
+        i1 = np.where(edc <= -25)[0]
+        if len(i0) and len(i1) and i1[0] > i0[0] + int(0.01 * sr):
+            tt = np.arange(i0[0], i1[0]) / sr
+            slope = np.polyfit(tt, edc[i0[0]:i1[0]], 1)[0]
+            if slope < 0:
+                rts.append(-60.0 / slope)
+        if len(dls) >= max_events:
+            break
+    # Dense rain throws up a handful of spurious events -- a gust, a cluster --
+    # and a room measured on three of those is nonsense that then scores as if
+    # it meant something. Fewer than eight isolated events is not a sparse
+    # recording, and the room is left unmeasured.
+    if len(dls) < MIN_ISOLATED_EVENTS:
+        return rate, float('nan'), float('nan'), sparse
+    late_rt = float(np.median(rts)) if rts else float('nan')
+    direct_late = float(np.median(dls))
+    return rate, late_rt, direct_late, sparse
+
+
 def extract(x, sr, label='', denoise=False):
     x = x - x.mean()
     db, centroid = band_spectrum(x, sr, denoise=denoise)
-    rate, cv = onset_stats(x, sr)
+    # The spectral-flux onsets are the most expensive thing here and two
+    # features want them, so they are found once.
+    t = onsets(x, sr)
+    rate, cv = onset_stats(x, sr, t)
+    event_rate, late_rt, direct_late, sparse = room_stats(x, sr)
     return {
         'label': label,
         'sr': sr,
@@ -296,9 +424,15 @@ def extract(x, sr, label='', denoise=False):
         'imp': impulsiveness(x, sr),
         'onset_rate': rate,
         'ioi_cv': cv,
-        'decay_ms': decay_ms(x, sr),
+        'decay_ms': decay_ms(x, sr, t=t),
         'mod_db': modulation_depth(x, sr),
         'crest': crest_db(x, sr),
+        'event_rate': event_rate,
+        'late_rt': late_rt,
+        'direct_late': direct_late,
+        # 1.0 or 0.0 rather than a bool, so a composite of several recordings
+        # averages to the fraction of them that are sparse.
+        'sparse': 1.0 if sparse else 0.0,
     }
 
 

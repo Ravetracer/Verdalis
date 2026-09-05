@@ -83,6 +83,25 @@ def seeds_for(preset):
     return SEED_POOL[:min(MAX_SEEDS, PRESET_SEEDS.get(preset, DEFAULT_SEEDS))]
 
 
+def seconds_for(target):
+    """How long a candidate has to be rendered to be measurable.
+
+    Six seconds of a drip at one drop every three seconds holds two drops, and
+    an objective averaged over two drops is averaging over noise. The render
+    length follows the reference's own event rate: half a minute for the sparse
+    recordings, which is still cheap because they are also the cheapest to
+    render, and six seconds for rain.
+    """
+    rate = target.get('event_rate', 0.0) or 0.0
+    if not np.isfinite(rate) or rate <= 0.0:
+        return SECONDS
+    if rate < 2.0:
+        return 30.0
+    if rate < 8.0:
+        return 15.0
+    return SECONDS
+
+
 # Per-preset overrides of SPACE, for the cases where the objective is happy with
 # something that does not sound like rain.
 #
@@ -94,11 +113,42 @@ def seeds_for(preset):
 # breaking icicles. The objective has no feature that can tell those apart, so
 # the bounds say it instead: a water drop on a panel is not a 6 kHz bell, and
 # most impacts do not entrain a ringing bubble at all.
+#
+# Cave Drips is bounded for a different reason. Its reference has two drip
+# sites -- deep bloops near 500 Hz that ring for seconds, and plinks near 2 kHz
+# -- so its long-term spectrum has a lump at 400-800 Hz, a notch at 0.8-1.6 kHz
+# and its peak at 1.6-3.2 kHz. One pitch distribution cannot make that shape,
+# and left alone the fit parks the centre in the notch, which is the one place a
+# drop should not be. The bounds hold the preset to the plink population, which
+# is what a listener means by a cave drip; two notes held at once give the two
+# sites, since each note is its own drip. The bed is held below 200 Hz because
+# that is where the recording's ambience is: above it the cave is impulsive,
+# and a noise band there is what reads as an old hardware synth.
+#
+# The remaining cave bounds are the recording's own measurements, written down
+# because the band term cannot see them: each drop is a narrow tonal ring that
+# the room sustains for about two seconds at the drop's own pitch, with a short
+# bright click on top and very little splash. That needs a big room (the fit
+# left to itself shrank it to a wet cellar to buy a few dB of spectrum), a tonal
+# excitation, and a drop that rings tens of milliseconds by itself, not ten.
 PRESET_BOUNDS = {
     'tin_roof': {
         'drop_pitch': ('mul', 60.0, 3000.0),
         'bubble':     ('add', 0.0, 0.5),
         'splash':     ('add', 0.5, 1.0),
+    },
+    'cave_drips': {
+        'drop_pitch':    ('mul', 1300.0, 3000.0),
+        'pitch_spread':  ('add', 0.0, 1.2),
+        'drop_decay':    ('mul', 30.0, 90.0),
+        'tonality':      ('add', 0.6, 1.0),
+        'splash':        ('add', 0.0, 0.3),
+        'impact':        ('add', 0.0, 0.4),
+        'bed_tone':      ('add', 0.0, 0.1),
+        'bed_body':      ('add', 0.0, 0.5),
+        'bed_level':     ('add', -60.0, -40.0),
+        'space_size':    ('add', 0.85, 1.0),
+        'space_damping': ('add', 0.3, 0.55),
     },
 }
 
@@ -164,7 +214,7 @@ def _close_worker():
 
 def _score_job(params, meta, target, want_timing=False):
     t0 = time.time()
-    x = _worker_renderer.render(params, meta, SECONDS)
+    x = _worker_renderer.render(params, meta, seconds_for(target))
     rendered = time.time() - t0
     d = fitlib.distance(fitlib.analyse_render(x), target, BAND_WEIGHT)
     return (d, rendered, time.time() - t0) if want_timing else d
