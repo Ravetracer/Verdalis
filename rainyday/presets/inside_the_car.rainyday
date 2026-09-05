@@ -7,33 +7,33 @@ features = ambient, texture, dark, muffled, lofi
 
 # Rain
 density = 532
-clumping = 0
-drop_pitch = 1859
+clumping = 0.28
+drop_pitch = 1200
 pitch_spread = 5
-drop_decay = 2.94
-decay_spread = 0.577
+drop_decay = 10.7
+decay_spread = 0.81
 tonality = 0.191
-bubble = 0.72
-impact = 0.593
-splash = 0.835
-level_spread = 0.6
+bubble = 0.255
+impact = 0.474
+splash = 0.715
+level_spread = 0.166
 chirp = 0.35
 surface = Glass
 note_tracking = 0.5
 
 # Bed
-bed_level = -57.2
-bed_tone = 0.294
-bed_body = 0.121
-bed_drift = 0.594
+bed_level = -58.7
+bed_tone = 0.228
+bed_body = 0.252
+bed_drift = 0.314
 bed_width = 0.75
 bed_pan = 0
 
 # Space
 width = 0.75
 drop_pan = 0
-distance = 0.296
-air = 0.357
+distance = 0.319
+air = 0.338
 space_amount = 0.28
 space_size = 0.2
 space_damping = 0.8

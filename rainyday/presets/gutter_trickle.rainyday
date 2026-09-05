@@ -7,32 +7,32 @@ features = texture, water, narrow, foley
 
 # Rain
 density = 650
-clumping = 0.119
-drop_pitch = 4203
-pitch_spread = 0
-drop_decay = 8.64
-decay_spread = 0.465
-tonality = 0.128
-bubble = 0.706
-impact = 0.529
-splash = 0.606
-level_spread = 0.481
+clumping = 0.085
+drop_pitch = 9000
+pitch_spread = 0.7
+drop_decay = 2.21
+decay_spread = 0.227
+tonality = 0
+bubble = 0.608
+impact = 1
+splash = 0.809
+level_spread = 0.005
 chirp = 0.9
 surface = Puddle
 note_tracking = 0.5
 
 # Bed
-bed_level = -36.4
-bed_tone = 0.352
-bed_body = 0.382
-bed_drift = 0.419
+bed_level = -50.7
+bed_tone = 0.308
+bed_body = 0.708
+bed_drift = 0.594
 bed_width = 0.4
 bed_pan = 0
 
 # Space
 width = 0.4
 drop_pan = 0
-distance = 1
+distance = 0.915
 air = 0
 space_amount = 0
 space_size = 0.236

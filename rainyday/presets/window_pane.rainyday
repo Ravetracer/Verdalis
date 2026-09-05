@@ -6,17 +6,17 @@ description = Close-up rain against glass. Hard, bright, glassy ticks right in f
 features = ambient, texture, bright, glassy, close
 
 # Rain
-density = 758
+density = 1174
 clumping = 0
-drop_pitch = 341
-pitch_spread = 0.26
-drop_decay = 6.54
-decay_spread = 0.22
-tonality = 0.503
-bubble = 0.931
-impact = 0
-splash = 0.448
-level_spread = 0.32
+drop_pitch = 366
+pitch_spread = 0.619
+drop_decay = 3.17
+decay_spread = 0
+tonality = 0.643
+bubble = 1
+impact = 0.411
+splash = 0.383
+level_spread = 0.236
 chirp = 0.35
 surface = Glass
 note_tracking = 0.5
@@ -24,7 +24,7 @@ note_tracking = 0.5
 # Bed
 bed_level = -21.3
 bed_tone = 1
-bed_body = 0.191
+bed_body = 0.376
 bed_drift = 0.58
 bed_width = 0.7
 bed_pan = 0
@@ -32,7 +32,7 @@ bed_pan = 0
 # Space
 width = 0.7
 drop_pan = 0
-distance = 0.619
+distance = 0.899
 air = 0
 space_amount = 0.15
 space_size = 0.3
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 7.37
+gain = 4.45
 max_droplets = 512
 seed = 0

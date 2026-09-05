@@ -9,12 +9,12 @@ features = ambient, texture, noise, loud, dark
 density = 4200
 clumping = 0.25
 drop_pitch = 1640
-pitch_spread = 3.12
-drop_decay = 1.57
+pitch_spread = 2.42
+drop_decay = 1.35
 decay_spread = 0.5
 tonality = 0.133
-bubble = 0.923
-impact = 0.085
+bubble = 0.783
+impact = 0.043
 splash = 0.887
 level_spread = 0.75
 chirp = 0.35
@@ -23,7 +23,7 @@ note_tracking = 0.5
 
 # Bed
 bed_level = -51.2
-bed_tone = 0.725
+bed_tone = 0.706
 bed_body = 1
 bed_drift = 0.5
 bed_width = 1
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 12
+gain = 11.5
 max_droplets = 1536
 seed = 0
