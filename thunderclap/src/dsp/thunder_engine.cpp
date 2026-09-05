@@ -130,6 +130,47 @@ constexpr float kRumbleExcite = 1.0f / (3.0f * kRumbleTauSec);
 constexpr float kRumbleGain = 1.6f;
 constexpr float kRumbleHighpassMinHz = 20.0f;
 
+// The blast pulse, which Impact fades in. Every element of the channel
+// radiates its own N-wave, but the near section of a return stroke also
+// expands as one body: a few hundred metres of channel, heated in
+// microseconds, pushes on the air once. What that sends out is not an N-wave
+// but a blast -- a near-instant jump to peak overpressure, a decay back
+// through zero, and a longer, shallower negative phase. Friedlander's
+// waveform, p(t) = P (1 - t/T) exp(-t/T), is the standard description of it,
+// and its spectrum |P(w)| = P w / (w^2 + 1/T^2) peaks at 1/(2 pi T).
+//
+// This is the part of a close thunder that lands as a slam rather than a tear.
+// It fills the 40 to 150 Hz that the reference recordings put at the top of
+// the spectrum through the first 300 ms -- a band the elements' own N-waves,
+// each one short and each one arriving at its own time, cannot fill between
+// them however many there are.
+//
+// T at one kilometre, and how it stretches further out: the same weak-shock
+// lengthening the N-waves get, so a distant blast is lower and slower as well
+// as quieter. 2.6 ms puts the peak at 61 Hz.
+constexpr float kBlastTauSec = 0.0026f;
+constexpr float kBlastTauExp = 0.3f;
+constexpr float kBlastTauMin = 0.0008f;
+constexpr float kBlastTauMax = 0.05f;
+// Peak overpressure of one pulse at Impact 100 %, against the arrival it is
+// taken from.
+constexpr float kBlastGain = 3.5f;
+// Only arrivals inside this much of the flash's start are candidates: the
+// blast belongs to the return stroke, not to whatever the cloud does ten
+// seconds later. The window is cut into as many slices as there are pulses,
+// and the loudest arrival in each slice gets one, which spreads the energy
+// over the onset instead of piling it on a single sample.
+constexpr float kBlastWindowSec = 0.35f;
+// A slice whose loudest arrival is quieter than this much of the best one in
+// the window does not get a pulse; without it the tail slices fire on
+// whatever noise floor the channel left there.
+constexpr float kBlastSliceFloor = 0.12f;
+// How long the negative phase is allowed to run before the pulse is dropped.
+constexpr float kBlastTailTaus = 12.0f;
+// The blast drives the rumble like any other shock, so the slam is followed by
+// the swell rather than standing on its own.
+constexpr float kBlastRumbleExcite = 0.5f;
+
 // Internal reference level, applied with Output Gain so a matched preset lands
 // in the middle of the gain range.
 constexpr float kEngineMakeup = 2.0f; // +6 dB
@@ -824,6 +865,49 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
          f.arrivals[i].time = std::max(0.0f, f.arrivals[i].time - t0);
    }
 
+   // --- The blast. The loudest arrival of the onset says how hard the near
+   // channel pushed, how far away it was and from where, and the pulse is
+   // built to match it. Searching only the onset keeps it with the crack: in
+   // a flash whose cloud swell is the loudest thing in it, the swell is not
+   // what slams.
+   {
+      const float sliceSec = kBlastWindowSec / Flash::kMaxBlasts;
+      int bestIdx[Flash::kMaxBlasts];
+      float bestAmp[Flash::kMaxBlasts];
+      for (int b = 0; b < Flash::kMaxBlasts; ++b) {
+         bestIdx[b] = -1;
+         bestAmp[b] = 0.0f;
+      }
+      for (uint32_t i = 0; i < f.count && f.arrivals[i].time < kBlastWindowSec; ++i) {
+         const int b = clampv(static_cast<int>(f.arrivals[i].time / sliceSec), 0,
+                              Flash::kMaxBlasts - 1);
+         if (f.arrivals[i].amp > bestAmp[b]) {
+            bestAmp[b] = f.arrivals[i].amp;
+            bestIdx[b] = static_cast<int>(i);
+         }
+      }
+      float peak = 0.0f;
+      for (int b = 0; b < Flash::kMaxBlasts; ++b)
+         peak = std::max(peak, bestAmp[b]);
+      const float floor = peak * kBlastSliceFloor;
+      f.blastCount = 0;
+      for (int b = 0; b < Flash::kMaxBlasts; ++b) {
+         if (bestIdx[b] < 0 || bestAmp[b] < floor)
+            continue;
+         const Arrival &a = f.arrivals[bestIdx[b]];
+         const int n = f.blastCount++;
+         f.blastTime[n] = a.time;
+         f.blastAmp[n] = a.amp * kBlastGain;
+         f.blastAirHz[n] = a.airHz;
+         f.blastPan[n] = a.pan;
+      }
+      f.blastTauSec = clampv(kBlastTauSec * std::pow(std::max(f.distanceKm, 0.05f), kBlastTauExp),
+                             kBlastTauMin, kBlastTauMax);
+      for (int k = 0; k < Flash::kMaxStrokes; ++k)
+         f.blastNext[k] = 0;
+   }
+
+
    // --- Return strokes: the same channel lit again, each a little later than
    // the gap says and usually quieter. Dart leaders do not branch, so only the
    // first stroke lights the branches (see the branch flag in processControl).
@@ -859,6 +943,7 @@ void ThunderEngine::spawnShock(const Arrival &a, float gain, float crack, uint32
       return;
    Shock &s = *sp;
 
+   s.blast = false;
    const float len = std::max(4.0f, a.lenSec * mSampleRate);
    // The shock fronts. Crack at 100 % leaves them a hundredth of the wave long,
    // which at a 10 ms wave is 0.1 ms and puts energy out to several kilohertz;
@@ -896,6 +981,53 @@ void ThunderEngine::spawnShock(const Arrival &a, float gain, float crack, uint32
    const float energy = amp * amp * a.lenSec;
    mRumbleEnergy += energy * kRumbleExcite;
    mRumbleAirHz += (a.airHz - mRumbleAirHz) * 0.02f;
+}
+
+void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, float crack,
+                               uint32_t offset) {
+   const float amp = f.blastAmp[index] * gain * mP.impact;
+   if (amp < 1.0e-6f)
+      return;
+   Shock *sp = allocateShock();
+   if (!sp)
+      return;
+   Shock &s = *sp;
+
+   const float tau = std::max(4.0f, f.blastTauSec * mSampleRate);
+   s.blast = true;
+   s.blastDecay = 1.0f / tau;
+   s.blastEnv = 1.0f;
+   s.blastEnvCoef = std::exp(-s.blastDecay);
+   s.lenSamples = static_cast<uint32_t>(tau);
+   s.invLen = s.blastDecay;
+   // The jump at the front. A blast front is a discontinuity; Crack decides
+   // how much of one survives here, exactly as it does for the N-wave, so a
+   // soft setting gives a thump and a hard one gives a slam with an edge.
+   const float edge = std::max(1.5f, tau * (0.01f + 0.25f * (1.0f - crack) * (1.0f - crack)));
+   s.edgeInv = 1.0f / edge;
+   s.amp = amp;
+   // No crackle: the tearing belongs to the individual elements' fronts, and
+   // the blast is the one thing in the model that is not one of them.
+   s.crackleSamples = 0;
+   s.crackleAmp = 0.0f;
+   for (int k = 0; k < 3; ++k) {
+      const float hz = clampv(f.blastAirHz[index] * std::pow(kAbsorbPoleRatio[k], 1.0f / kAbsorbExp),
+                              30.0f, 0.45f * mSampleRate);
+      s.airCoef[k] = 1.0f - std::exp(-6.283185307f * hz / mSampleRate);
+      s.airState[k] = 0.0f;
+   }
+   s.lifeMax = static_cast<uint32_t>(kBlastTailTaus * tau) + 16;
+   s.life = 0;
+   s.startOffset = offset;
+
+   const float angle = (f.blastPan[index] + 1.0f) * 0.785398163f;
+   s.gainL = std::cos(angle);
+   s.gainR = std::sin(angle);
+   s.active = true;
+
+   // And it shakes the rumble like anything else that arrives, so the slam is
+   // answered by the swell instead of standing on its own.
+   mRumbleEnergy += amp * amp * f.blastTauSec * kRumbleExcite * kBlastRumbleExcite;
 }
 
 // ------------------------------------------------------------------ process
@@ -961,6 +1093,11 @@ void ThunderEngine::processControl(float *outL, float *outR, uint32_t numSamples
          const float env = v.env.level();
          for (int k = 0; k < f.strokes; ++k) {
             const float off = f.strokeOffset[k];
+            while (f.blastNext[k] < f.blastCount &&
+                   f.blastTime[f.blastNext[k]] * mSampleRate + off <= f.clock) {
+               spawnBlast(f, f.blastNext[k], f.level * f.strokeGain[k] * env, mP.crack, i);
+               ++f.blastNext[k];
+            }
             while (f.cursor[k] < f.count) {
                const Arrival &a = f.arrivals[f.cursor[k]];
                if (k > 0 && a.branch) {
@@ -1012,7 +1149,16 @@ void ThunderEngine::processShocks(float *outL, float *outR, uint32_t numSamples)
 
       for (; i < numSamples; ++i) {
          float x = 0.0f;
-         if (s.life < len) {
+         if (s.blast) {
+            // Friedlander: up over the front, then (1 - t/T) exp(-t/T), which
+            // crosses zero at T and comes back as the long negative phase.
+            const float lifeF = static_cast<float>(s.life);
+            const float t = lifeF * s.blastDecay;
+            float e = std::min(lifeF * s.edgeInv, 1.0f);
+            e = e * e * (3.0f - 2.0f * e);
+            x = s.amp * e * (1.0f - t) * s.blastEnv;
+            s.blastEnv *= s.blastEnvCoef;
+         } else if (s.life < len) {
             // The N-wave: a jump up, a straight fall through zero, a jump back.
             // Both fronts are eased over the Crack-controlled rise time, and
             // the easing is a smoothstep so the front's spectrum falls off

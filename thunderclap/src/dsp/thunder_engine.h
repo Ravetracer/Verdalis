@@ -34,6 +34,7 @@ struct EngineParams {
    float air = 0.5f;
    float scatter = 0.5f;
    float focus = 0.7f;
+   float impact = 0.0f;
 
    float width = 0.8f;
    float pan = 0.0f;
@@ -93,6 +94,12 @@ struct Arrival {
 // which has lost 50 dB there. Three poles placed on the real curve do.
 struct Shock {
    bool active = false;
+   // A blast runs the Friedlander shape below instead of the N-wave: the same
+   // envelope of air absorption and panning, a different pressure history.
+   bool blast = false;
+   float blastDecay = 0.0f;      // 1 / time constant, in samples
+   float blastEnv = 1.0f;        // exp(-t/T), stepped recursively
+   float blastEnvCoef = 1.0f;    // exp(-1/T) per sample
    uint32_t startOffset = 0; // sample within the current block where it begins
    uint32_t life = 0, lifeMax = 0;
    uint32_t lenSamples = 1;
@@ -125,6 +132,20 @@ struct Flash {
    uint32_t cursor[kMaxStrokes] = {};
    float level = 1.0f; // velocity and distance loss, applied to every shock
    float distanceKm = 1.0f;
+
+   // The blast the near channel throws off, replayed by every return stroke.
+   // Not one pulse but a short cluster of them: the near channel is several
+   // coherent sections, each at its own range, and they push in turn over the
+   // first few hundred milliseconds. One pulse alone is a click -- it buys a
+   // tall peak and almost no energy in the band that is supposed to hit.
+   static constexpr int kMaxBlasts = 8;
+   int blastCount = 0;
+   float blastTime[kMaxBlasts] = {}; // seconds, same clock as Arrival::time
+   float blastAmp[kMaxBlasts] = {};
+   float blastAirHz[kMaxBlasts] = {};
+   float blastPan[kMaxBlasts] = {};
+   float blastTauSec = 0.003f;
+   uint8_t blastNext[kMaxStrokes] = {}; // next pulse this stroke owes
 
    bool exhausted() const {
       for (int k = 0; k < strokes; ++k)
@@ -195,6 +216,7 @@ private:
                     bool branch, float weightScale, float shadowElev, float shadowWidth,
                     float heightM);
    void spawnShock(const Arrival &a, float gain, float crack, uint32_t offset);
+   void spawnBlast(const Flash &f, int index, float gain, float crack, uint32_t offset);
    void processControl(float *outL, float *outR, uint32_t numSamples);
    void processShocks(float *outL, float *outR, uint32_t numSamples);
    void processOutputChain(float *outL, float *outR, uint32_t numSamples);

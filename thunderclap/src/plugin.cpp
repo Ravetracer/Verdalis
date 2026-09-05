@@ -142,6 +142,7 @@ private:
       p.air = static_cast<float>(realValue(kParamAir));
       p.scatter = static_cast<float>(realValue(kParamScatter));
       p.focus = static_cast<float>(realValue(kParamFocus));
+      p.impact = static_cast<float>(realValue(kParamImpact));
 
       p.width = static_cast<float>(realValue(kParamWidth));
       p.pan = static_cast<float>(realValue(kParamPan));

@@ -131,6 +131,9 @@ const ParamDesc kParams[kNumParams] = {
        "How fast the compressor grabs a crack. Slow lets the first snap through."),
    LOG(kParamCompRelease, "comp_release", "Comp Release", "Dynamics", 0.565, 10.0, 3000.0, "ms",
        "How fast it lets go afterwards. Slow is a smooth swell; fast pumps with the claps."),
+
+   PCT(kParamImpact, "impact", "Impact", "Impact", 0.0,
+       "The blast the near channel throws off when the stroke fires: a low, hard slam under the crack."),
 };
 
 #undef LIN

@@ -351,6 +351,27 @@ compressor makes the level a non-linear function of the gain.
 | Scatter | 0 – 100 % | Random spread of level and length per shock |
 | Focus | 0 – 100 % | Directivity of the channel elements |
 
+### Impact
+
+| Parameter | Range | What it does |
+|---|---|---|
+| Impact | 0 – 100 % | The near channel's blast: a low, hard slam under the crack |
+
+Every element of the channel radiates its own N-wave, but the near section of
+a return stroke also expands as one body, and what that sends out is a blast
+rather than an N-wave: a near-instant jump to peak overpressure, a decay back
+through zero, and a longer, shallower negative phase — Friedlander's waveform,
+whose spectrum peaks at 1/(2πT). It is not one pulse but a short cluster of
+them, taken from the loudest arrival in each slice of the first 350 ms, so the
+energy lands across the onset instead of on a single sample; one pulse alone
+buys a tall peak and almost nothing in the band that is supposed to hit.
+
+This is the part of a close thunder that arrives as a slam rather than a tear,
+and it fills the 40 to 150 Hz that the reference recordings put at the top of
+the spectrum through the first 300 ms — a band the elements' own N-waves, each
+one short and each arriving at its own time, cannot fill between them however
+many there are. It defaults to 0, which is the model without it.
+
 ### Stereo
 
 | Parameter | Range | What it does |

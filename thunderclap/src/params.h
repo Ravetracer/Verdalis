@@ -71,6 +71,9 @@ enum ParamId : uint32_t {
    kParamCompAttack,
    kParamCompRelease,
 
+   // Appended: the near channel's blast pulse.
+   kParamImpact,
+
    kNumParams
 };
 

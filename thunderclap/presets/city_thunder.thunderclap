@@ -2,7 +2,7 @@
 format = 1
 name = City Thunder
 author = ThunderClap
-description = Thunder between buildings, the way a phone hears it: a bright open crack, claps wandering over the roofs, then a deep late swell that shakes the street.
+description = Thunder between buildings, the way a phone hears it: the near channel's blast hits first, claps wander over the roofs, then a deep late swell shakes the street.
 features = sfx, impact
 
 # Strike
@@ -24,6 +24,7 @@ rumble_tone = 0.55
 air = 0.35
 scatter = 0.5
 focus = 0.85
+impact = 0.75
 
 # Stereo
 width = 0.85
