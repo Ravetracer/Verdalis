@@ -131,16 +131,40 @@ least constrained by anything physical; and 3 to 6 kHz is exactly where the
 drop-derived impact frequency from 1b now sits, scaled by surface brightness.
 Inside the Car regressed in that same band when 1b landed.
 
-Worth trying, in order:
+Both checked on 2026-09-04:
 
-- Check whether the 3 to 6 kHz excess predates 1b by measuring the residual
-  against the engine at commit 007aa2f's parent. If 1b caused it, the impact
-  weighting per surface is the thing to revisit rather than the frequency.
-- The 200 to 400 Hz shortfall is where a struck *surface* rings rather than a
-  droplet. The engine models a droplet radiating into air and the surface only
-  as a set of scaling factors, so a panel or a pavement having modes of its own
-  is simply absent. That is the largest missing mechanism in the model and it
-  would be a real piece of work.
+- **The 3 to 6 kHz excess does not come from 1b.** Measured at 2287146, the
+  parent of the commit that introduced the drop-derived impact frequency, with
+  that commit's own presets and tooling: on the thirteen presets whose fits had
+  converged there, 200-400 Hz was already short by 1.9 dB (11 of 13 negative)
+  and 3.2-6.3 kHz already heavy by 2.2 dB (10 of 13 positive). The same signs,
+  the same counts, within half a decibel of the current engine. The apparent
+  jump in the all-sixteen mean was three presets that were badly fitted at the
+  old commit and happened to sit below their references in that band. So the
+  tilt is the engine's and predates the impact model; revisiting the impact
+  weighting per surface would not have fixed it.
+- **The 200 to 400 Hz shortfall is where a struck surface rings.** Built as the
+  fifth droplet layer: one low mode of the surface per impact, at a frequency,
+  ring time and weight that are the surface's own (the `body` columns of
+  `kSurfaces`), scattered per droplet, scaled by Impact, bypassing the droplet's
+  radiation highpass because it is the surface radiating. Water and Puddle have
+  none. Whether it also relieves the 3-6 kHz excess -- by letting the fit stop
+  compensating for the missing low mids elsewhere -- is what the re-fit after it
+  has to show.
+
+### After the 2026-09-05 re-fit
+
+Measured over all sixteen presets, same method: 3.2-6.3 kHz went from +2.69 dB
+(13 of 16 positive) to +1.24 dB (10 of 16); 200-400 Hz from -2.05 to -1.97 dB.
+The low-mid number hides where it moved. The surfaces with a body are largely
+fixed (Under an Umbrella -7.0 to -2.2, Inside the Car -5.1 to -2.4, Tin Roof
+-2.8 to -0.9), and what remains is the presets that use the **Water** surface
+while imitating something that is not water: Steady Rain and Tropical Monsoon
+are fitted to a roof recording, Downpour and Storm Front to concrete, all with
+`surface = Water`, which has no body by design. Surface is never fitted because
+it is a preset's identity; here the identity looks wrong. Try Wood for the roof
+presets and Concrete for the concrete ones, re-fit those four, and see whether
+the shortfall goes.
 
 ## 3. The fit overfits its own seeds, and it is costing real presets
 
@@ -165,13 +189,48 @@ would buy most of it for very little.
 `dripping_faucet` at 436.6 is now the worst preset in the library by a wide
 margin and is the obvious test case.
 
-## 4. GUI follow-ups
+## 4. CPU cost
 
-- **Text entry on a knob.** `paramTextToValue()` already parses everything the
-  display prints, including `k` multipliers and seconds on millisecond fields.
-  The save dialog now has a working text field to copy from, so what is left is
-  routing a click on a value to it and deciding what happens when the host does
-  not give the window key events.
+Measured 2026-09-04 with a benchmark that drives `RainEngine` directly with
+flush-to-zero set the way `process()` sets it: Downpour rendered at 130 % of
+realtime on one core, Tin Roof at 67 %, Storm Front at 35 %. Far too heavy for
+a plugin. Two exact changes -- each layer of a droplet is skipped once it has
+decayed below -140 dBFS, and the sine comes from a table -- took those to 52 %,
+16 % and 22 %, with the output identical to below -100 dB, so nothing needed
+re-fitting. The remaining cost is the chain of filters every droplet runs every
+sample (resonator, radiation highpass, air), which is bound by its own serial
+dependency and not by arithmetic: the table sine bought almost nothing.
+
+What would buy the next factor:
+
+- **A random generator per droplet.** Every droplet draws from the shared
+  generator every sample for its splash, whether the splash is still audible
+  or not, because skipping a draw would shift every later random number and
+  change the whole rain. Seeding a small generator per droplet at spawn would
+  let a droplet stop the moment all its layers are silent instead of running
+  to 1.6x its longest decay (about a third of its life is spent below -60 dB),
+  and let the draw itself be skipped. It changes the rain a fixed Seed produces,
+  once; the statistics do not change, so the fitted library stays valid, but it
+  cannot be verified by comparing renders, only by re-measuring.
+- **Processing droplets in lockstep.** Four or eight droplets per loop
+  iteration, so the filter chains' latencies overlap. A restructuring of
+  `Droplet` into arrays; likely another 2-3x.
+- ~~Check whether Downpour drops droplets.~~ Counted: over six seconds of
+  Downpour, 24733 spawns, none refused; 2430 (10 %) took over a slot whose
+  droplet had already decayed below -60 dB, which is the intended path and
+  inaudible. Distant Rain Wall reuses 4.6 %, every other preset none. The pool
+  sizes are right.
+
+## 5. GUI follow-ups
+
+- **Text entry on a knob -- DONE 2026-09-04.** Click the value under a knob
+  and it becomes a field with the current text selected; typing replaces it,
+  Return applies it through `paramTextToValue()` (so `2.2k`, `500 ms`, `-12 dB`
+  all work), Escape cancels, and a value the parser rejects turns the field red
+  and leaves it open. A double-click on the value still resets. It takes the
+  keyboard the way the save field does, for the life of the field, which is the
+  modal case where a grab is defensible; the XEmbed item below is still the
+  principled fix for both.
 - **Keyboard focus for the embedded window.** Confirmed in Bitwig: asking for
   the input focus does not work, so the save dialog takes a keyboard grab
   instead. That is defensible for a modal field but it does not generalise --
@@ -180,25 +239,28 @@ margin and is the obvious test case.
   handle the `_XEMBED` client messages, and ask the embedder for focus with
   `XEMBED_REQUEST_FOCUS`. Worth doing before any further text entry is added,
   and it needs a real host to test against.
-- **Resizable window.** `can_resize` currently reports false and the layout is
-  a fixed 960×740 in design pixels. Everything is already drawn through a cairo
-  scale, so honouring `set_size` is mostly a matter of choosing a scale from
-  the requested size and reporting sensible resize hints.
+- **Resizable window -- DONE 2026-09-04.** `can_resize` is true with
+  preserve-aspect-ratio hints; `adjust_size` snaps a request to the largest
+  scale that fits (0.5x to 4x) and `set_size` applies it as the one cairo scale
+  over the unchanged layout. Verified at 1440x1110 and 600x463 through
+  `rainyday-guihost`, which now forwards its window's size changes to the plugin
+  the way a DAW does.
 - **Wayland.** Only the X11 window API is offered. Under a Wayland host this
   falls back to the generic parameter view.
-- **A scrollbar in the browser.** Presets past the panel's height are currently
-  not drawn. Sixteen factory presets in three columns fit comfortably; a large
-  user library would not.
-- **The selector list has no keyboard or scroll handling.** Clicking the name
-  opens it and clicking an entry picks one, but arrow keys do not move through
-  it and the wheel does not scroll it. Fine for four and seven entries; worth
-  revisiting if a list ever gets long, which `kSurfaces` plausibly will.
+- **A scrollbar in the browser -- DONE 2026-09-04.** The grid is row-major and
+  scrolls by rows on the wheel or the arrow keys, with a scrollbar drawn only
+  when the library overflows; it opens with the current preset in view. Verified
+  with seventy presets.
+- **The selector list -- DONE 2026-09-04.** The wheel and the arrow keys step an
+  open list's value, Return and Escape close it. Whether keys arrive at all is
+  still the host's decision (see the XEmbed item above); in the test host they
+  do.
 
 `tools/guihost.cpp` opens the editor outside a DAW, which is how any of this
 gets checked. It opens a window on the current display, so it is not something
 to run unannounced.
 
-## 5. Later / nice to have
+## 6. Later / nice to have
 
 - **Wind and thunder.** Explicitly out of scope for now; the plugin is rain
   only. When added, they belong as separate parameter groups, and thunder needs
@@ -222,10 +284,13 @@ to run unannounced.
   matched to the nearest neighbour rather than to themselves. A true far-field
   recording, a downspout, rain on a tent and rain on a water surface would each
   earn their keep.
-- **Teach the fit to tell a droplet from a room.** The objective in
-  `tools/analysis/` has no feature that separates a long droplet ring from a
-  long reverb tail, and on Cave Drips it put the cavern inside the droplet:
-  `drop_decay` was fitted to 260 ms with `space_amount` at 0.07, which reads as
-  a synthetic swoop rather than a drip in a cave. It needs a per-band
-  reverberation-time feature, and probably a ceiling on `drop_decay` relative to
-  the surface, before the space controls can be fitted at all.
+- **Teach the fit to tell a droplet from a room -- DONE 2026-09-04.** The
+  objective now measures, on references sparse enough to have isolated events,
+  the event rate, the late RT60 (Schroeder integration from 50 ms after each
+  isolated event, floor subtracted) and the direct-to-late energy ratio, and
+  compares per-frame flatness as a log ratio there as well, since 0.001 against
+  0.010 is nothing squared and everything heard. Sparse presets render for 30 s
+  per candidate instead of 6. Cave Drips is the first preset fitted with its
+  space and filter controls (`DROP` mode in `pairs.py`), because its reference
+  has a measured room. Still open: the same treatment for Dripping Faucet and
+  Puddle Plinks once their references are judged good enough to fit a room to.

@@ -1,7 +1,7 @@
 # RainyDay — current status
 
-Written 2026-09-03. See `README.md` for the design and parameter reference, and
-`TODO.md` for what is still open (preset saving is now the headline item).
+Written 2026-09-03, brought up to date 2026-09-05. See `README.md` for the
+design and parameter reference, and `TODO.md` for what is still open.
 
 ## State: working and playable
 
@@ -15,7 +15,7 @@ installed to `~/.clap/RainyDay/`.
 
 - Droplets arrive as a Cox process (Poisson with a modulated rate), giving
   correct clustering statistics rather than jittered regularity.
-- Each droplet is four layers: a chirped decaying sine for the entrained bubble,
+- Each droplet is five layers: a chirped decaying sine for the entrained bubble,
   a quieter second bubble mode near twice that frequency, a noise burst through
   a resonant state-variable bandpass, and the initial impact — a two-cycle
   damped sine whose frequency is drawn afresh for every droplet, uniformly
@@ -29,13 +29,29 @@ installed to `~/.clap/RainyDay/`.
   drops are automatically loud, low and long.
 - Far-field droplets are summed statistically into a filtered, drifting,
   width-controlled noise bed instead of being synthesised individually.
-- 4-line feedback delay network with an orthonormal Hadamard matrix for space.
+- The space is a room model driven by one physical size: eight discrete early
+  reflections per channel at fixed fractions of the room dimension, then an
+  8-line feedback delay network through an orthonormal Hadamard matrix, each
+  line with its own low shelf and air lowpass so the decay is frequency
+  dependent the way real rooms are, four lines slowly modulated so a long tail
+  does not ring metallic. Space Size is 3 m to 90 m and the decay time follows
+  from it and from Space Damping through Sabine's law, so a small room cannot
+  ring for ten seconds and a stone hall cannot be dead.
 - Loudness is normalised against expected droplet concurrency, so `Density` is
   a texture control and not a hidden volume control.
 - The noise bed is a band rather than a lowpass, each droplet has a 12 dB/oct
   radiation rolloff below its own pitch, and the pitch spread is skewed upward.
   Together these are what stop the bottom two octaves flooding: real rain sits
   30 to 50 dB down at 100 Hz and the engine now does too.
+  The fifth layer is the struck surface's own low mode -- a canopy at 240 Hz, a
+  tin roof at 320 Hz, nothing for water -- excited per impact, scaled by Impact
+  and weighted by energy against the click. It fills the 200-400 Hz band that
+  the fitted library was consistently short in.
+
+The droplet loop skips each layer once it has decayed below -140 dBFS, which
+is exact to below -100 dB and is the difference between Downpour costing 130 %
+of a core and costing about half of one (TODO section 4 has the numbers and
+what would buy the next factor).
 
 **Plugin side** (`src/plugin.cpp`):
 
@@ -79,10 +95,17 @@ preset-discovery factory (so they appear in the host's own browser).
 The library was fitted numerically against a set of reference recordings of
 real rain (`tools/analysis/`): measure the recording and RainyDay's output with
 the same feature set, then coordinate-descend the preset values until they
-agree. Mean distance to the references fell by roughly 18x; the dense rain
-presets now match within a few dB in every band. Output Gain is matched
-afterwards across the library at -22 dBFS RMS, backing off where that would
-push the peak past -4 dBFS.
+agree. The objective measures, on references sparse enough to have isolated
+events, the event rate, the late reverberation time and the direct-to-late
+ratio as well, which is what let Cave Drips be fitted as a drip in a cave
+rather than as a texture. Across the thirteen dense presets the mean distance
+is 26.6 (it was 57.9 on the same objective before the room model, the body
+layer and the 2026-09-05 re-fit); Window Pane sits at 8.3 and Steady Rain at
+11.6. A fitted value is accepted only where it also wins on seeds the fit
+never optimised against; in the last run eleven of fifteen did, and Downpour,
+Dripping Faucet, First Drops and Storm Front kept their previous values.
+Output Gain is matched afterwards across the library at -22 dBFS RMS, backing
+off where that would push the peak past -4 dBFS.
 
 **Verification** (`tools/render.cpp`): a real mini CLAP host that walks the
 preset-discovery factory the way a DAW does, renders WAVs, and runs 30
@@ -141,8 +164,10 @@ long note.
 
 ## Known limitations
 
-- The window is a fixed size, and X11 or Win32 only; under a Wayland host the
-  plugin falls back to the host's generic parameter view.
+- The window is X11 or Win32 only; under a Wayland host the plugin falls back
+  to the host's generic parameter view. It resizes (by zooming the one layout,
+  aspect ratio kept, half size to four times), verified in `rainyday-guihost`,
+  which now forwards the host window's size changes the way a DAW does.
 - Rain only, by design. No wind, no thunder.
 - `Filter Key Track` follows the most recently played note (single global
   filter stage).
@@ -152,17 +177,25 @@ long note.
   by every host, Bitwig among them, and CLAP has no way to ask for it.
 - Per-note parameter modulation and note expressions are ignored.
 - The sparse drip presets match their references less closely than the dense
-  rain ones. Isolated drops in a room are dominated by the room, and the
-  reference recordings carry reverb the synth has to approximate with a single
-  feedback delay network.
+  rain ones, and their distances (Cave Drips 409, Dripping Faucet 361, Puddle
+  Plinks 144) include the room terms the dense presets never pay. Cave Drips is
+  bounded to the plink site of a two-site recording (see `PRESET_BOUNDS`), and
+  its top two octaves are 17 dB under the recording's for a reason not yet
+  found -- it is not the click. Christian judged the fitted cave against the
+  recording by ear on 2026-09-04 and accepted it.
 - The fit still overfits its own seeds on the sparse presets, though far less
   than it did. Scoring each candidate over twelve seeds instead of two took
   Dripping Faucet from 732.1 on held-out seeds to 43.0, and Storm Front from
   197.7 to 70.0. Fitted values are still accepted only where they also win on
   three seeds the fit neither optimised nor verified against; six of sixteen
   were rejected on that test.
-- Inside the Car is 91.9 against 54.6 before the impact model changed. Its
-  residual is 5 dB heavy at 3 to 6 kHz and 13 dB short at the top, which is
-  where the drop-derived impact frequency now sits, and a car roof takes that
-  at full strength. Tin Roof and Concrete Alley improved from the same change,
-  so it is not uniformly right for rigid surfaces.
+- Inside the Car is 55.4, from 91.9, with the body layer filling the low mids
+  a car roof has. It is still 16 dB short at 12-20 kHz, which is the recording
+  having more air than a lowpassed preset can pass.
+- The library-wide residual is now +1.2 dB at 3.2-6.3 kHz (from +2.7) and still
+  -2.0 dB at 200-400 Hz, but the shortfall has moved: the surfaces with a body
+  (umbrella -7.0 to -2.2, car -5.1 to -2.4) are largely fixed, and what is left
+  is concentrated in presets that use the Water surface while imitating a roof
+  or a pavement (Steady Rain, Tropical Monsoon, Downpour, Storm Front), where
+  the body is off by design. Whether those should be Wood or Concrete is a
+  preset-design decision, not a fit.

@@ -15,8 +15,9 @@ Play a MIDI note and it rains for as long as you hold it.
   host's own browser
 - Sample-accurate note and parameter handling, host modulation support,
   bounded CPU cost
-- A plugin window drawn with X11 and Cairo: every parameter, a preset browser
-  and a droplet-activity meter, with no toolkit dependency
+- A plugin window drawn with X11 and Cairo: every parameter, a preset browser,
+  typed value entry and a droplet-activity meter, resizable, with no toolkit
+  dependency
 
 ## Build and install
 
@@ -66,7 +67,9 @@ RainyDay draws its own window with raw **X11** and **Cairo** — no toolkit, so
 the plugin stays one self-contained `.clap` file and needs nothing a Linux
 audio machine does not already have. It is embedded in the host's window
 through `CLAP_EXT_GUI` (X11 API, non-floating) and repainted from the host's
-timer, at a fixed 960×740.
+timer. The layout is 960×740 in design pixels and the window resizes by zooming it:
+the host is told to keep the aspect ratio, and any size it settles on becomes one
+cairo scale over the same layout, from half size to four times.
 
 The layout is generated from the parameter table in `src/params.cpp`: panels
 are the modules, cells are the parameters, and the help line at the bottom is
@@ -138,7 +141,7 @@ random walk. The log-normal modulation is mean-compensated by
 `exp(-σ²/2)`, so the average density stays exactly where you set it while the
 rain gains natural surges and lulls.
 
-### 2. A single droplet — four layers
+### 2. A single droplet — five layers
 
 Each impact is a short event assembled from:
 
@@ -148,11 +151,28 @@ Each impact is a short event assembled from:
 | Second mode | A quieter partial near twice the bubble frequency, decaying twice as fast | surface |
 | Wet | White-noise burst through a resonant state-variable bandpass tuned to the droplet's pitch | `Splash`, `Tonality` |
 | Impact | A two-cycle damped sine at a frequency drawn afresh for every droplet | `Impact` |
+| Body | One low mode of the struck surface, at the surface's own frequency and ring time | `Impact`, surface |
 
 Bubble, second mode and splash all pass through the droplet's own radiation
-highpass; the impact does not, because it is the surface being struck and not
-the droplet radiating. Everything then passes through a one-pole lowpass
-standing in for air absorption, and is equal-power panned into the stereo field.
+highpass; the impact and the body do not, because they are the surface being
+struck and not the droplet radiating. Everything then passes through a one-pole
+lowpass standing in for air absorption, and is equal-power panned into the
+stereo field.
+
+**The surface has a voice of its own.** A droplet cannot put energy far below
+its own resonance, but the thing it lands on can, and every recording of rain on
+something has more in the low mids than a cloud of droplets radiating into air
+can make: the fitted library was short by about 2 dB between 200 and 400 Hz on
+thirteen presets out of sixteen however each was pointed, which is an engine's
+bias and not a preset's. So each impact also excites one low mode of the
+surface — 240 Hz and 40 ms for a canopy, 320 Hz and 150 ms for a tin roof,
+nothing at all for water — scattered a little per droplet because a roof is not
+one panel, scaled by `Impact` because it is the strike that sets it going, and
+weighted as an *energy* ratio against the click rather than an amplitude one,
+since a mode that rings for forty milliseconds carries far more energy than a
+two-cycle tick of the same height. It radiates through its own highpass at
+0.6× its frequency, for the same reason the droplet does: a panel is small
+against the wavelengths below its mode.
 
 **The impact is pitched, not noise.** Following Liu, Cheng and Tong (2019), the
 initial impact is modelled as `A·e^(−2f·t)·sin(2πf·t)` with `f` drawn uniformly
@@ -232,10 +252,28 @@ a resonant lowpass and a highpass, and modulated by a slow random walk
 
 `Distance` attenuates and darkens, with `Air Absorption` setting how quickly
 the high end is lost — near drops are bright and loud, far ones are dull and
-soft, per droplet. `Space` is a 4-line **feedback delay network** with an
-orthonormal Hadamard mixing matrix, mutually prime delay lengths and per-line
-damping. Orthonormal mixing means the feedback gain alone determines decay, so
-the tank mathematically cannot blow up.
+soft, per droplet.
+
+`Space` is a room model driven by one physical quantity. `Space Size` is the
+dimension of the room, 3 m to 90 m, and everything else follows from it: the
+distances the first reflections travel, the mean free path the late tank's
+delay lengths are built on, and — through Sabine's law, with `Space Damping` as
+the absorption of the surfaces — the decay time. A small room therefore cannot
+ring for ten seconds and a bare stone hall cannot be dead, and the decay is
+frequency dependent the way real rooms are: surfaces absorb mids and highs more
+than lows, and the air itself takes the top end off over the distance sound has
+to travel before it dies, so a large space is longer *and* darker.
+
+Two stages. **Early reflections** are eight discrete taps per channel at fixed
+fractions of the room dimension; in the reference cave recording the strongest
+of these arrives 55 ms after each drop only 7 dB below it, and it is the most
+audible thing about the room — a diffuse tank can only smear it. The **late
+tail** is an 8-line feedback delay network through an orthonormal Hadamard
+matrix, each line with its own low shelf and air lowpass so that every line
+decays at the same rate per second whatever its length, and four of the lines
+slowly modulated by a fraction of a millisecond, which breaks up the metallic
+modes an unmodulated tank rings with on a long decay and is far too little to be
+heard as pitch.
 
 ### 6. Level behaviour
 
@@ -379,9 +417,9 @@ split still load; they simply gain a `bed_width` of their own.
 |---|---|---|
 | Distance | 0 – 100 % | Pushes the whole rain field away |
 | Air Absorption | 0 – 100 % | How much high end distance costs |
-| Space Amount | 0 – 100 % | Feedback delay network mix |
-| Space Size | 0 – 100 % | Delay lengths and decay time |
-| Space Damping | 0 – 100 % | Bright stone ↔ soft absorbent surfaces |
+| Space Amount | 0 – 100 % | Room mix: early reflections and late tail |
+| Space Size | 0 – 100 % | Room dimension, 3 m to 90 m; decay time follows |
+| Space Damping | 0 – 100 % | Surface absorption: bright stone ↔ soft and absorbent |
 
 ### Filter
 
@@ -507,7 +545,7 @@ src/params.cpp           the parameter table, its tips and unit conversions
 src/gui/gui.cpp          the plugin window: X11, Cairo, layout, interaction
 src/dsp/rain_engine.*    voices, droplet pool, scheduling, the noise bed
 src/dsp/filters.h        state-variable and one-pole filters
-src/dsp/reverb.h         delay line, allpass, feedback delay network
+src/dsp/reverb.h         delay line, allpass, the room (early reflections + 8-line tank)
 src/dsp/rng.h            xoshiro128+, uniform/Gaussian/exponential draws
 src/dsp/adsr.h           the envelope
 src/dsp/fastmath.h       fast sine, decay coefficients
