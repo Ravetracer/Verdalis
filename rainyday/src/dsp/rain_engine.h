@@ -63,13 +63,14 @@ struct EngineParams {
    int seed = 0;
 };
 
-// A single impact. Four synthesis layers share one droplet:
+// A single impact. Five synthesis layers share one droplet:
 //   * a chirped sine that swells in and decays (the "plink" of the air bubble
 //     the impact traps, which is why it arrives just after the splash),
 //   * a second, much quieter bubble mode near twice that frequency,
 //   * a noise burst through a resonant bandpass (the wet splash),
 //   * the initial impact: a two-cycle damped sine at a frequency drawn afresh
-//     for every droplet.
+//     for every droplet,
+//   * the surface's own low mode, where a struck panel or canopy rings.
 struct Droplet {
    bool active = false;
    uint32_t startOffset = 0; // sample within the current block where it begins
@@ -93,6 +94,15 @@ struct Droplet {
    // uniformly, damped hard enough that only about two cycles survive.
    float clickPhase = 0.0f, clickPhaseInc = 0.0f;
    float clickAmp = 0.0f, clickDecay = 0.0f;
+   // The struck surface's own low mode: a panel, a leaf or a canopy rings in
+   // the low mids where no droplet radiates. Like the impact it is the surface
+   // sounding, so it bypasses the droplet's radiation highpass.
+   float bodyPhase = 0.0f, bodyPhaseInc = 0.0f;
+   float bodyAmp = 0.0f, bodyDecay = 0.0f, bodyRiseInv = 0.0f;
+   // A panel radiates poorly below its own mode for the same reason a droplet
+   // does below its bubble: it is small against the wavelength. Without this
+   // the mode's spectral skirts fill the two empty octaves under it.
+   Hp2 bodyHp;
    OnePoleLp air;
    // A droplet is a small radiator: it cannot put out much energy far below its
    // own resonance, so everything under it is rolled off at 12 dB/oct.
@@ -100,7 +110,7 @@ struct Droplet {
    float gainL = 0.0f, gainR = 0.0f;
 
    inline float peak() const {
-      return (tonalAmp - tonalRise) + harmAmp + noiseAmp + clickAmp;
+      return (tonalAmp - tonalRise) + harmAmp + noiseAmp + clickAmp + bodyAmp;
    }
 };
 
@@ -174,7 +184,7 @@ private:
    // project turned out to be largely about rain having no low end.
    Hp2 mHighpassL, mHighpassR;
    bool mHighpassBypass = true;
-   Fdn mSpace;
+   Space mSpace;
    int mLastKey = 60;
 
    // Cached derived values, refreshed by setParams().

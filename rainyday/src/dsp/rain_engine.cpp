@@ -25,6 +25,10 @@ struct SurfaceProfile {
    float onsetMul;   // how slowly the tone swells in after the impact
    float harmonic;   // level of the second bubble mode, relative to the first
    float impactFromDrop; // 0 statistical, 1 derived from the drop that made it
+   float bodyHz;         // centre of the surface's own low mode
+   float bodySpreadOct;  // how far that mode is scattered per droplet, in octaves
+   float bodyDecaySec;   // how long the surface rings
+   float bodyLevel;      // its weight, relative to the impact click
 };
 
 // Wet surfaces trap an air bubble, so their tone swells in a few milliseconds
@@ -44,14 +48,26 @@ struct SurfaceProfile {
 // water; it is what a bubble pulsating hard enough to be heard radiates at
 // twice its breathing frequency. It belongs to the bubble, so the surfaces that
 // do not trap one do not get it.
+//
+// The four body columns are the surface itself sounding. Every recording of
+// rain on something -- a roof, leaves, a canopy, a car -- has more in the low
+// mids than a cloud of droplets radiating into air can make, and the fitted
+// library was short there by about 2 dB on thirteen presets out of sixteen
+// however it was pointed, which is an engine's bias and not a preset's. A
+// droplet cannot put energy far below its own resonance; the thing it lands on
+// can. So each impact also excites one low mode of the surface, at a frequency
+// and ring time that are the surface's own, scattered a little per droplet
+// because a roof is not one panel. Water has none: there is nothing rigid to
+// ring. The umbrella has the most, being a drumhead. Weighted by Impact, since
+// it is the strike that sets it going.
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
-   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f},
-   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f},
-   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f},
-   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f},
-   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f},
-   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f},
-   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f},
+   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f,   0.0f, 0.0f, 0.00f, 0.00f},
+   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f,   0.0f, 0.0f, 0.00f, 0.00f},
+   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f},
+   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f},
+   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f},
+   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f, 450.0f, 0.4f, 0.060f, 0.20f},
+   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f, 400.0f, 0.4f, 0.015f, 0.08f},
    // Fabric: a taut canopy a foot above your head, which is an umbrella or a
    // tent. It is a drumhead, so the impact is the loudest thing about it and
    // carries more weight than on any other surface, but the membrane is lossy
@@ -59,7 +75,7 @@ const SurfaceProfile kSurfaces[kNumSurfaces] = {
    // once and has very little pitch to it. Struck from above and radiating
    // straight down, it is also the one surface heard from a few centimetres
    // away rather than across a street.
-   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f},
+   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f, 240.0f, 0.4f, 0.040f, 0.60f},
 };
 
 // Time constant of the pitch bend, as a fraction of the droplet's ring time and
@@ -139,6 +155,13 @@ constexpr float kDownwardSpread = 0.45f;
 // envelope and distance.
 constexpr float kDropletBaseAmp = 0.25f;
 
+// Below this a layer is not computed any more: 1e-7 is -140 dBFS. The click is
+// gone within a few milliseconds and the splash soon after, so for most of a
+// droplet's life only the bubble is still being computed. Measured on Downpour
+// this took the engine from 130 % of realtime to 54 %, and on Tin Roof from 67 %
+// to 17 %, with the output identical to below -100 dB.
+constexpr float kSilent = 1.0e-7f;
+
 // The absolute diameter, in millimetres, that a relative size of one stands
 // for. The engine only ever works in relative size, but terminal velocity is a
 // function of the real drop, so the two have to be tied together somewhere and
@@ -208,6 +231,7 @@ static uint32_t rngStateForSeed(int seed) {
 
 void RainEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
    mSampleRate = static_cast<float>(sampleRate);
+   sinTable(); // built now, on this thread, rather than on the first audio call
    mDroplets.assign(kMaxDroplets, Droplet());
    mSpace.prepare(mSampleRate);
    // Unique starting point per instance so stacked copies decorrelate.
@@ -639,6 +663,40 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    d.noiseDecay = decayCoef(noiseDecaySec, mSampleRate);
    d.clickDecay = decayCoef(clickDecaySec, mSampleRate);
 
+   // --- Surface body: one low mode of the thing struck, scattered per droplet
+   // and scaled with the drop's size the way the impact is, since a bigger
+   // drop shakes the panel harder. A surface with no body leaves the layer at
+   // zero and it costs nothing.
+   //
+   // The level is an energy ratio against the click, not an amplitude ratio.
+   // The click is two cycles and gone in a millisecond; the body rings for
+   // tens or hundreds of them, so at equal peak amplitude it carries twenty
+   // times the energy or more, and the first version of this, scaled by peak,
+   // put the umbrella 18 dB heavy below 200 Hz. sqrt(T_click / T_body) makes
+   // bodyLevel mean what it says.
+   const float bodyDecaySec = sp.bodyLevel > 0.0f ? sp.bodyDecaySec : 0.0f;
+   if (bodyDecaySec > 0.0f) {
+      const float bodyHz =
+         clampv(sp.bodyHz * std::exp2(sp.bodySpreadOct * clampv(mRng.gaussian() * 0.5f, -1.0f, 1.0f)),
+                40.0f, 2000.0f);
+      d.bodyPhase = 0.0f;
+      d.bodyPhaseInc = bodyHz / mSampleRate;
+      d.bodyAmp = amp * click * sp.bodyLevel * std::sqrt(clickDecaySec / bodyDecaySec);
+      d.bodyDecay = decayCoef(bodyDecaySec, mSampleRate);
+      // A mode does not appear at full swing on its first sample; it is driven
+      // up over about one cycle. Switching it on hard gives the sine skirts
+      // wide enough to fill the two octaves under it, which is exactly where
+      // rain has nothing.
+      d.bodyRiseInv = bodyHz / mSampleRate;
+      d.bodyHp.reset();
+      d.bodyHp.setCutoff(clampv(0.6f * bodyHz, 30.0f, 0.4f * mSampleRate), mSampleRate);
+   } else {
+      d.bodyAmp = 0.0f;
+      d.bodyDecay = 0.0f;
+      d.bodyPhaseInc = 0.0f;
+      d.bodyRiseInv = 0.0f;
+   }
+
    // --- Tonal layer: e^(-t/decay) - e^(-t/rise), so it swells in behind the
    // impact rather than appearing at full level on the first sample. The pair
    // is normalised by its own peak, which keeps `amp` the layer's real peak.
@@ -723,7 +781,8 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    // own ring-down. A short fade at the end keeps the hard stop inaudible.
    const float qRing = (1.0f / clampv(d.resonator.k(), 0.02f, 2.0f)) / (3.14159265f * freq);
    const float ringSec = hasBubble ? tonalDecaySec : 0.0f;
-   const float longest = std::max(ringSec, std::max(noiseDecaySec + qRing, clickDecaySec));
+   const float longest =
+      std::max(std::max(ringSec, bodyDecaySec), std::max(noiseDecaySec + qRing, clickDecaySec));
    d.lifeMax = static_cast<uint32_t>(clampv(1.6f * longest, 0.001f, 4.0f) * mSampleRate) + 96;
    d.life = 0;
    d.startOffset = offset + static_cast<uint32_t>(clampv(travelSamples, 0.0f, 0.5f * mSampleRate));
@@ -803,17 +862,31 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
       const uint32_t fadeStart = d.lifeMax > 64 ? d.lifeMax - 64 : 0;
 
       for (; i < numSamples; ++i) {
+         // The generator is shared by every droplet and the bed, so it is
+         // drawn from whether or not the splash still needs it: skipping the
+         // draw would change every random number after it and with them the
+         // whole rain, and a fixed Seed promises the same rain every time.
          const float noise = mRng.white();
          // Bubble and splash are radiated by the droplet itself, so both go
-         // through its radiation rolloff. The impact is not: it is the surface
-         // being struck, and its pitch has nothing to do with the bubble's, so
-         // rolling it off below the bubble would silence the low ticks that
-         // land under a fine drop. Air absorption applies to all of it.
-         float s = (d.tonalAmp - d.tonalRise) * sin2pi(d.phase);
-         s += d.harmAmp * sin2pi(d.harmPhase);
-         s += d.resonator.bandpassNormalised(noise * d.noiseAmp);
+         // through its radiation rolloff. The impact and the body are not: they
+         // are the surface being struck, and their pitch has nothing to do with
+         // the bubble's, so rolling them off below the bubble would silence the
+         // low ticks that land under a fine drop. Air absorption applies to all
+         // of it. Each layer is skipped once it has decayed below kSilent.
+         float s = 0.0f;
+         if (d.tonalAmp > kSilent) {
+            s = (d.tonalAmp - d.tonalRise) * sin2piFast(d.phase);
+            s += d.harmAmp * sin2piFast(d.harmPhase);
+         }
+         if (d.noiseAmp > kSilent || d.resonator.ringing(kSilent))
+            s += d.resonator.bandpassNormalised(noise * d.noiseAmp);
          s = d.body.tick(s);
-         s += d.clickAmp * sin2pi(d.clickPhase);
+         if (d.clickAmp > kSilent)
+            s += d.clickAmp * sin2piFast(d.clickPhase);
+         if (d.bodyAmp > kSilent) {
+            const float ramp = static_cast<float>(d.life) * d.bodyRiseInv;
+            s += d.bodyHp.tick(d.bodyAmp * (ramp < 1.0f ? ramp : 1.0f) * sin2piFast(d.bodyPhase));
+         }
          s = d.air.tick(s);
 
          if (d.life >= fadeStart)
@@ -831,6 +904,9 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
          d.clickPhase += d.clickPhaseInc;
          if (d.clickPhase >= 1.0f)
             d.clickPhase -= 1.0f;
+         d.bodyPhase += d.bodyPhaseInc;
+         if (d.bodyPhase >= 1.0f)
+            d.bodyPhase -= 1.0f;
 
          // The second mode is a mode of the same bubble, so it bends with it.
          d.phaseInc *= d.chirpRate;
@@ -848,6 +924,7 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
          d.harmAmp *= d.harmDecay;
          d.noiseAmp *= d.noiseDecay;
          d.clickAmp *= d.clickDecay;
+         d.bodyAmp *= d.bodyDecay;
 
          if (++d.life >= d.lifeMax) {
             d.active = false;
@@ -931,7 +1008,7 @@ uint32_t RainEngine::activeDropletCount() const {
 float RainEngine::tailSeconds() const {
    // Release plus the reverb ring-down, which is what a host needs to know to
    // keep processing after the last note off.
-   const float spaceTail = mP.spaceAmount > 0.001f ? 0.5f + 6.0f * mP.spaceSize : 0.05f;
+   const float spaceTail = mP.spaceAmount > 0.001f ? 0.3f + mSpace.decaySeconds() : 0.05f;
    // Plus a second of slack for the longest droplet ring-down.
    return mP.releaseSec + spaceTail + 1.0f;
 }

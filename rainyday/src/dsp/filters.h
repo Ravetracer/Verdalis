@@ -57,6 +57,11 @@ public:
    }
 
    inline float k() const { return mK; }
+   // Whether the state still holds anything above `floor`: a resonator keeps
+   // ringing after its input has stopped, and stops mattering when this is false.
+   inline bool ringing(float floor) const {
+      return std::fabs(mIc1) > floor || std::fabs(mIc2) > floor;
+   }
 
 private:
    float mIc1 = 0.0f, mIc2 = 0.0f;
