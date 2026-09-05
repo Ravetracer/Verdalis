@@ -262,9 +262,9 @@ to run unannounced.
 
 ## 6. Later / nice to have
 
-- **Wind and thunder.** Explicitly out of scope for now; the plugin is rain
-  only. When added, they belong as separate parameter groups, and thunder needs
-  its own event scheduler rather than reusing the droplet pool.
+- **Wind and thunder are not coming here.** Decided 2026-09-05: they will be
+  separate plugins. RainyDay stays rain, and nothing in it should be shaped to
+  leave room for them.
 - **Per-note modulation.** `CLAP_EVENT_PARAM_MOD` is handled globally;
   per-note-id modulation is currently ignored.
 - **Per-voice filter.** `Filter Key Track` follows the most recent note

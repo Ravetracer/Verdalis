@@ -168,7 +168,8 @@ long note.
   to the host's generic parameter view. It resizes (by zooming the one layout,
   aspect ratio kept, half size to four times), verified in `rainyday-guihost`,
   which now forwards the host window's size changes the way a DAW does.
-- Rain only, by design. No wind, no thunder.
+- Rain only, by design. Wind and thunder are separate plugins, not features
+  waiting to be added here.
 - `Filter Key Track` follows the most recently played note (single global
   filter stage).
 - The save dialog holds a keyboard grab for as long as it is open, so the host's
