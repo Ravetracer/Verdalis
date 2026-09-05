@@ -6,18 +6,18 @@ description = Well-behaved everyday rain. The reference point for the whole libr
 features = ambient, texture, noise
 
 # Rain
-density = 290
+density = 386
 clumping = 0.585
 drop_pitch = 3428
 pitch_spread = 2.39
 drop_decay = 5.21
 decay_spread = 0.958
-tonality = 0.3
+tonality = 0.347
 bubble = 0.846
-impact = 0.056
+impact = 0.077
 splash = 0.938
-level_spread = 0.515
-chirp = 0.35
+level_spread = 0.795
+chirp = 0.02
 surface = Water
 note_tracking = 0.5
 
@@ -33,7 +33,7 @@ bed_pan = 0
 width = 0.9
 drop_pan = 0
 distance = 0.212
-air = 0.831
+air = 0.827
 space_amount = 0.2
 space_size = 0.5
 space_damping = 0.5
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 1.04
+gain = -0.868
 max_droplets = 512
 seed = 0

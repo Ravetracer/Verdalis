@@ -34,13 +34,14 @@ struct SurfaceProfile {
 // Wet surfaces trap an air bubble, so their tone swells in a few milliseconds
 // behind the splash; a rigid surface starts ringing the instant it is struck.
 //
-// The chirp column is very small on purpose. Tracking the instantaneous
-// frequency of isolated drops in real recordings, across the 80 ms or so that a
-// drop is actually audible, puts the bend between 0.01 and 0.09 octaves. It is
-// a couple of per cent, not the octave-wide swoop the textbook description of
-// bubble entrainment suggests. Chirp at 100 % now sits at the top of that
-// measured range rather than above it: past roughly a tenth of an octave a
-// droplet stops sounding like water and starts sounding like a laser.
+// The chirp column is the total pitch bend, and it splits the surfaces in two.
+// A drop that traps an air bubble bends by more than an octave as the bubble
+// shrinks -- see the measurement above kChirpAccel -- while a drop landing on
+// something rigid excites a fixed mode of that thing and barely bends at all.
+// So water and puddles get the full Minnaert runaway and the hard surfaces
+// keep the couple of per cent they always had. What makes the large values
+// usable is that the bend is back-loaded into the decaying tail; spent on the
+// attack instead, anything past a tenth of an octave sounds like a laser.
 //
 // The harmonic column is the second bubble mode. Measuring the isolated drops
 // in the reference recordings puts a partial at 1.8 to 2.15 times the
@@ -61,8 +62,8 @@ struct SurfaceProfile {
 // ring. The umbrella has the most, being a drumhead. Weighted by Impact, since
 // it is the strike that sets it going.
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
-   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 0.08f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f,   0.0f, 0.0f, 0.00f, 0.00f},
-   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 0.12f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f,   0.0f, 0.0f, 0.00f, 0.00f},
+   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 1.30f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f, 0.0f, 0.0f, 0.00f, 0.00f},
+   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 1.45f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f, 0.0f, 0.0f, 0.00f, 0.00f},
    /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f},
    /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f},
    /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f},
@@ -78,15 +79,43 @@ const SurfaceProfile kSurfaces[kNumSurfaces] = {
    /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f, 240.0f, 0.4f, 0.040f, 0.60f},
 };
 
-// Time constant of the pitch bend, as a fraction of the droplet's ring time and
-// as an absolute window. Spread across the ring rather than crammed into its
-// first few milliseconds: the recordings show the frequency drifting gently
-// over the drop's whole audible life, and concentrating the same small bend
-// into the attack is exactly what makes it read as a swoop instead of as the
-// pitch of a bubble settling.
-constexpr float kChirpTauFraction = 1.0f;
-constexpr float kChirpTauMinSec = 0.005f;
-constexpr float kChirpTauMaxSec = 0.120f;
+// --- The pitch bend of a drop falling into water.
+//
+// Tracking an isolated drop cycle by cycle, from the zero crossings of the
+// tone itself, gives a shape in three parts:
+//
+//   1. one cycle of downward bend at the attack, 876 -> 730 Hz, about a
+//      quarter of an octave in a millisecond, while the splash is loudest;
+//   2. a plateau: 730 -> 775 Hz over the next 15 ms, the part of the drop
+//      that is within 2 dB of peak. Barely a twentieth of an octave;
+//   3. a rise that accelerates as the drop decays: 775 Hz at 20 ms, 1 kHz at
+//      55 ms, 2.4 kHz at 130 ms, by which point it is 42 dB down. About 1.7
+//      octaves in total, and roughly 95 % of it below -3 dB.
+//
+// This is why the bend was previously fitted at a tenth of an octave and no
+// more. Measured over the loud part of a drop that is exactly what it is, and
+// an energy-weighted fit sees nothing else. The rise lives almost entirely in
+// the tail, so a model that spends its bend on the plateau has to keep the
+// bend tiny or it sounds like a laser -- which was the old conclusion here.
+//
+// The shape below therefore back-loads the rise instead of front-loading it.
+// The per-sample step grows geometrically, so the accumulated bend after a
+// fraction f of the sweep is (e^(kf) - 1) / (e^k - 1). Fitting k against the
+// 20x-stretched reference gives 0.5 and rejects anything steep: the real drop
+// has done a sixth of its bend a quarter of the way through and half of it by
+// the middle, so a strongly back-loaded curve hides the whole rise in the part
+// nobody hears. Slightly above the fitted value, to keep the plateau.
+constexpr float kChirpAccel = 0.6f;
+// Where the sweep finishes, as a multiple of the ring time. decayCoef takes
+// the time to -60 dB, and the reference has reached its full span by about
+// -36 dB, so the bend is done at 0.6 ring times and holds afterwards. This is
+// the number that decides whether any of the bend is audible: spread over the
+// droplet's whole lifetime (1.6 ring times, about -96 dB) the drop is already
+// 36 dB down before a fifth of the sweep has happened.
+constexpr float kChirpReachRings = 0.6f;
+// The attack dip: how far down, and how fast it relaxes back.
+constexpr float kChirpDipOct = 0.22f;
+constexpr float kChirpDipTauSec = 0.0012f;
 
 // Rise time of the tonal layer, as a fraction of its own ring time and as an
 // absolute window. Capped against the ring time so the rise is always clearly
@@ -735,25 +764,21 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    d.clickPhase = 0.0f;
    d.clickPhaseInc = impactHz / mSampleRate;
 
-   // --- Chirp: a droplet trapping an air bubble in water rises in pitch as the
-   // bubble shrinks. The per-sample frequency multiplier starts high and relaxes
-   // towards 1 with its own time constant, taken from the ring time, so the
-   // total sweep comes to chirpOct octaves spread across the drop's audible
-   // life (see kChirpTauFraction: front-loading the same bend into the attack
-   // is what makes it read as a swoop rather than as a bubble settling).
-   //
-   // Drops do not all bend by the same amount. Measured across the isolated
-   // drops in the references the bend runs from about nothing to +0.17 octaves
-   // with a median near +0.03, so the setting is the mean of a uniform draw
-   // rather than a fixed amount: 2u has mean 1, which leaves Chirp meaning what
-   // it meant while no two droplets bend alike.
+   // --- Chirp: how far this droplet's bubble bends. Drops do not all bend by
+   // the same amount, so the setting is the mean of a uniform draw rather than
+   // a fixed amount: 2u has mean 1, which leaves Chirp meaning what it means
+   // while no two droplets bend alike. The draw happens here, with the other
+   // per-droplet draws, so that a fixed Seed keeps meaning the same rain; the
+   // bend itself is set up further down, once the droplet's lifetime is known.
    const float chirpOct = mP.chirp * sp.chirpOct * 2.0f * mRng.uniformPositive();
-   const float chirpTauSec =
-      clampv(tonalDecaySec * kChirpTauFraction, kChirpTauMinSec, kChirpTauMaxSec);
-   const float chirpSamples = chirpTauSec * mSampleRate;
-   if (chirpSamples > 1.0f && std::fabs(chirpOct) > 1.0e-4f) {
-      d.chirpRate = std::exp2(chirpOct / chirpSamples);
-      d.chirpRelax = std::exp(-1.0f / chirpSamples);
+
+   // The attack dip: one cycle of downward bend while the cavity is still
+   // opening. It belongs to the bubble, so only the surfaces that trap one get
+   // it, and it is over long before the rise below has gone anywhere.
+   const float dipSamples = kChirpDipTauSec * mSampleRate;
+   if (hasBubble && dipSamples > 1.0f && sp.chirpOct > 0.05f) {
+      d.chirpRate = std::exp2(-kChirpDipOct * mP.chirp / dipSamples);
+      d.chirpRelax = std::exp(-1.0f / dipSamples);
    } else {
       d.chirpRate = 1.0f;
       d.chirpRelax = 0.0f;
@@ -785,6 +810,30 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
       std::max(std::max(ringSec, bodyDecaySec), std::max(noiseDecaySec + qRing, clickDecaySec));
    d.lifeMax = static_cast<uint32_t>(clampv(1.6f * longest, 0.001f, 4.0f) * mSampleRate) + 96;
    d.life = 0;
+
+   // --- Chirp, the rise: the bubble shrinking. The sweep is spread over the
+   // droplet's whole audible life rather than over a fixed window, because
+   // that is what the reference does -- it is still bending when it passes
+   // -42 dB -- and because a window longer than the drop would deliver only
+   // the flat first part of the curve and none of the runaway.
+   //
+   // The per-sample step grows geometrically, so the bend is back-loaded into
+   // the decaying tail. The geometric sum is pinned to chirpOct, which leaves
+   // kChirpAccel free to move where the bend happens without changing how far
+   // it goes.
+   const float sweep = tonalDecaySec * kChirpReachRings * mSampleRate;
+   if (sweep > 32.0f && chirpOct > 1.0e-4f) {
+      const float grow = std::exp(kChirpAccel / sweep);
+      d.chirpGrow = grow;
+      d.chirpStep = chirpOct * 0.693147181f * (grow - 1.0f) / std::expm1(kChirpAccel);
+      // Past the sweep the bubble has gone; the pitch holds where it ended
+      // rather than running on into the noise floor.
+      d.chirpEnd = static_cast<uint32_t>(sweep);
+   } else {
+      d.chirpGrow = 1.0f;
+      d.chirpStep = 0.0f;
+      d.chirpEnd = 0;
+   }
    d.startOffset = offset + static_cast<uint32_t>(clampv(travelSamples, 0.0f, 0.5f * mSampleRate));
    d.active = true;
 }
@@ -909,8 +958,14 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
             d.bodyPhase -= 1.0f;
 
          // The second mode is a mode of the same bubble, so it bends with it.
-         d.phaseInc *= d.chirpRate;
-         d.harmPhaseInc *= d.chirpRate;
+         // The attack dip relaxes away; the tail rise accelerates.
+         float bend = d.chirpRate;
+         if (d.life < d.chirpEnd) {
+            bend *= 1.0f + d.chirpStep;
+            d.chirpStep *= d.chirpGrow;
+         }
+         d.phaseInc *= bend;
+         d.harmPhaseInc *= bend;
          d.chirpRate = 1.0f + (d.chirpRate - 1.0f) * d.chirpRelax;
          if (d.phaseInc > 0.45f)
             d.phaseInc = 0.45f;

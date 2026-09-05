@@ -14,16 +14,16 @@ drop_decay = 72
 decay_spread = 0
 tonality = 0.6
 bubble = 0.76
-impact = 0.4
+impact = 0.347
 splash = 0.3
 level_spread = 0.53
-chirp = 0.3
+chirp = 1
 surface = Puddle
 note_tracking = 0.5
 
 # Bed
 bed_level = -40
-bed_tone = 0.067
+bed_tone = 0.083
 bed_body = 0.5
 bed_drift = 0.3
 bed_width = 0.9
@@ -32,11 +32,11 @@ bed_pan = 0
 # Space
 width = 0.9
 drop_pan = 0
-distance = 0.16
-air = 0.379
-space_amount = 0.995
-space_size = 0.872
-space_damping = 0.531
+distance = 0.44
+air = 0.099
+space_amount = 0.897
+space_size = 0.851
+space_damping = 0.55
 
 # Filter
 filter_type = Lowpass
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 1.86
+gain = 5.45
 max_droplets = 512
 seed = 0

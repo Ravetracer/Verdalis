@@ -77,9 +77,19 @@ struct Droplet {
    uint32_t life = 0, lifeMax = 0;
 
    float phase = 0.0f, phaseInc = 0.0f;
-   // Chirp is a per-sample frequency multiplier that itself relaxes back to 1,
-   // so the pitch bend is front-loaded instead of crawling across the ring.
+   // The pitch bend has two parts, because a drop falling into water makes two.
+   //
+   // The dip is a fast downward bend that relaxes back to 1 within a cycle or
+   // two of the attack: the cavity is still opening while the splash is at its
+   // loudest.
    float chirpRate = 1.0f, chirpRelax = 0.0f;
+   // The rise is the bubble shrinking afterwards. Its per-sample log-frequency
+   // step *grows*, so the pitch sits almost still through the loud plateau and
+   // runs away through the decaying tail, which is where a real drop puts
+   // nearly all of its bend.
+   float chirpStep = 0.0f, chirpGrow = 1.0f;
+   // Sample at which the rise is finished and the pitch holds.
+   uint32_t chirpEnd = 0;
    // The tonal layer is a difference of two exponentials, which gives it a
    // short rise instead of switching on at full level like a beep.
    float tonalAmp = 0.0f, tonalDecay = 0.0f;

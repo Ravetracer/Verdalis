@@ -112,6 +112,39 @@ wind. That is a real finding, and it is also exactly the scope this project has
 decided against. Worth remembering when a preset sounds thin for no reason the
 measurements can explain.
 
+### 1f. The bubble's pitch bend was measured on the wrong part of the drop -- DONE
+
+Closed 2026-09-05, and worth keeping because the mistake is easy to repeat.
+
+The bend had been fitted at 0.01 to 0.09 octaves by tracking isolated drops
+across the 80 ms they are loud. That measurement is right; the conclusion was
+not. Energy weighting only ever sees the plateau, and the plateau is the one
+part of a drop that does not move -- the reference stays within 0.07 octaves of
+750 Hz for as long as it is within 2 dB of peak. The rise happens afterwards,
+from 846 Hz to 2 kHz between 30 and 110 ms, while the drop falls from -9 to
+-36 dB. +1.47 octaves, essentially all of it below -3 dB.
+
+A 20x pitch-preserving time stretch of the reference is what made this
+tractable: twenty times the cycles to track, and zero-crossing timing is the
+only method that survives the quiet tail. Fitting the accumulated bend against
+`(e^(kf) - 1) / (e^k - 1)` over the reliable window gives k = 0.5.
+
+Two anchoring traps, having been caught by both:
+
+- Front-loading the bend into the attack makes any large span sound like a
+  laser, which reads as evidence that the span must be small. It is not; it is
+  evidence that the shape is wrong.
+- Back-loading it and then spreading the sweep across the droplet's whole
+  lifetime (1.6 ring times, about -96 dB) leaves under a fifth of the bend
+  before the drop is inaudible, which sounds like no bend at all. The sweep has
+  to finish at 0.6 ring times -- the -36 dB point -- and hold.
+
+Large spans belong only to surfaces that trap a bubble: Water and Puddle carry
+1.30 and 1.45 octaves, every rigid surface keeps the hundredth of an octave it
+had. The rain textures that happen to sit on Water are held still with
+`chirp = 0.02` in the preset, verified at 0.00 dB per band against the previous
+engine, so only Cave Drips, Puddle Plinks and Dripping Faucet moved.
+
 ## 2. What the library's residual says the engine is missing
 
 Measured 2026-09-04 across all sixteen fitted presets, against nine different
@@ -165,6 +198,37 @@ are fitted to a roof recording, Downpour and Storm Front to concrete, all with
 it is a preset's identity; here the identity looks wrong. Try Wood for the roof
 presets and Concrete for the concrete ones, re-fit those four, and see whether
 the shortfall goes.
+
+### After the 2026-09-05 chirp re-fit
+
+Re-fitted after the pitch-bend rework of 1f. Scored on seeds the fit never saw
+(31/32/33), the library went from a mean distance of 144.0 to 138.1, with no
+preset regressing.
+
+That number is a filtered result, not the fit's own. **Seven of sixteen presets
+were accepted and nine rejected**, on the rule that a preset is only taken if it
+improved on the unseen seeds rather than the ones it was fitted against:
+
+- taken: steady_rain, rain_on_leaves, concrete_alley, tin_roof, inside_the_car,
+  cave_drips, window_pane
+- refused because they got worse on unseen seeds: light_drizzle (34.0 ->
+  361.7, a tenfold blow-up and the clearest case of section 3 there has been),
+  puddle_plinks (124.7 -> 138.9), downpour (13.8 -> 15.4), first_drops
+  (22.7 -> 23.0)
+- refused although the number improved: **dripping_faucet**. The fit halved
+  Tonality (0.578 -> 0.298), more than doubled Pitch Spread (0.914 -> 2.11) and
+  nearly doubled Density, turning a slow tap with a consistent pitch into a
+  fast scatter across two octaves -- measured, twice the drop events and the
+  spectral centroid up from 3.7 to 5.1 kHz. It bought 2 % on a distance that
+  stays above 800 either way, and it would have undone the drop character 1f
+  exists to produce.
+- the rest converged to no change
+
+Two things worth doing before the next re-fit. `dripping_faucet` scores 768 on
+one seed set and 1426 on another with identical parameters: its distance is
+dominated by which drops happen to fall, so the pairing against
+`multiple_water_drops_faucet` is measuring seed noise, not tone. And the accept
+rule above is applied by hand at the moment; section 3 wants it in `fit.py`.
 
 ## 3. The fit overfits its own seeds, and it is costing real presets
 

@@ -6,16 +6,16 @@
 
 namespace rainyday {
 
-constexpr char kPluginId[] = "audio.rainyday.rainyday";
+constexpr char kPluginId[] = "de.ravetracer.rainyday";
 constexpr char kPluginName[] = "RainyDay";
-constexpr char kPluginVendor[] = "RainyDay Audio";
+constexpr char kPluginVendor[] = "Ravetracer";
 constexpr char kPluginVersion[] = "1.0.0";
 constexpr char kPluginUrl[] = "https://github.com/";
 constexpr char kPluginDescription[] =
    "Fully synthetic rain generator. No samples: every droplet is computed.";
 
 constexpr char kPresetExtension[] = "rainyday";
-constexpr char kProviderId[] = "audio.rainyday.preset-provider";
+constexpr char kProviderId[] = "de.ravetracer.rainyday.preset-provider";
 
 // Absolute path to the "presets" directory that sits next to the loaded
 // plugin binary, or an empty string if it cannot be determined.

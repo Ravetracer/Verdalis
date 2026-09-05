@@ -8,14 +8,14 @@ features = ambient, texture, bright, glassy, close
 # Rain
 density = 1174
 clumping = 0
-drop_pitch = 366
-pitch_spread = 0.619
+drop_pitch = 406
+pitch_spread = 0.001
 drop_decay = 3.17
 decay_spread = 0
-tonality = 0.643
-bubble = 1
-impact = 0.411
-splash = 0.383
+tonality = 0.709
+bubble = 0.934
+impact = 0.477
+splash = 0.751
 level_spread = 0.236
 chirp = 0.35
 surface = Glass
@@ -24,7 +24,7 @@ note_tracking = 0.5
 # Bed
 bed_level = -21.3
 bed_tone = 1
-bed_body = 0.376
+bed_body = 0.442
 bed_drift = 0.58
 bed_width = 0.7
 bed_pan = 0
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 4.45
+gain = 3.2
 max_droplets = 512
 seed = 0

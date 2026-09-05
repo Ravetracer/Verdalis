@@ -56,7 +56,7 @@ for a `presets` directory **next to its own binary**, so keep them together.
 
 `~/.clap` is scanned by default. After installing, restart Bitwig or rescan
 under *Settings → Locations → Plug-in Locations*. RainyDay then shows up as an
-instrument (`RainyDay Audio`), and the factory presets are indexed through
+instrument (`Ravetracer`), and the factory presets are indexed through
 CLAP's preset-discovery mechanism.
 
 Drop it on an instrument track, add a long note, and it rains.
@@ -206,18 +206,36 @@ into a puddle goes "plink" with an upward bend rather than a flat tone.
 
 Two details of that model matter more than they look:
 
-- **The bend is small, gentle, and different for every drop.** The per-sample
-  frequency multiplier starts high and relaxes back towards 1 with its own time
-  constant, taken from the droplet's ring time and capped at 120 ms, so the bend
-  drifts across the drop's whole audible life rather than being crammed into the
-  attack — cramming it in is exactly what makes it read as a swoop. The total
-  sweep comes to `Chirp × surface` octaves *on average*: the amount is drawn per
-  droplet as a uniform `2u`, because measured across the isolated drops in the
-  references the bend runs from about nothing to +0.17 octaves with a median
-  near +0.03, and a field where every drop bends by exactly the same amount does
-  not sound like any of them. That measured ceiling is also why the surface
-  column tops out at a tenth of an octave: past that a droplet stops sounding
-  like water and starts sounding like a laser.
+- **The bend is large, late, and over before the drop is.** Tracked cycle by
+  cycle from the zero crossings of an isolated drop — the only method that
+  survives the quiet tail — the reference dips from 775 to 728 Hz across the
+  first four milliseconds, sits on a plateau near 750 Hz while it is within
+  2 dB of peak, and then rises from 846 Hz to 2 kHz between 30 and 110 ms, by
+  which point it is 36 dB down. That is +1.47 octaves in total, and almost none
+  of it happens while the drop is loud.
+
+  So the model is in two parts. A fast downward dip relaxes away within a cycle
+  or two of the attack, and a rise whose per-sample step *grows* geometrically
+  carries the rest. The accumulated bend after a fraction `f` of the sweep is
+  `(e^(kf) − 1) / (e^k − 1)`; fitting `k` against a 20× time-stretch of the
+  reference gives 0.5, and rejects steeper curves outright.
+
+  Two anchoring details decide whether any of this is audible. The sweep
+  **finishes at 0.6 ring times and then holds** — `decayCoef` takes the time to
+  −60 dB, so that is the −36 dB point, where the reference has finished too.
+  Spreading the same bend across the droplet's whole lifetime instead (1.6 ring
+  times, about −96 dB) leaves it barely a fifth done before the drop is
+  inaudible, which sounds like no bend at all. And the total sweep comes to
+  `Chirp × surface` octaves *on average*, drawn per droplet as a uniform `2u`,
+  because a field where every drop bends by the same amount does not sound like
+  any of them.
+
+  Only surfaces that trap a bubble get the large span — Water and Puddle carry
+  1.30 and 1.45 octaves. A drop landing on something rigid excites a fixed mode
+  of that thing and barely bends at all, so the hard surfaces stay near a
+  hundredth of an octave. It is the back-loading that makes the large values
+  usable: spent on the attack instead, anything past a tenth of an octave does
+  stop sounding like water and start sounding like a laser.
 - **The tone arrives behind the splash.** The impact happens first and the
   bubble is only entrained afterwards, so the tonal layer's envelope is
   `e^(-t/decay) − e^(-t/rise)` rather than a decay from full level. That gives
@@ -311,21 +329,30 @@ the real thing. Three parts of the model were wrong in the same direction:
   down. The spread is now lopsided to match, and the downward reach is less than
   half the upward one.
 
-**A drop's pitch bend is a fiftieth of what the model was doing.** Tracking the
-instantaneous frequency of isolated drops in the recordings, across the 80 ms
-or so that a drop is actually audible, puts the bend between 0.01 and 0.09
-octaves. It is a couple of per cent. RainyDay was sweeping 0.42 octaves at its
-default setting and two full octaves on Puddle; measured the same way, a Cave
-Drips droplet climbed 0.40 octaves while the reference drifted 0.008. The
-textbook description of bubble entrainment says the pitch rises, and it does,
-but nothing like that far, and past roughly a tenth of an octave a droplet
-stops sounding like water and starts sounding like a laser.
+**A drop's pitch bend is not small — it is late.** This one took three passes
+to get right, and the first two were confidently wrong.
 
-The shape mattered as much as the size. The bend used to be front-loaded, on
-the reasoning that a bubble finishes shrinking long before the tone finishes
-ringing — but the recordings show the frequency drifting gently across the
-drop's whole audible life, and cramming even a small bend into the attack is
-what makes it read as a swoop. It is now spread across the ring.
+Tracking the instantaneous frequency of isolated drops across the 80 ms or so
+that a drop is loud puts the bend between 0.01 and 0.09 octaves, a couple of
+per cent, and that measurement is correct. The conclusion drawn from it was
+not. Weighting by energy means only the plateau is ever measured, and the
+plateau is the one part of a drop that genuinely does not move: the reference
+sits within 0.07 octaves of 750 Hz for as long as it is within 2 dB of peak.
+Everything else happens afterwards. From 30 to 110 ms it climbs from 846 Hz to
+2 kHz while falling from −9 to −36 dB — +1.47 octaves in a stretch of the sound
+that no energy-weighted fit will ever look at.
+
+So the bend was capped at a tenth of an octave for two releases, on the
+strength of a number that was right about the wrong part of the drop.
+
+The shape mattered as much as the size, and it is what made the error stick.
+While the bend was front-loaded into the attack, a large span really did sound
+like a laser, which looked like confirmation that the span had to stay small.
+Back-loading it removes the constraint. What remains is an anchoring question
+that is easy to get wrong in the other direction: spread the sweep across the
+droplet's whole lifetime and only about a sixth of it lands before the drop is
+inaudible, which sounds like no bend at all. It has to *finish* while the drop
+can still be heard — at 0.6 ring times, the −36 dB point — and then hold.
 
 **One droplet in seven was being flattened against a ceiling.** Droplet
 amplitude is drawn as `u^k · (k+1)`, which has mean 1 and a natural maximum of

@@ -17,7 +17,7 @@ bubble = 0.783
 impact = 0.043
 splash = 0.887
 level_spread = 0.75
-chirp = 0.35
+chirp = 0.02
 surface = Water
 note_tracking = 0.5
 
@@ -54,6 +54,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 11.5
+gain = 11.4
 max_droplets = 1536
 seed = 0

@@ -17,7 +17,7 @@ bubble = 1
 impact = 0.85
 splash = 1
 level_spread = 0.7
-chirp = 0.35
+chirp = 0.02
 surface = Water
 note_tracking = 0.5
 
