@@ -1,0 +1,60 @@
+# RainyDay preset
+format = 1
+name = Dripping Faucet
+author = RainyDay
+description = A single tap that will not stop. Nearly regular timing, tight stereo image, bright and close.
+features = percussive, sparse, water, foley
+
+# Rain
+density = 0.826
+clumping = 0.28
+drop_pitch = 3801
+pitch_spread = 0.914
+drop_decay = 48.4
+decay_spread = 0.636
+tonality = 0.578
+bubble = 1
+impact = 0.16
+splash = 0.862
+slosh = 0.5
+level_spread = 0.35
+chirp = 1
+surface = Water
+note_tracking = 0.5
+
+# Bed
+bed_level = -56.9
+bed_tone = 0.317
+bed_body = 0.023
+bed_drift = 0.3
+bed_width = 0.25
+bed_pan = 0
+
+# Space
+width = 0.25
+drop_pan = 0
+distance = 0
+air = 0
+space_amount = 0.2
+space_size = 0.834
+space_damping = 0.458
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 5
+decay = 80
+sustain = 1
+release = 900
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 0.309
+max_droplets = 512
+seed = 0

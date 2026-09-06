@@ -1,0 +1,60 @@
+# RainyDay preset
+format = 1
+name = Under an Umbrella
+author = RainyDay
+description = Rain drumming on a taut canopy a foot above your head. Close, blunt and percussive.
+features = ambient, texture, close, percussive
+
+# Rain
+density = 664
+clumping = 0.422
+drop_pitch = 1859
+pitch_spread = 5
+drop_decay = 12
+decay_spread = 0.189
+tonality = 0
+bubble = 0.35
+impact = 1
+splash = 0.704
+slosh = 0.5
+level_spread = 0.496
+chirp = 0.35
+surface = Fabric
+note_tracking = 0.5
+
+# Bed
+bed_level = -32.6
+bed_tone = 1
+bed_body = 0.199
+bed_drift = 0.63
+bed_width = 0.8
+bed_pan = 0
+
+# Space
+width = 0.8
+drop_pan = 0
+distance = 0.19
+air = 0
+space_amount = 0.12
+space_size = 0.25
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 400
+decay = 600
+sustain = 1
+release = 1600
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = -0.16
+max_droplets = 512
+seed = 0

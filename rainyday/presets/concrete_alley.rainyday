@@ -1,0 +1,60 @@
+# RainyDay preset
+format = 1
+name = Concrete Alley
+author = RainyDay
+description = Rain in a narrow city alley, slapping off hard flat surfaces.
+features = ambient, texture, urban, reverberant
+
+# Rain
+density = 760
+clumping = 0.019
+drop_pitch = 885
+pitch_spread = 0.173
+drop_decay = 13.1
+decay_spread = 0
+tonality = 0.752
+bubble = 0.972
+impact = 0.496
+splash = 1
+slosh = 0.5
+level_spread = 0.81
+chirp = 0.35
+surface = Concrete
+note_tracking = 0.5
+
+# Bed
+bed_level = -17.8
+bed_tone = 0.757
+bed_body = 0
+bed_drift = 0.417
+bed_width = 0.9
+bed_pan = 0
+
+# Space
+width = 0.9
+drop_pan = 0
+distance = 0.547
+air = 0.152
+space_amount = 0.45
+space_size = 0.7
+space_damping = 0.4
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 600
+decay = 600
+sustain = 1
+release = 2600
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = -4.51
+max_droplets = 512
+seed = 0

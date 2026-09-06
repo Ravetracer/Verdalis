@@ -1,0 +1,60 @@
+# RainyDay preset
+format = 1
+name = Tropical Monsoon
+author = RainyDay
+description = Absurd volumes of warm water falling straight down. Dark, dense and relentless.
+features = ambient, texture, noise, loud, dark
+
+# Rain
+density = 4200
+clumping = 0.25
+drop_pitch = 1640
+pitch_spread = 2.42
+drop_decay = 1.35
+decay_spread = 0.5
+tonality = 0.133
+bubble = 0.783
+impact = 0.043
+splash = 0.887
+slosh = 0.5
+level_spread = 0.75
+chirp = 0.02
+surface = Water
+note_tracking = 0.5
+
+# Bed
+bed_level = -51.2
+bed_tone = 0.706
+bed_body = 1
+bed_drift = 0.5
+bed_width = 1
+bed_pan = 0
+
+# Space
+width = 1
+drop_pan = 0
+distance = 1
+air = 1
+space_amount = 0.3
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 1200
+decay = 600
+sustain = 1
+release = 3000
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 11.2
+max_droplets = 1536
+seed = 0

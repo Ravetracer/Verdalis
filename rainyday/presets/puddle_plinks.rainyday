@@ -1,0 +1,60 @@
+# RainyDay preset
+format = 1
+name = Puddle Plinks
+author = RainyDay
+description = Fat drops landing in standing water, each with the slight upward bend of a trapped bubble.
+features = percussive, sparse, water, playful
+
+# Rain
+density = 144
+clumping = 0.773
+drop_pitch = 1958
+pitch_spread = 0
+drop_decay = 30.2
+decay_spread = 0
+tonality = 0.35
+bubble = 0.72
+impact = 0.331
+splash = 0.853
+slosh = 0.5
+level_spread = 0.636
+chirp = 1
+surface = Puddle
+note_tracking = 0.5
+
+# Bed
+bed_level = -58.8
+bed_tone = 0.466
+bed_body = 1
+bed_drift = 0.16
+bed_width = 0.95
+bed_pan = 0
+
+# Space
+width = 0.95
+drop_pan = 0
+distance = 0.865
+air = 0.042
+space_amount = 0.414
+space_size = 0.663
+space_damping = 1
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 7870
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 40
+decay = 600
+sustain = 1
+release = 2000
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 4.01
+max_droplets = 512
+seed = 0

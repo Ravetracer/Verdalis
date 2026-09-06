@@ -1,0 +1,60 @@
+# RainyDay preset
+format = 1
+name = Gutter Trickle
+author = RainyDay
+description = A thin stream running off a downspout. Narrow, wet, and gurgling.
+features = texture, water, narrow, foley
+
+# Rain
+density = 650
+clumping = 0.085
+drop_pitch = 9000
+pitch_spread = 0.315
+drop_decay = 2.45
+decay_spread = 0.326
+tonality = 0
+bubble = 0.927
+impact = 1
+splash = 0.767
+slosh = 0.5
+level_spread = 0
+chirp = 0.9
+surface = Puddle
+note_tracking = 0.5
+
+# Bed
+bed_level = -50.7
+bed_tone = 0.308
+bed_body = 0.708
+bed_drift = 0.594
+bed_width = 0.4
+bed_pan = 0
+
+# Space
+width = 0.4
+drop_pan = 0
+distance = 0.915
+air = 0
+space_amount = 0
+space_size = 0.236
+space_damping = 0.966
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 7294
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 200
+decay = 600
+sustain = 1
+release = 1400
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Output
+gain = 12
+max_droplets = 512
+seed = 0
