@@ -161,14 +161,33 @@ struct Wave {
    // all, and lowpassed above because a sheet of bubbles rolls off with
    // frequency. White noise left unbounded above would climb 3 dB per octave
    // and swamp everything, which is not what the references measure.
+   // The sizzle: thousands of sub-millimetre bubbles bursting at once. At that
+   // size they ring above 5 kHz for a couple of milliseconds, and at that rate
+   // they overlap several deep, so they are not separately audible -- they merge
+   // into a crackling hiss. Modelled as a high band with a granular envelope on
+   // it rather than as thousands of oscillators, which is the same sum for one
+   // multiply a sample.
    Hp2 foamHp;
    Lp2 foamLp;
    float foamLevel = 0.0f;
-   float foamEnv = 0.0f;
+   float foamEnv = 0.0f;         // drives the individually audible foam bubbles
    float foamAttackInc = 0.0f;
    float foamDecayCoef = 0.0f;
    bool foamRising = true;
    int foamDelaySamples = 0;
+
+   // The sizzle arrives later again: the shore breaks, some bubbles are heard,
+   // and only after that does the foam start bursting.
+   float sizzleEnv = 0.0f;
+   float sizzleAttackInc = 0.0f;
+   float sizzleDecayCoef = 0.0f;
+   bool sizzleRising = true;
+   int sizzleDelaySamples = 0;
+   // Sample-and-hold on the sizzle's amplitude, which is what makes it crackle
+   // rather than hiss.
+   float shValue = 0.0f;
+   int shCounter = 0;
+   int shPeriod = 24;
 
    // The collective mode of the whole bubble cloud. Xue et al. show the lowest
    // mode of a cloud of N bubbles falls as f0 / cbrt(N), so a thousand bubbles
@@ -208,8 +227,9 @@ struct Wave {
 
    // Done when nothing is still rising and everything has faded out.
    inline bool finished() const {
-      return !breakRising && !foamRising && !washRising && breakEnv < 1.0e-5f &&
-             foamEnv < 1.0e-5f && washEnv < 1.0e-5f;
+      return !breakRising && !foamRising && !washRising && !sizzleRising &&
+             breakEnv < 1.0e-5f && foamEnv < 1.0e-5f && washEnv < 1.0e-5f &&
+             sizzleEnv < 1.0e-5f;
    }
 };
 
@@ -227,6 +247,15 @@ struct Bubble {
    float inc = 0.0f;
    float level = 0.0f;
    float decayCoef = 0.0f;
+   // A bubble rises and shrinks as it goes, and Minnaert ties its pitch to its
+   // radius, so the tone bends upward over its life. This is the "bloop" of a
+   // dripping tap, and without it a bubble is a bare sine.
+   float chirp = 0.0f;
+   // Its body. A real bubble is water being displaced as well as air ringing,
+   // so a band of noise around its own pitch sits under the tone -- it is what
+   // stops a cascade sounding like a music box.
+   Svf bodyBand;
+   float noiseMix = 0.0f;
    // The entrainment transient: a few milliseconds of noise as the bubble is
    // pinched off, which is the click under the tone.
    float clickLevel = 0.0f;

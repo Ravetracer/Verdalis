@@ -22,7 +22,7 @@ precursor = 0.5
 # Foam
 foam_level = -9
 foam_decay = 2600
-foam_tone = 1000
+foam_tone = 1700
 foam_delay = 280
 foam_bubbles = 0.25
 fizz = 0.3
@@ -51,8 +51,8 @@ shore_type = Shingle
 distance = 0.18
 air = 0.55
 width = 0.92
-space_amount = 0.3
-space_size = 0.6
+space_amount = 0.4
+space_size = 0.85
 space_damping = 0.5
 
 # Filter

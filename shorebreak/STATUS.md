@@ -36,6 +36,30 @@ Spectral shape is a good fit across the library. Envelope character is right for
 shore breaks (Sand and Foam measures an envelope variation of 1.82 against the
 reference's 1.86; Rhythmic Tide 1.16 against 1.24).
 
+## A wave in three stages
+
+The shore breaks, some bubbles are heard, and after a while the foam starts
+bursting as a sizzle. The engine now does that in order:
+
+1. **The break**, deep coming in and opening up as it collapses.
+2. **Bubbles**, a trickle at the break's tail and more in the foam that follows,
+   individually audible at around a kilohertz.
+3. **The sizzle**, arriving later again and outlasting everything: thousands of
+   sub-millimetre bubbles bursting at once. At 0.25-0.6 mm they ring between 5
+   and 13 kHz for a couple of milliseconds, and at that rate they overlap
+   several deep, so they are not separately audible -- they merge. It is
+   generated as a high band with a granular envelope rather than as thousands of
+   oscillators, which is the same sum for one multiply a sample.
+
+## An open shore has no walls
+
+Eight discrete early reflections at fixed fractions of a room dimension is what
+makes a reverb sound like a bathroom, and no amount of tail will talk the ear
+out of it. Outdoors there is nothing close enough to reflect. `Space::setEnclosure`
+scales the early field, and the shore type sets it: 0.04 for open sand, 0.95 for
+a harbour wall with something right there to bounce off. Space amount and size
+went up across the library at the same time.
+
 ## A wave comes in deep and brightens as it breaks
 
 The band opens upward into the break instead of sweeping down out of it, which
@@ -121,6 +145,10 @@ by listening, and the same class of mistake is easy to repeat:
   maximum-Q bandpass on continuous noise -- a whistle, loudest in Receding Sand
   because it has the most Sand and the loudest wash. Resonance is now converted
   from a Q properly, and the wash is barely resonant on purpose.
+- The bubble chirp was applied as a per-sample factor when it was meant as a
+  total rise over the bubble's life. At 1.006 per sample it compounded 300-fold
+  within a thousand samples, sent the phase increment to infinity and read off
+  the end of the sine table. The self-test caught it as a crash.
 - The break's slope filter was applied unconditionally rather than mixed in, so
   the minimum was 12 dB/octave against the 6 the bandpass already gave. The
   break lost its top end twice over and measured darker than the wave before it,

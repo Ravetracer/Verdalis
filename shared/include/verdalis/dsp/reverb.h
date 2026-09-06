@@ -155,6 +155,20 @@ public:
       update();
    }
 
+   // How enclosed the space is, 0..1. Early reflections are what tell the ear
+   // there are walls nearby: eight discrete taps at fixed fractions of the room
+   // is a room, and no amount of tail will stop it sounding like one. Outdoors
+   // there is nothing close enough to reflect, so the early field is what has to
+   // go -- what is left is the diffuse tail and the air. 1 is a room, 0 is open
+   // ground with the sky above it.
+   void setEnclosure(float enclosure) {
+      const float e = clampv(enclosure, 0.0f, 1.0f);
+      if (e == mEnclosure)
+         return;
+      mEnclosure = e;
+      update();
+   }
+
    void setDamping(float damping) {
       mDamping = clampv(damping, 0.0f, 1.0f);
       update();
@@ -293,8 +307,8 @@ private:
          mTapDelay[1][k] = clampv(static_cast<size_t>(dr), size_t(1), earlyCap);
          // Swap two gains between the channels so the patterns differ.
          const int kr = (k == 1) ? 2 : (k == 2) ? 1 : k;
-         mTapGain[0][k] = kTapGain[k] * absorb;
-         mTapGain[1][k] = kTapGain[kr] * absorb;
+         mTapGain[0][k] = kTapGain[k] * absorb * mEnclosure;
+         mTapGain[1][k] = kTapGain[kr] * absorb * mEnclosure;
       }
       mPreDelay = mTapDelay[0][0];
       const float earlyCutoff = clampv(16000.0f * std::exp2(-3.0f * mDamping), 800.0f,
@@ -345,6 +359,7 @@ private:
    size_t mPreDelay = 1;
    float mSampleRate = 48000.0f;
    float mSize = 0.5f, mDamping = 0.5f;
+   float mEnclosure = 1.0f;
    float mRtLow = 1.0f, mRoomM = 16.0f;
 };
 

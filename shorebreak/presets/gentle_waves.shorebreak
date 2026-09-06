@@ -22,7 +22,7 @@ precursor = 0.3
 # Foam
 foam_level = -13
 foam_decay = 1600
-foam_tone = 900
+foam_tone = 1900
 foam_delay = 420
 foam_bubbles = 0.32
 fizz = 0.3
@@ -51,8 +51,8 @@ shore_type = Sand
 distance = 0.12
 air = 0.7
 width = 0.85
-space_amount = 0.24
-space_size = 0.4
+space_amount = 0.32
+space_size = 0.66
 space_damping = 0.5
 
 # Filter

@@ -53,15 +53,20 @@ struct ShoreTraits {
    float grain;      // how much the wash rattles
    float bodyTilt;   // multiplies the break's low weight
    float bubbleTilt; // multiplies bubble pitch
+   // How much is close enough to reflect. An open beach has nothing: the sound
+   // goes out over the water and does not come back, and the early reflections
+   // that make a reverb read as a room have to be absent or it sounds like a
+   // bathroom however large the tail is. A harbour has a wall right there.
+   float enclosure;
 };
 
 constexpr ShoreTraits kShoreTraits[kNumShores] = {
-   /* Sand     */ {0.85f, 0.80f, 0.30f, 1.00f, 0.90f},
-   /* Shingle  */ {1.05f, 1.35f, 0.85f, 0.85f, 1.15f},
-   /* Pebbles  */ {1.15f, 1.55f, 1.00f, 0.80f, 1.30f},
-   /* Rock     */ {1.25f, 1.20f, 0.55f, 1.15f, 1.10f},
-   /* Reef     */ {1.35f, 1.45f, 0.70f, 1.05f, 1.25f},
-   /* Harbour  */ {0.70f, 0.65f, 0.40f, 1.35f, 0.75f},
+   /* Sand     */ {0.85f, 0.80f, 0.30f, 1.00f, 0.90f, 0.04f},
+   /* Shingle  */ {1.05f, 1.35f, 0.85f, 0.85f, 1.15f, 0.08f},
+   /* Pebbles  */ {1.15f, 1.55f, 1.00f, 0.80f, 1.30f, 0.10f},
+   /* Rock     */ {1.25f, 1.20f, 0.55f, 1.15f, 1.10f, 0.38f},
+   /* Reef     */ {1.35f, 1.45f, 0.70f, 1.05f, 1.25f, 0.22f},
+   /* Harbour  */ {0.70f, 0.65f, 0.40f, 1.35f, 0.75f, 0.95f},
 };
 
 // How the crest collapses. The slope figures are Means & Heitmeyer's (2002)
@@ -179,6 +184,7 @@ void WaveEngine::updateFilters() {
 
    mSpace.setSize(mP.spaceSize);
    mSpace.setDamping(mP.spaceDamping);
+   mSpace.setEnclosure(kShoreTraits[clampi(mP.shore, 0, kNumShores - 1)].enclosure);
 }
 
 void WaveEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t noteId,
@@ -400,6 +406,20 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    w.foamDelaySamples = static_cast<int>(std::max(0.0f, mP.foamDelaySec) * sr *
                                          (0.6f + 0.8f * mRng.uniform()));
 
+   // The sizzle: a high band, because these are the smallest bubbles there are,
+   // and it starts later again than the ones that are separately audible.
+   w.sizzleEnv = 0.0f;
+   w.sizzleRising = true;
+   w.sizzleAttackInc = 1.0f / std::max(1.0f, 0.35f * sr);
+   w.sizzleDecayCoef = decayCoefFor(std::max(0.08f, mP.foamDecaySec * 2.2f), mSampleRate);
+   w.sizzleDelaySamples = w.foamDelaySamples +
+                          static_cast<int>(std::max(0.0f, mP.foamDelaySec) * sr *
+                                           (0.15f + 0.35f * mRng.uniform()));
+   // Bursts come faster the finer the foam is.
+   w.shPeriod = std::max(4, static_cast<int>(sr * (0.0022f - 0.0016f * mP.fizz)));
+   w.shCounter = 0;
+   w.shValue = 0.0f;
+
    // Wash: a mid band with a slow walk, coarser shores rattling more.
    w.washBand.reset();
    const float washHz = clampf(mP.washToneHz * st.washTilt, 120.0f, 9000.0f);
@@ -458,6 +478,16 @@ void WaveEngine::spawnBubble(const Wave &w, float level, float pitchScale) {
 
    b.phase = mRng.uniform();
    b.inc = f / sr;
+   // Rises by a few per cent over its life. Expressed as the total rise and
+   // then spread over the life, which is 1/beta seconds: applying the total as
+   // a per-sample factor compounds it into the megahertz within a millisecond.
+   const float rise = 1.03f + 0.09f * mRng.uniform();
+   b.chirp = std::pow(rise, beta / sr);
+
+   // The noisy body, a broad band around the bubble's own pitch.
+   b.bodyBand.reset();
+   b.bodyBand.setCutoff(clampf(f * 1.15f, 60.0f, 0.45f * sr), resonanceFor(2.2f), sr);
+   b.noiseMix = 0.55f + 0.35f * mRng.uniform();
    b.level = level * (0.55f + 0.45f * mRng.uniform());
    b.decayCoef = std::exp(-beta / sr);
 
@@ -616,9 +646,7 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
             } else {
                w.foamEnv *= w.foamDecayCoef;
             }
-            const float f = w.foamHp.tick(w.rng.white());
-            s += w.foamLp.tick(f) * w.foamEnv * w.foamLevel *
-                 (1.0f - 0.25f * clampf(mP.foamBubbles, 0.0f, 1.0f));
+
 
             // The foam's own cascade: finer bubbles, faster than the break's,
             // and this is what carries the gap between waves. The slowed
@@ -631,6 +659,33 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
                               w.foamPitchScale);
                }
             }
+         }
+
+         // ---- the sizzle, which arrives after the bubbles have been heard
+         if (w.sizzleDelaySamples > 0) {
+            --w.sizzleDelaySamples;
+         } else {
+            if (w.sizzleRising) {
+               w.sizzleEnv += w.sizzleAttackInc;
+               if (w.sizzleEnv >= 1.0f) {
+                  w.sizzleEnv = 1.0f;
+                  w.sizzleRising = false;
+               }
+            } else {
+               w.sizzleEnv *= w.sizzleDecayCoef;
+            }
+            // Each burst is one held random value; squaring it leaves mostly
+            // quiet with spikes through it, which is what a sheet of bursting
+            // bubbles sounds like.
+            if (--w.shCounter <= 0) {
+               w.shCounter = w.shPeriod;
+               const float u = w.rng.uniformPositive();
+               w.shValue = u * u;
+            }
+            const float f = w.foamHp.tick(w.rng.white());
+            s += w.foamLp.tick(f) * w.sizzleEnv * w.foamLevel *
+                 (0.22f + 2.1f * w.shValue) *
+                 (1.0f - 0.25f * clampf(mP.foamBubbles, 0.0f, 1.0f));
          }
 
          // ---- the wash
@@ -663,10 +718,16 @@ void WaveEngine::processBubbles(float *outL, float *outR, uint32_t numSamples) {
       if (!b.active)
          continue;
       for (uint32_t i = 0; i < numSamples; ++i) {
+         b.inc *= b.chirp;
+         // Nothing may run past Nyquist, whatever the chirp is asked for.
+         if (b.inc > 0.45f)
+            b.inc = 0.45f;
          b.phase += b.inc;
          if (b.phase >= 1.0f)
             b.phase -= 1.0f;
+         // Tone and body together: the ringing air, and the water around it.
          float s = sin2piFast(b.phase) * b.level;
+         s += b.bodyBand.bandpassNormalised(b.rng.white()) * b.level * b.noiseMix;
          if (b.clickLevel > 1.0e-5f) {
             s += b.rng.white() * b.clickLevel;
             b.clickLevel *= b.clickCoef;
