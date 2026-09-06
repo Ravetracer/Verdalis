@@ -15,6 +15,13 @@
 
 #include <cairo/cairo.h>
 
+// MinGW's <cmath> hides M_PI unless _USE_MATH_DEFINES is set before it, which
+// is not something a header can rely on having happened. The arcs below need
+// it, so define it if it is missing.
+#ifndef M_PI
+#   define M_PI 3.14159265358979323846
+#endif
+
 #if !defined(_WIN32)
 #   include <X11/Xlib.h>
 #endif

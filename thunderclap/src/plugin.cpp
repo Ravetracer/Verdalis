@@ -785,13 +785,13 @@ private:
       right = mPeakR.load(std::memory_order_relaxed);
    }
 
-   uint32_t guiShockCount() const override {
+   uint32_t guiVoiceCount() const override {
       return mShockMeter.load(std::memory_order_relaxed);
    }
 
-   uint32_t guiShockLimit() const override { return ThunderEngine::kMaxShocks; }
+   uint32_t guiVoiceLimit() const override { return ThunderEngine::kMaxShocks; }
 
-   uint32_t guiFlashCounter() const override {
+   uint32_t guiEventCounter() const override {
       return mFlashMeter.load(std::memory_order_relaxed);
    }
 

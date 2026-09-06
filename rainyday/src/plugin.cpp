@@ -768,11 +768,11 @@ private:
       right = mPeakR.load(std::memory_order_relaxed);
    }
 
-   uint32_t guiDropletCount() const override {
+   uint32_t guiVoiceCount() const override {
       return mDropletMeter.load(std::memory_order_relaxed);
    }
 
-   uint32_t guiDropletLimit() const override {
+   uint32_t guiVoiceLimit() const override {
       return static_cast<uint32_t>(realValue(kParamMaxDroplets));
    }
 

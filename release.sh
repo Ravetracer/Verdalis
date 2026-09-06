@@ -19,6 +19,11 @@
 # window-less Windows build is genuinely what you want.
 set -euo pipefail
 
+# Each build step sends its normal output to /dev/null so the log stays short.
+# That makes a failure look like the script simply stopped, so say what died.
+step=""
+trap 'rc=$?; [ $rc -eq 0 ] || echo "!!  failed during: ${step:-startup} (exit $rc)" >&2' EXIT
+
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 version="${1:-}"
 shift || true
@@ -134,8 +139,11 @@ build_one() {
    fi
 
    echo "--> ${name} (${target})"
+   step="${name} (${target}) configure"
    cmake "${generator[@]}" "${args[@]}" >/dev/null
+   step="${name} (${target}) build"
    cmake --build "$build_dir" --parallel "$(nproc)" >/dev/null
+   step="${name} (${target}) install"
    cmake --install "$build_dir" >/dev/null
 }
 
@@ -195,6 +203,7 @@ TXT
 } > "${stage}/BUILD-INFO.txt"
 
 # ----------------------------------------------------------------------- pack
+step="packing"
 cd "$out_dir"
 base="verdalis-suite-${version}"
 rm -f "${base}.tar.gz" "${base}.zip"

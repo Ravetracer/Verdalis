@@ -116,6 +116,16 @@ endif()
 #
 # The suite's common parameter model and DSP building blocks. Lives beside the
 # plugins at the suite root, so it is reached with an explicit path.
+# The window lives in shared/; hand it what this plugin discovered above, since
+# a cross build must not let the shared CMakeLists consult this machine.
+if(THUNDERCLAP_BUILD_GUI)
+   set(VERDALIS_WITH_GUI ON)
+   set(VERDALIS_GUI_INCLUDE_DIRS ${THUNDERCLAP_GUI_DEPS_INCLUDE_DIRS})
+   set(VERDALIS_GUI_LIBRARY_DIRS ${THUNDERCLAP_GUI_DEPS_LIBRARY_DIRS})
+   set(VERDALIS_GUI_LIBRARIES ${THUNDERCLAP_GUI_DEPS_LIBRARIES})
+   set(VERDALIS_GUI_DEFINES ${THUNDERCLAP_GUI_DEFINES})
+endif()
+
 add_subdirectory("${VERDALIS_SHARED_DIR}" verdalis-shared)
 
 # ------------------------------------------------------------------- the plugin
