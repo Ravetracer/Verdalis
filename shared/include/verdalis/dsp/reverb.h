@@ -8,7 +8,7 @@
 #include "fastmath.h"
 #include "filters.h"
 
-namespace thunderclap {
+namespace verdalis {
 
 // Delay line over a power-of-two buffer, with integer and fractional reads.
 // Read before write within a tick: read(d) then returns the sample written d
@@ -49,7 +49,7 @@ private:
 };
 
 // Schroeder allpass, used to diffuse the input before it enters the tank so
-// a dense clap does not smear into a single flutter.
+// a dense stream of events does not smear into a single flutter.
 class Allpass {
 public:
    void allocate(size_t maxSamples) { mLine.allocate(maxSamples); }
@@ -70,7 +70,7 @@ private:
    float mGain = 0.5f;
 };
 
-// The space the listener hears the thunder from: a room, a porch, a courtyard.
+// The space the sound happens in: a room, a cave, a courtyard.
 //
 // Two stages, both derived from one physical size. Space Size sets the
 // dimension of the room, in metres; from that follow the distances the first
@@ -96,11 +96,19 @@ private:
 // decay, and far too little to be heard as pitch movement.
 class Space {
 public:
+   // The default suits a source with little energy below ~50 Hz.
+   static constexpr float kDefaultLoopHighpassHz = 35.0f;
+
    static constexpr int kLines = 8;
    static constexpr int kTaps = 8;
 
-   void prepare(float sampleRate) {
+   // `loopHighpassHz` is a voicing decision that belongs to the plugin: it is
+   // what stops the tank accumulating DC, and it must sit below the lowest
+   // frequency the source can produce. Rain wants it an octave or so above
+   // what thunder wants.
+   void prepare(float sampleRate, float loopHighpassHz = kDefaultLoopHighpassHz) {
       mSampleRate = sampleRate;
+      mLoopHighpassHz = loopHighpassHz;
       const size_t maxTank =
          static_cast<size_t>(sampleRate * (kMaxLineSec + 2.0f * kModDepthMaxSec)) + 8;
       for (auto &l : mLines)
@@ -114,7 +122,7 @@ public:
          a.setGain(0.62f);
       }
       for (int i = 0; i < kLines; ++i) {
-         mLoopHp[i].setCutoff(kLoopHighpassHz, sampleRate);
+         mLoopHp[i].setCutoff(mLoopHighpassHz, sampleRate);
          mShelfLp[i].setCutoff(kShelfHz, sampleRate);
       }
       for (auto &lp : mEarlyLp)
@@ -130,7 +138,7 @@ public:
          mAirLp[i].reset();
          mLoopHp[i].reset();
          // The modulation is playing state too: a fixed Seed promises the same
-         // thunder after a reset, and that includes where the tank's lines are in
+         // output after a reset, and that includes where the tank's lines are in
          // their slow wander.
          mLfoPhase[i] = static_cast<float>(i) / kLines;
       }
@@ -175,7 +183,7 @@ public:
       erR = mEarlyLp[1].tick(erR);
 
       // --- Tank input: the pre-delayed direct sound plus the reflections,
-      // diffused so that a dense clap does not enter as a coherent flutter.
+      // diffused so that a dense stream does not enter as a coherent flutter.
       const float tL = mDiffusers[0].tick(mDiffusers[2].tick(0.6f * preL + 0.5f * erL));
       const float tR = mDiffusers[1].tick(mDiffusers[3].tick(0.6f * preR + 0.5f * erR));
 
@@ -215,7 +223,7 @@ public:
          mLines[i].write(((i & 1) ? tR : tL) + x);
       }
 
-      // Left listens to the lines the left input feeds, so a shock on one side
+      // Left listens to the lines the left input feeds, so an event on one side
       // starts its tail on that side and diffuses across from there.
       outL = erL + 0.35f * (a[0] + a[2] + a[4] + a[6]);
       outR = erR + 0.35f * (a[1] + a[3] + a[5] + a[7]);
@@ -257,12 +265,11 @@ private:
    static constexpr float kTiltRange = 0.3f;
    static constexpr float kShelfHz = 600.0f;
    // Air absorption at the 6 kHz reference, in dB per second of travel: about
-   // 0.05 dB/m, which is the damp air under a storm, times the speed
+   // 0.05 dB/m, which is damp air, times the speed
    // of sound.
    static constexpr float kAirRefHz = 6000.0f;
    static constexpr float kAirDbPerSec = 17.0f;
-   // Thunder lives an octave below rain; the tank must not take the bottom off it.
-   static constexpr float kLoopHighpassHz = 16.0f;
+   float mLoopHighpassHz = kDefaultLoopHighpassHz;
    static constexpr float kRtMinSec = 0.08f;
    static constexpr float kRtMaxSec = 20.0f;
 
@@ -341,4 +348,4 @@ private:
    float mRtLow = 1.0f, mRoomM = 16.0f;
 };
 
-} // namespace thunderclap
+} // namespace verdalis

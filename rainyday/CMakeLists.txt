@@ -106,6 +106,12 @@ if(RAINYDAY_BUILD_GUI AND NOT RAINYDAY_GUI_FOUND_WIN)
    endif()
 endif()
 
+# ------------------------------------------------------------------ shared code
+#
+# The suite's common parameter model and DSP building blocks. Lives beside the
+# plugins at the suite root, so it is reached with an explicit path.
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../shared" verdalis-shared)
+
 # ------------------------------------------------------------------- the plugin
 add_library(RainyDay MODULE
    src/plugin.cpp
@@ -117,6 +123,8 @@ add_library(RainyDay MODULE
    "${RAINYDAY_GENERATED_HEADER}"
 )
 add_dependencies(RainyDay rainyday_presets)
+
+target_link_libraries(RainyDay PRIVATE verdalis::shared)
 
 target_include_directories(RainyDay PRIVATE
    "${CLAP_INCLUDE_DIR}"
@@ -181,6 +189,7 @@ if(RAINYDAY_BUILD_TOOLS)
    # The preset text format is linked in as well as loaded through the plugin,
    # so the self-test can check that writing a preset and reading it back agree.
    add_executable(rainyday-render tools/render.cpp src/preset.cpp src/params.cpp)
+   target_link_libraries(rainyday-render PRIVATE verdalis::shared)
    target_include_directories(rainyday-render PRIVATE
       "${CLAP_INCLUDE_DIR}"
       "${CMAKE_CURRENT_SOURCE_DIR}/src"

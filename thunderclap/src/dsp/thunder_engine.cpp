@@ -5,7 +5,7 @@
 #include <chrono>
 #include <cmath>
 
-#include "fastmath.h"
+#include "verdalis/dsp/fastmath.h"
 
 namespace thunderclap {
 
@@ -31,6 +31,10 @@ namespace {
 // lengthening as it travels.
 
 constexpr float kSpeedOfSoundMs = 343.0f;
+
+// The reverb tank's loop highpass. Below Space::kDefaultLoopHighpassHz, which
+// suits rain; thunder carries real energy under 35 Hz and must keep it.
+constexpr float kSpaceLoopHighpassHz = 16.0f;
 
 // The coherence length of the channel: the scale on which it is straight
 // enough to radiate as one source. An element longer than this stands for
@@ -229,7 +233,9 @@ void ThunderEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
       f.active = false;
    }
    mEchoLine.allocate(static_cast<size_t>(kMaxEchoSec * mSampleRate) + 8);
-   mSpace.prepare(mSampleRate);
+   // Thunder lives an octave below rain, so the tank's loop highpass has to sit
+   // lower than the shared default or it takes the bottom off the tail.
+   mSpace.prepare(mSampleRate, kSpaceLoopHighpassHz);
    mCompressor.prepare(mSampleRate);
    mRumbleDecay = std::exp(-1.0f / (kRumbleTauSec * mSampleRate));
    // Unique starting point per instance so stacked copies decorrelate.

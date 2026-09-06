@@ -2,12 +2,12 @@
 
 #include "fastmath.h"
 
-namespace rainyday {
+namespace verdalis {
 
 // Topology-preserving-transform state variable filter (Andrew Simper / Vadim
 // Zavalishin). One tan() per coefficient update, then 8 multiplies per sample
 // for simultaneous LP/BP/HP outputs. Stable up to Nyquist, which matters
-// because droplet resonators get placed all over the spectrum.
+// because resonators get placed all over the spectrum.
 class Svf {
 public:
    void reset() {
@@ -43,7 +43,7 @@ public:
    }
 
    // Constant-peak-gain bandpass: bp * k normalises the resonant boost, so a
-   // droplet resonator does not get louder as its Q rises.
+   // resonator does not get louder as its Q rises.
    inline float bandpassNormalised(float in) {
       float lp, bp, hp;
       tick(in, lp, bp, hp);
@@ -89,7 +89,7 @@ private:
    float mCoef = 0.5f;
 };
 
-// One-pole highpass, for keeping DC and sub rumble out of the noise bed.
+// One-pole highpass, for keeping DC and sub rumble out of a noise bed.
 class OnePoleHp {
 public:
    void reset() { mZ = 0.0f; }
@@ -108,8 +108,8 @@ private:
 };
 
 // Two cascaded one-poles: 12 dB/oct. Used where a 6 dB/oct slope is not enough
-// to get rid of what is below the corner -- the noise bed's low end, and the
-// radiation rolloff of an individual droplet.
+// to get rid of what is below the corner -- a noise bed's low end, or the
+// radiation rolloff of an individual source.
 class Hp2 {
 public:
    void reset() {
@@ -126,4 +126,24 @@ private:
    OnePoleHp mA, mB;
 };
 
-} // namespace rainyday
+// Two cascaded one-pole lowpasses: 12 dB/oct. The air absorption of a shock
+// wave that has travelled kilometres is steeper than a single pole, and the
+// N-wave's own spectrum only falls at 6 dB/oct, so one pole leaves a distant
+// thunder with a top end it cannot have.
+class Lp2 {
+public:
+   void reset() {
+      mA.reset();
+      mB.reset();
+   }
+   void setCutoff(float cutoffHz, float sampleRate) {
+      mA.setCutoff(cutoffHz, sampleRate);
+      mB.setCutoff(cutoffHz, sampleRate);
+   }
+   inline float tick(float in) { return mB.tick(mA.tick(in)); }
+
+private:
+   OnePoleLp mA, mB;
+};
+
+} // namespace verdalis

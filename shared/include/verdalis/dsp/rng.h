@@ -3,18 +3,18 @@
 #include <cmath>
 #include <cstdint>
 
-namespace rainyday {
+namespace verdalis {
 
 // xoshiro128+ -- small state, fast, and statistically far better than the
 // rand()-style LCGs usually used for noise. Everything in this plugin
-// (droplet timing, pitch, pan, the noise bed itself) comes out of here, so it
+// (event timing, pitch, pan, the noise bed itself) comes out of here, so it
 // has to be both cheap and free of audible periodicity.
-// A droplet's own generator, for the layers that can stop drawing once they
+// A single voice's own generator, for layers that can stop drawing once they
 // have decayed. Four bytes of state rather than the twenty-four a full Rng
-// carries: there are up to 2048 droplets live at once and the struct is walked
-// every sample, so this is a cache decision, not a cycle-count one. xorshift32
-// has a period of 2^32-1 against a droplet lifetime of a few thousand samples,
-// and it is only ever asked for splash noise, never for the droplet's shape.
+// carries: there can be thousands of voices live at once and the struct is
+// walked every sample, so this is a cache decision, not a cycle-count one.
+// xorshift32 has a period of 2^32-1 against a voice lifetime of a few thousand
+// samples, and it is only ever asked for noise, never for a voice's shape.
 class RngLite {
 public:
    inline void seed(uint32_t s) { mState = s ? s : 0x9E3779B9u; }
@@ -99,7 +99,7 @@ public:
    }
 
    // Exponentially distributed waiting time with the given rate (events per
-   // unit time). This is what makes the rain a proper Poisson process rather
+   // unit time). This is what makes the stream a proper Poisson process rather
    // than a metronome with jitter.
    inline float exponential(float rate) {
       if (rate <= 0.0f)
@@ -113,4 +113,4 @@ private:
    bool mHasSpare = false;
 };
 
-} // namespace rainyday
+} // namespace verdalis

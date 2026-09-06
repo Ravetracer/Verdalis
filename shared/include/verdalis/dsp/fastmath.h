@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace thunderclap {
+namespace verdalis {
 
 // Clamp without pulling in <algorithm> in the audio path.
 template <typename T> inline T clampv(T v, T lo, T hi) {
@@ -30,6 +30,34 @@ inline float sin2pi(float t) {
    return sign * y;
 }
 
+// The same function from a table, for inner loops where it is evaluated
+// several times per voice per sample. 4096 entries with linear
+// interpolation: the largest error is (2 pi / 4096)^2 / 8, about 3e-7, which is
+// -130 dB and below anything a 24-bit converter can carry. Measured against the
+// series it saves only a few per cent -- such loops are usually bound by their
+// chain of filters, not by arithmetic -- but it is exact enough to be free.
+struct SinTable {
+   static constexpr int kSize = 4096;
+   float v[kSize + 1];
+   SinTable() {
+      for (int i = 0; i <= kSize; ++i)
+         v[i] = static_cast<float>(std::sin(2.0 * 3.14159265358979323846 * i / kSize));
+   }
+};
+inline const SinTable &sinTable() {
+   static const SinTable table;
+   return table;
+}
+
+inline float sin2piFast(float t) {
+   t -= std::floor(t);
+   const float x = t * static_cast<float>(SinTable::kSize);
+   const int i = static_cast<int>(x);
+   const float f = x - static_cast<float>(i);
+   const float *v = sinTable().v;
+   return v[i] + f * (v[i + 1] - v[i]);
+}
+
 // Decay coefficient for an exponential envelope that falls to -60 dB after
 // `seconds`. Multiplicative, one multiply per sample.
 inline float decayCoef(float seconds, float sampleRate) {
@@ -50,4 +78,4 @@ inline float dbToGain(float db) { return db <= -59.9f ? 0.0f : std::pow(10.0f, d
 
 inline float semitonesToRatio(float semis) { return std::exp2(semis * (1.0f / 12.0f)); }
 
-} // namespace thunderclap
+} // namespace verdalis

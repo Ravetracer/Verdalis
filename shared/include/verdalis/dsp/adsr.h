@@ -2,11 +2,11 @@
 
 #include "fastmath.h"
 
-namespace rainyday {
+namespace verdalis {
 
 // Analogue-style ADSR: linear-ish attack via a one-pole overshoot target,
-// exponential decay and release. Drives both the noise bed level and the
-// amplitude stamped onto every droplet at spawn time.
+// exponential decay and release. Drives a noise bed level, and the amplitude
+// stamped onto each voice as it is spawned.
 class Adsr {
 public:
    enum class Stage { Idle, Attack, Decay, Sustain, Release };
@@ -77,4 +77,4 @@ private:
    Stage mStage = Stage::Idle;
 };
 
-} // namespace rainyday
+} // namespace verdalis

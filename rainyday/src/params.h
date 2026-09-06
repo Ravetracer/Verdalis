@@ -2,7 +2,16 @@
 
 #include <cstdint>
 
+#include "verdalis/params.h"
+
 namespace rainyday {
+
+// The parameter model -- ParamDesc, ParamKind, the range mapping and the text
+// formatting -- is shared by the whole suite. Pulling it in here rather than
+// qualifying every use keeps the plugin's own code reading as it always did.
+// The directive is scoped to this namespace, so nothing escapes into the
+// global one.
+using namespace verdalis;
 
 // Parameter identifiers. These are persisted in preset files and plugin state,
 // so the numeric values must never change: append new parameters at the end
@@ -55,14 +64,6 @@ enum ParamId : uint32_t {
    kNumParams
 };
 
-enum class ParamKind {
-   Linear,  // host value is the real value
-   Percent, // host value 0..1, displayed as 0..100 %
-   Log,     // host value 0..1, mapped exponentially onto [dispMin, dispMax]
-   Stepped, // integer host value
-   Enum     // integer host value with names
-};
-
 // Surface materials -- these bias the droplet resonator model.
 enum SurfaceKind {
    kSurfaceWater = 0,
@@ -76,39 +77,9 @@ enum SurfaceKind {
    kNumSurfaces
 };
 
-enum FilterKind { kFilterLowpass = 0, kFilterBandpass, kFilterHighpass, kFilterNotch };
-
-struct ParamDesc {
-   uint32_t id;
-   const char *key;    // stable machine key used in preset files
-   const char *name;   // human readable name shown by the host
-   const char *module; // host-side grouping, e.g. "Rain"
-   double min;
-   double max;
-   double def;
-   ParamKind kind;
-   double dispMin; // only meaningful for Log
-   double dispMax;
-   const char *unit;
-   const char *const *enumNames;
-   uint32_t enumCount;
-   const char *tip; // one-line explanation, shown in the plugin's help line
-};
-
+// The plugin's own table, and lookups into it.
 const ParamDesc *paramTable();
 const ParamDesc *paramById(uint32_t id);
 const ParamDesc *paramByKey(const char *key);
-
-// Convert a raw host-facing parameter value into the real-world quantity used
-// by the DSP (Hz, ms, dB, ratio, ...).
-double paramToReal(const ParamDesc &desc, double raw);
-
-// Inverse of paramToReal, used when parsing preset files written in
-// real-world units.
-double realToParam(const ParamDesc &desc, double real);
-
-// Formats `raw` for display. Returns false if the buffer was too small.
-bool paramValueToText(const ParamDesc &desc, double raw, char *out, uint32_t outSize);
-bool paramTextToValue(const ParamDesc &desc, const char *text, double *outRaw);
 
 } // namespace rainyday

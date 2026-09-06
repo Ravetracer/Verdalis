@@ -4,11 +4,11 @@
 #include <vector>
 
 #include "../params.h"
-#include "adsr.h"
+#include "verdalis/dsp/adsr.h"
 #include "dynamics.h"
-#include "filters.h"
-#include "reverb.h"
-#include "rng.h"
+#include "verdalis/dsp/filters.h"
+#include "verdalis/dsp/reverb.h"
+#include "verdalis/dsp/rng.h"
 
 namespace thunderclap {
 

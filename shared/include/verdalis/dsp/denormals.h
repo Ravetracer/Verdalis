@@ -2,10 +2,10 @@
 
 #if defined(__SSE2__) || defined(__x86_64__)
 #   include <xmmintrin.h>
-#   define RAINYDAY_HAVE_MXCSR 1
+#   define VERDALIS_HAVE_MXCSR 1
 #endif
 
-namespace rainyday {
+namespace verdalis {
 
 // Disables denormal arithmetic for the lifetime of the object and restores the
 // previous FPU mode afterwards.
@@ -18,7 +18,7 @@ namespace rainyday {
 class ScopedNoDenormals {
 public:
    ScopedNoDenormals() {
-#ifdef RAINYDAY_HAVE_MXCSR
+#ifdef VERDALIS_HAVE_MXCSR
       mSaved = _mm_getcsr();
       // 0x8000 = flush-to-zero, 0x0040 = denormals-are-zero
       _mm_setcsr((mSaved | 0x8000u | 0x0040u));
@@ -26,7 +26,7 @@ public:
    }
 
    ~ScopedNoDenormals() {
-#ifdef RAINYDAY_HAVE_MXCSR
+#ifdef VERDALIS_HAVE_MXCSR
       _mm_setcsr(mSaved);
 #endif
    }
@@ -35,9 +35,9 @@ public:
    ScopedNoDenormals &operator=(const ScopedNoDenormals &) = delete;
 
 private:
-#ifdef RAINYDAY_HAVE_MXCSR
+#ifdef VERDALIS_HAVE_MXCSR
    unsigned int mSaved = 0;
 #endif
 };
 
-} // namespace rainyday
+} // namespace verdalis

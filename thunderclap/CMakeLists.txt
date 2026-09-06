@@ -106,6 +106,12 @@ if(THUNDERCLAP_BUILD_GUI AND NOT THUNDERCLAP_GUI_FOUND_WIN)
    endif()
 endif()
 
+# ------------------------------------------------------------------ shared code
+#
+# The suite's common parameter model and DSP building blocks. Lives beside the
+# plugins at the suite root, so it is reached with an explicit path.
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../shared" verdalis-shared)
+
 # ------------------------------------------------------------------- the plugin
 add_library(ThunderClap MODULE
    src/plugin.cpp
@@ -117,6 +123,8 @@ add_library(ThunderClap MODULE
    "${THUNDERCLAP_GENERATED_HEADER}"
 )
 add_dependencies(ThunderClap thunderclap_presets)
+
+target_link_libraries(ThunderClap PRIVATE verdalis::shared)
 
 target_include_directories(ThunderClap PRIVATE
    "${CLAP_INCLUDE_DIR}"
@@ -174,6 +182,7 @@ if(THUNDERCLAP_BUILD_TOOLS)
    # The preset text format is linked in as well as loaded through the plugin,
    # so the self-test can check that writing a preset and reading it back agree.
    add_executable(thunderclap-render tools/render.cpp src/preset.cpp src/params.cpp)
+   target_link_libraries(thunderclap-render PRIVATE verdalis::shared)
    target_include_directories(thunderclap-render PRIVATE
       "${CLAP_INCLUDE_DIR}"
       "${CMAKE_CURRENT_SOURCE_DIR}/src"

@@ -8,8 +8,8 @@
 
 #include <clap/clap.h>
 
-#include "dsp/denormals.h"
-#include "dsp/fastmath.h"
+#include "verdalis/dsp/denormals.h"
+#include "verdalis/dsp/fastmath.h"
 #include "dsp/rain_engine.h"
 #include "factories.h"
 #include "params.h"

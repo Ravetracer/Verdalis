@@ -5,7 +5,7 @@
 #include <chrono>
 #include <cmath>
 
-#include "fastmath.h"
+#include "verdalis/dsp/fastmath.h"
 
 namespace rainyday {
 
