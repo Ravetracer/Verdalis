@@ -1118,7 +1118,7 @@ static const void *entryGetFactory(const char *factoryId) {
       return &rainyday::gPluginFactory;
    if (std::strcmp(factoryId, CLAP_PRESET_DISCOVERY_FACTORY_ID) == 0 ||
        std::strcmp(factoryId, CLAP_PRESET_DISCOVERY_FACTORY_ID_COMPAT) == 0)
-      return &rainyday::gPresetDiscoveryFactory;
+      return rainyday::presetDiscoveryFactory();
    return nullptr;
 }
 

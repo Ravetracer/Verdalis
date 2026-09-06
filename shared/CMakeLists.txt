@@ -16,12 +16,21 @@ cmake_minimum_required(VERSION 3.16)
 
 add_library(verdalis_shared STATIC
    src/params.cpp
+   src/preset.cpp
+   src/preset_provider.cpp
 )
 add_library(verdalis::shared ALIAS verdalis_shared)
 
 target_include_directories(verdalis_shared PUBLIC
    "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
+
+# The preset-discovery provider is written against the CLAP API. The plugin that
+# pulls this in has already located the headers.
+if(NOT CLAP_INCLUDE_DIR)
+   message(FATAL_ERROR "verdalis_shared: CLAP_INCLUDE_DIR must be set before add_subdirectory()")
+endif()
+target_include_directories(verdalis_shared PUBLIC "${CLAP_INCLUDE_DIR}")
 
 target_compile_features(verdalis_shared PUBLIC cxx_std_17)
 

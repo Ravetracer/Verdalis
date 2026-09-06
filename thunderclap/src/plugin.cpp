@@ -1138,7 +1138,7 @@ static const void *entryGetFactory(const char *factoryId) {
       return &thunderclap::gPluginFactory;
    if (std::strcmp(factoryId, CLAP_PRESET_DISCOVERY_FACTORY_ID) == 0 ||
        std::strcmp(factoryId, CLAP_PRESET_DISCOVERY_FACTORY_ID_COMPAT) == 0)
-      return &thunderclap::gPresetDiscoveryFactory;
+      return thunderclap::presetDiscoveryFactory();
    return nullptr;
 }
 
