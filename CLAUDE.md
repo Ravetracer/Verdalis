@@ -65,12 +65,12 @@ Naming follows a consistent pattern: a two-word CamelCase compound naming the
 phenomenon, lowercase and joined for the folder, the CLAP id
 (`de.ravetracer.<folder>`) and the preset extension (`.<folder>`).
 
-**This roadmap is the argument for extracting `shared/` now.** Every one of the
-five remaining plugins will start as a copy of an existing one, and each copy
-duplicates the DSP toolbox and the entire GUI layer again. Extracting after
-plugin 7 means unpicking seven copies; extracting before plugin 3 means the
-remaining five are built against a shared foundation from their first commit.
-See *Shared components* below.
+**This roadmap is why `shared/` exists.** Every one of the five remaining
+plugins starts as a copy of an existing one, and without a shared foundation
+each copy would duplicate the DSP toolbox and the GUI layer again. The
+extraction was done before ShoreBreak, so the remaining five are built against
+it from their first commit. See *Shared components* below for what is in it and
+what is deliberately still per-plugin.
 
 Likely shared additions as the suite grows — worth anticipating rather than
 retrofitting:
@@ -87,33 +87,30 @@ retrofitting:
 ## Plugin anatomy
 
 Every plugin follows the same skeleton. Reproduce it exactly when starting a new
-one — the consistency is what makes shared components possible.
+one — the consistency is what makes shared components possible. The build
+tooling, the DSP toolbox, the parameter model, the preset format and the GUI
+drawing primitives all come from `shared/`; see *Shared components* below.
 
 ```
 <plugin>/
 ├── CMakeLists.txt           C++17, CLAP module + offline tools
-├── install.sh               configure → build → self-test → install to ~/.clap
+├── install.sh               thin wrapper over shared/tools/install-plugin.sh
 ├── README.md                user-facing documentation
 ├── STATUS.md                what works, what is measured
 ├── TODO.md                  planned work
-├── cmake/
-│   ├── <plugin>.version     linker script: exports only clap_entry
-│   ├── embed_presets.cmake  bakes presets/ into a generated header
-│   ├── mingw-w64-x86_64.cmake  Windows cross-build toolchain
-│   └── build-windows-cairo.sh
 ├── presets/                 factory presets, one file per preset, .<plugin>
 ├── src/
-│   ├── <plugin>.h           shared plugin-wide declarations
+│   ├── <plugin>.h           identity constants + the preset bindings
 │   ├── plugin.cpp           CLAP entry point, host glue, audio callback
-│   ├── params.{h,cpp}       parameter table and formatting
-│   ├── preset.cpp           preset (de)serialisation
-│   ├── preset_provider.cpp  CLAP preset-discovery factory
+│   ├── params.{h,cpp}       this plugin's ParamId enum and ParamDesc table
+│   ├── preset.cpp           binds the shared preset format to this plugin
+│   ├── preset_provider.cpp  binds the shared discovery provider
 │   ├── factories.h
-│   ├── dsp/                 the synthesis engine + DSP building blocks
-│   └── gui/                 X11/Win32 + Cairo plugin window
+│   ├── dsp/                 the synthesis engine (the DSP toolbox is shared)
+│   └── gui/                 its palette and panel layout, drawn with the
+│                            shared toolkit
 ├── tools/
 │   ├── render.cpp           offline renderer + self-test
-│   ├── fithost.cpp          parameter fitting against reference recordings
 │   ├── guihost.cpp          standalone GUI host for window development
 │   └── analysis/            Python analysis helpers (loudness, spectra, fits)
 └── !dev/                    LOCAL ONLY — reference recordings, papers, renders.
@@ -237,69 +234,77 @@ accident. The Windows binaries are ~5 MB because Cairo is linked statically.
 
 ## Shared components
 
-The two plugins were built in sequence, and the second inherited the first's
-structure. A file-level comparison shows how much is genuinely common — this is
-the roadmap for the planned `shared/` folder.
+`shared/` holds the code the whole suite is built on, compiled as the static
+library `verdalis::shared` and reached through `<verdalis/...>` includes:
 
-**Identical, or identical apart from the plugin name** — these are already
-shared code that merely got copied, and should move to `shared/` as-is:
+```
+shared/
+├── CMakeLists.txt              builds verdalis::shared
+├── include/verdalis/
+│   ├── params.h                ParamDesc, ParamKind, FilterKind, conversions
+│   ├── param_macros.h          table-building shorthand (params.cpp only)
+│   ├── preset.h                PresetContext, PresetData, the text format
+│   ├── preset_provider.h       PresetProviderSpec, the discovery factory
+│   ├── dsp/{adsr,denormals,fastmath,filters,reverb,rng}.h
+│   └── gui/toolkit.h           Cairo drawing primitives, Rect, Align
+├── src/{params,preset,preset_provider}.cpp
+├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
+│                               clap_entry.version
+└── tools/                      install-plugin.sh, fithost.cpp, analysis/wavio.py
+```
 
-- `src/factories.h`
-- `src/preset.cpp` — preset serialisation
-- `src/preset_provider.cpp` — CLAP preset-discovery factory
-- `src/dsp/denormals.h`
-- `cmake/embed_presets.cmake`
-- `cmake/mingw-w64-x86_64.cmake`
-- `cmake/build-windows-cairo.sh`
-- `cmake/<plugin>.version` — the linker script, byte-identical
-- `tools/fithost.cpp`
-- `tools/analysis/wavio.py`
-- `install.sh`, `.gitignore`, `LICENSE`
+A plugin pulls it in with
 
-**Same code, diverged only by domain-flavoured comments plus small per-plugin
-additions.** These need a superset with neutral wording, not a copy:
+```cmake
+add_subdirectory("${VERDALIS_SHARED_DIR}" verdalis-shared)
+target_link_libraries(<target> PRIVATE verdalis::shared)
+```
 
-| File | Divergence |
-|------|-----------|
-| `src/dsp/rng.h` | RainyDay adds `RngLite` (4-byte state, per-droplet) |
-| `src/dsp/fastmath.h` | RainyDay adds `SinTable` / `sin2piFast` |
-| `src/dsp/filters.h` | RainyDay adds `Svf::ringing()`; ThunderClap adds `Lp2` |
-| `src/dsp/reverb.h` | Same tank; ThunderClap lowers `kLoopHighpassHz` 35 → 16 Hz |
-| `src/dsp/adsr.h` | Comments only |
+and each plugin's `params.h` re-exports the shared names into its own namespace
+with a scoped `using namespace verdalis;`, so plugin code calls `paramToReal`,
+`Svf`, `parsePreset` and so on unqualified, exactly as before.
 
-**The GUI is one toolkit with a per-plugin palette.** `src/gui/gui.cpp` has the
-same top-level structure in both — `Cell`, `PanelSpec`, `Rgb`, `roundedRect`,
-`drawTriangle`, `drawText`, `textWidth`, `upperCase`, `normalised`, `isChip`,
-`isStepped`, `isBipolar`, `Rect`, `X11Gui` — with an identical layout engine and
-identical static layout assertions. What actually differs is the colour table
-and the engine-specific meter. ThunderClap's own comment states the intent:
-*"RainyDay's greys, an octave darker, with the sky's own colour for the accent."*
+**How the shared code stays plugin-agnostic.** It never hardcodes a name. The
+preset code takes a `PresetContext` (plugin name, file extension, parameter
+table and its size); the discovery provider takes a `PresetProviderSpec`.
+`embed_presets.cmake` requires `NAMESPACE` and `PRESET_EXT` as arguments and
+fails without them, because a default would silently generate the wrong
+namespace and still compile in the plugin it was copied from.
 
-This is the strongest case for extraction: a shared widget/layout/paint layer
-plus a small per-plugin theme struct.
+Because `verdalis::shared` is a **static** library linked into each plugin
+separately, file-scope state in shared code belongs to one plugin binary. That
+is what makes the single preset-discovery provider safe.
 
-**Genuinely per-plugin, never share:** `src/dsp/<name>_engine.{h,cpp}`,
-`src/params.{h,cpp}`, `presets/`, `README.md`, `STATUS.md`, `TODO.md`, `!dev/`.
+### What each plugin still owns
 
-### Extraction is not done yet
+Genuinely per-plugin, and correctly so:
 
-`shared/` does **not** exist. The analysis above is the plan, not the state.
+- `src/dsp/<name>_engine.{h,cpp}` — the synthesis itself
+- `src/params.cpp` / `params.h` — its ParamId enum and its ParamDesc table
+- `src/preset.cpp`, `src/preset_provider.cpp` — ~35-line bindings that supply
+  the plugin's name, extension and table to the shared implementations
+- `src/gui/gui.cpp` — its palette and panel layout
+- `presets/`, `README.md`, `STATUS.md`, `TODO.md`, `!dev/`
 
-The monorepo removes what used to be the hard part: a sibling `shared/` folder
-is now plainly reachable from every plugin, so extraction is an ordinary
-refactor — no submodules, no subtrees, no vendoring. A `shared/` directory with
-`add_subdirectory(../shared)` from each plugin's `CMakeLists.txt` is enough.
+### Still duplicated
 
-Suggested order, easiest first:
+Two files remain substantially shared but are **not** extracted, because
+finishing them means deciding what the plugins should do, not just moving code:
 
-1. The already-identical files — `preset.cpp`, `preset_provider.cpp`,
-   `factories.h`, `denormals.h`, the `cmake/` helpers, `fithost.cpp`,
-   `wavio.py`. Pure de-duplication, no behaviour change.
-2. The DSP headers, as a superset with neutral comments.
-3. The GUI: shared layout/paint/widget layer plus a per-plugin theme struct.
+| File | Size | Differing lines | What blocks extraction |
+|------|------|-----------------|------------------------|
+| `src/plugin.cpp` | ~1140 | ~128 | CLAP lifecycle is common; the engine type is not. Wants a template or an engine interface. |
+| `src/gui/gui.cpp` | ~2060 | ~398 | The window classes share 72 of ~78 methods. RainyDay has a typed value-entry field ThunderClap lacks; ThunderClap draws a lightning flash RainyDay lacks. |
 
-Do this before the third plugin exists, not after — every new plugin copies the
-duplication forward.
+Unifying the window would give ThunderClap RainyDay's typed value entry — a
+behaviour change, and an improvement, but the user's call. The natural moment
+for both is when ShoreBreak's window is written, since a third copy is what
+proves which parts are really common.
+
+### Rule for a shared change
+
+Anything in `shared/` is used by every plugin. A change there must be verified
+against all of them — see the verification recipe under *Working notes*.
 
 ## Conventions for a new plugin
 
@@ -370,3 +375,38 @@ layout and geometry, distinct only in accent hue.
 - Both plugins' `kPluginUrl` now point at the suite repository. They previously
   pointed at the per-plugin repos, which no longer exist — a new plugin must use
   the suite URL, not invent its own.
+
+### Verifying a change to shared/
+
+The synthesis is deliberately stochastic — the same build renders differently
+every run — so comparing output only works with the seed pinned. `Random Seed`
+is non-zero-means-reproducible, and `render --param` matches on the *display*
+name, so the override is `randomseed=N`, not `seed=N`.
+
+The recipe that proves a refactor changed nothing:
+
+```sh
+# 1. a reference build from before the change
+git worktree add /tmp/ref <commit>
+ln -s "$PWD/CLAP" /tmp/ref/CLAP
+cmake -S /tmp/ref/rainyday -B /tmp/ref-build -DCMAKE_BUILD_TYPE=Release && cmake --build /tmp/ref-build
+
+# 2. render every preset from both, with the seed pinned
+for side in ref new; do
+   ./rainyday-render --plugin ./RainyDay.clap --all --outdir /tmp/wav-$side \
+      --seconds 3 --tail 2 --rate 48000 --param randomseed=7
+done
+
+# 3. compare
+for f in /tmp/wav-ref/*.wav; do cmp "$f" "/tmp/wav-new/$(basename "$f")"; done
+```
+
+Vary `--rate` and the seed; identical output across several of each is strong
+evidence. Also run `render --selftest` (it round-trips a saved preset) and
+`render --list` (it exercises preset discovery, and its output should be
+byte-identical).
+
+For a GUI change, `<plugin>-guihost <plugin>.clap "" 8` opens the real window
+for eight seconds; capture it with `import -window $(xdotool search --name
+RainyDay | head -1)` and compare with `compare -metric AE`. Zero differing
+pixels is the bar.
