@@ -133,6 +133,7 @@ private:
       p.tonality = static_cast<float>(realValue(kParamTonality));
       p.impact = static_cast<float>(realValue(kParamImpact));
       p.splash = static_cast<float>(realValue(kParamSplash));
+      p.slosh = static_cast<float>(realValue(kParamSlosh));
       p.levelSpread = static_cast<float>(realValue(kParamLevelSpread));
       p.chirp = static_cast<float>(realValue(kParamChirp));
       p.bubbleChance = static_cast<float>(realValue(kParamBubble));

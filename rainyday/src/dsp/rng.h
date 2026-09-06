@@ -9,6 +9,33 @@ namespace rainyday {
 // rand()-style LCGs usually used for noise. Everything in this plugin
 // (droplet timing, pitch, pan, the noise bed itself) comes out of here, so it
 // has to be both cheap and free of audible periodicity.
+// A droplet's own generator, for the layers that can stop drawing once they
+// have decayed. Four bytes of state rather than the twenty-four a full Rng
+// carries: there are up to 2048 droplets live at once and the struct is walked
+// every sample, so this is a cache decision, not a cycle-count one. xorshift32
+// has a period of 2^32-1 against a droplet lifetime of a few thousand samples,
+// and it is only ever asked for splash noise, never for the droplet's shape.
+class RngLite {
+public:
+   inline void seed(uint32_t s) { mState = s ? s : 0x9E3779B9u; }
+
+   inline uint32_t next() {
+      mState ^= mState << 13;
+      mState ^= mState >> 17;
+      mState ^= mState << 5;
+      return mState;
+   }
+
+   // Uniform in [-1, 1) -- the white noise primitive.
+   inline float white() { return ((next() >> 8) * (1.0f / 8388608.0f)) - 1.0f; }
+
+   // Uniform in (0, 1].
+   inline float uniformPositive() { return ((next() >> 8) + 1) * (1.0f / 16777216.0f); }
+
+private:
+   uint32_t mState = 0x9E3779B9u;
+};
+
 class Rng {
 public:
    explicit Rng(uint32_t seed = 0x1234567u) { reseed(seed); }

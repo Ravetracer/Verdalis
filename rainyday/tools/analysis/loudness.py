@@ -3,6 +3,14 @@
 Each preset is rendered at three fixed seeds; the gain is moved so the mean RMS
 lands on target, then pulled back if that would push the peak too high. Sparse
 presets are peak-limited by nature and simply keep whatever RMS falls out.
+
+The correction is applied more than once, because a single round does not
+converge when the engine's soft clipper is already engaged. Above its 0.8 knee
+the output is compressed, so cutting the gain by n dB moves the measured peak by
+much less than n and the pass stops with the preset still over target -- which
+is how Concrete Alley came to ship 5.7 dB into the clipper after the slosh layer
+was added. Each round measures again, so once the peaks are back under the knee
+the remaining correction is linear and it settles.
 """
 import os
 import sys
@@ -12,6 +20,10 @@ import fitlib
 
 TARGET_RMS_DB = -22.0
 MAX_PEAK_DB = -4.0
+# Enough rounds for the soft clipper to be backed out of; it settles in two or
+# three for everything in the library.
+MAX_ROUNDS = 6
+TOLERANCE_DB = 0.2
 SEEDS = [11, 12, 13]
 SECONDS = 8.0
 
@@ -37,12 +49,19 @@ def match(src_dir, dst_dir, names):
         gain = float(params.get('gain', 0.0))
         params['gain'] = f'{gain:.6g}'
         peak, rms = measure(r, params, meta)
-        delta = TARGET_RMS_DB - rms
-        if peak + delta > MAX_PEAK_DB:
-            delta = MAX_PEAK_DB - peak
-        new_gain = float(np.clip(gain + delta, -60.0, 12.0))
+        new_gain = gain
+        peak2, rms2 = peak, rms
+        for _ in range(MAX_ROUNDS):
+            delta = TARGET_RMS_DB - rms2
+            if peak2 + delta > MAX_PEAK_DB:
+                delta = MAX_PEAK_DB - peak2
+            stepped = float(np.clip(new_gain + delta, -60.0, 12.0))
+            if abs(stepped - new_gain) < TOLERANCE_DB:
+                break
+            new_gain = stepped
+            params['gain'] = f'{new_gain:.6g}'
+            peak2, rms2 = measure(r, params, meta)
         params['gain'] = f'{new_gain:.6g}'
-        peak2, rms2 = measure(r, params, meta)
         with open(os.path.join(dst_dir, name + '.rainyday'), 'w') as f:
             f.write(fitlib.preset_text(params, meta))
         rows.append((name, gain, new_gain, peak2, rms2))

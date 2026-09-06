@@ -54,6 +54,12 @@ const ParamDesc kParams[kNumParams] = {
        "Weight of the broadband click at the moment of impact."),
    PCT(kParamSplash, "splash", "Splash", "Rain", 0.35,
        "Length and weight of the wet noise burst after the impact."),
+   PCT(kParamSlosh, "slosh", "Slosh", "Rain", 0.5,
+       "How long the splash cascades. A drop landing on a hard wet surface -- "
+       "stone, wood or glass -- throws secondary droplets that land a few "
+       "milliseconds apart; this is how many, and so how much it sounds like "
+       "water rather than a hiss. Surfaces that hold no film of water ignore "
+       "it."),
    PCT(kParamLevelSpread, "level_spread", "Level Spread", "Rain", 0.6,
        "Skew of the drop-size distribution, which also spreads pitch and decay."),
    BIPCT(kParamChirp, "chirp", "Chirp", "Rain", 0.35,

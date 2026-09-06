@@ -54,7 +54,9 @@ constexpr int kMargin = 16;
 constexpr int kGap = 8;
 // Ten cells wide, plus the padding and gaps of the busiest row, which is the
 // four-panel one. Rows with fewer panels stretch their last panel to match.
-constexpr int kContentW = 928;
+// Widened by one cell when Slosh joined the RAIN panel, which needs eight
+// columns rather than seven.
+constexpr int kContentW = 1012;
 constexpr int kHeaderH = 66;
 constexpr int kBarH = 32;
 constexpr int kHelpH = 24;
@@ -85,12 +87,14 @@ struct PanelSpec {
    int count;
 };
 
-// Seven per line, which is one row of the panel.
+// Seven per line, which is one row of the panel. Slosh sits next to Splash:
+// it lengthens what Splash starts.
 constexpr uint32_t kRainParams[] = {
    kParamSurface,  kParamDensity, kParamClumping, kParamDropPitch,   kParamPitchSpread,
    kParamDropDecay, kParamDecaySpread,
-   kParamTonality, kParamBubble,  kParamImpact,   kParamSplash,      kParamLevelSpread,
-   kParamChirp,     kParamNoteTracking,
+   kParamTonality, kParamBubble,  kParamImpact,   kParamSplash,      kParamSlosh,
+   kParamLevelSpread, kParamChirp,
+   kParamNoteTracking,
 };
 constexpr uint32_t kSpaceParams[] = {kParamDistance,  kParamAir,       kParamSpaceAmount,
                                  kParamSpaceSize, kParamSpaceDamping};
@@ -108,7 +112,7 @@ constexpr uint32_t kOutParams[] = {kParamGain, kParamMaxDroplets, kParamSeed};
    { title, cols, rows, arr, static_cast<int>(sizeof(arr) / sizeof(arr[0])) }
 
 constexpr PanelSpec kPanelSpecs[] = {
-   PANEL("RAIN", 7, 2, kRainParams),     PANEL("DISTANT", 3, 2, kDistantParams),
+   PANEL("RAIN", 8, 2, kRainParams),     PANEL("DISTANT", 3, 2, kDistantParams),
    PANEL("ENVELOPE", 3, 2, kEnvParams),  PANEL("FILTER", 3, 2, kFilterParams),
    PANEL("SPACE", 3, 2, kSpaceParams),   PANEL("CLOSE", 1, 2, kCloseParams),
    PANEL("OUTPUT", 3, 1, kOutParams),

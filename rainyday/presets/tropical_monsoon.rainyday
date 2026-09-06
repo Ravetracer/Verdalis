@@ -16,6 +16,7 @@ tonality = 0.133
 bubble = 0.783
 impact = 0.043
 splash = 0.887
+slosh = 0.5
 level_spread = 0.75
 chirp = 0.02
 surface = Water
@@ -54,6 +55,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 11.4
+gain = 11.2
 max_droplets = 1536
 seed = 0

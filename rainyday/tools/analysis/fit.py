@@ -154,8 +154,11 @@ PRESET_BOUNDS = {
 
 # The full set, and the subset used for presets that only need their tone
 # corrected without losing the density and rhythm that define them. Surface,
-# Chirp, the space controls and the envelope are never fitted: those are the
-# preset's identity, not something to be solved for.
+# Chirp, Slosh, the space controls and the envelope are never fitted: those are
+# the preset's identity, not something to be solved for. Slosh is in that list
+# for a second reason as well -- the concrete references it would be fitted
+# against are distant recordings with no splat in them, so solving for it would
+# drive it to zero and quietly undo the layer.
 FULL_PARAMS = ['density', 'clumping', 'drop_pitch', 'pitch_spread', 'drop_decay',
         'decay_spread', 'tonality', 'bubble', 'impact', 'splash', 'level_spread',
         'bed_level', 'bed_tone', 'bed_body', 'bed_drift', 'distance', 'air']

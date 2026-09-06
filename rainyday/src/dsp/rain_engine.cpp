@@ -29,6 +29,10 @@ struct SurfaceProfile {
    float bodySpreadOct;  // how far that mode is scattered per droplet, in octaves
    float bodyDecaySec;   // how long the surface rings
    float bodyLevel;      // its weight, relative to the impact click
+   float sloshHz;        // centre of the splash sheet's noise band
+   float sloshDecaySec;  // how long it washes out
+   float sloshLevel;     // its weight, relative to the impact click
+   float sloshChance;    // fraction of droplets that slap at all
 };
 
 // Wet surfaces trap an air bubble, so their tone swells in a few milliseconds
@@ -61,14 +65,53 @@ struct SurfaceProfile {
 // because a roof is not one panel. Water has none: there is nothing rigid to
 // ring. The umbrella has the most, being a drumhead. Weighted by Impact, since
 // it is the strike that sets it going.
+//
+// The four slosh columns are a sheet of water thrown sideways across a hard,
+// wet, non-absorbent surface: broadband hiss an octave or two above anything
+// the droplet itself radiates. The existing splash layer cannot produce it,
+// because that noise is filtered by the droplet's own resonator and so lands
+// wherever the bubble is and never up here.
+//
+// Concrete's four numbers are measured, over a close recording of rain on wet
+// concrete: 69 % of the energy between 2 and 8 kHz, 26 % above 8 kHz, median
+// 5.8 kHz, and a cascade of sub-bursts rather than one wash (see the splat
+// cascade constants below).
+//
+// Wood's and glass's are not measured, and it is worth being plain about why.
+// The same measurement run over every other reference we hold finds the
+// signature nowhere: window 84 % below 2 kHz with a median of 509 Hz, metal
+// 68 % below 2 kHz, car 99 %, roof the only one with real weight up there at
+// 52 % in the 2-8 kHz band. But the comparison is confounded by microphone
+// distance rather than by surface -- `rain_on_concrete`, a distant recording of
+// the very surface that does slosh, also measures 64 % below 2 kHz and a
+// 1.5 kHz median. Every recording that shows the signature is a close one, and
+// the concrete slosh file is the only close one we have. So the recordings
+// cannot say whether wet wood and wet glass slap; they can only say that
+// nothing rules it out.
+//
+// What is set below is therefore physical reasoning, scaled off concrete's
+// measured column, and a close recording of either surface should replace it:
+//   - wood holds a thick, broken film on a rough and slightly absorbent
+//     surface, so it is darker than concrete and throws less;
+//   - glass holds a thin, smooth, fast-draining film, so what it throws is
+//     brighter, shorter and lighter still.
+// Metal is left out deliberately. It is smooth like glass, but its click is
+// three times any other surface's and its own ring already occupies the band a
+// slosh would land in, and the two references that contain wet metal (`metal`,
+// `car`) give the idea no support at all.
+//
+// Note that `rain_on_concrete`, which the concrete presets are fitted to, is
+// the duller and more distant recording described above. Adding the slosh
+// therefore moves those presets away from that reference while moving them
+// towards what concrete sounds like from a few feet away. See TODO section 2.
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
-   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 1.30f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f, 0.0f, 0.0f, 0.00f, 0.00f},
-   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 1.45f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f, 0.0f, 0.0f, 0.00f, 0.00f},
-   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f},
-   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f},
-   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f},
-   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f, 450.0f, 0.4f, 0.060f, 0.20f},
-   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f, 400.0f, 0.4f, 0.015f, 0.08f},
+   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 1.30f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 1.45f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f, 4200.0f, 0.028f, 4.20f, 0.070f},
+   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f, 450.0f, 0.4f, 0.060f, 0.20f, 6500.0f, 0.018f, 3.20f, 0.055f},
+   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f, 400.0f, 0.4f, 0.015f, 0.08f, 5000.0f, 0.030f, 6.50f, 0.095f},
    // Fabric: a taut canopy a foot above your head, which is an umbrella or a
    // tent. It is a drumhead, so the impact is the loudest thing about it and
    // carries more weight than on any other surface, but the membrane is lossy
@@ -76,7 +119,7 @@ const SurfaceProfile kSurfaces[kNumSurfaces] = {
    // once and has very little pitch to it. Struck from above and radiating
    // straight down, it is also the one surface heard from a few centimetres
    // away rather than across a street.
-   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f, 240.0f, 0.4f, 0.040f, 0.60f},
+   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f, 240.0f, 0.4f, 0.040f, 0.60f, 0.0f, 0.00f, 0.00f, 0.00f},
 };
 
 // --- The pitch bend of a drop falling into water.
@@ -113,6 +156,19 @@ constexpr float kChirpAccel = 0.6f;
 // droplet's whole lifetime (1.6 ring times, about -96 dB) the drop is already
 // 36 dB down before a fifth of the sweep has happened.
 constexpr float kChirpReachRings = 0.6f;
+// The splat cascade, measured on isolated events in the concrete reference:
+// six bursts in the first 40 ms about 5 ms apart, each roughly 11 dB under the
+// first, with the last of them straggling out towards 300 ms.
+// Slosh at 100 % reaches well past what the reference shows, deliberately:
+// the measurement is one recording of one pavement, and a longer cascade is
+// the difference between rain on stone and rain into a fountain. The measured
+// six sits near the middle of the range.
+constexpr uint32_t kSloshBurstsMin = 2;
+constexpr uint32_t kSloshBurstsMax = 22;
+constexpr float kSloshGapSec = 0.005f;
+constexpr float kSloshBurstSec = 0.008f;
+constexpr float kSloshBurstLevel = 0.29f;
+
 // The attack dip: how far down, and how fast it relaxes back.
 constexpr float kChirpDipOct = 0.22f;
 constexpr float kChirpDipTauSec = 0.0012f;
@@ -726,6 +782,73 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
       d.bodyRiseInv = 0.0f;
    }
 
+   // --- Slosh: the sheet of water thrown sideways across hard wet stone.
+   // Weighted like the body layer, as an energy ratio against the click rather
+   // than a peak ratio, since it lasts sixty times longer than the click does.
+   // It follows Splash rather than Impact: it is water being thrown, and a
+   // preset that asks for a dry surface should not get a wet sheet on it.
+   // Not every drop slaps: a splat needs a film of water to land in, and a
+   // concrete surface in rain is wet in patches. Weighting by size cannot
+   // produce this on its own -- the size draw spans barely a factor of 1.4
+   // from the median drop to the largest, so scaling by it moves the loud
+   // events and the quiet ones together and the texture stays a wash. A
+   // per-droplet chance is what separates them: the same energy delivered by
+   // one droplet in eight is eight times the peak over the same average, which
+   // is the difference between hearing a slap and hearing hiss.
+   // Slosh drives how often a drop slaps as well as how long each slap
+   // cascades. Length alone made the control read as a brightness knob: more
+   // bursts is more energy, and the character barely moved. How many drops
+   // slap at all is what decides whether the texture has slapping in it.
+   const float sloshAmt = clampv(mP.slosh, 0.0f, 1.0f);
+   const bool slaps = mRng.uniformPositive() < sp.sloshChance * 2.0f * sloshAmt;
+   if (slaps && sp.sloshLevel > 0.0f && sp.sloshDecaySec > 0.0f) {
+      // Fast, not swelling. A first version of this rose over 6 ms and ran for
+      // 65, which measured close to the reference in spectrum and nothing like
+      // it in envelope: on the 2-8 kHz band the recording spends 17 % of its
+      // time within 10 dB of its loudest, and that version spent 80 %. A wash
+      // instead of a slap, which is what rain on a canopy sounds like and not
+      // what it does on stone.
+      const float sloshRiseSec = 0.0004f;
+      const float ratio = clampv(sloshRiseSec / sp.sloshDecaySec, 1.0e-4f, 0.45f);
+      const float norm = std::pow(ratio, ratio / (1.0f - ratio)) -
+                         std::pow(ratio, 1.0f / (1.0f - ratio));
+      // Only the fat drops slap. Size already scales every layer through amp,
+      // but this one needs more than its share of it: a splat is a volume of
+      // water arriving, and the reference is a handful of loud events over a
+      // quiet bed rather than every drop contributing equally. Squaring the
+      // size on top of amp is what puts the loud ones far enough above the
+      // rest to read as separate slaps.
+      const float fat = clampv(sizeRel * sizeRel, 0.09f, 9.0f);
+      const float peak = amp * fat * mP.splash * sp.sloshLevel *
+                         std::sqrt(clickDecaySec / sp.sloshDecaySec) /
+                         (norm > 1.0e-3f ? norm : 1.0f);
+      d.sloshAmp = peak;
+      d.sloshRise = peak;
+      d.sloshSeed = peak;
+      // Each burst is short -- it has to die before the next one lands or the
+      // cascade fills in and becomes the wash again.
+      d.sloshDecay = decayCoef(kSloshBurstSec, mSampleRate);
+      d.sloshRiseDecay = decayCoef(sloshRiseSec, mSampleRate);
+      const uint32_t bursts = kSloshBurstsMin +
+         static_cast<uint32_t>((kSloshBurstsMax - kSloshBurstsMin) * sloshAmt);
+      d.sloshLeft = bursts + (mRng.next() % 4u);
+      d.sloshNext = static_cast<uint32_t>(kSloshGapSec * mSampleRate);
+      // Wide and gentle: a sheet of water is not a resonator. Scattered a
+      // little per droplet so a downpour is not one hiss played many times.
+      const float hz = clampv(sp.sloshHz * std::exp2(0.22f * mRng.white()),
+                              1000.0f, 0.42f * mSampleRate);
+      d.sloshBp.reset();
+      d.sloshBp.setCutoff(hz, 0.40f, mSampleRate);
+   } else {
+      d.sloshAmp = 0.0f;
+      d.sloshRise = 0.0f;
+      d.sloshDecay = 0.0f;
+      d.sloshRiseDecay = 0.0f;
+      d.sloshLeft = 0;
+      d.sloshNext = 0;
+      d.sloshSeed = 0.0f;
+   }
+
    // --- Tonal layer: e^(-t/decay) - e^(-t/rise), so it swells in behind the
    // impact rather than appearing at full level on the first sample. The pair
    // is normalised by its own peak, which keeps `amp` the layer's real peak.
@@ -806,10 +929,23 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    // own ring-down. A short fade at the end keeps the hard stop inaudible.
    const float qRing = (1.0f / clampv(d.resonator.k(), 0.02f, 2.0f)) / (3.14159265f * freq);
    const float ringSec = hasBubble ? tonalDecaySec : 0.0f;
+   // The cascade outlives any single burst: five or so gaps, the last two of
+   // them stretched, plus the final burst's own decay. A droplet whose life is
+   // sized on one burst dies with most of its splat unplayed.
+   // The cascade outlives any single burst, and how far it outlives it is now
+   // the user's choice, so the droplet's life has to be sized from the number
+   // of bursts actually scheduled rather than from a constant.
+   const float sloshSec =
+      d.sloshAmp > 0.0f
+         ? kSloshGapSec * 1.2f * (static_cast<float>(d.sloshLeft) + 2.0f * 8.0f) +
+              kSloshBurstSec * 2.0f
+         : 0.0f;
    const float longest =
-      std::max(std::max(ringSec, bodyDecaySec), std::max(noiseDecaySec + qRing, clickDecaySec));
+      std::max(std::max(std::max(ringSec, bodyDecaySec), sloshSec),
+               std::max(noiseDecaySec + qRing, clickDecaySec));
    d.lifeMax = static_cast<uint32_t>(clampv(1.6f * longest, 0.001f, 4.0f) * mSampleRate) + 96;
    d.life = 0;
+   d.rng.seed(mRng.next());
 
    // --- Chirp, the rise: the bubble shrinking. The sweep is spread over the
    // droplet's whole audible life rather than over a fixed window, because
@@ -911,11 +1047,6 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
       const uint32_t fadeStart = d.lifeMax > 64 ? d.lifeMax - 64 : 0;
 
       for (; i < numSamples; ++i) {
-         // The generator is shared by every droplet and the bed, so it is
-         // drawn from whether or not the splash still needs it: skipping the
-         // draw would change every random number after it and with them the
-         // whole rain, and a fixed Seed promises the same rain every time.
-         const float noise = mRng.white();
          // Bubble and splash are radiated by the droplet itself, so both go
          // through its radiation rolloff. The impact and the body are not: they
          // are the surface being struck, and their pitch has nothing to do with
@@ -927,8 +1058,11 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
             s = (d.tonalAmp - d.tonalRise) * sin2piFast(d.phase);
             s += d.harmAmp * sin2piFast(d.harmPhase);
          }
+         // The noise draw comes from the droplet's own generator, so it can be
+         // skipped outright once the splash is done rather than drawn and
+         // discarded to keep the shared sequence aligned.
          if (d.noiseAmp > kSilent || d.resonator.ringing(kSilent))
-            s += d.resonator.bandpassNormalised(noise * d.noiseAmp);
+            s += d.resonator.bandpassNormalised(d.rng.white() * d.noiseAmp);
          s = d.body.tick(s);
          if (d.clickAmp > kSilent)
             s += d.clickAmp * sin2piFast(d.clickPhase);
@@ -936,6 +1070,10 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
             const float ramp = static_cast<float>(d.life) * d.bodyRiseInv;
             s += d.bodyHp.tick(d.bodyAmp * (ramp < 1.0f ? ramp : 1.0f) * sin2piFast(d.bodyPhase));
          }
+         // The slosh is the surface being wetted, not the droplet radiating, so
+         // like the impact and the body it bypasses the radiation highpass.
+         if (d.sloshAmp > kSilent)
+            s += d.sloshBp.bandpassNormalised((d.sloshAmp - d.sloshRise) * d.rng.white());
          s = d.air.tick(s);
 
          if (d.life >= fadeStart)
@@ -980,8 +1118,43 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
          d.noiseAmp *= d.noiseDecay;
          d.clickAmp *= d.clickDecay;
          d.bodyAmp *= d.bodyDecay;
+         d.sloshAmp *= d.sloshDecay;
+         d.sloshRise *= d.sloshRiseDecay;
+         // Re-trigger: the next secondary droplet lands. Spacing and level are
+         // scattered per burst, because a splat that ticks at a fixed interval
+         // reads as a machine and not as water.
+         if (d.sloshLeft > 0u) {
+            if (d.sloshNext > 0u) {
+               --d.sloshNext;
+            } else {
+               --d.sloshLeft;
+               const float lvl = kSloshBurstLevel * (0.45f + 1.10f * d.rng.uniformPositive());
+               d.sloshAmp = d.sloshSeed * lvl;
+               d.sloshRise = d.sloshAmp;
+               const float gap = kSloshGapSec * (0.5f + 1.4f * d.rng.uniformPositive());
+               d.sloshNext = static_cast<uint32_t>(gap * mSampleRate);
+               // The last few come back late and alone: the stragglers run out
+               // to about 300 ms in the reference.
+               if (d.sloshLeft <= 2u)
+                  d.sloshNext *= 8u;
+            }
+         }
 
+         // A droplet used to run to 1.6x its longest decay so the shared
+         // generator stayed in step; about a third of that is spent below
+         // -60 dB. With its own generator it can stop the moment every layer
+         // is under kSilent and nothing is still ringing.
          if (++d.life >= d.lifeMax) {
+            d.active = false;
+            break;
+         }
+         // Tested every 64 samples, not every one: on a dense preset almost no
+         // droplet ends this way -- they are short and reach lifeMax first --
+         // so a per-sample test is pure overhead on exactly the presets that
+         // can least afford it. A 64-sample granularity is 1.3 ms.
+         if ((d.life & 63u) == 0u && d.tonalAmp <= kSilent && d.harmAmp <= kSilent &&
+             d.noiseAmp <= kSilent && d.clickAmp <= kSilent && d.bodyAmp <= kSilent &&
+             d.sloshAmp <= kSilent && !d.resonator.ringing(kSilent)) {
             d.active = false;
             break;
          }

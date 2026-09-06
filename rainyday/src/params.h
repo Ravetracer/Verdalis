@@ -18,6 +18,7 @@ enum ParamId : uint32_t {
    kParamTonality,
    kParamImpact,
    kParamSplash,
+   kParamSlosh,
    kParamLevelSpread,
    kParamChirp,
    kParamSurface,

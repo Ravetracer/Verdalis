@@ -16,6 +16,7 @@ tonality = 0.268
 bubble = 0.327
 impact = 0.977
 splash = 0.899
+slosh = 0.5
 level_spread = 1
 chirp = 0.35
 surface = Metal
@@ -54,6 +55,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 2.35
+gain = 1.49
 max_droplets = 512
 seed = 0

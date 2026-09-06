@@ -12,7 +12,7 @@ ROOT = os.environ.get('RAINYDAY_ROOT', os.path.dirname(os.path.dirname(os.path.d
 SECTIONS = [
     ('Rain', ['density', 'clumping', 'drop_pitch', 'pitch_spread', 'drop_decay',
               'decay_spread', 'tonality', 'bubble', 'impact', 'splash',
-              'level_spread', 'chirp', 'surface', 'note_tracking']),
+              'slosh', 'level_spread', 'chirp', 'surface', 'note_tracking']),
     ('Bed', ['bed_level', 'bed_tone', 'bed_body', 'bed_drift', 'bed_width',
              'bed_pan']),
     ('Space', ['width', 'drop_pan', 'distance', 'air', 'space_amount',

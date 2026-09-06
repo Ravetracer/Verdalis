@@ -16,6 +16,7 @@ tonality = 0
 bubble = 0.608
 impact = 1
 splash = 0.809
+slosh = 0.5
 level_spread = 0.005
 chirp = 0.9
 surface = Puddle

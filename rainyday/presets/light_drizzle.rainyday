@@ -16,6 +16,7 @@ tonality = 0.995
 bubble = 0.893
 impact = 0.023
 splash = 0.488
+slosh = 0.25
 level_spread = 1
 chirp = 0.35
 surface = Concrete
@@ -54,6 +55,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 9.73
+gain = 0.819
 max_droplets = 512
 seed = 0

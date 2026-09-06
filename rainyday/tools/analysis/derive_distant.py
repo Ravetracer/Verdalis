@@ -17,6 +17,7 @@ import fitlib
 OVERRIDES = {
     'density': 3000,          # a wall, not individual impacts
     'surface': 'Concrete',
+    'slosh': 0.15,           # no individual slap survives the trip
     'bed_level': -6,          # far field is mostly bed
     'bed_tone': 0.75,
     'bed_drift': 0.5,

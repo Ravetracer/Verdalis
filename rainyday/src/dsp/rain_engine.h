@@ -25,6 +25,7 @@ struct EngineParams {
    float tonality = 0.35f;
    float impact = 0.5f;
    float splash = 0.35f;
+   float slosh = 0.5f;
    float levelSpread = 0.6f;
    float chirp = 0.35f;
    float bubbleChance = 1.0f;
@@ -99,6 +100,11 @@ struct Droplet {
    float harmPhase = 0.0f, harmPhaseInc = 0.0f;
    float harmAmp = 0.0f, harmDecay = 0.0f;
    Svf resonator;
+   // The splash draws from the droplet's own generator, not the engine's, so a
+   // droplet that no longer needs noise can stop asking for it without shifting
+   // every random number after it. Seeded from the shared generator at spawn,
+   // which keeps a fixed Seed meaning one fixed rain.
+   RngLite rng;
    float noiseAmp = 0.0f, noiseDecay = 0.0f;
    // The impact is a damped sine, not noise: one frequency per droplet, drawn
    // uniformly, damped hard enough that only about two cycles survive.
@@ -113,6 +119,23 @@ struct Droplet {
    // does below its bubble: it is small against the wavelength. Without this
    // the mode's spectral skirts fill the two empty octaves under it.
    Hp2 bodyHp;
+   // The slosh: the sheet of water a drop throws across a hard wet surface.
+   // Broadband noise well above the droplet's own resonance, swelling in over
+   // a few milliseconds rather than striking, and unpitched -- it is water
+   // spreading, not anything ringing. Zero on every surface but concrete, and
+   // skipped for a single comparison when it is.
+   Svf sloshBp;
+   float sloshAmp = 0.0f, sloshDecay = 0.0f;
+   float sloshRise = 0.0f, sloshRiseDecay = 0.0f;
+   // A splat is not one burst. Counted on isolated events in the reference, a
+   // drop landing on wet concrete throws six of them in the first 40 ms about
+   // 5 ms apart, each around 11 dB under the first, and leaves stragglers out
+   // to 300 ms -- secondary droplets thrown up and coming back down. One
+   // smooth burst with the right spectrum and the right decay still sounds
+   // like hiss, because the cascade is the sound.
+   uint32_t sloshNext = 0;   // samples until the next sub-burst
+   uint32_t sloshLeft = 0;   // sub-bursts still to come
+   float sloshSeed = 0.0f;   // level of the first burst, for re-triggering
    OnePoleLp air;
    // A droplet is a small radiator: it cannot put out much energy far below its
    // own resonance, so everything under it is rolled off at 12 dB/oct.

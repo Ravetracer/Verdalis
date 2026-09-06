@@ -112,6 +112,30 @@ wind. That is a real finding, and it is also exactly the scope this project has
 decided against. Worth remembering when a preset sounds thin for no reason the
 measurements can explain.
 
+Added 2026-09-06: `!dev/Numerical_Calculation_of_Slosh_Dissipation.pdf` (Malan,
+Pilloton, Colagrossi & Malan, Appl. Sci. 2022) is not about this kind of slosh
+and does not need reading again. It simulates a partly filled aircraft fuel tank
+on springs, oscillating at 6.51 Hz, whose liquid slams into the tank roof; the
+subject is the energy dissipation budget, computed by SPH against a
+finite-volume VOF method. There is no acoustics in it at all -- the only speed of
+sound quoted is the artificial one of the weakly compressible SPH model, a
+numerical device -- and the length and time scales are metres and hertz against
+the millimetres and kilohertz a droplet works in.
+
+The one point of contact is structural rather than quantitative: the paper
+splits dissipation into a continuous viscous term and a discrete impact-loss
+term and finds the impact losses dominate, and it notes that greater
+fragmentation dissipates more energy. That agrees with the cascade model in the
+engine -- discrete sub-bursts rather than a smooth wash -- but it constrains no
+number here.
+
+What would actually move the slosh, in order: a close recording of rain on wet
+wood or wet glass, which is what the two reasoned surface columns are waiting
+for; then the drop-impact-on-a-thin-liquid-film literature (crown splash, the
+splashing threshold, secondary droplet count and size against film thickness and
+Weber number), which is the cascade itself; then impact acoustics of drops on
+wetted rigid surfaces.
+
 ### 1f. The bubble's pitch bend was measured on the wrong part of the drop -- DONE
 
 Closed 2026-09-05, and worth keeping because the mistake is easy to repeat.
