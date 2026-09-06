@@ -107,8 +107,8 @@ drawing primitives all come from `shared/`; see *Shared components* below.
 │   ├── preset_provider.cpp  binds the shared discovery provider
 │   ├── factories.h
 │   ├── dsp/                 the synthesis engine (the DSP toolbox is shared)
-│   └── gui/                 its palette and panel layout, drawn with the
-│                            shared toolkit
+│   └── gui/                 its theme, panel layout and header ornament;
+│                            the window itself comes from shared/
 ├── tools/
 │   ├── render.cpp           offline renderer + self-test
 │   ├── guihost.cpp          standalone GUI host for window development
@@ -246,8 +246,12 @@ shared/
 │   ├── preset.h                PresetContext, PresetData, the text format
 │   ├── preset_provider.h       PresetProviderSpec, the discovery factory
 │   ├── dsp/{adsr,denormals,fastmath,filters,reverb,rng}.h
-│   └── gui/toolkit.h           Cairo drawing primitives, Rect, Align
+│   └── gui/
+│       ├── gui.h               Gui + GuiDelegate, the plugin/window contract
+│       ├── toolkit.h           Cairo drawing primitives, Rect, Align
+│       └── window.h            Theme, PanelSpec, HeaderOrnament, WindowSpec
 ├── src/{params,preset,preset_provider}.cpp
+├── src/gui/window.cpp          the window: layout, widgets, browser, entry
 ├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
 │                               clap_entry.version
 └── tools/                      install-plugin.sh, fithost.cpp, analysis/wavio.py
@@ -275,6 +279,47 @@ Because `verdalis::shared` is a **static** library linked into each plugin
 separately, file-scope state in shared code belongs to one plugin binary. That
 is what makes the single preset-discovery provider safe.
 
+### The window, and its theme
+
+Every Verdalis plugin has **the same window**: one layout engine, one set of
+widgets, one set of interactions, in `shared/src/gui/window.cpp`. Knobs, chips,
+dropdowns, the preset browser, the save field, the typed value entry and the
+meters are written once. A plugin describes itself with a `WindowSpec` and calls
+`createWindow()`.
+
+**Every plugin has its own colour theme, and that is the only thing that tells
+the windows apart.** The `Theme` in the spec carries the whole palette, not just
+the accent: the backgrounds, the panel fill and edge, the knob face, the track
+and the three text greys are all part of it. A plugin tints its greys towards
+its own accent so the window reads as one instrument rather than a grey chassis
+with a coloured knob.
+
+| Plugin | Accent | Character |
+|--------|--------|-----------|
+| RainyDay | `#58B6E8` | rain blue, cool neutral greys |
+| ThunderClap | `#B396FA` | lightning violet, greys an octave darker |
+
+A new plugin picks its own accent and derives its greys from it. Do not reuse
+another plugin's theme, and do not fall back to the suite brand palette — that
+one is for the README and packaging, not the window.
+
+`Theme::highlight` is a second, brighter colour for an ornament that needs one
+(the white-hot core of a lightning channel). Set it to the text colour when
+there is nothing like that.
+
+**The header ornament** is the other per-plugin signature: a `HeaderOrnament`
+subclass drawn behind the wordmark, clipped to the header. RainyDay runs rain
+streaks whose density follows `voiceLoad`; ThunderClap grows a bolt from
+`eventCounter`, deterministic in the flash number so the same flash always draws
+the same bolt. `animating()` decides whether the window repaints, and must not
+change state. A plugin with nothing to animate leaves `ornament` null.
+
+**The delegate** (`verdalis/gui/gui.h`) is deliberately generic:
+`guiVoiceCount()` and `guiVoiceLimit()` are whatever the activity meter counts
+-- droplets, shock waves, grains -- and `guiEventCounter()` is an optional
+monotonic count of discrete events, defaulting to zero. The meter's wording
+comes from the spec's `voiceNoun` and `eventNoun`.
+
 ### What each plugin still owns
 
 Genuinely per-plugin, and correctly so:
@@ -283,23 +328,16 @@ Genuinely per-plugin, and correctly so:
 - `src/params.cpp` / `params.h` — its ParamId enum and its ParamDesc table
 - `src/preset.cpp`, `src/preset_provider.cpp` — ~35-line bindings that supply
   the plugin's name, extension and table to the shared implementations
-- `src/gui/gui.cpp` — its palette and panel layout
+- `src/gui/gui.cpp` — its theme, its panel layout and its header ornament
 - `presets/`, `README.md`, `STATUS.md`, `TODO.md`, `!dev/`
 
 ### Still duplicated
 
-Two files remain substantially shared but are **not** extracted, because
-finishing them means deciding what the plugins should do, not just moving code:
+One file remains substantially shared but is **not** extracted:
 
 | File | Size | Differing lines | What blocks extraction |
 |------|------|-----------------|------------------------|
-| `src/plugin.cpp` | ~1140 | ~128 | CLAP lifecycle is common; the engine type is not. Wants a template or an engine interface. |
-| `src/gui/gui.cpp` | ~2060 | ~398 | The window classes share 72 of ~78 methods. RainyDay has a typed value-entry field ThunderClap lacks; ThunderClap draws a lightning flash RainyDay lacks. |
-
-Unifying the window would give ThunderClap RainyDay's typed value entry — a
-behaviour change, and an improvement, but the user's call. The natural moment
-for both is when ShoreBreak's window is written, since a third copy is what
-proves which parts are really common.
+| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface, and is best done when a third plugin shows which parts are really common. |
 
 ### Rule for a shared change
 
@@ -321,7 +359,11 @@ against all of them — see the verification recipe under *Working notes*.
    - `kPluginUrl` = `https://github.com/Ravetracer/Verdalis`
 6. Presets are fitted against real reference recordings where possible, and the
    references live in `!dev/`, uncommitted.
-7. Keep the visual language: same layout engine and geometry, new accent hue.
+7. Keep the visual language: the window comes from `shared/`, so the layout
+   engine and geometry are automatic. What the plugin writes is its own `Theme`
+   (a new accent, with the greys tinted towards it), its panel table, and a
+   `HeaderOrnament` if it has something to animate. See *The window, and its
+   theme*.
 
 ## Branding
 
@@ -348,11 +390,10 @@ Verdalis palette, taken from the logo:
 | Pale mint | `#DCEFE3` | light text on dark |
 | Amber | `#F2AE3F` | single warm accent |
 
-Note the plugin windows do **not** use this palette directly: each plugin keeps
-its own near-black chassis with a hue that suits its subject (RainyDay's rain
-blue `#58B6E8`, ThunderClap's lightning violet `#B396FA`). The suite palette is
-for brand surfaces — README, site, packaging. Keep plugin windows identical in
-layout and geometry, distinct only in accent hue.
+Note the plugin windows do **not** use this palette. Each plugin has its own
+theme, near-black and tinted towards its own accent — see *The window, and its
+theme* for the rule and the current accents. The suite palette above is for
+brand surfaces only: README, site, packaging.
 
 ## Suite-wide goals
 
@@ -409,4 +450,19 @@ byte-identical).
 For a GUI change, `<plugin>-guihost <plugin>.clap "" 8` opens the real window
 for eight seconds; capture it with `import -window $(xdotool search --name
 RainyDay | head -1)` and compare with `compare -metric AE`. Zero differing
-pixels is the bar.
+pixels is the bar. Match the window by its expected width when picking it out
+of `xdotool search` -- the search also matches other windows with the plugin's
+name in the title, and grabbing the wrong one silently "passes".
+
+Interactions can be driven the same way, which is how the shared typed value
+entry was checked in both plugins:
+
+```sh
+eval "$(xdotool getwindowgeometry --shell "$wid")"
+xdotool mousemove $((X+150)) $((Y+180)) click 1   # a knob's value field
+xdotool type --delay 60 "55"
+xdotool key Return
+```
+
+Click a *knob*, not an enum chip: a chip opens its dropdown instead, which is
+correct behaviour and looks like a failed test.
