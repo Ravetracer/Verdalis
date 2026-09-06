@@ -18,6 +18,9 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
    set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.clap" CACHE PATH "Install prefix" FORCE)
 endif()
 
+# The suite's shared code, beside this plugin at the repository root.
+get_filename_component(VERDALIS_SHARED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../shared" ABSOLUTE)
+
 # ---------------------------------------------------------------- CLAP headers
 #
 # Point CLAP_INCLUDE_DIR at the include/ directory of a CLAP checkout, or let
@@ -58,8 +61,10 @@ add_custom_command(
    COMMAND "${CMAKE_COMMAND}"
       -DPRESET_DIR=${THUNDERCLAP_PRESET_DIR}
       -DOUTPUT=${THUNDERCLAP_GENERATED_HEADER}
-      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_presets.cmake"
-   DEPENDS ${THUNDERCLAP_PRESET_FILES} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_presets.cmake"
+      -DNAMESPACE=thunderclap
+      -DPRESET_EXT=thunderclap
+      -P "${VERDALIS_SHARED_DIR}/cmake/embed_presets.cmake"
+   DEPENDS ${THUNDERCLAP_PRESET_FILES} "${VERDALIS_SHARED_DIR}/cmake/embed_presets.cmake"
    COMMENT "Embedding ${CMAKE_CURRENT_SOURCE_DIR}/presets into presets_generated.h"
    VERBATIM
 )
@@ -73,7 +78,8 @@ set(THUNDERCLAP_GUI_SOURCES "")
 # pkg-config on this machine describes this machine, so a cross build must not
 # consult it: it would report the host's X11 and Cairo and drag /usr/include
 # into a Windows compile. Point THUNDERCLAP_WIN_CAIRO at a Cairo cross-built with
-# its win32 backend instead (see cmake/build-windows-cairo.sh).
+# its win32 backend instead (see ../shared/cmake/build-windows-cairo.sh,
+# or run ../setup-winbuild.sh once).
 if(THUNDERCLAP_BUILD_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
    if(NOT THUNDERCLAP_WIN_CAIRO OR NOT EXISTS "${THUNDERCLAP_WIN_CAIRO}/lib/libcairo.a")
       set(THUNDERCLAP_BUILD_GUI OFF)
@@ -110,7 +116,7 @@ endif()
 #
 # The suite's common parameter model and DSP building blocks. Lives beside the
 # plugins at the suite root, so it is reached with an explicit path.
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../shared" verdalis-shared)
+add_subdirectory("${VERDALIS_SHARED_DIR}" verdalis-shared)
 
 # ------------------------------------------------------------------- the plugin
 add_library(ThunderClap MODULE
@@ -166,7 +172,7 @@ if(WIN32)
    )
 else()
    target_link_options(ThunderClap PRIVATE
-      "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/cmake/thunderclap.version"
+      "-Wl,--version-script=${VERDALIS_SHARED_DIR}/cmake/clap_entry.version"
       "-Wl,--no-undefined"
    )
 endif()
@@ -225,7 +231,7 @@ if(THUNDERCLAP_BUILD_TOOLS)
    # The fitting host and the window host are both part of the Linux analysis
    # workflow and have no reason to exist on Windows.
    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
-   add_executable(thunderclap-fithost tools/fithost.cpp)
+   add_executable(thunderclap-fithost "${VERDALIS_SHARED_DIR}/tools/fithost.cpp")
    target_include_directories(thunderclap-fithost PRIVATE "${CLAP_INCLUDE_DIR}")
    target_compile_options(thunderclap-fithost PRIVATE -Wall -Wextra)
    target_link_libraries(thunderclap-fithost PRIVATE ${CMAKE_DL_LIBS})

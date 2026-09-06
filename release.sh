@@ -49,15 +49,20 @@ out_dir="${here}/dist"
 
 # ---------------------------------------------------------------- plugin list
 #
-# Every subdirectory with a CMakeLists.txt is a plugin. Keeping this discovered
-# rather than hardcoded means a new plugin joins a release by existing.
+# Every subdirectory with a CMakeLists.txt is a plugin, minus the few that are
+# not. Keeping this discovered rather than hardcoded means a new plugin joins a
+# release by existing; "shared" carries a CMakeLists.txt of its own and is a
+# library, not a plugin.
 plugins=()
 for d in "${here}"/*/; do
    d="${d%/}"
    name="$(basename "$d")"
-   [ "$name" = "CLAP" ] && continue
-   [ "$name" = "dist" ] && continue
+   case "$name" in
+      CLAP|dist|shared|winbuild|_designs) continue ;;
+   esac
    [ -f "${d}/CMakeLists.txt" ] || continue
+   # What actually makes it a plugin: a CLAP entry point of its own.
+   [ -f "${d}/src/plugin.cpp" ] || continue
    plugins+=("$name")
 done
 
@@ -124,7 +129,7 @@ build_one() {
    args+=("-D${upper}_BUILD_TOOLS=OFF")
 
    if [ "$target" = windows ]; then
-      args+=(-DCMAKE_TOOLCHAIN_FILE="${here}/${plugin}/cmake/mingw-w64-x86_64.cmake")
+      args+=(-DCMAKE_TOOLCHAIN_FILE="${here}/shared/cmake/mingw-w64-x86_64.cmake")
       [ -n "$win_cairo" ] && args+=("-D${upper}_WIN_CAIRO=${win_cairo}")
    fi
 

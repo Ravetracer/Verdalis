@@ -51,14 +51,10 @@ if [ ! -x "${venv}/bin/meson" ]; then
 fi
 echo "    meson $("${venv}/bin/meson" --version)"
 
-# The actual cross-build lives with the plugin that first needed it; the script
-# is identical in every plugin, so use whichever one is present.
-builder=""
-for candidate in "${here}"/*/cmake/build-windows-cairo.sh; do
-   [ -f "$candidate" ] && builder="$candidate" && break
-done
-if [ -z "$builder" ]; then
-   echo "no */cmake/build-windows-cairo.sh found" >&2
+# The cross-build itself is shared by the suite.
+builder="${here}/shared/cmake/build-windows-cairo.sh"
+if [ ! -f "$builder" ]; then
+   echo "missing ${builder}" >&2
    exit 1
 fi
 

@@ -11,11 +11,11 @@
 #   ./cmake/build-windows-cairo.sh /some/prefix
 #   cmake -S . -B build-win \
 #         -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake \
-#         -DRAINYDAY_WIN_CAIRO=/some/prefix
+#         -DVERDALIS_WIN_CAIRO=/some/prefix
 #
 # The result is just include/ and lib/, so build it once and keep it. This
 # machine has one at ~/projects/private_stuff/rainyday-winbuild; point
-# RAINYDAY_WIN_CAIRO there and there is no need to run this script at all.
+# VERDALIS_WIN_CAIRO there and there is no need to run this script at all.
 #
 # Needs meson; if the system python refuses to install it, a venv works:
 #   python3 -m venv venv && venv/bin/pip install meson
