@@ -157,7 +157,7 @@ private:
 
       // Bubbles.
       p.bubbleRateHz = static_cast<float>(realValue(kParamBubbleRate));
-      p.bubblePitchHz = static_cast<float>(realValue(kParamBubblePitch));
+      p.bubbleRadiusMm = static_cast<float>(realValue(kParamBubblePitch));
       p.bubbleSpreadOct = static_cast<float>(realValue(kParamBubbleSpread));
       p.bubbleDamping = static_cast<float>(realValue(kParamBubbleDecay));
 

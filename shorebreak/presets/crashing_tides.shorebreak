@@ -36,7 +36,7 @@ swell_width = 0.88
 
 # Bubbles
 bubble_rate = 22
-bubble_pitch = 845
+bubble_radius = 3.86
 bubble_spread = 1.1
 bubble_decay = 1
 

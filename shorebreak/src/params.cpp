@@ -83,10 +83,13 @@ const ParamDesc kParams[kNumParams] = {
    // --------------------------------------------------------------- bubbles
    LOG(kParamBubbleRate, "bubble_rate", "Bubble Rate", "Bubbles", 0.5, 2.0, 600.0, "/s",
        "Bubbles formed per second at the peak of a break. Keep it near the\n       references' 15-30: any faster and they overlap into noise instead of\n       being separately audible, which is the difference between a cascade and\n       a whoosh."),
-   LOG(kParamBubblePitch, "bubble_pitch", "Bubble Pitch", "Bubbles", 0.45, 200.0, 5000.0, "Hz",
-       "Centre pitch of a bubble, which is really its radius: small bubbles ring high."),
-   LIN(kParamBubbleSpread, "bubble_spread", "Bubble Spread", "Bubbles", 0.0, 5.0, 2.2, "oct",
-       "Spread of bubble sizes. A foam sheet holds every size at once."),
+   LOG(kParamBubblePitch, "bubble_radius", "Bubble Size", "Bubbles", 0.55, 0.25, 12.0, "mm",
+       "Radius of a typical bubble, which is what its pitch actually is: Minnaert gives "
+       "f0 = 3.26/r, so 3 mm rings at about a kilohertz. The references' audible bubbles "
+       "measure 1.7-5 mm."),
+   LIN(kParamBubbleSpread, "bubble_spread", "Bubble Spread", "Bubbles", 0.0, 4.0, 1.1, "oct",
+       "Spread of sizes either side of that. The references' onset pitches span about an "
+       "octave each way."),
    LIN(kParamBubbleDecay, "bubble_damping", "Bubble Damping", "Bubbles", 0.25, 4.0, 1.0, "x",
        "Multiplies the damping a bubble actually has. At 1 it is physical: radiative\n       plus thermal loss after Xue et al., which gives Q 20-46 and ring times of\n       2-124 ms across the size range. Below 1 rings longer, above 1 is deader."),
 

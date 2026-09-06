@@ -22,10 +22,10 @@ precursor = 0.2
 # Foam
 foam_level = -19
 foam_decay = 2400
-foam_tone = 1200
+foam_tone = 1700
 foam_delay = 800
 foam_bubbles = 0.1
-fizz = 0.2
+fizz = 0.3
 
 # Swell
 swell_level = -13
@@ -36,7 +36,7 @@ swell_width = 0.95
 
 # Bubbles
 bubble_rate = 12
-bubble_pitch = 845
+bubble_radius = 3.86
 bubble_spread = 1
 bubble_decay = 1
 
@@ -58,7 +58,7 @@ space_damping = 0.55
 # Filter
 filter_type = Lowpass
 highpass = 20
-filter_cutoff = 11000
+filter_cutoff = 16000
 filter_reso = 0.05
 filter_keytrack = 0
 

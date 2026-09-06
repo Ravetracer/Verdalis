@@ -121,6 +121,72 @@ had both phases drawing from one distribution that slid *downwards*, which is
 backwards. The foam now runs its own cascade, higher and faster, controlled by
 `Foam Bubbles` and pitched by `Fizz`.
 
+## Why the crest factor is not chased
+
+The presets measure a crest factor 3-9 dB below their references, which looked
+like the obvious remaining gap. Measuring where the difference actually sits
+says otherwise. Comparing the peak of the 50 ms envelope against its tenth
+percentile -- the range between a break and the quiet between breaks:
+
+| | p99/q10 |
+|---|---|
+| Big Waves Crashing | **34.6** vs reference 27.2 |
+| Gentle Waves | **34.9** vs reference 25.8 |
+| Sand and Foam | **41.8** vs reference 36.4 |
+| Rhythmic Tide | 26.9 vs reference 29.0 |
+
+The synthesis has a *wider* dynamic range than the references in three cases out
+of four, so the gaps are not too loud. The crest difference is in instantaneous
+transient sharpness: the references have short spikes that exceed their own
+envelope percentiles, and the synthesis does not. Sharpening those is exactly
+what had to be undone when the bubbles were too prominent, so this is left
+alone deliberately rather than fixed.
+
+## A distant shore is a coastline, not a quiet one
+
+At distance the references are nearly steady -- Earth-Toned Roar measures an
+envelope variation of 0.10 against a shore break's 1.86 -- and simply turning a
+sequence of breaks down does not produce that. What is heard from far away is a
+whole coastline of breaks arriving over a wide arc and smeared by the air they
+crossed, so distance multiplies the number of events and divides their size,
+holding energy roughly constant at n events of 1/sqrt(n) each, and lengthens
+each one's rise and fall. Distant Roar's envelope variation went from 0.44 to
+0.32 that way, with its crest factor landing at 14.1 against the reference's
+14.5.
+
+## The cloud has a spectrum of modes
+
+Xue et al.'s Figure 3 decomposes one pour into modes at 386, 589, 732, 1121 and
+1579 Hz -- ratios of 1.00, 1.53, 1.90. A single resonator at f0/cbrt(N) sounds
+like a tuned pipe; three at those ratios, progressively weaker, sound like a
+body of water. For a 3.7 mm bubble in a cloud of 2500 the first mode lands at
+65 Hz, which is where surf rumble belongs, and it is also what sets the 50 Hz
+band -- `Break Body` scales these, not the swell, which is worth knowing when
+the low end is wrong.
+
+## Bubble size is a size
+
+`Bubble Size` reads in millimetres rather than hertz, because that is what it
+physically is: Minnaert gives f0 = 3.26/r, so 3 mm rings at about a kilohertz.
+The references' audible bubbles measure 1.7 to 5 mm, and the presets now sit in
+that range.
+
+## Fitting the library
+
+`fit.py` compares every preset against the reference it was fitted to and flags
+third-octave bands more than 6 dB out. It ignores bands more than 35 dB below
+the reference's peak: a recording can sit at -120 dB at 50 Hz, and being 30 dB
+above nothing is still nothing, so flagging it sends you chasing content neither
+signal has.
+
+Currently 12 of 17 presets have at least one audible band outside 6 dB, mostly a
+single band by 6-11 dB, down from 15 of 17 with deviations as large as 37 dB.
+
+One of them should not be chased: Forest Ocean - Shallow Clear Water measures
+-13.5 dB at 50 Hz against -27 at 200 Hz, which is not what a shore does -- it is
+handling rumble in the recording. The preset fits the surf band and leaves the
+rumble alone.
+
 ## Foam does not wait for the next wave
 
 Foam is quiet -- close to a sound you have to put your ear near the sand to

@@ -9,14 +9,17 @@
       do not); the break envelope's decay being exponential where the references
       suggest something closer to two stages; and the swell bed filling gaps
       that should be quiet. Measure with `tools/analysis`, not by ear.
-- [ ] **Make the steady sources actually steady.** Distant Roar measures an
+- [~] **Partly done: make the steady sources actually steady.** Distance now
+      multiplies the events and smears their edges, taking Distant Roar from
+      0.53 to 0.32 against a reference 0.10. Still not steady enough.
+- [ ] **Old note: make the steady sources actually steady.** Distant Roar measures an
       envelope variation of 0.53 against the reference's 0.10. At distance the
       individual breaks should smear into the roar; they still punch through.
       A distance-dependent smoothing of the break envelope is the obvious idea,
       and is physically defensible: what arrives from a kilometre away has been
       through a kilometre of scattering.
-- [ ] Fit the remaining ten presets against their references properly. Only
-      seven have been compared numerically so far.
+- [x] ~~Fit the remaining ten presets.~~ All 17 are compared by
+      tools/analysis/fit.py; 12 still have a single band 6-11 dB out.
 - [ ] Harbour Lapping is 12 dB too bright at 12.5 kHz and its envelope is too
       eventful. A harbour is a boxy, close, low sound and the model is not quite
       getting the boxiness — the space may need to do more of the work.
@@ -35,7 +38,9 @@
       character into range but several presets are now grainier than their
       references. The metric cannot tell the difference between convincing
       bubbling and too much of it.
-- [ ] **Couple the bubbles.** Xue et al.'s point is that bubbles in a cloud
+- [x] ~~Couple the bubbles.~~ Three collective modes at Xue et al.'s measured
+      ratios rather than one.
+- [ ] **Old note: couple the bubbles.** Xue et al.'s point is that bubbles in a cloud
       force each other, and that this is what produces the low modes. The
       collective mode is currently a single resonator at f0/cbrt(N); the real
       thing is a spectrum of modes (their Figure 3 shows 386, 589, 732, 1121,

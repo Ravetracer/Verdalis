@@ -13,7 +13,7 @@ size_variation = 0.4
 break_attack = 700
 break_decay = 820
 break_tone = 850
-break_body = 0.05
+break_body = 0.06
 crest_sweep = 0.18
 breaker_type = Spilling
 bubble_mix = 0.14
@@ -28,15 +28,15 @@ foam_bubbles = 0.32
 fizz = 0.3
 
 # Swell
-swell_level = -30
-swell_tone = 700
+swell_level = -35
+swell_tone = 820
 swell_depth = 0.45
 swell_rate = 8
 swell_width = 0.9
 
 # Bubbles
 bubble_rate = 26
-bubble_pitch = 1055
+bubble_radius = 3.09
 bubble_spread = 1.1
 bubble_decay = 1
 

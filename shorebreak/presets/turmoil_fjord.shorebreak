@@ -13,7 +13,7 @@ size_variation = 0.6
 break_attack = 550
 break_decay = 1000
 break_tone = 480
-break_body = 0.55
+break_body = 0.5
 crest_sweep = 0.22
 breaker_type = Collapsing
 bubble_mix = 0.06
@@ -22,10 +22,10 @@ precursor = 0.35
 # Foam
 foam_level = -14
 foam_decay = 3000
-foam_tone = 1300
+foam_tone = 2300
 foam_delay = 560
 foam_bubbles = 0.12
-fizz = 0.22
+fizz = 0.44
 
 # Swell
 swell_level = -9
@@ -36,7 +36,7 @@ swell_width = 0.8
 
 # Bubbles
 bubble_rate = 14
-bubble_pitch = 1030
+bubble_radius = 3.17
 bubble_spread = 1.1
 bubble_decay = 1
 
@@ -48,7 +48,7 @@ sand = 0.35
 
 # Shore
 shore_type = Rock
-distance = 0.4
+distance = 0.28
 air = 0.4
 width = 0.8
 space_amount = 0.56
@@ -58,7 +58,7 @@ space_damping = 0.35
 # Filter
 filter_type = Lowpass
 highpass = 20
-filter_cutoff = 9000
+filter_cutoff = 17000
 filter_reso = 0.05
 filter_keytrack = 0
 

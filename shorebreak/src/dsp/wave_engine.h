@@ -77,7 +77,7 @@ struct EngineParams {
 
    // bubbles
    float bubbleRateHz = 40.0f;
-   float bubblePitchHz = 1200.0f;
+   float bubbleRadiusMm = 3.0f;
    float bubbleSpreadOct = 2.2f;
    float bubbleDamping = 1.0f;
 
@@ -193,7 +193,11 @@ struct Wave {
    // mode of a cloud of N bubbles falls as f0 / cbrt(N), so a thousand bubbles
    // ring an order of magnitude below one -- which is where surf rumble comes
    // from. It is not a lowpass of the break, it is a resonance of its own.
-   Svf cloudBand;
+   // Three of them: a cloud does not have one collective mode but a spectrum of
+   // them, and Xue et al.'s Figure 3 puts the first three of a pour at 386, 589
+   // and 732 Hz -- ratios of 1.00, 1.53 and 1.90. One resonator sounds like a
+   // tuned pipe where three sound like a body of water.
+   Svf cloudBand[3];
    float cloudLevel = 0.0f;
 
    // The foam runs its own, faster and higher cascade: smaller bubbles.
@@ -336,6 +340,12 @@ private:
    Hp2 mOutHpL, mOutHpR;
    Lp2 mAirLpL, mAirLpR; // distance: air absorption
    OnePoleLp mDistanceTiltL, mDistanceTiltR;
+
+   // Distance turns a sequence of breaks into a coastline: more events, each
+   // smaller and with its edges smeared by the air it crossed.
+   float mDistanceRate = 1.0f;
+   float mDistanceLevel = 1.0f;
+   float mDistanceSmear = 1.0f;
 
    float mSilenceCounter = 0.0f;
 };

@@ -6,8 +6,8 @@ description = Open coast heard from far inland: air absorption has taken everyth
 features = ambient, texture, dark
 
 # Surf
-wave_period = 2000
-set_variation = 0.8
+wave_period = 1500
+set_variation = 0.3
 wave_size = 0.3
 size_variation = 0.5
 break_attack = 900
@@ -30,13 +30,13 @@ fizz = 0.12
 # Swell
 swell_level = -2
 swell_tone = 150
-swell_depth = 0.04
+swell_depth = 0.03
 swell_rate = 2.5
 swell_width = 0.95
 
 # Bubbles
 bubble_rate = 6
-bubble_pitch = 610
+bubble_radius = 5.34
 bubble_spread = 0.9
 bubble_decay = 1
 

@@ -30,6 +30,11 @@ inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v
 // in the references.
 inline float bubbleDelta(float f) { return 0.01368f + 4.743e-4f * std::sqrt(f); }
 
+// Minnaert's relation, which is the whole reason a bubble has a pitch at all:
+// f0 = (1 / 2 pi r) sqrt(3 gamma p0 / rho) = 3.26 / r for air in water at STP.
+// A 3 mm bubble rings at about a kilohertz.
+inline float minnaertHz(float radiusMm) { return 3260.0f / clampf(radiusMm, 0.05f, 200.0f); }
+
 // Svf::setCutoff takes resonance as 0..1, which it maps to k = 1/Q over 2..0.02.
 // Passing a Q straight in silently clamps to maximum resonance, which turns a
 // noise band into a whistle; convert properly instead.
@@ -181,6 +186,17 @@ void WaveEngine::updateFilters() {
    const float reso = clampf(0.05f + 0.90f * mP.filterReso, 0.0f, 0.98f);
    mOutFilterL.setCutoff(clampf(mP.filterCutoffHz, 20.0f, 0.45f * sr), reso, sr);
    mOutFilterR.setCutoff(clampf(mP.filterCutoffHz, 20.0f, 0.45f * sr), reso, sr);
+
+   // A distant shore is not one break heard quietly: it is a whole coastline of
+   // them, arriving over a wide arc and smeared by the air they crossed. So
+   // distance multiplies the number of events and divides their size, which is
+   // what turns a sequence of breaks into a roar. Energy is held roughly
+   // constant: n events at 1/sqrt(n) each.
+   const float dd = clampf(mP.distance, 0.0f, 1.0f);
+   mDistanceRate = 1.0f + 11.0f * dd * dd;
+   mDistanceLevel = 1.0f / std::sqrt(mDistanceRate);
+   // And each of them arrives with its edges taken off.
+   mDistanceSmear = 1.0f + 2.5f * dd * dd;
 
    mSpace.setSize(mP.spaceSize);
    mSpace.setDamping(mP.spaceDamping);
@@ -357,15 +373,16 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    w.breakRising = true;
    // A wave rises rather than strikes: a linear ramp over the attack, which is
    // what the references show (0.25-1.2 s from a third of peak to peak).
-   const float atk =
-      std::max(0.002f, mP.breakAttackSec * bt.attack * (0.7f + 0.6f * mRng.uniform()));
+   const float atk = std::max(0.002f, mP.breakAttackSec * bt.attack * mDistanceSmear *
+                                         (0.7f + 0.6f * mRng.uniform()));
    w.breakAttackInc = 1.0f / (atk * sr);
    // Bigger breakers decay more slowly: -7 dB/s for a 1.6-2.0 m wave against
    // -4.5 dB/s for 2.4-2.7 m. Scale the setting the same way rather than
    // letting size change only the level.
    const float decayScale = 1.0f + 0.55f * (size - 0.5f);
    w.breakDecayCoef =
-      decayCoefFor(std::max(0.02f, mP.breakDecaySec * clampf(decayScale, 0.5f, 2.0f)),
+      decayCoefFor(std::max(0.02f, mP.breakDecaySec * mDistanceSmear *
+                                      clampf(decayScale, 0.5f, 2.0f)),
                    mSampleRate);
 
    // Bigger waves resonate lower: the cloud they make is larger.
@@ -388,9 +405,14 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    // resonance of the cloud, not a lowpass of the break, and it lands below
    // 400 Hz exactly where Schindall & Heitmeyer put collective oscillations.
    const float cloudN = 60.0f + 5000.0f * size * size;
-   const float cloudHz = clampf(mP.bubblePitchHz / std::cbrt(cloudN), 25.0f, 400.0f);
-   w.cloudBand.reset();
-   w.cloudBand.setCutoff(cloudHz, resonanceFor(3.5f), sr);
+   const float cloudHz =
+      clampf(minnaertHz(mP.bubbleRadiusMm) / std::cbrt(cloudN), 25.0f, 400.0f);
+   constexpr float kCloudModes[3] = {1.00f, 1.53f, 1.90f};
+   for (int ci = 0; ci < 3; ++ci) {
+      w.cloudBand[ci].reset();
+      w.cloudBand[ci].setCutoff(clampf(cloudHz * kCloudModes[ci], 20.0f, 0.45f * sr),
+                                resonanceFor(3.0f), sr);
+   }
    w.cloudLevel = w.body * 1.4f;
 
    // The slope above 1.5 kHz: steepest at the moment of collapse, relaxing
@@ -416,10 +438,11 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    w.foamHp.setCutoff(foamHz, sr);
    // Fizz is how fine the sheet is, expressed as how far above its corner the
    // band reaches: two octaves for a coarse seething, six for a fine hiss.
-   // A sheet of bubbles spans a couple of octaves, not the whole top end: one
-   // and a half for a coarse seething, four for the finest hiss. Wider than
-   // that and white noise's own 3 dB/octave rise takes the spectrum over.
-   w.foamLp.setCutoff(clampf(foamHz * std::pow(2.0f, 1.5f + 2.5f * mP.fizz), 400.0f,
+   // The sizzle is made of the smallest bubbles there are, and by Minnaert a
+   // quarter-millimetre one rings at 13 kHz, so the band has to reach the top
+   // of the spectrum or the whole library measures dark up there. Two octaves
+   // above the corner for a coarse seething, five for the finest hiss.
+   w.foamLp.setCutoff(clampf(foamHz * std::pow(2.0f, 2.0f + 3.2f * mP.fizz), 400.0f,
                              0.45f * sr),
                       sr);
    w.foamLevel = w.breakLevel * mP.foamGain * bt.foam * (0.7f + 0.6f * mRng.uniform());
@@ -495,7 +518,8 @@ void WaveEngine::spawnBubble(const Wave &w, float level, float pitchScale) {
    // bubble about 3 mm across. The cloud holds a range of sizes at once, and
    // the references measure the audible ones between 650 and 1930 Hz.
    const float oct = (mRng.uniform() * 2.0f - 1.0f) * mP.bubbleSpreadOct;
-   const float f = clampf(mP.bubblePitchHz * st.bubbleTilt * pitchScale * std::pow(2.0f, oct),
+   const float f = clampf(minnaertHz(mP.bubbleRadiusMm) * st.bubbleTilt * pitchScale *
+                             std::pow(2.0f, oct),
                           80.0f, 0.45f * sr);
 
    // Damping straight from the physics, scaled by the parameter. beta is the
@@ -550,12 +574,12 @@ void WaveEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numSa
       v.waveTimer -= 1.0;
       if (v.waveTimer <= 0.0) {
          if (!v.env.isReleasing() || env > 0.02f)
-            spawnWave(v, clampf(env * velLevel, 0.0f, 2.0f));
+            spawnWave(v, clampf(env * velLevel * mDistanceLevel, 0.0f, 2.0f));
          // Set Variation groups the waves: a narrow draw is a metronome, a wide
          // one arrives in sets the way a real swell does.
          const float var = clampf(mP.setVariation, 0.0f, 1.0f);
          const float jitter = 1.0f + var * (mRng.uniform() * 2.0f - 1.0f) * 1.3f;
-         v.waveTimer = static_cast<double>(mP.wavePeriodSec * sr) *
+         v.waveTimer = static_cast<double>(mP.wavePeriodSec * sr / mDistanceRate) *
                        static_cast<double>(std::max(0.15f, jitter));
          if (v.waveTimer < 64.0)
             v.waveTimer = 64.0;
@@ -638,8 +662,12 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
          if (w.body > 0.0f) {
             s += w.bodyLp.tick(n) * w.body * w.breakEnv * w.breakLevel * 0.45f;
             // The cloud oscillating as one thing, driven by the same turbulence.
-            s += w.cloudBand.bandpassNormalised(n) * w.cloudLevel * w.breakEnv *
-                 w.breakLevel * 0.8f;
+            // The higher modes are progressively weaker, as they are in the
+            // paper's modal decomposition.
+            const float cl = w.cloudLevel * w.breakEnv * w.breakLevel;
+            s += w.cloudBand[0].bandpassNormalised(n) * cl * 0.62f;
+            s += w.cloudBand[1].bandpassNormalised(n) * cl * 0.30f;
+            s += w.cloudBand[2].bandpassNormalised(n) * cl * 0.18f;
          }
 
          // A trickle of bubbles while the crest is actually collapsing. The

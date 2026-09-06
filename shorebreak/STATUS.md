@@ -123,15 +123,22 @@ despite having a bubble layer all along.
 Measured graininess is now inside the reference range; see
 `tools/analysis/README.md`.
 
+## Fitted numerically
+
+`tools/analysis/fit.py` compares all 17 presets against their references.
+12 have a single audible band 6-11 dB out, down from 15 with deviations up to
+37 dB. The low end is set by the collective cloud mode rather than the swell,
+which is what `Break Body` scales.
+
 ## What does not fit yet
 
 Both are in `TODO.md` with what is known about them:
 
 1. **Crest factor is 3–9 dB below the references.** Real surf has more silence
    between breaks than the synthesis leaves.
-2. **The steadiest sources are too eventful.** Distant Roar measures an
-   envelope variation of 0.53 against the reference's 0.10; the individual
-   waves still punch through what should be a continuous roar.
+2. **The steadiest sources are still somewhat eventful**, though much less so:
+   Distant Roar measures an envelope variation of 0.32 against the reference's
+   0.10, having been 0.53 before distance began multiplying the events.
 3. **Rhythmic Tide is darker than its reference throughout** -- it brightens at
    the break in the right direction and by a plausible amount, but its reference
    sits about 3 dB brighter overall in every phase.
