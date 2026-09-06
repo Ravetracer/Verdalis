@@ -37,10 +37,13 @@ The plugins were originally separate repositories (`Ravetracer/RainyDay` and
 `Ravetracer/ThunderClap`). They were merged into this monorepo with their
 histories rewritten under `rainyday/` and `thunderclap/`, so `git log` and
 `git blame` reach back through all of it — RainyDay's 46 commits of DSP fitting
-work included. The old repositories were deleted afterwards; **this repository
-is the only copy of that history.**
+work included.
 
 Commit at suite level. There are no per-plugin remotes any more.
+
+The two former repositories are slated for deletion and, once that happens,
+**this repository becomes the only copy of that history.** Treat it accordingly:
+it is not a working copy of something published elsewhere.
 
 ## Suite roadmap
 
