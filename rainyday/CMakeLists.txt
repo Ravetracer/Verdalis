@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(RainyDay VERSION 1.5.0 LANGUAGES CXX)
+project(RainyDay VERSION 1.5.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -134,6 +134,13 @@ target_compile_options(RainyDay PRIVATE
 )
 
 target_link_libraries(RainyDay PRIVATE ${CMAKE_DL_LIBS})
+
+# The version lives in two places that have to agree: project() above and
+# kPluginVersion in src/rainyday.h. Handing the project version to the compiler
+# lets rainyday.h static_assert that they match, so a bump that only lands in
+# one of them fails the build instead of shipping.
+target_compile_definitions(RainyDay PRIVATE
+   RAINYDAY_CMAKE_VERSION="${PROJECT_VERSION}")
 
 if(RAINYDAY_BUILD_GUI)
    target_compile_definitions(RainyDay PRIVATE RAINYDAY_WITH_GUI ${RAINYDAY_GUI_DEFINES})

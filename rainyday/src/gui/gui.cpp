@@ -36,6 +36,7 @@
 #endif
 
 #include "params.h"
+#include "rainyday.h"
 
 namespace rainyday {
 
@@ -802,7 +803,7 @@ private:
       setColor(cr, kTextMute);
       drawText(cr, kMargin + kContentW, 30, "SYNTHETIC RAIN INSTRUMENT", 9, true, Align::Right);
       char ver[64];
-      std::snprintf(ver, sizeof(ver), "v%s", "1.0.0");
+      std::snprintf(ver, sizeof(ver), "v%s", kPluginVersion);
       drawText(cr, kMargin + kContentW, 44, ver, 9, false, Align::Right);
 
       setColor(cr, kPanelEdge);

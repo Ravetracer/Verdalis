@@ -9,7 +9,19 @@ namespace rainyday {
 constexpr char kPluginId[] = "de.ravetracer.rainyday";
 constexpr char kPluginName[] = "RainyDay";
 constexpr char kPluginVendor[] = "Ravetracer";
-constexpr char kPluginVersion[] = "1.5.0";
+constexpr char kPluginVersion[] = "1.5.1";
+
+// Nothing else keeps the two version sites in step, and drift here is quiet:
+// the GUI drew a hardcoded "1.0.0" for the whole of 1.5.0's development because
+// it never read this constant. It does now, and the build fails if the version
+// here and the one in CMakeLists.txt disagree.
+#ifdef RAINYDAY_CMAKE_VERSION
+constexpr bool sameString(const char *a, const char *b) {
+   return *a == *b && (*a == '\0' || sameString(a + 1, b + 1));
+}
+static_assert(sameString(kPluginVersion, RAINYDAY_CMAKE_VERSION),
+              "kPluginVersion and the CMake project() version disagree");
+#endif
 constexpr char kPluginUrl[] = "https://github.com/Ravetracer/RainyDay";
 constexpr char kPluginDescription[] =
    "Fully synthetic rain generator. No samples: every droplet is computed.";
