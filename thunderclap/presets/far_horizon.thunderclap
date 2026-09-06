@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Far Horizon
+author = ThunderClap
+description = Lightning on the horizon, twenty kilometres out. Very deep, very slow, more felt than heard.
+features = ambient, soft, dark, evolving
+
+# Strike
+distance = 18
+height = 7
+cloud_spread = 15
+tortuosity = 0.5
+branching = 0.4
+strokes = 3
+stroke_gap = 90
+variation = 0.5
+
+# Sound
+crack = 0.2
+weight = 0.8
+swell = 0.9
+rumble = 0.7
+rumble_tone = 0.3
+air = 0.7
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.5
+
+# Echoes
+echo_level = -14
+echo_count = 4
+echo_spread = 5
+echo_damping = 0.9
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 3000
+storm_rate = 3
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = 7.2
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0
+comp_attack = 3.16
+comp_release = 250

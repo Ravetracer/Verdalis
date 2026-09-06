@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Storm Front
+author = ThunderClap
+description = The squall is here. Flashes every few seconds, close and violent, with every setting thrown wide.
+features = ambient, loud, evolving, storm
+
+# Strike
+distance = 1.5
+height = 5
+cloud_spread = 5
+tortuosity = 0.65
+branching = 0.6
+strokes = 4
+stroke_gap = 50
+variation = 1
+
+# Sound
+crack = 0.7
+weight = 0.5
+swell = 0.15
+rumble = 0.5
+rumble_tone = 0.55
+air = 0.4
+scatter = 0.6
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -12
+echo_count = 5
+echo_spread = 2
+echo_damping = 0.5
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = Storm
+attack = 1
+release = 3000
+storm_rate = 15
+vel_to_level = 0.5
+vel_to_distance = 0.3
+
+# Output
+gain = -5.7
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.4
+comp_attack = 3
+comp_release = 300

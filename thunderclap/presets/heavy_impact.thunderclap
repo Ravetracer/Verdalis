@@ -1,0 +1,69 @@
+# ThunderClap preset
+format = 1
+name = Heavy Impact
+author = ThunderClap
+description = A strike close enough to arrive as one blow: the near channel's blast lands first and dark, the claps pile in behind it, and the whole thing is over in a few seconds.
+features = sfx, loud, impact
+
+# Strike
+distance = 0.8
+height = 4
+cloud_spread = 2.5
+tortuosity = 0.55
+branching = 0.4
+strokes = 3
+stroke_gap = 60
+variation = 0.35
+
+# Sound
+crack = 0.65
+weight = 0.65
+swell = 0.15
+rumble = 0.6
+rumble_tone = 0.4
+air = 0.6
+scatter = 0.5
+focus = 0.75
+impact = 1
+
+# Stereo
+width = 0.8
+pan = 0
+rumble_width = 0.9
+drift = 0.25
+
+# Echoes
+echo_level = -14
+echo_count = 4
+echo_spread = 1.2
+echo_damping = 0.6
+
+# Space
+space_amount = 0.15
+space_size = 0.55
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -25
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.7
+comp_attack = 8
+comp_release = 400

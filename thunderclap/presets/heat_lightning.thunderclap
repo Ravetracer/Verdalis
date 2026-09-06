@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Heat Lightning
+author = ThunderClap
+description = A storm too far to see properly: the odd flash on the horizon every quarter minute, barely a murmur each.
+features = ambient, soft, dark, storm
+
+# Strike
+distance = 20
+height = 8
+cloud_spread = 20
+tortuosity = 0.5
+branching = 0.4
+strokes = 3
+stroke_gap = 90
+variation = 0.6
+
+# Sound
+crack = 0.1
+weight = 1
+swell = 1
+rumble = 0.5
+rumble_tone = 0.25
+air = 0.7
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -16
+echo_count = 3
+echo_spread = 6
+echo_damping = 0.95
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = Storm
+attack = 1
+release = 4000
+storm_rate = 4
+vel_to_level = 0.3
+vel_to_distance = 0.2
+
+# Output
+gain = 8.7
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0
+comp_attack = 3.16
+comp_release = 250

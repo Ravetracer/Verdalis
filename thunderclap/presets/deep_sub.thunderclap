@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Deep Sub
+author = ThunderClap
+description = The cinematic one: long shock waves, a heavy rumble and nothing above 400 Hz. Feel it in the floor.
+features = sfx, dark, loud, impact
+
+# Strike
+distance = 2
+height = 6
+cloud_spread = 5
+tortuosity = 0.5
+branching = 0.4
+strokes = 3
+stroke_gap = 70
+variation = 0.4
+
+# Sound
+crack = 0.3
+weight = 1
+swell = 0.2
+rumble = 0.8
+rumble_tone = 0.2
+air = 0.6
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -12
+echo_count = 4
+echo_spread = 2.5
+echo_damping = 0.9
+
+# Space
+space_amount = 0.3
+space_size = 1
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 400
+filter_reso = 0.2
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -11.2
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.6
+comp_attack = 10
+comp_release = 600

@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Distant Rumble
+author = ThunderClap
+description = A storm ten kilometres off: no crack at all, a slow deep roll that swells in from the cloud.
+features = ambient, soft, evolving
+
+# Strike
+distance = 10
+height = 6
+cloud_spread = 8
+tortuosity = 0.5
+branching = 0.3
+strokes = 3
+stroke_gap = 80
+variation = 0.5
+
+# Sound
+crack = 0.3
+weight = 0.6
+swell = 0.6
+rumble = 0.6
+rumble_tone = 0.45
+air = 0.5
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -10
+echo_count = 4
+echo_spread = 3
+echo_damping = 0.7
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 2000
+storm_rate = 4
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = 2.6
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0
+comp_attack = 3.16
+comp_release = 250

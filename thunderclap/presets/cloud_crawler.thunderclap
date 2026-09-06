@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Cloud Crawler
+author = ThunderClap
+description = Intracloud lightning crawling across the cloud base: nothing reaches the ground, and the whole sky rolls for half a minute.
+features = ambient, evolving, wide
+
+# Strike
+distance = 3
+height = 8
+cloud_spread = 15
+tortuosity = 0.6
+branching = 0.8
+strokes = 2
+stroke_gap = 120
+variation = 0.5
+
+# Sound
+crack = 0.4
+weight = 0.6
+swell = 1
+rumble = 0.55
+rumble_tone = 0.45
+air = 0.5
+scatter = 0.5
+focus = 0.9
+
+# Stereo
+width = 1
+pan = 0
+rumble_width = 0.9
+drift = 0.5
+
+# Echoes
+echo_level = -14
+echo_count = 3
+echo_spread = 2
+echo_damping = 0.7
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -2.2
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.3
+comp_attack = 10
+comp_release = 500

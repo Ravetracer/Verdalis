@@ -1,0 +1,68 @@
+# ThunderClap preset
+format = 1
+name = Close Strike
+author = ThunderClap
+description = A strike a few hundred metres off: a tearing crack, then a long, rolling decay with the hills answering.
+features = sfx, loud, impact
+
+# Strike
+distance = 0.4
+height = 5
+cloud_spread = 3
+tortuosity = 0.6
+branching = 0.5
+strokes = 3
+stroke_gap = 50
+variation = 0.4
+
+# Sound
+crack = 0.8
+weight = 0.5
+swell = 0.1
+rumble = 0.45
+rumble_tone = 0.6
+air = 0.35
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -14
+echo_count = 3
+echo_spread = 1.5
+echo_damping = 0.5
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -9.4
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.3
+comp_attack = 3
+comp_release = 250
