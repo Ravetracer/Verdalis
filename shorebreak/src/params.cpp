@@ -36,17 +36,20 @@ const ParamDesc kParams[kNumParams] = {
        "Centre of the bubble cloud a breaking wave makes. Measured 400-1600 Hz."),
    PCT(kParamBreakBody, "break_body", "Break Body", "Surf", 0.4,
        "Low weight under the break: the surf rumble you feel more than hear."),
-   PCT(kParamCrestSweep, "crest_sweep", "Crest Sweep", "Surf", 0.5,
-       "How far the break's tone falls as the crest collapses and the cloud grows."),
+   PCT(kParamCrestSweep, "crest_sweep", "Crest Open", "Surf", 0.2,
+       "How much darker a wave is coming in than it is breaking. An approaching wave is "
+       "the deep sound of moving water; the top of the spectrum arrives with the "
+       "collapse, like a filter opening -- though never all the way."),
    ENUM(kParamBreakerType, "breaker_type", "Breaker", "Surf", 1.0, kBreakerNames,
         "How the crest collapses. Sets the slope above 1.5 kHz: -10 dB/oct for a "
         "plunger, -8.3 for a spiller."),
    PCT(kParamPrecursor, "precursor", "Precursor", "Surf", 0.3,
        "The crest of an incipient breaker already bubbles before it collapses. This is "
        "how much of that you hear."),
-   PCT(kParamBubbleMix, "bubble_mix", "Bubble Mix", "Surf", 0.45,
-       "What the break is made of: turbulence at 0, a cascade of individual bubbles at 1. "
-       "A real break is mostly bubbles -- 15-28 of them a second are separately audible."),
+   PCT(kParamBubbleMix, "bubble_mix", "Bubble Mix", "Surf", 0.15,
+       "How much of the break is separately audible bubbles rather than moving water. "
+       "Bubbles are a detail: a break is mostly water, with them heard under it and "
+       "just after it. Zero is legitimate -- distant surf has none."),
 
    // ------------------------------------------------------------------ foam
    LIN(kParamFoamLevel, "foam_level", "Foam Level", "Foam", -60.0, 6.0, -8.0, "dB",
@@ -55,14 +58,15 @@ const ParamDesc kParams[kNumParams] = {
        "How long the foam hisses on. This is what fills the gap between waves."),
    LOG(kParamFoamTone, "foam_tone", "Foam Tone", "Foam", 0.5, 400.0, 8000.0, "Hz",
        "Where the foam starts. Foam has no low end at all: measured -82 dB at 50 Hz."),
-   LOG(kParamFoamDelay, "foam_delay", "Foam Delay", "Foam", 0.35, 1.0, 2500.0, "ms",
+   LOG(kParamFoamDelay, "foam_delay", "Foam Delay", "Foam", 0.79, 1.0, 2500.0, "ms",
        "How long after the break the foam arrives. Zero on a shore break, later off a bar."),
-   PCT(kParamFizz, "fizz", "Fizz", "Foam", 0.5,
+   PCT(kParamFizz, "fizz", "Fizz", "Foam", 0.3,
        "Fineness of the foam. Foam bubbles are smaller than the ones a break makes, so "
        "they ring higher: this is how much higher."),
-   PCT(kParamFoamBubbles, "foam_bubbles", "Foam Bubbles", "Foam", 0.7,
+   PCT(kParamFoamBubbles, "foam_bubbles", "Foam Bubbles", "Foam", 0.3,
        "How much of the foam is separately audible bubbles rather than a bed of hiss. "
-       "The fizzling of foam on sand measures 29 onsets a second at 2.2 kHz."),
+       "This is where they belong: the fizzle after a break measures 29 onsets a second "
+       "at 2.2 kHz against the break's own 9."),
 
    // ----------------------------------------------------------------- swell
    LIN(kParamSwellLevel, "swell_level", "Swell Level", "Swell", -80.0, 6.0, -18.0, "dB",

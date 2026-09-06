@@ -23,6 +23,16 @@
 
 ## Model
 
+- [ ] **The bubbles are pure sinusoids and probably still too salient.** A real
+      bubble is buried in moving water; a clean decaying sine at the same
+      measured graininess stands out far more. Giving each one a noisier body --
+      a short filtered-noise component at its own frequency rather than only the
+      pinch-off click -- would let the level come back up without them poking
+      out.
+- [ ] Take the hint from `AZ Low-FI Shore` further: it runs 100% wet with a big
+      room, and a large space is doing a lot of the work of making it cohere.
+      ShoreBreak's presets are still comparatively dry.
+
 - [ ] **Settle the preset graininess by ear.** The measurements got the
       character into range but several presets are now grainier than their
       references. The metric cannot tell the difference between convincing

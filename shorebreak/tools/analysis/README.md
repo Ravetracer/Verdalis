@@ -121,6 +121,74 @@ had both phases drawing from one distribution that slid *downwards*, which is
 backwards. The foam now runs its own cascade, higher and faster, controlled by
 `Foam Bubbles` and pitched by `Fizz`.
 
+## Deep coming in, brighter breaking
+
+A wave sounds deep as it approaches and brighter as it breaks, "like opening the
+cutoff of a noise generator but not fully". The spectral centroid does not show
+this -- it actually *dips* at the break, because the break adds so much low end
+that the energy-weighted average falls. What does show it is the balance between
+bands, measured at the mid-band envelope peak and half a second either side:
+
+| HF (2-10k) minus LF (100-400), dB | approach | break | after |
+|---|---|---|---|
+| Kattegat Uproar - Big Waves Crashing | 2.3 | **9.1** | -0.9 |
+| Eyrarsund - Crashing Tides | -3.0 | **2.6** | -3.5 |
+| Shores of Kattegat - Rolling Tide | 1.5 | **4.9** | 2.2 |
+| Beach of Kattegat - Rhythmic Tide | 6.4 | 7.5 | 7.9 |
+| Eyrarsund - Uproar Waves | 2.2 | -0.8 | -1.2 |
+| Beach of Kattegat - Soft Waves | 19.9 | 16.6 | 15.8 |
+
+Most brighten at the break by 1 to 7 dB. The engine had this backwards: its band
+started high and swept *down*, so a wave got darker as it broke. It now opens
+upward -- `Crest Open` is how much darker the approach is than the break -- and
+the precursor runs through the body filter, because what is heard coming is the
+mass of water, not bubbles.
+
+Two things were fighting it and both were bugs:
+
+1. **The slope filter was applied twice.** The break's bandpass already falls at
+   6 dB/octave, the paper's nominal figure, but the code then blended between
+   *one* and *two* extra poles, so the minimum was 12 dB/octave. The break lost
+   its top end and measured darker than the wave before it. The extra pole is
+   now mixed in rather than always applied.
+2. **The band was too narrow.** The references sit only about 4 dB down at
+   3 kHz relative to their 800 Hz peak, which no resonant bandpass can do. It is
+   now opened right out and the tilt is left to the slope filter.
+
+The size-to-tone coupling was also too strong: at 0.55 per unit size the biggest
+waves' band fell into the low band entirely, which is why Big Waves Crashing
+measured darker at the break where its reference gets 6.8 dB brighter. At 0.78 it
+brightens by 6.4 dB.
+
+## How much bubbling is right
+
+Bubbles were made far too prominent in the previous pass. Three corrections, and
+the first came from outside the measurements:
+
+**A shore preset with no bubbles at all.** `AZ Low-FI Shore` for u-he Hive 2 is
+one noise oscillator (Osc2's volume is zero), two filters in series, an amp
+envelope of attack 61 / decay 78 / **sustain 9** / release 62 so each note swells
+and falls, an LFO on volume, pan and phase, and reverb at **100% wet** with size
+114 and decay 70. There are no discrete events in it whatsoever. A shore patch
+that people like is filtered noise, slow modulation and a large space -- so
+bubbles are a detail, not the substance. Space went up across the preset library
+on that evidence.
+
+**They belong after the break, not on it.** The slowed references measure 9
+onsets a second during the break against 29 in the foam that follows, and the
+engine was spawning them hardest at the peak of the break. The break now gets a
+trickle, weighted towards its tail, and the cascade lives in the foam -- which
+arrives 220-900 ms later depending on the preset.
+
+**Not every preset should have them.** Distant Roar and Open Sea Murmur now have
+none: distant surf has no separately audible bubbles, and pretending otherwise
+was wrong in a way no metric complained about.
+
+Graininess accordingly came down from 0.93-1.26 to 0.32-0.71, against the
+references' 0.61-1.08 -- deliberately at or below them now, because a synthesised
+sinusoidal bubble is far more salient than a real one buried in moving water at
+the same measured graininess.
+
 ## Bubble physics, from Xue et al.
 
 Xue, Aronson, Wang, Langlois & James, *Improved Water Sound Synthesis using

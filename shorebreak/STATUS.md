@@ -36,6 +36,21 @@ Spectral shape is a good fit across the library. Envelope character is right for
 shore breaks (Sand and Foam measures an envelope variation of 1.82 against the
 reference's 1.86; Rhythmic Tide 1.16 against 1.24).
 
+## A wave comes in deep and brightens as it breaks
+
+The band opens upward into the break instead of sweeping down out of it, which
+is what it does in the references: the HF-to-LF balance rises by 1 to 7 dB at
+the break in most of the library. `Crest Open` is how much darker the approach
+is. The precursor is the low sound of water arriving, not bubbles.
+
+## Bubbles are a detail
+
+They are quiet, they sit behind the break rather than on it, and several presets
+have none at all -- distant surf has no separately audible bubbles. The slowed
+references put 9 onsets a second in the break against 29 in the foam that
+follows, so the cascade belongs in the foam, which arrives a few hundred
+milliseconds later.
+
 ## Bubbles are oscillators, not filtered noise
 
 A bubble is generated as a decaying sinusoid with a short pinch-off transient,
@@ -80,7 +95,12 @@ Both are in `TODO.md` with what is known about them:
 2. **The steadiest sources are too eventful.** Distant Roar measures an
    envelope variation of 0.53 against the reference's 0.10; the individual
    waves still punch through what should be a continuous roar.
-3. **Several presets are now grainier than their references.** Sand and Foam
+3. **Rhythmic Tide is darker than its reference throughout** -- it brightens at
+   the break in the right direction and by a plausible amount, but its reference
+   sits about 3 dB brighter overall in every phase.
+4. **Uproar Waves brightens at the break where its reference darkens slightly.**
+   Every other preset measured moves the right way.
+5. **Previously: several presets were grainier than their references.** Sand and Foam
    matches almost exactly (0.99 against 1.08), but Big Waves measures 1.18
    against 0.76 and Rhythmic Tide 1.19 against a comparable figure. Erring
    toward more bubbling was deliberate after the first version was too smooth,
@@ -101,6 +121,10 @@ by listening, and the same class of mistake is easy to repeat:
   maximum-Q bandpass on continuous noise -- a whistle, loudest in Receding Sand
   because it has the most Sand and the loudest wash. Resonance is now converted
   from a Q properly, and the wash is barely resonant on purpose.
+- The break's slope filter was applied unconditionally rather than mixed in, so
+  the minimum was 12 dB/octave against the 6 the bandpass already gave. The
+  break lost its top end twice over and measured darker than the wave before it,
+  which is the opposite of what a wave does.
 - `Bubble Rate` was allowed up to 6000/s on the reasoning that only some
   bubbles are separately audible. At 1400/s and a 38 ms ring that is 53 bubbles
   overlapping, which sums back into noise -- the cascade has to be sparse to be

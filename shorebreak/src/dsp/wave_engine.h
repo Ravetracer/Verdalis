@@ -132,8 +132,13 @@ struct Wave {
    float breakDecayCoef = 0.0f;
    bool breakRising = true;
    float toneHz = 800.0f;
-   float toneSweptHz = 800.0f;
-   float sweepCoef = 0.0f;
+   // How far open the break's band is, 0 while the wave is still coming and 1
+   // once it has collapsed. A wave approaching is deep -- the mass of water
+   // moving, and the cloud mode under it -- and the top of the spectrum only
+   // appears when it breaks, which is heard as a filter opening.
+   float openness = 0.0f;
+   float openDepth = 2.0f;   // how many times lower the approach is
+   float openCoef = 0.0f;    // how quickly it closes again afterwards
    float body = 0.0f;
 
    // The slope above 1.5 kHz. Klusek & Lisimenka measure it steepening to about

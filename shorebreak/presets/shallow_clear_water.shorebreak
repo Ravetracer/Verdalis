@@ -14,18 +14,18 @@ break_attack = 500
 break_decay = 450
 break_tone = 1000
 break_body = 0.12
-crest_sweep = 0.45
+crest_sweep = 0.16
 breaker_type = Surging
-bubble_mix = 0.5
+bubble_mix = 0.24
 precursor = 0.2
 
 # Foam
-foam_level = -12
+foam_level = -15
 foam_decay = 1200
 foam_tone = 1100
-foam_delay = 60
-foam_bubbles = 0.8
-fizz = 0.5
+foam_delay = 340
+foam_bubbles = 0.45
+fizz = 0.34
 
 # Swell
 swell_level = -52
@@ -35,7 +35,7 @@ swell_rate = 6
 swell_width = 0.9
 
 # Bubbles
-bubble_rate = 28
+bubble_rate = 24
 bubble_pitch = 1150
 bubble_spread = 1.2
 bubble_decay = 1
@@ -51,7 +51,7 @@ shore_type = Pebbles
 distance = 0.08
 air = 0.8
 width = 0.8
-space_amount = 0.1
+space_amount = 0.28
 space_size = 0.35
 space_damping = 0.45
 

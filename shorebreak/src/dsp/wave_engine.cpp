@@ -77,11 +77,14 @@ struct BreakerTraits {
    float bright;    // multiplies the initial upward sweep
 };
 
+// slope: 0 leaves the bandpass's own 6 dB/octave, 1 takes it to 12. Means &
+// Heitmeyer measure -10 for plungers and -8.3 for spillers, so both sit low in
+// this range; a surge barely breaks and keeps almost no top at all.
 constexpr BreakerTraits kBreakerTraits[kNumBreakers] = {
-   /* Spilling   */ {0.38f, 1.45f, 0.80f, 1.35f, 0.75f, 0.70f},
-   /* Plunging   */ {0.67f, 0.65f, 1.00f, 1.00f, 1.15f, 1.30f},
-   /* Collapsing */ {0.52f, 0.85f, 0.90f, 1.10f, 1.00f, 1.00f},
-   /* Surging    */ {0.30f, 1.80f, 0.60f, 0.45f, 1.30f, 0.45f},
+   /* Spilling   */ {0.34f, 1.45f, 0.80f, 1.35f, 0.75f, 0.70f},
+   /* Plunging   */ {0.55f, 0.65f, 1.00f, 1.00f, 1.15f, 1.30f},
+   /* Collapsing */ {0.44f, 0.85f, 0.90f, 1.10f, 1.00f, 1.00f},
+   /* Surging    */ {0.72f, 1.80f, 0.60f, 0.45f, 1.30f, 0.45f},
 };
 
 // Seed 0 is the "always different" setting and has no fixed mapping; every
@@ -333,10 +336,13 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
                    mSampleRate);
 
    // Bigger waves resonate lower: the cloud they make is larger.
-   w.toneHz = clampf(mP.breakToneHz * std::pow(0.55f, size - 0.5f), 60.0f, 6000.0f);
-   // The crest sweeps down as the cloud grows and coarsens.
-   w.toneSweptHz = w.toneHz * (1.0f + 1.8f * mP.crestSweep * bt.bright);
-   w.sweepCoef = decayCoefFor(std::max(0.05f, atk + mP.breakDecaySec), mSampleRate);
+   w.toneHz = clampf(mP.breakToneHz * std::pow(0.78f, size - 0.5f), 60.0f, 6000.0f);
+   // The band opens upward into the break rather than sweeping down out of it.
+   // An approaching wave is deep; the brightness arrives with the collapse, and
+   // only partly -- the top never opens all the way.
+   w.openness = 0.0f;
+   w.openDepth = 1.0f + 2.2f * mP.crestSweep * bt.bright;
+   w.openCoef = decayCoefFor(std::max(0.15f, 2.5f * mP.breakDecaySec), mSampleRate);
    w.body = clampf(mP.breakBody * st.bodyTilt * bt.body * (0.6f + 0.8f * size), 0.0f, 1.6f);
 
    w.breakBand.reset();
@@ -361,11 +367,11 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    w.slopeLp1.setCutoff(1500.0f, sr);
    w.slopeLp2.setCutoff(1500.0f, sr);
    w.slopeTarget = bt.slope;
-   w.slopeMix = clampf(bt.slope + 0.33f, 0.0f, 1.0f); // steeper while it collapses
+   w.slopeMix = clampf(bt.slope + 0.22f, 0.0f, 1.0f); // steeper while it collapses
    w.slopeRelax = decayCoefFor(1.0f, mSampleRate);    // relaxes over about a second
 
-   // The precursor: the crest is already bubbling as it stands up. Quiet, and
-   // brighter than the break it precedes, because it is all small bubbles.
+   // The precursor: the wave audible before it breaks. Deep -- this is the mass
+   // of water arriving, not the bubbles, which come later.
    w.preLevel = w.breakLevel * mP.precursor * 0.22f;
    w.preEnv = 0.0f;
    w.preInc = 1.0f / std::max(1.0f, atk * 1.6f * sr);
@@ -423,7 +429,7 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    w.foamPitchScale = 1.0f + 2.6f * mP.fizz;
    // The size distribution starts high and slides down over the life of the
    // break: small bubbles are formed first, larger ones coalesce after.
-   w.pitchScale = 1.0f + 0.35f * mP.crestSweep;
+   w.pitchScale = 1.15f;
    w.pitchScaleCoef = decayCoefFor(std::max(0.08f, atk + mP.breakDecaySec), mSampleRate);
 }
 
@@ -457,8 +463,8 @@ void WaveEngine::spawnBubble(const Wave &w, float level, float pitchScale) {
 
    // The pinch-off transient. Short and broadband, and it is what makes a
    // bubble read as an event rather than a tone.
-   b.clickLevel = b.level * 0.32f;
-   b.clickCoef = decayCoefFor(0.0015f, mSampleRate);
+   b.clickLevel = b.level * 0.55f;
+   b.clickCoef = decayCoefFor(0.004f, mSampleRate);
    b.panL = w.panL;
    b.panR = w.panR;
 }
@@ -543,21 +549,29 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
             w.breakEnv *= w.breakDecayCoef;
          }
 
-         // The cloud's resonance falls towards its final tone as it grows.
-         w.toneSweptHz = w.toneHz + (w.toneSweptHz - w.toneHz) * w.sweepCoef;
-         if ((i & 31u) == 0u)
-            w.breakBand.setCutoff(clampf(w.toneSweptHz, 40.0f, 0.45f * sr), 0.42f, sr);
+         // The band opens with the crest and closes gradually after it. While
+         // the wave is still coming, only the bottom of its spectrum is there.
+         if (w.breakRising)
+            w.openness = w.breakEnv;
+         else
+            w.openness *= w.openCoef;
+         if ((i & 31u) == 0u) {
+            const float f = w.toneHz * std::pow(w.openDepth, w.openness - 1.0f);
+            w.breakBand.setCutoff(clampf(f, 40.0f, 0.45f * sr), 0.10f, sr);
+         }
 
          const float n = w.rng.white();
          float band = w.breakBand.bandpassNormalised(n);
 
-         // Slope above 1.5 kHz: one pole is -6 dB/oct, two are -12, and the mix
-         // between them is the slope. It starts steep, while the crest is still
-         // collapsing, and relaxes towards the breaker type's own figure.
+         // Slope above 1.5 kHz. The bandpass already falls at 6 dB/octave of its
+         // own, which is the paper's nominal figure, so the extra pole is mixed
+         // *in* rather than always applied: blending towards one lowpass takes
+         // it to 12 dB/octave, and the measured -6 to -10 sits between. Running
+         // both poles unconditionally, as this did, cost the break its top end
+         // twice over and left it darker than the wave that preceded it.
          w.slopeMix = w.slopeTarget + (w.slopeMix - w.slopeTarget) * w.slopeRelax;
          const float p1 = w.slopeLp1.tick(band);
-         const float p2 = w.slopeLp2.tick(p1);
-         band = p1 + (p2 - p1) * w.slopeMix;
+         band = band + (p1 - band) * clampf(w.slopeMix, 0.0f, 1.0f);
 
          // Bubble Mix decides what the break is made of. A real break is mostly
          // the sound of bubbles being formed, so the turbulence band is only
@@ -571,25 +585,21 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
                  w.breakLevel * 0.8f;
          }
 
-         // The cascade itself. The rate follows the break envelope, so bubbles
-         // are formed fastest as the crest collapses. This is the break; the
-         // filters above only colour what surrounds it.
+         // A trickle of bubbles while the crest is actually collapsing. The
+         // slowed references measure 9 onsets a second here against 29 in the
+         // foam that follows, and they are quiet: a break is mostly water
+         // moving, with bubbles audible under it rather than over it.
          w.pitchScale = 1.0f + (w.pitchScale - 1.0f) * w.pitchScaleCoef;
          if (bubbleRate > 0.0f && mP.bubbleMix > 0.001f) {
-            const float drive = w.breakEnv * w.breakEnv; // fastest at the peak
-            w.bubbleTimer -= bubbleRate * drive;
+            // Weighted towards the tail of the break rather than its peak:
+            // bubbles are formed as the crest folds under, and are heard once
+            // the noise of the collapse has begun to fall away.
+            const float drive = w.breakRising ? 0.0f : w.breakEnv * (1.0f - w.breakEnv * 0.4f);
+            w.bubbleTimer -= bubbleRate * drive * 0.30f;
             while (w.bubbleTimer <= 0.0f) {
                w.bubbleTimer += 1.0f;
-               spawnBubble(w, w.breakLevel * mP.bubbleMix * 3.2f, w.pitchScale);
+               spawnBubble(w, w.breakLevel * mP.bubbleMix * 0.85f, w.pitchScale);
             }
-         }
-
-         // The precursor bubbling, which fades as the break it announced takes
-         // over. Reuses the foam highpass, being the same small bubbles.
-         if (w.preLevel > 0.0f && w.preEnv < 1.0f) {
-            w.preEnv += w.preInc;
-            const float fade = 1.0f - w.breakEnv;
-            s += w.foamHp.tick(w.rng.white()) * w.preEnv * fade * w.preLevel;
          }
 
          // ---- the foam, once it has arrived
@@ -608,7 +618,7 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
             }
             const float f = w.foamHp.tick(w.rng.white());
             s += w.foamLp.tick(f) * w.foamEnv * w.foamLevel *
-                 (1.0f - 0.65f * clampf(mP.foamBubbles, 0.0f, 1.0f));
+                 (1.0f - 0.25f * clampf(mP.foamBubbles, 0.0f, 1.0f));
 
             // The foam's own cascade: finer bubbles, faster than the break's,
             // and this is what carries the gap between waves. The slowed

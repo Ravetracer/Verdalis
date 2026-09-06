@@ -14,18 +14,18 @@ break_attack = 700
 break_decay = 900
 break_tone = 430
 break_body = 0.55
-crest_sweep = 0.35
+crest_sweep = 0.12
 breaker_type = Spilling
-bubble_mix = 0.22
+bubble_mix = 0
 precursor = 0.25
 
 # Foam
-foam_level = -13
+foam_level = -17
 foam_decay = 3200
 foam_tone = 800
-foam_delay = 250
-foam_bubbles = 0.35
-fizz = 0.3
+foam_delay = 650
+foam_bubbles = 0.06
+fizz = 0.22
 
 # Swell
 swell_level = -10
@@ -35,7 +35,7 @@ swell_rate = 5
 swell_width = 0.95
 
 # Bubbles
-bubble_rate = 20
+bubble_rate = 10
 bubble_pitch = 800
 bubble_spread = 1
 bubble_decay = 1
@@ -51,7 +51,7 @@ shore_type = Sand
 distance = 0.6
 air = 0.35
 width = 0.85
-space_amount = 0.22
+space_amount = 0.34
 space_size = 0.7
 space_damping = 0.6
 
