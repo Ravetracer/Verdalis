@@ -41,9 +41,11 @@ work included.
 
 Commit at suite level. There are no per-plugin remotes any more.
 
-The two former repositories are slated for deletion and, once that happens,
-**this repository becomes the only copy of that history.** Treat it accordingly:
-it is not a working copy of something published elsewhere.
+Both former repositories have since been deleted, so **this repository is the
+only copy of that history** — including the DSP fitting work, where the commit
+messages are often the only record of what a coefficient was fitted against. It
+is not a working copy of something published elsewhere. Keep at least one clone
+or mirror off this machine.
 
 ## Suite roadmap
 
@@ -136,10 +138,10 @@ cmake --build build
 cmake --install build            # defaults to ~/.clap/<PluginName>
 ```
 
-Pre-existing `build/` and `build-win/` trees inside the plugins still carry
-absolute paths from before the move — **delete them and reconfigure** before the
-next local build. A fresh configure and full build of both plugins from the new
-location is verified working.
+A `build/` tree records the absolute source path it was configured against, so
+moving or renaming a plugin folder makes its existing tree fail hard with
+*"does not match the source used to generate cache"*. The fix is always to
+delete the tree and let it reconfigure; nothing in it is worth keeping.
 
 ## CLAP SDK
 

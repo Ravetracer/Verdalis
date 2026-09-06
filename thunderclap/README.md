@@ -1,5 +1,8 @@
 # ThunderClap
 
+> Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather,
+> no samples. Built and released from the suite root.
+
 A native Linux **CLAP** instrument that generates thunder — entirely by
 synthesis. There are no samples anywhere in this project: every flash grows its
 own lightning channel, and every shock wave you hear is computed from that
@@ -46,8 +49,9 @@ cmake --build build
 cmake --install build            # defaults to ~/.clap
 ```
 
-`CLAP_INCLUDE_DIR` is auto-detected from a few common locations (including
-`../CLAP/clap/include` next to this repo); pass it explicitly if the configure
+`CLAP_INCLUDE_DIR` is auto-detected from a few common locations, including
+`../CLAP/clap/include` — which is where the Verdalis suite keeps the SDK, at
+the suite root beside this plugin folder. Pass it explicitly if the configure
 step cannot find `clap/clap.h`.
 
 The installed layout matters: the plugin locates its factory presets by looking
