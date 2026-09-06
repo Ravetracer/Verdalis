@@ -157,6 +157,76 @@ for plugin in "${plugins[@]}"; do
    fi
 done
 
+# ------------------------------------------------------------- install notes
+#
+# Written per operating system, because someone downloading the Windows build
+# should not have to read past the Linux instructions to find theirs.
+install_note() {
+   local os="$1" what="$2" prefix="$3"
+   if [ "$os" = linux ]; then
+      cat <<TXT
+${what}
+$(printf '=%.0s' $(seq ${#what}))
+
+CLAP hosts load plugins from ~/.clap on Linux.
+
+Copy ${prefix} into:
+
+    ~/.clap/
+
+so that you end up with ~/.clap/RainyDay/RainyDay.clap and so on. Keep each
+plugin's folder and its presets/ together: a plugin finds its factory presets by
+looking for a presets directory next to its own binary.
+
+Then rescan plugins in your host. Tested with Bitwig Studio and Reaper.
+
+Needs X11 and Cairo, which any Linux machine that can run a DAW already has.
+TXT
+   else
+      cat <<TXT
+${what}
+$(printf '=%.0s' $(seq ${#what}))
+
+CLAP hosts load plugins from the common CLAP folder on Windows.
+
+Copy ${prefix} into:
+
+    C:\\Program Files\\Common Files\\CLAP\\
+
+so that you end up with ...\\CLAP\\RainyDay\\RainyDay.clap and so on. Keep each
+plugin's folder and its presets\\ together: a plugin finds its factory presets by
+looking for a presets directory next to its own binary.
+
+Then rescan plugins in your host.
+
+Nothing else is needed: the plugin window and its Cairo are linked in, so there
+are no DLLs to install beside it.
+TXT
+   fi
+}
+
+build_info() {
+   echo "Verdalis Plugin Suite ${version}"
+   echo "built $(date -u '+%Y-%m-%d %H:%M UTC') on $(uname -srm)"
+   echo
+   echo "plugins:"
+   for plugin in "${plugins[@]}"; do
+      echo "  $(project_name "$plugin") $(project_version "$plugin")   (${plugin}/)"
+   done
+   echo
+   echo "targets:"
+   echo "  linux/    x86_64, GUI via X11 + Cairo"
+   if [ "$build_windows" = 1 ]; then
+      if [ -n "$win_cairo" ]; then
+         echo "  windows/  x86_64 (mingw-w64), GUI via win32 + Cairo"
+      else
+         echo "  windows/  x86_64 (mingw-w64), NO PLUGIN WINDOW"
+      fi
+   else
+      echo "  windows/  not built"
+   fi
+}
+
 # --------------------------------------------------------------- archive extras
 cp "${here}/README.md" "${here}/LICENSE" "$stage/"
 
@@ -180,39 +250,78 @@ Windows
 Then rescan plugins in your host. Tested with Bitwig Studio and Reaper.
 TXT
 
-{
-   echo "Verdalis Plugin Suite ${version}"
-   echo "built $(date -u '+%Y-%m-%d %H:%M UTC') on $(uname -srm)"
-   echo
-   echo "plugins:"
-   for plugin in "${plugins[@]}"; do
-      echo "  $(project_name "$plugin") $(project_version "$plugin")   (${plugin}/)"
-   done
-   echo
-   echo "targets:"
-   echo "  linux/    x86_64, GUI via X11 + Cairo"
-   if [ "$build_windows" = 1 ]; then
-      if [ -n "$win_cairo" ]; then
-         echo "  windows/  x86_64 (mingw-w64), GUI via win32 + Cairo"
-      else
-         echo "  windows/  x86_64 (mingw-w64), NO PLUGIN WINDOW"
-      fi
-   else
-      echo "  windows/  not built"
-   fi
-} > "${stage}/BUILD-INFO.txt"
+build_info > "${stage}/BUILD-INFO.txt"
 
 # ----------------------------------------------------------------------- pack
+#
+# One archive per plugin per operating system, so a site can offer a plain
+# "Windows download" beside a "Linux download", plus the whole suite the same
+# way and a single archive with everything in it. Linux gets .tar.gz and Windows
+# .zip, which is what each expects.
 step="packing"
 cd "$out_dir"
+
+made=()
+
+pack() {
+   local dir="$1" os="$2"
+   if [ "$os" = windows ]; then
+      command -v zip >/dev/null 2>&1 || { echo "!!  zip not found, skipping ${dir}.zip" >&2; return; }
+      rm -f "${dir}.zip"; zip -qr "${dir}.zip" "$dir"; made+=("${dir}.zip")
+   else
+      rm -f "${dir}.tar.gz"; tar czf "${dir}.tar.gz" "$dir"; made+=("${dir}.tar.gz")
+   fi
+   rm -rf "$dir"
+}
+
+targets=(linux)
+[ "$build_windows" = 1 ] && targets+=(windows)
+
+# --- one per plugin, per operating system
+for plugin in "${plugins[@]}"; do
+   name="$(project_name "$plugin")"
+   pver="$(project_version "$plugin")"
+   for os in "${targets[@]}"; do
+      [ -d "${stage}/${os}/${name}" ] || continue
+      d="${name}-${pver}-${os}-x86_64"
+      rm -rf "$d"; mkdir -p "$d"
+      cp -r "${stage}/${os}/${name}" "${d}/"
+      cp "${here}/LICENSE" "${d}/"
+      [ -f "${here}/${plugin}/README.md" ] && cp "${here}/${plugin}/README.md" "${d}/"
+      install_note "$os" "${name} ${pver}" "the ${name} folder" > "${d}/INSTALL.txt"
+      build_info > "${d}/BUILD-INFO.txt"
+      pack "$d" "$os"
+   done
+done
+
+# --- the whole suite, per operating system
+for os in "${targets[@]}"; do
+   [ -d "${stage}/${os}" ] || continue
+   d="verdalis-suite-${version}-${os}-x86_64"
+   rm -rf "$d"; mkdir -p "$d"
+   cp -r "${stage}/${os}/"* "${d}/"
+   cp "${here}/README.md" "${here}/LICENSE" "${d}/"
+   install_note "$os" "Verdalis Plugin Suite ${version}" "every plugin folder in this archive" \
+      > "${d}/INSTALL.txt"
+   build_info > "${d}/BUILD-INFO.txt"
+   pack "$d" "$os"
+done
+
+# --- and everything at once, both platforms, as before
 base="verdalis-suite-${version}"
 rm -f "${base}.tar.gz" "${base}.zip"
 tar czf "${base}.tar.gz" "$base"
-command -v zip >/dev/null 2>&1 && zip -qr "${base}.zip" "$base"
+made+=("${base}.tar.gz")
+if command -v zip >/dev/null 2>&1; then
+   zip -qr "${base}.zip" "$base"
+   made+=("${base}.zip")
+fi
 rm -rf "$work"
 
 echo
-echo "==> ${out_dir}/${base}.tar.gz"
-[ -f "${out_dir}/${base}.zip" ] && echo "==> ${out_dir}/${base}.zip"
+echo "==> ${out_dir}"
+for f in "${made[@]}"; do
+   printf "    %-46s %s\n" "$f" "$(du -h "$f" | cut -f1)"
+done
 echo
 cat "${stage}/BUILD-INFO.txt"

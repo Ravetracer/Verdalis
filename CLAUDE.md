@@ -198,13 +198,40 @@ is no list to update. It reads each plugin's display name and version from its
 `project()` line, builds Release for Linux and Windows, installs into a staging
 tree, and writes `BUILD-INFO.txt` recording what went in.
 
-Archive layout:
+It produces ten archives, so a site can offer a plain "Windows download" beside
+a "Linux download" for each plugin as well as for the suite:
 
 ```
-verdalis-suite-<version>/
-├── README.md, LICENSE, INSTALL.txt, BUILD-INFO.txt
-├── linux/     RainyDay/RainyDay.clap + presets/, ThunderClap/…
-└── windows/   RainyDay/RainyDay.clap + presets/, ThunderClap/…
+RainyDay-1.5.1-linux-x86_64.tar.gz          one plugin, one platform
+RainyDay-1.5.1-windows-x86_64.zip
+ThunderClap-1.0.0-linux-x86_64.tar.gz
+ThunderClap-1.0.0-windows-x86_64.zip
+ShoreBreak-0.1.0-linux-x86_64.tar.gz
+ShoreBreak-0.1.0-windows-x86_64.zip
+verdalis-suite-0.2.0-linux-x86_64.tar.gz    every plugin, one platform
+verdalis-suite-0.2.0-windows-x86_64.zip
+verdalis-suite-0.2.0.tar.gz                 everything, both platforms
+verdalis-suite-0.2.0.zip
+```
+
+Linux gets `.tar.gz` and Windows `.zip`, which is what each expects. The
+per-plugin archives carry that plugin's **own** version from its `project()`
+line, not the suite's, because they are downloaded and updated separately.
+
+Every archive is self-contained: the plugin folder with its presets, the
+plugin's README, the LICENSE, a BUILD-INFO.txt, and an INSTALL.txt written for
+that operating system alone -- somebody downloading the Windows build should not
+have to read past the Linux instructions to find theirs.
+
+```
+RainyDay-1.5.1-windows-x86_64/
+├── RainyDay/
+│   ├── RainyDay.clap
+│   └── presets/            (17 files)
+├── README.md
+├── LICENSE
+├── INSTALL.txt             Windows only
+└── BUILD-INFO.txt
 ```
 
 Options: `--linux-only` skips the Windows half; `--windows-no-gui` allows a

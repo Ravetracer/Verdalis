@@ -68,11 +68,16 @@ cd rainyday
 ./install.sh          # configure, build, self-test, install to ~/.clap
 ```
 
-Or build the whole suite and pack a release archive:
+Or build the whole suite and pack the release archives:
 
 ```sh
-./release.sh 0.1.0
+./release.sh 0.2.0
 ```
+
+That produces one archive per plugin per platform, one per platform for the
+whole suite, and one containing everything -- `.tar.gz` for Linux and `.zip`
+for Windows. Each is self-contained, with the plugin, its presets and install
+instructions for that platform.
 
 ### CLAP SDK
 
