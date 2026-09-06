@@ -37,6 +37,8 @@
 
 #include "params.h"
 
+#include "verdalis/gui/toolkit.h"
+
 namespace thunderclap {
 
 namespace {
@@ -186,12 +188,6 @@ static_assert(contentBottom() + 2 + kBarH + 24 <= kWindowH, "the window is too s
 
 // ---------------------------------------------------------------------- paint
 
-struct Rgb {
-   double r, g, b;
-};
-
-// RainyDay's greys, an octave darker, with the sky's own colour for the accent:
-// the violet of a lightning channel rather than the blue of rain.
 constexpr Rgb kBgTop = {0.094, 0.090, 0.125};
 constexpr Rgb kBgBottom = {0.055, 0.051, 0.078};
 constexpr Rgb kPanelFill = {0.129, 0.125, 0.173};
@@ -204,116 +200,8 @@ constexpr Rgb kText = {0.918, 0.906, 0.945};
 constexpr Rgb kTextDim = {0.541, 0.518, 0.620};
 constexpr Rgb kTextMute = {0.400, 0.380, 0.475};
 
-inline void setColor(cairo_t *cr, const Rgb &c, double a = 1.0) {
-   cairo_set_source_rgba(cr, c.r, c.g, c.b, a);
-}
-
-void roundedRect(cairo_t *cr, double x, double y, double w, double h, double r) {
-   cairo_new_sub_path(cr);
-   cairo_arc(cr, x + w - r, y + r, r, -0.5 * M_PI, 0.0);
-   cairo_arc(cr, x + w - r, y + h - r, r, 0.0, 0.5 * M_PI);
-   cairo_arc(cr, x + r, y + h - r, r, 0.5 * M_PI, M_PI);
-   cairo_arc(cr, x + r, y + r, r, M_PI, 1.5 * M_PI);
-   cairo_close_path(cr);
-}
-
-// Button numbers follow X11's, which is what the shared code was written
-// against; the Win32 side translates into them.
-constexpr unsigned kButtonLeft = 1;
-constexpr unsigned kButtonRight = 3;
-constexpr unsigned kWheelUp = 4;
-constexpr unsigned kWheelDown = 5;
-
-enum class Align { Left, Center, Right };
-
-#if !defined(_WIN32)
-// Asking an embedded window for the keyboard focus can fail for reasons that
-// are none of the plugin's business. A failure must not reach Xlib's default
-// handler, which exits the host.
-int ignoreXError(Display *, XErrorEvent *) { return 0; }
-#endif
-
-// Drawn rather than typed: a glyph like U+25C0 is not in every sans font, and
-// a missing-glyph box in the preset bar would look like a bug.
-void drawTriangle(cairo_t *cr, double cx, double cy, double size, int dir) {
-   const double h = size * 0.5;
-   cairo_new_path(cr);
-   if (dir < 0) {
-      cairo_move_to(cr, cx + h * 0.7, cy - h);
-      cairo_line_to(cr, cx + h * 0.7, cy + h);
-      cairo_line_to(cr, cx - h * 0.7, cy);
-   } else if (dir > 0) {
-      cairo_move_to(cr, cx - h * 0.7, cy - h);
-      cairo_line_to(cr, cx - h * 0.7, cy + h);
-      cairo_line_to(cr, cx + h * 0.7, cy);
-   } else {
-      cairo_move_to(cr, cx - h, cy - h * 0.7);
-      cairo_line_to(cr, cx + h, cy - h * 0.7);
-      cairo_line_to(cr, cx, cy + h * 0.7);
-   }
-   cairo_close_path(cr);
-   cairo_fill(cr);
-}
-
-void drawText(cairo_t *cr, double x, double baseline, const char *text, double size, bool bold,
-              Align align) {
-   cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL,
-                          bold ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
-   cairo_set_font_size(cr, size);
-   cairo_text_extents_t ext;
-   cairo_text_extents(cr, text, &ext);
-   double tx = x;
-   if (align == Align::Center)
-      tx = x - (ext.width * 0.5 + ext.x_bearing);
-   else if (align == Align::Right)
-      tx = x - (ext.width + ext.x_bearing);
-   cairo_move_to(cr, tx, baseline);
-   cairo_show_text(cr, text);
-}
-
-double textWidth(cairo_t *cr, const char *text, double size, bool bold) {
-   cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL,
-                          bold ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
-   cairo_set_font_size(cr, size);
-   cairo_text_extents_t ext;
-   cairo_text_extents(cr, text, &ext);
-   return ext.width;
-}
-
-// Upper-cases into a small buffer for the panel and parameter labels, which are
-// drawn in caps regardless of how they are written in the table.
-void upperCase(const char *in, char *out, size_t outSize) {
-   size_t i = 0;
-   for (; in[i] && i + 1 < outSize; ++i)
-      out[i] = static_cast<char>(in[i] >= 'a' && in[i] <= 'z' ? in[i] - 32 : in[i]);
-   out[i] = 0;
-}
-
-// The parameter's position on its knob, 0..1.
-double normalised(const ParamDesc &d, double raw) {
-   const double span = d.max - d.min;
-   if (span <= 0.0)
-      return 0.0;
-   return std::min(1.0, std::max(0.0, (raw - d.min) / span));
-}
-
-bool isChip(const ParamDesc &d) { return d.kind == ParamKind::Enum; }
-
 // Every cell is one column wide. Filter Type prints "Bandpass" and Mode prints
 // "One Shot" in a single cell, and the layout comes out exactly full.
-int cellSpan(uint32_t) { return 1; }
-bool isStepped(const ParamDesc &d) {
-   return d.kind == ParamKind::Enum || d.kind == ParamKind::Stepped;
-}
-bool isBipolar(const ParamDesc &d) { return d.min < -0.0001; }
-
-struct Rect {
-   double x = 0, y = 0, w = 0, h = 0;
-   bool contains(double px, double py) const {
-      return px >= x && px < x + w && py >= y && py < y + h;
-   }
-};
-
 // --------------------------------------------------------------- the window
 
 class X11Gui final : public Gui {
