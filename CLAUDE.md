@@ -202,20 +202,25 @@ It produces ten archives, so a site can offer a plain "Windows download" beside
 a "Linux download" for each plugin as well as for the suite:
 
 ```
-RainyDay-1.5.1-linux-x86_64.tar.gz          one plugin, one platform
+RainyDay-1.5.1-linux-x86_64.zip             one plugin, one platform
 RainyDay-1.5.1-windows-x86_64.zip
-ThunderClap-1.0.0-linux-x86_64.tar.gz
+ThunderClap-1.0.0-linux-x86_64.zip
 ThunderClap-1.0.0-windows-x86_64.zip
-ShoreBreak-0.1.0-linux-x86_64.tar.gz
+ShoreBreak-0.1.0-linux-x86_64.zip
 ShoreBreak-0.1.0-windows-x86_64.zip
-verdalis-suite-0.2.0-linux-x86_64.tar.gz    every plugin, one platform
+verdalis-suite-0.2.0-linux-x86_64.zip       every plugin, one platform
 verdalis-suite-0.2.0-windows-x86_64.zip
-verdalis-suite-0.2.0.tar.gz                 everything, both platforms
-verdalis-suite-0.2.0.zip
+verdalis-suite-0.2.0.zip                    everything, both platforms
 ```
 
-Linux gets `.tar.gz` and Windows `.zip`, which is what each expects. The
-per-plugin archives carry that plugin's **own** version from its `project()`
+**Everything is a `.zip`, the Linux builds included.** That is not the Unix
+habit, but the download manager the site runs handles zip alone, and a release
+nobody can publish is worse than one in the wrong format. Nothing is lost by it:
+zip records Unix permissions, and a `.clap` is `dlopen`'d, which needs no execute
+bit — verified by extracting one and loading it. `--tarball` emits `.tar.gz`
+alongside for anywhere that prefers it.
+
+The per-plugin archives carry that plugin's **own** version from its `project()`
 line, not the suite's, because they are downloaded and updated separately.
 
 Every archive is self-contained: the plugin folder with its presets, the
@@ -234,7 +239,8 @@ RainyDay-1.5.1-windows-x86_64/
 └── BUILD-INFO.txt
 ```
 
-Options: `--linux-only` skips the Windows half; `--windows-no-gui` allows a
+Options: `--tarball` adds `.tar.gz` beside every `.zip`; `--linux-only` skips
+the Windows half; `--windows-no-gui` allows a
 Windows build with no plugin window. Offline tools are switched off for release
 builds (`-D<PLUGIN>_BUILD_TOOLS=OFF`).
 

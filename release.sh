@@ -6,6 +6,7 @@
 #
 #   ./release.sh 0.1.0                  Linux + Windows (needs cross-built Cairo)
 #   ./release.sh 0.1.0 --linux-only     skip the Windows half
+#   ./release.sh 0.1.0 --tarball        also emit .tar.gz beside the .zip files
 #
 # Windows builds need a Cairo cross-built with mingw-w64. Build it once with
 #
@@ -29,16 +30,18 @@ version="${1:-}"
 shift || true
 
 if [ -z "$version" ]; then
-   echo "usage: $0 <version> [--linux-only] [--windows-no-gui]" >&2
+   echo "usage: $0 <version> [--linux-only] [--windows-no-gui] [--tarball]" >&2
    exit 1
 fi
 
 linux_only=0
 windows_no_gui=0
+tarball=0
 for arg in "$@"; do
    case "$arg" in
       --linux-only)     linux_only=1 ;;
       --windows-no-gui) windows_no_gui=1 ;;
+      --tarball)        tarball=1 ;;
       *) echo "unknown option: $arg" >&2; exit 1 ;;
    esac
 done
@@ -256,19 +259,26 @@ build_info > "${stage}/BUILD-INFO.txt"
 #
 # One archive per plugin per operating system, so a site can offer a plain
 # "Windows download" beside a "Linux download", plus the whole suite the same
-# way and a single archive with everything in it. Linux gets .tar.gz and Windows
-# .zip, which is what each expects.
+# way and a single archive with everything in it.
+#
+# Everything is a .zip, including the Linux builds. That is not the Unix habit,
+# but a release nobody can publish is worse than one in the wrong format, and
+# download managers commonly handle zip alone. Nothing is lost by it: zip records
+# Unix permissions and a .clap is dlopen'd, which needs no execute bit. Pass
+# --tarball to get .tar.gz alongside for anywhere that prefers it.
 step="packing"
 cd "$out_dir"
 
 made=()
 
 pack() {
-   local dir="$1" os="$2"
-   if [ "$os" = windows ]; then
-      command -v zip >/dev/null 2>&1 || { echo "!!  zip not found, skipping ${dir}.zip" >&2; return; }
+   local dir="$1"
+   if command -v zip >/dev/null 2>&1; then
       rm -f "${dir}.zip"; zip -qr "${dir}.zip" "$dir"; made+=("${dir}.zip")
    else
+      echo "!!  zip not found: install it, or the release cannot be published" >&2
+   fi
+   if [ "$tarball" = 1 ]; then
       rm -f "${dir}.tar.gz"; tar czf "${dir}.tar.gz" "$dir"; made+=("${dir}.tar.gz")
    fi
    rm -rf "$dir"
@@ -290,7 +300,7 @@ for plugin in "${plugins[@]}"; do
       [ -f "${here}/${plugin}/README.md" ] && cp "${here}/${plugin}/README.md" "${d}/"
       install_note "$os" "${name} ${pver}" "the ${name} folder" > "${d}/INSTALL.txt"
       build_info > "${d}/BUILD-INFO.txt"
-      pack "$d" "$os"
+      pack "$d"
    done
 done
 
@@ -304,17 +314,17 @@ for os in "${targets[@]}"; do
    install_note "$os" "Verdalis Plugin Suite ${version}" "every plugin folder in this archive" \
       > "${d}/INSTALL.txt"
    build_info > "${d}/BUILD-INFO.txt"
-   pack "$d" "$os"
+   pack "$d"
 done
 
-# --- and everything at once, both platforms, as before
+# --- and everything at once, both platforms. Kept out of pack() because the
+# staging tree it names is also where BUILD-INFO.txt is read from below.
 base="verdalis-suite-${version}"
-rm -f "${base}.tar.gz" "${base}.zip"
-tar czf "${base}.tar.gz" "$base"
-made+=("${base}.tar.gz")
 if command -v zip >/dev/null 2>&1; then
-   zip -qr "${base}.zip" "$base"
-   made+=("${base}.zip")
+   rm -f "${base}.zip"; zip -qr "${base}.zip" "$base"; made+=("${base}.zip")
+fi
+if [ "$tarball" = 1 ]; then
+   rm -f "${base}.tar.gz"; tar czf "${base}.tar.gz" "$base"; made+=("${base}.tar.gz")
 fi
 rm -rf "$work"
 

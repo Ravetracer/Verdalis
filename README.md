@@ -74,10 +74,10 @@ Or build the whole suite and pack the release archives:
 ./release.sh 0.2.0
 ```
 
-That produces one archive per plugin per platform, one per platform for the
-whole suite, and one containing everything -- `.tar.gz` for Linux and `.zip`
-for Windows. Each is self-contained, with the plugin, its presets and install
-instructions for that platform.
+That produces one `.zip` per plugin per platform, one per platform for the whole
+suite, and one containing everything. Each is self-contained, with the plugin,
+its presets and install instructions for that platform. Pass `--tarball` to get
+`.tar.gz` alongside.
 
 ### CLAP SDK
 
