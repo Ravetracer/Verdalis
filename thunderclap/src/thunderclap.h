@@ -10,7 +10,7 @@ constexpr char kPluginId[] = "de.ravetracer.thunderclap";
 constexpr char kPluginName[] = "ThunderClap";
 constexpr char kPluginVendor[] = "Ravetracer";
 constexpr char kPluginVersion[] = "1.0.0";
-constexpr char kPluginUrl[] = "https://github.com/";
+constexpr char kPluginUrl[] = "https://github.com/Ravetracer/Verdalis";
 constexpr char kPluginDescription[] =
    "Fully synthetic thunder. No samples: every flash grows its own lightning channel and "
    "every shock wave is computed.";

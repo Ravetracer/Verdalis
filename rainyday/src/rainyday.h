@@ -22,7 +22,7 @@ constexpr bool sameString(const char *a, const char *b) {
 static_assert(sameString(kPluginVersion, RAINYDAY_CMAKE_VERSION),
               "kPluginVersion and the CMake project() version disagree");
 #endif
-constexpr char kPluginUrl[] = "https://github.com/Ravetracer/RainyDay";
+constexpr char kPluginUrl[] = "https://github.com/Ravetracer/Verdalis";
 constexpr char kPluginDescription[] =
    "Fully synthetic rain generator. No samples: every droplet is computed.";
 
