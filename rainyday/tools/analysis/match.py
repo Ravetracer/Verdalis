@@ -73,10 +73,21 @@ def cmd_fit(args):
     f = fit.Fitter(pool)
     print(f'fitting with {pool.jobs} render processes', flush=True)
     t0 = time.time()
+    rows = []
     for preset, ref, mode in selected(args):
-        fit.fit_preset(f, preset, ref, names_for(mode), args.out)
+        rows.append(fit.fit_preset(f, preset, ref, names_for(mode), args.out))
         print(f'  [{time.time() - t0:6.0f}s] {preset}\n', flush=True)
     pool.close()
+
+    # The output directory is a complete library either way: a refused preset is
+    # written back unchanged. This summary says which ones actually moved.
+    kept = [r for r in rows if r['accepted']]
+    print(f'\n{"preset":20s} {"held-out":>18s} {"gain vs noise":>18s}   verdict')
+    for r in rows:
+        print(f'{r["preset"]:20s} {r["held_before"]:8.1f} -> {r["held_after"]:6.1f} '
+              f'{r["improvement"]:+10.1f} vs {r["se"]:5.1f}   '
+              f'{"kept" if r["accepted"] else "refused"}')
+    print(f'\n{len(kept)} of {len(rows)} presets improved on unseen seeds')
 
 
 def cmd_loudness(args):

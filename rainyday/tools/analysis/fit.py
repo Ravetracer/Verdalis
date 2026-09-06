@@ -74,8 +74,24 @@ MAX_SEEDS = 12
 # Disjoint from VERIFY_SEEDS, so the held-out check stays honest however many of
 # these are used.
 SEED_POOL = [1, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]
-FIT_SEEDS = SEED_POOL[:2]
-VERIFY_SEEDS = [2, 3, 4]
+# Eight, not three. The held-out check decides whether a fit is kept, so it
+# cannot be noisier than the fit it is judging, and it was: the fit averages
+# twelve seeds and this used to be three. Measured over 32 fresh seeds, a
+# three-seed estimate of Dripping Faucet's distance carries a standard error of
+# 519 on a mean of 1020, which is not a decision, it is a coin toss.
+#
+# Eight is where the cost stops being worth it rather than where the noise
+# stops: with the median above and the decay fix in fitlib, the remaining spread
+# on the worst presets is still large, and the honest consequence is that those
+# presets need a big improvement before this rule believes one. That is the
+# intended behaviour -- see ACCEPT_MARGIN_SE.
+VERIFY_SEEDS = [2, 3, 4, 6, 8, 9, 10, 12]
+# How much better the held-out median has to be, in standard errors of itself,
+# before a fit is kept. At 1.0 a preset whose improvement is the same size as
+# the measurement's own noise is refused, which is the point: nine of sixteen
+# presets in the 2026-09-05 run had to be thrown out by hand afterwards, and
+# every one of them had been written to disk as though it were an improvement.
+ACCEPT_MARGIN_SE = 1.0
 SECONDS = 6.0
 
 
@@ -249,7 +265,7 @@ class Fitter:
     def __init__(self, pool):
         self.pool = pool
         self.cache = {}
-        self.seeds = list(FIT_SEEDS)
+        self.seeds = SEED_POOL[:DEFAULT_SEEDS]
 
     @staticmethod
     def _key(params, seed):
@@ -270,22 +286,29 @@ class Fitter:
         if not param_list:
             return []
         seeds = [seed] if seed is not None else self.seeds
-        totals = [0.0] * len(param_list)
+        per_seed = [[] for _ in param_list]
         pending = {}
         for i, params in enumerate(param_list):
             for s in seeds:
                 key, p = self._key(params, s)
                 hit = self.cache.get(key)
                 if hit is not None:
-                    totals[i] += hit
+                    per_seed[i].append(hit)
                 else:
                     pending[self.pool.submit(p, meta, target)] = (i, key)
         for fut in cf.as_completed(pending):
             i, key = pending[fut]
             d = fut.result()
             self.cache[key] = d
-            totals[i] += d
-        return [t / len(seeds) for t in totals]
+            per_seed[i].append(d)
+        # Median, not mean. Several presets' distances are heavy-tailed rather
+        # than merely wide: measured over 32 fresh seeds, Cave Drips has a median
+        # of 391 and a maximum of 3016, Dripping Faucet 788 against 4234, Window
+        # Pane 6.7 against 30.2. One unlucky realisation moves a mean far enough
+        # to decide a comparison between two candidates that differ by much less,
+        # so the mean was ranking accidents. Nothing is discarded to get this --
+        # the same renders are scored either way.
+        return [float(np.median(v)) for v in per_seed]
 
     def run(self, params, meta, target, names, passes=4, log=None, bounds=None):
         cur = dict(params)
@@ -326,6 +349,37 @@ class Fitter:
         return cur, best
 
 
+def held_out_verdict(fitter, params, tuned, meta, target, seeds):
+    """Did the fit improve the preset on seeds it never optimised against?
+
+    Both parameter sets are scored on the same held-out seeds and compared by
+    their medians, and the improvement has to clear the noise of the medians
+    themselves to count.
+
+    Sharing the seeds is a convenience, not a paired test, and it is worth
+    writing down why: pairing was tried and measured to buy nothing. Rendering
+    a candidate and its parent on one seed does not give them the same droplets.
+    The seed drives a Poisson process whose realisation depends on its rate, so
+    any change to Density -- or to anything that shifts how many random draws a
+    droplet consumes -- produces different rain entirely. Measured over 32 seeds
+    on eight presets, the spread of the per-seed difference was 0.3 to 1.7 times
+    the spread of the distance itself, i.e. no better and often worse. The
+    per-seed difference is not the steadier quantity it would be if the two
+    renders shared their droplets.
+    """
+    tuned_d = np.array([fitter.score(tuned, meta, target, seed=s) for s in seeds])
+    base_d = np.array([fitter.score(params, meta, target, seed=s) for s in seeds])
+    held_before, held_after = float(np.median(base_d)), float(np.median(tuned_d))
+    # Standard error of a median, 1.253 x that of a mean for a normal sample and
+    # a reasonable rule of thumb for these. Pooled across both sets, since the
+    # two parameter sets are close enough to share a spread.
+    pooled = np.concatenate([tuned_d - np.median(tuned_d), base_d - np.median(base_d)])
+    se = float(1.253 * pooled.std(ddof=1) / np.sqrt(len(seeds)))
+    improvement = held_before - held_after
+    accepted = bool(improvement > ACCEPT_MARGIN_SE * se)
+    return accepted, held_before, held_after, improvement, se
+
+
 def fit_preset(fitter, preset, reference, names, out_dir):
     root = fitlib.ROOT
     params, meta = fitlib.read_preset(os.path.join(root, 'presets', preset + '.rainyday'))
@@ -341,11 +395,21 @@ def fit_preset(fitter, preset, reference, names, out_dir):
           f'{"   (bounded)" if bounds else ""}', flush=True)
     tuned, after = fitter.run(params, meta, target, names, log=log, bounds=bounds)
 
-    checks = [fitter.score(tuned, meta, target, seed=s) for s in VERIFY_SEEDS]
-    base_checks = [fitter.score(params, meta, target, seed=s) for s in VERIFY_SEEDS]
+    accepted, held_before, held_after, improvement, se = held_out_verdict(
+        fitter, params, tuned, meta, target, VERIFY_SEEDS)
+    verdict = 'kept' if accepted else 'REFUSED'
     print(f'  {preset}: {before:.1f} -> {after:.1f}   unseen seeds '
-          f'{np.mean(base_checks):.1f} -> {np.mean(checks):.1f}', flush=True)
+          f'{held_before:.1f} -> {held_after:.1f}   '
+          f'gain {improvement:+.1f} vs noise {se:.1f}   {verdict}', flush=True)
 
+    # A refused fit writes the preset back unchanged, so that the output
+    # directory is always a complete library that can be installed as it
+    # stands. This used to be a hand comparison of two printed numbers, and
+    # nine of sixteen presets in the 2026-09-05 run had to be discarded by eye
+    # afterwards.
+    written = tuned if accepted else params
     with open(os.path.join(out_dir, preset + '.rainyday'), 'w') as f:
-        f.write(fitlib.preset_text(tuned, meta))
-    return before, after, float(np.mean(base_checks)), float(np.mean(checks))
+        f.write(fitlib.preset_text(written, meta))
+    return dict(preset=preset, accepted=accepted, before=before, after=after,
+                held_before=held_before, held_after=held_after,
+                improvement=improvement, se=se)

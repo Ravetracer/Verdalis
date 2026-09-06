@@ -254,28 +254,109 @@ dominated by which drops happen to fall, so the pairing against
 `multiple_water_drops_faucet` is measuring seed noise, not tone. And the accept
 rule above is applied by hand at the moment; section 3 wants it in `fit.py`.
 
-## 3. The fit overfits its own seeds, and it is costing real presets
+## 3. The fit overfits its own seeds -- FIXED 2026-09-06, with two limits left
 
-Each candidate is scored on two seeds (`FIT_SEEDS` in `fit.py`) and verified on
-three others. On the sparse presets the gap between the two is enormous, because
-a seven-second render of a preset at one drip a second contains about a dozen
-audible events and the objective is averaging over noise: Dripping Faucet
-reached 28.7 on the seeds it was fitted against and 732.1 on unseen ones, Storm
-Front 23.4 and 194.9.
+The seed count was already fixed in 447ceb3 (twelve seeds a candidate, not two);
+what remained was everything around it. Measured over 32 fresh seeds per preset
+before changing anything:
 
-The immediate consequence is that six of the fifteen fitted presets in the last
-run had to be thrown away, having measured worse on seeds the fit never saw. The
-work was done and then discarded.
+    preset             mean      sd  sd/mean   se@12   se@3
+    cave_drips        475.2   469.7    98.8%   135.6  271.2
+    dripping_faucet  1019.8   898.4    88.1%   259.3  518.7
+    storm_front        86.2    68.2    79.1%    19.7   39.4
+    light_drizzle     720.0   462.1    64.2%   133.4  266.8
+    window_pane         8.1     4.6    57.0%     1.3    2.7
+    gutter_trickle     36.5     0.8     2.3%     0.2    0.5
 
-The fix is not subtle -- average more seeds per candidate -- and it costs
-proportionally more time, which is why it has not simply been done: the last
-full fit already took 68 minutes at two seeds. Worth measuring first how many
-seeds it actually takes for the sparse presets to stabilise, rather than
-guessing, since the dense ones clearly do not need it. A per-preset seed count
-would buy most of it for very little.
+Four things were wrong, and all four are fixed.
 
-`dripping_faucet` at 436.6 is now the worst preset in the library by a wide
-margin and is the obvious test case.
+**The held-out check was noisier than the fit it judged.** The fit averaged
+twelve seeds and the accept/reject decision was made on three, which for
+Dripping Faucet is a standard error of 519 on a mean of 1020. `VERIFY_SEEDS` is
+eight now.
+
+**A paired test was tried and refuted.** Scoring a candidate and its parent on
+the same seed does not give them the same droplets: the seed drives a Poisson
+process whose realisation depends on its rate, so changing Density -- or
+anything that shifts how many draws a droplet consumes -- produces different
+rain entirely. Measured over 32 seeds on eight presets, the spread of the
+per-seed difference was 0.3 to 1.7 times the spread of the distance itself. The
+idea is recorded here so it is not tried again.
+
+**The mean was ranking accidents.** Several presets are heavy-tailed rather than
+merely wide: Cave Drips has a median of 391 against a maximum of 3016, Dripping
+Faucet 788 against 4234. `score_many` aggregates by median now. It costs
+nothing -- the same renders are scored either way.
+
+**The objective paid a preset for breaking a measurement.** `feat.decay_ms`
+returns NaN when no isolated event decays 20 dB inside its 0.4 s window, and
+`distance` silently skipped the term when it did. Over 24 seeds Light Drizzle
+measured on 18 of them and scored 1026, and on the other 6 the term vanished and
+it scored 43, so a fit could improve the number by making the sound
+unmeasurable. That is exactly the 34.0 -> 361.7 blow-up of the previous run.
+Fixing it took Light Drizzle's spread from 64 % to 0.8 %.
+
+**And W_DECAY was pointing the wrong way.** Measuring the references shows most
+of them saturate the estimator's 1200 ms ceiling -- leaves 1175, metal 1186, car
+1195, window 1196, umbrella 1178 and the cave itself 1159 -- while roof, concrete
+and sewer return NaN. Only `rain_soft` (38.7 ms) and
+`multiple_water_drops_faucet` (20.9 ms) carry a real measurement. So the term
+contributed about 0.1 to Cave Drips, the one preset whose ring time it was
+written for, and a large constant to the two that have a usable reference. The
+reference now decides whether the term is asked at all, so no candidate can
+switch it on or off.
+
+**The accept rule is no longer a person reading two numbers.** `fit_preset`
+requires the held-out median to improve by more than one standard error of
+itself, and writes a refused preset back unchanged so the output directory is
+always a complete, installable library.
+
+### Two limits this exposed, both still open
+
+**Some presets cannot be adjudicated at all.** Cave Drips carries a held-out
+noise of 283 because `direct_late` and `late_rt` hold 98 % of its variance
+(`direct_late` has a standard deviation of 353 about a mean of 81); Storm Front
+carries 43 because `tflat` holds 99 % of its. No improvement either preset can
+make will clear its own measurement error, so both are effectively unfittable
+until those estimators are stabilised. Loosening the margin would not fix this,
+it would only stop the noise being visible.
+
+**Two presets are paired with the wrong recording**, which is what the decay work
+uncovered rather than something it caused:
+
+- `light_drizzle` is fitted to `rain_soft`, which reports 0.82 events a second,
+  while the preset renders 1256 drops a second. The decay term is therefore a
+  constant penalty of about 1000 that no parameter can move -- verified by
+  sweeping Drop Decay over a factor of 40 and Density over a factor of 20, which
+  changed the measured decay from 1198 ms to 1197 and 1091 respectively.
+- `dripping_faucet` was already known to measure seed noise rather than tone.
+
+### The 2026-09-06 re-fit
+
+Run with all of the above in place. **Five of sixteen presets improved on unseen
+seeds**: steady_rain (+1.9 against a noise of 0.7), rain_on_leaves (+2.9/0.6),
+concrete_alley (+159.8/7.2), light_drizzle (+9.5/2.5), gutter_trickle (+1.1/0.6).
+The other eleven were refused automatically and written back unchanged.
+
+Two of the five accepted fits were then refused **by hand**, on the same grounds
+as dripping_faucet in the previous run -- the number improved and the preset got
+worse:
+
+- **concrete_alley**, and this is the one to remember. Its 92 % improvement came
+  from cutting Splash 1 -> 0.635 and pushing Distance 0.547 -> 0.687 and Air
+  0.152 -> 0.245. The fit cannot touch Slosh, so it starved the layer from every
+  other side instead. Measured over three seeds: energy above 8 kHz fell from
+  46.5 % to 14.6 % and crest from 24.8 to 17.1 dB, which are the two signatures
+  of the splat. That is correct against `rain_on_concrete`, which has 4 % above
+  8 kHz, and wrong against the close recording the layer was built from, which
+  has 25.8 % and a crest of 31.6. **The concrete presets need repointing before
+  they are fitted again.**
+- **light_drizzle** went from 1256 drops a second to 3014 with clumping 0.712 ->
+  0.992, for a gain of 9.5 on a distance of 1014 that is more than 98 % constant
+  decay penalty. It bought noise and cost the preset its name.
+
+So three were installed: gutter_trickle, rain_on_leaves and steady_rain, with
+Output Gain re-matched afterwards.
 
 ## 4. CPU cost
 

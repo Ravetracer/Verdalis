@@ -7,17 +7,17 @@ features = ambient, texture, organic, soft, dark
 
 # Rain
 density = 439
-clumping = 0.215
+clumping = 0.138
 drop_pitch = 4762
 pitch_spread = 0
-drop_decay = 10.2
-decay_spread = 0.14
+drop_decay = 9.19
+decay_spread = 0.164
 tonality = 0.023
-bubble = 0.758
-impact = 0.683
-splash = 0.935
+bubble = 0.6
+impact = 0.617
+splash = 0.893
 slosh = 0.5
-level_spread = 0.853
+level_spread = 1
 chirp = 0.35
 surface = Leaves
 note_tracking = 0.5
@@ -25,16 +25,16 @@ note_tracking = 0.5
 # Bed
 bed_level = -29.5
 bed_tone = 0.301
-bed_body = 0.116
-bed_drift = 0.225
+bed_body = 0.069
+bed_drift = 0.023
 bed_width = 1
 bed_pan = 0
 
 # Space
 width = 1
 drop_pan = 0
-distance = 0.735
-air = 0.369
+distance = 0.812
+air = 0.35
 space_amount = 0.3
 space_size = 0.55
 space_damping = 0.7
@@ -55,6 +55,6 @@ vel_to_level = 0.5
 vel_to_density = 0.3
 
 # Output
-gain = 3.76
+gain = 3.5
 max_droplets = 512
 seed = 0

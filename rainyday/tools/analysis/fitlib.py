@@ -161,6 +161,11 @@ W_FFLAT = 4000.0
 # a ring twice as long as the reference's costs as much as being 6 dB out in
 # every band at once.
 W_DECAY = 40.0
+# The largest ring time feat.decay_ms can report: its 0.4 s search window scaled
+# by the 3000 that extrapolates -20 dB out to -60. A render that reaches this has
+# no isolated event decaying inside the window, which is the same finding as a
+# NaN and is charged the same way.
+DECAY_CEILING_MS = 1200.0
 # The room and the rhythm, from isolated events (feat.room_stats). None of the
 # features above can tell a long droplet ring from a long reverb tail, or a drop
 # every three seconds from a drop every tenth of a second once the spectrum and
@@ -197,9 +202,37 @@ def distance(a, b, band_weight=None):
     m = [v if np.isfinite(v) else 0.0 for v in (a['mod_db'], b['mod_db'])]
     d += W_MOD * (m[0] - m[1]) ** 2
     d += W_FFLAT * (a.get('fflat', 0.0) - b.get('fflat', 0.0)) ** 2
-    da, db_ = a.get('decay_ms'), b.get('decay_ms')
-    if da and db_ and np.isfinite(da) and np.isfinite(db_) and da > 0 and db_ > 0:
-        d += W_DECAY * np.log2(da / db_) ** 2
+    # Ring time, and the reference alone decides whether it is asked about.
+    #
+    # `feat.decay_ms` looks for an isolated event that falls 20 dB inside a 0.4 s
+    # window and scales that out to -60 dB, so DECAY_CEILING_MS is not a long
+    # decay but a failure: nothing isolated decayed inside the window. Measuring
+    # the references shows most of them fail it -- leaves 1175, metal 1186, car
+    # 1195, window 1196, umbrella 1178, and the cave itself 1159, all at the
+    # ceiling -- while roof, concrete and sewer return NaN outright. Only
+    # `rain_soft` (38.7 ms) and `multiple_water_drops_faucet` (20.9 ms) carry a
+    # real measurement.
+    #
+    # Two things follow. A reference at the ceiling cannot be compared against
+    # anything, so the term is switched off for that preset entirely; it was
+    # contributing about 0.1 to Cave Drips, which is to say nothing, in the one
+    # place ring time was supposed to matter most. And where the reference does
+    # carry a measurement, a render that fails to produce one is charged as
+    # though it saturated rather than excused: NaN and the ceiling are the same
+    # statement about the sound. Skipping on NaN paid a preset for making the
+    # measurement fail -- over 24 seeds Light Drizzle measured on 18 of them and
+    # scored 1026, and on the other 6 the term vanished and it scored 43. A fit
+    # handed that choice takes it, which is how Light Drizzle went from 34.0 to
+    # 361.7 on unseen seeds in the 2026-09-05 run.
+    #
+    # Because the switch is the reference's, no candidate can turn the term on
+    # or off; for a given preset it is either always asked or never asked.
+    db_ = b.get('decay_ms')
+    if db_ and np.isfinite(db_) and 0 < db_ < DECAY_CEILING_MS * 0.95:
+        da = a.get('decay_ms')
+        if not (da and np.isfinite(da) and da > 0):
+            da = DECAY_CEILING_MS
+        d += W_DECAY * np.log2(min(da, DECAY_CEILING_MS) / db_) ** 2
     # b is the reference. Only a sparse reference has a rhythm and a room that
     # can be measured event by event.
     rb = b.get('event_rate', 0.0)

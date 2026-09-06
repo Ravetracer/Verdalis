@@ -9,7 +9,7 @@ namespace rainyday {
 constexpr char kPluginId[] = "de.ravetracer.rainyday";
 constexpr char kPluginName[] = "RainyDay";
 constexpr char kPluginVendor[] = "Ravetracer";
-constexpr char kPluginVersion[] = "1.0.0";
+constexpr char kPluginVersion[] = "1.5.0";
 constexpr char kPluginUrl[] = "https://github.com/";
 constexpr char kPluginDescription[] =
    "Fully synthetic rain generator. No samples: every droplet is computed.";

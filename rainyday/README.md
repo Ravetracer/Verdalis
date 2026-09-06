@@ -7,9 +7,9 @@ run time. Two instances never produce the same rain.
 
 Play a MIDI note and it rains for as long as you hold it.
 
-- 41 parameters covering droplet statistics, impact surface, stereo field,
+- 42 parameters covering droplet statistics, impact surface, stereo field,
   distance, space, filter and a full ADSR
-- 16 factory presets from a single drip in a cave to a tropical monsoon, each
+- 17 factory presets from a single drip in a cave to a tropical monsoon, each
   fitted against a real recording of the thing it is imitating
 - Exposed to the host through CLAP preset discovery, so presets appear in the
   host's own browser
@@ -617,6 +617,20 @@ above 6 kHz — is measured in `tools/analysis/`, not taken from either.
 - Deliberately built without `-ffast-math`: on x86 GCC that links
   `crtfastmath.o`, which would flip FTZ/DAZ for the entire host process.
 - No wind, no thunder — this is rain only.
+
+## Versioning
+
+Semantic versioning, `MAJOR.MINOR.PATCH`:
+
+- **MAJOR** — an overhaul: a rewrite of the synthesis model, or a change that
+  breaks existing presets or saved host state.
+- **MINOR** — new features: a new parameter, a new layer, a new surface, new
+  presets, anything that adds to what the plugin can do.
+- **PATCH** — bug fixes and corrections that add nothing new.
+
+The version is set in two places that must agree: `kPluginVersion` in
+`src/rainyday.h`, which is what the host reports, and the `project()` line in
+`CMakeLists.txt`.
 
 ## License
 
