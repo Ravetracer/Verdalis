@@ -12,8 +12,8 @@ wave_size = 0.3
 size_variation = 0.5
 break_attack = 900
 break_decay = 1400
-break_tone = 320
-break_body = 0.6
+break_tone = 240
+break_body = 0.8
 crest_sweep = 0.1
 breaker_type = Spilling
 bubble_mix = 0
@@ -28,8 +28,8 @@ foam_bubbles = 0
 fizz = 0.12
 
 # Swell
-swell_level = -3
-swell_tone = 360
+swell_level = -2
+swell_tone = 150
 swell_depth = 0.04
 swell_rate = 2.5
 swell_width = 0.95
@@ -57,8 +57,8 @@ space_damping = 0.65
 
 # Filter
 filter_type = Lowpass
-highpass = 25
-filter_cutoff = 11000
+highpass = 20
+filter_cutoff = 9000
 filter_reso = 0.05
 filter_keytrack = 0
 

@@ -308,6 +308,33 @@ Bubble *WaveEngine::allocateBubble() {
 }
 
 void WaveEngine::spawnWave(Voice &v, float envLevel) {
+   const float srate = static_cast<float>(mSampleRate);
+
+   // A breaking wave runs over whatever foam is already lying on the shore.
+   // Foam that has not sizzled yet does not go on waiting its turn: the water
+   // arriving over it bursts it, so it goes off now rather than at the delay it
+   // was given. Foam already sizzling is carried back out and fades early.
+   // Without this, extending Foam Delay leaves a wave's foam hanging in the air
+   // through the next break, which is the one thing a beach never does.
+   for (uint32_t oi = 0; oi < kMaxWaves; ++oi) {
+      Wave &o = mWaves[oi];
+      if (!o.active)
+         continue;
+      if (o.sizzleDelaySamples > 0) {
+         // Burst by the arriving water, within a few tens of milliseconds.
+         o.sizzleDelaySamples = static_cast<int>(mRng.uniform() * 0.035f * srate);
+         // And it goes off harder for being crushed rather than left to fizz.
+         o.sizzleAttackInc = 1.0f / std::max(1.0f, 0.09f * srate);
+      }
+      if (o.foamDelaySamples > 0)
+         o.foamDelaySamples = static_cast<int>(mRng.uniform() * 0.05f * srate);
+      // Whatever is already sounding is washed away rather than left to decay
+      // in its own time.
+      const float swept = decayCoefFor(std::max(0.08f, 0.55f * mP.foamDecaySec), mSampleRate);
+      o.sizzleDecayCoef = std::min(o.sizzleDecayCoef, swept);
+      o.foamDecayCoef = std::min(o.foamDecayCoef, swept);
+   }
+
    Wave *slot = allocateWave();
    if (!slot)
       return;
@@ -683,7 +710,7 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
                w.shValue = u * u;
             }
             const float f = w.foamHp.tick(w.rng.white());
-            s += w.foamLp.tick(f) * w.sizzleEnv * w.foamLevel *
+            s += w.foamLp.tick(f) * w.sizzleEnv * w.foamLevel * 0.42f *
                  (0.22f + 2.1f * w.shValue) *
                  (1.0f - 0.25f * clampf(mP.foamBubbles, 0.0f, 1.0f));
          }

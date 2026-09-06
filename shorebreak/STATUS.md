@@ -51,6 +51,19 @@ bursting as a sizzle. The engine now does that in order:
    generated as a high band with a granular envelope rather than as thousands of
    oscillators, which is the same sum for one multiply a sample.
 
+## A wave washes the last one's foam away
+
+Each wave used to own a private foam timer that ignored the sea around it, so
+with a long Foam Delay a wave's foam could still be hanging in the air when the
+next one broke -- the one thing a beach never does. A breaking wave now runs
+over whatever foam is already lying there: what has not sizzled yet is burst by
+the arriving water within a few tens of milliseconds rather than waiting out its
+delay, and what is already sizzling is carried back out and fades early.
+
+Measured with Foam Delay at 2.5 s and waves every 1.2 s, so that every wave's
+foam is still pending when the next breaks: the sizzle fires 0.06 s after each
+break instead of at its 2.5 s delay.
+
 ## An open shore has no walls
 
 Eight discrete early reflections at fixed fractions of a room dimension is what

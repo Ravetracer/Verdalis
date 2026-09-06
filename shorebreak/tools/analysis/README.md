@@ -121,6 +121,13 @@ had both phases drawing from one distribution that slid *downwards*, which is
 backwards. The foam now runs its own cascade, higher and faster, controlled by
 `Foam Bubbles` and pitched by `Fizz`.
 
+## Foam does not wait for the next wave
+
+Foam is quiet -- close to a sound you have to put your ear near the sand to
+hear -- and it does not survive the next break. A wave arriving over standing
+foam bursts it rather than letting it keep its delay, which is why the sizzle is
+triggered early by the following wave instead of firing on its own clock.
+
 ## Deep coming in, brighter breaking
 
 A wave sounds deep as it approaches and brighter as it breaks, "like opening the
