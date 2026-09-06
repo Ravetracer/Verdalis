@@ -55,7 +55,7 @@ Seven plugins, each modelling one natural sound source:
 |---|--------|--------|--------|-----------|
 | 1 | **RainyDay** | `rainyday/` | WIP | rain |
 | 2 | **ThunderClap** | `thunderclap/` | WIP | thunder |
-| 3 | **ShoreBreak** | `shorebreak/` | planned | ocean waves |
+| 3 | **ShoreBreak** | `shorebreak/` | WIP | ocean waves |
 | 4 | **SkyHowl** | `skyhowl/` | planned | winds, storms |
 | 5 | **ChirpParade** | `chirpparade/` | planned | bird chirps |
 | 6 | **RiverFlow** | `riverflow/` | planned | rivers, streams |
@@ -75,8 +75,10 @@ what is deliberately still per-plugin.
 Likely shared additions as the suite grows — worth anticipating rather than
 retrofitting:
 
-- ShoreBreak, RiverFlow and RainyDay are all **water**, and will want a common
-  bubble/droplet resonator and filtered-noise bed.
+- ShoreBreak, RiverFlow and RainyDay are all **water**. ShoreBreak's bubble
+  layer and RainyDay's droplet resonators are already the same idea built twice;
+  RiverFlow will make it three. A shared bubble resonator, with Minnaert's
+  radius-to-pitch relation in it, is the obvious next extraction.
 - SkyHowl and ThunderClap both need **large-scale air movement** and distance
   modelling; ThunderClap's `Lp2` air-absorption filter generalises directly.
 - CrackleBlaze and RainyDay share **stochastic impulse spawning** — the Poisson

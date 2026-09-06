@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Sand and Foam
+author = ShoreBreak
+description = Foam running out over flat sand, with no low end at all: the reference measures -82 dB at 50 Hz. Almost the whole sound is the sheet of bubbles after the break.
+features = foam, bright, texture
+
+# Surf
+wave_period = 3800
+set_variation = 0.4
+wave_size = 0.3
+size_variation = 0.55
+break_attack = 250
+break_decay = 350
+break_tone = 900
+break_body = 0
+crest_sweep = 0.4
+breaker_type = Spilling
+precursor = 0.35
+
+# Foam
+foam_level = -2
+foam_decay = 3000
+foam_tone = 900
+foam_delay = 30
+fizz = 0.45
+
+# Swell
+swell_level = -46
+swell_tone = 1100
+swell_depth = 0.6
+swell_rate = 10
+swell_width = 0.95
+
+# Bubbles
+bubble_rate = 140
+bubble_pitch = 1500
+bubble_spread = 2.6
+bubble_decay = 14
+
+# Wash
+wash_level = -9
+wash_decay = 2400
+wash_tone = 1400
+sand = 0.7
+
+# Shore
+shore_type = Sand
+distance = 0.1
+air = 0.8
+width = 0.9
+space_amount = 0.1
+space_size = 0.35
+space_damping = 0.45
+
+# Filter
+filter_type = Highpass
+highpass = 180
+filter_cutoff = 140
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 900
+decay = 500
+sustain = 1
+release = 2200
+vel_to_level = 0.4
+vel_to_size = 0.3
+
+# Output
+gain = 0
+max_waves = 160
+seed = 0

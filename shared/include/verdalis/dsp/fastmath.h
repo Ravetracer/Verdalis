@@ -78,4 +78,16 @@ inline float dbToGain(float db) { return db <= -59.9f ? 0.0f : std::pow(10.0f, d
 
 inline float semitonesToRatio(float semis) { return std::exp2(semis * (1.0f / 12.0f)); }
 
+// The suite's output stage. Linear to 0.8 and a tanh knee above it, so a
+// plugin driven into its own ceiling saturates rather than clipping, and the
+// output stays bounded whatever the gain staging inside it adds up to.
+inline float softClip(float x) {
+   constexpr float t = 0.8f;
+   if (x > t)
+      return t + (1.0f - t) * std::tanh((x - t) / (1.0f - t));
+   if (x < -t)
+      return -t - (1.0f - t) * std::tanh((-x - t) / (1.0f - t));
+   return x;
+}
+
 } // namespace verdalis

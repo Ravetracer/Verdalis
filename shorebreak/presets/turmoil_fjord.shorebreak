@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Turmoil Fjord
+author = ShoreBreak
+description = Confined water in turmoil, the walls giving it back. The reference's crest factor of 21 dB is nearly continuous sound, so the swell carries most of it.
+features = fjord, dense, dark
+
+# Surf
+wave_period = 2800
+set_variation = 0.6
+wave_size = 0.7
+size_variation = 0.6
+break_attack = 550
+break_decay = 1000
+break_tone = 480
+break_body = 0.85
+crest_sweep = 0.5
+breaker_type = Collapsing
+precursor = 0.35
+
+# Foam
+foam_level = -10
+foam_decay = 3000
+foam_tone = 700
+foam_delay = 250
+fizz = 0.25
+
+# Swell
+swell_level = -9
+swell_tone = 300
+swell_depth = 0.22
+swell_rate = 8
+swell_width = 0.8
+
+# Bubbles
+bubble_rate = 35
+bubble_pitch = 950
+bubble_spread = 2
+bubble_decay = 40
+
+# Wash
+wash_level = -13
+wash_decay = 2600
+wash_tone = 750
+sand = 0.35
+
+# Shore
+shore_type = Rock
+distance = 0.4
+air = 0.4
+width = 0.8
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.35
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 9000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 2000
+decay = 1000
+sustain = 1
+release = 4000
+vel_to_level = 0.4
+vel_to_size = 0.35
+
+# Output
+gain = -1
+max_waves = 160
+seed = 0

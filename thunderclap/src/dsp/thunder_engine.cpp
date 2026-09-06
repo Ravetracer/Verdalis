@@ -179,15 +179,6 @@ constexpr float kBlastRumbleExcite = 0.5f;
 // in the middle of the gain range.
 constexpr float kEngineMakeup = 2.0f; // +6 dB
 
-inline float softClip(float x) {
-   constexpr float t = 0.8f;
-   if (x > t)
-      return t + (1.0f - t) * std::tanh((x - t) / (1.0f - t));
-   if (x < -t)
-      return -t - (1.0f - t) * std::tanh((-x - t) / (1.0f - t));
-   return x;
-}
-
 inline bool noteMatches(const Voice &v, int16_t port, int16_t channel, int16_t key,
                         int32_t noteId) {
    if (noteId >= 0 && v.noteId >= 0)
@@ -912,7 +903,6 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
       for (int k = 0; k < Flash::kMaxStrokes; ++k)
          f.blastNext[k] = 0;
    }
-
 
    // --- Return strokes: the same channel lit again, each a little later than
    // the gap says and usually quieter. Dart leaders do not branch, so only the

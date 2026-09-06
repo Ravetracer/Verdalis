@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Crystal Bubbles
+author = ShoreBreak
+description = Close in on the foam, where individual bubbles are audible one at a time. Bubble pitch is its radius: 2.6 kHz is about a millimetre across.
+features = bubbles, close, detail
+
+# Surf
+wave_period = 4000
+set_variation = 0.45
+wave_size = 0.25
+size_variation = 0.5
+break_attack = 300
+break_decay = 320
+break_tone = 1100
+break_body = 0
+crest_sweep = 0.35
+breaker_type = Spilling
+precursor = 0.4
+
+# Foam
+foam_level = -10
+foam_decay = 2600
+foam_tone = 1200
+foam_delay = 40
+fizz = 0.5
+
+# Swell
+swell_level = -48
+swell_tone = 1200
+swell_depth = 0.5
+swell_rate = 9
+swell_width = 0.9
+
+# Bubbles
+bubble_rate = 320
+bubble_pitch = 2000
+bubble_spread = 2.8
+bubble_decay = 10
+
+# Wash
+wash_level = -18
+wash_decay = 1600
+wash_tone = 1800
+sand = 0.4
+
+# Shore
+shore_type = Rock
+distance = 0.05
+air = 0.85
+width = 0.9
+space_amount = 0.12
+space_size = 0.3
+space_damping = 0.4
+
+# Filter
+filter_type = Highpass
+highpass = 250
+filter_cutoff = 200
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 400
+sustain = 1
+release = 2000
+vel_to_level = 0.4
+vel_to_size = 0.3
+
+# Output
+gain = 0
+max_waves = 192
+seed = 0

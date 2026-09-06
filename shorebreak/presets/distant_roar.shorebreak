@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Distant Roar
+author = ShoreBreak
+description = Open coast heard from far inland: air absorption has taken everything above a few kilohertz, and what is left is the roar. Fitted against a reference measuring -50 dB at 12.5 kHz and a crest factor of only 14.5 dB.
+features = ambient, texture, dark
+
+# Surf
+wave_period = 2000
+set_variation = 0.8
+wave_size = 0.3
+size_variation = 0.5
+break_attack = 900
+break_decay = 1400
+break_tone = 320
+break_body = 0.6
+crest_sweep = 0.3
+breaker_type = Spilling
+precursor = 0.15
+
+# Foam
+foam_level = -26
+foam_decay = 4500
+foam_tone = 500
+foam_delay = 600
+fizz = 0.15
+
+# Swell
+swell_level = -3
+swell_tone = 360
+swell_depth = 0.04
+swell_rate = 2.5
+swell_width = 0.95
+
+# Bubbles
+bubble_rate = 4
+bubble_pitch = 700
+bubble_spread = 1.5
+bubble_decay = 40
+
+# Wash
+wash_level = -30
+wash_decay = 3500
+wash_tone = 420
+sand = 0.3
+
+# Shore
+shore_type = Sand
+distance = 0.6
+air = 0.5
+width = 0.7
+space_amount = 0.3
+space_size = 0.8
+space_damping = 0.65
+
+# Filter
+filter_type = Lowpass
+highpass = 25
+filter_cutoff = 11000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 4000
+decay = 2000
+sustain = 1
+release = 6000
+vel_to_level = 0.3
+vel_to_size = 0.2
+
+# Output
+gain = 0
+max_waves = 128
+seed = 0

@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Open Sea Murmur
+author = ShoreBreak
+description = The steady murmur of water that never quite stops breaking. Almost no envelope: the reference measures an envelope variation of 0.15 against 1.86 for a shore break.
+features = ambient, texture, steady
+
+# Surf
+wave_period = 3600
+set_variation = 0.7
+wave_size = 0.45
+size_variation = 0.6
+break_attack = 700
+break_decay = 900
+break_tone = 430
+break_body = 0.55
+crest_sweep = 0.35
+breaker_type = Spilling
+precursor = 0.25
+
+# Foam
+foam_level = -13
+foam_decay = 3200
+foam_tone = 800
+foam_delay = 250
+fizz = 0.3
+
+# Swell
+swell_level = -10
+swell_tone = 330
+swell_depth = 0.18
+swell_rate = 5
+swell_width = 0.95
+
+# Bubbles
+bubble_rate = 18
+bubble_pitch = 1000
+bubble_spread = 2
+bubble_decay = 30
+
+# Wash
+wash_level = -20
+wash_decay = 2600
+wash_tone = 700
+sand = 0.35
+
+# Shore
+shore_type = Sand
+distance = 0.6
+air = 0.35
+width = 0.85
+space_amount = 0.22
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 22
+filter_cutoff = 12000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 3000
+decay = 1500
+sustain = 1
+release = 5000
+vel_to_level = 0.35
+vel_to_size = 0.25
+
+# Output
+gain = 0
+max_waves = 128
+seed = 0

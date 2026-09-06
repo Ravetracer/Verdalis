@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Big Waves Crashing
+author = ShoreBreak
+description = Large plungers on an open beach: the crest throws forward and slams. Set Variation is high because the reference's gaps scatter by nearly four seconds.
+features = surf, powerful, plunging
+
+# Surf
+wave_period = 3800
+set_variation = 0.8
+wave_size = 0.9
+size_variation = 0.7
+break_attack = 400
+break_decay = 800
+break_tone = 700
+break_body = 0.7
+crest_sweep = 0.7
+breaker_type = Plunging
+precursor = 0.4
+
+# Foam
+foam_level = -7
+foam_decay = 2200
+foam_tone = 1100
+foam_delay = 120
+fizz = 0.35
+
+# Swell
+swell_level = -16
+swell_tone = 380
+swell_depth = 0.4
+swell_rate = 6
+swell_width = 0.9
+
+# Bubbles
+bubble_rate = 60
+bubble_pitch = 1200
+bubble_spread = 2.4
+bubble_decay = 28
+
+# Wash
+wash_level = -13
+wash_decay = 1900
+wash_tone = 1100
+sand = 0.45
+
+# Shore
+shore_type = Sand
+distance = 0.2
+air = 0.6
+width = 0.9
+space_amount = 0.15
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 1500
+decay = 800
+sustain = 1
+release = 3000
+vel_to_level = 0.5
+vel_to_size = 0.45
+
+# Output
+gain = 0
+max_waves = 160
+seed = 0

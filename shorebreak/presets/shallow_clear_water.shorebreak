@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Shallow Clear Water
+author = ShoreBreak
+description = Sparse, isolated laps in shallow water, with real silence between them. The reference's 41 dB crest factor is the highest in the library.
+features = sparse, quiet, clear
+
+# Surf
+wave_period = 6500
+set_variation = 0.6
+wave_size = 0.22
+size_variation = 0.6
+break_attack = 500
+break_decay = 450
+break_tone = 1000
+break_body = 0.12
+crest_sweep = 0.45
+breaker_type = Surging
+precursor = 0.2
+
+# Foam
+foam_level = -12
+foam_decay = 1200
+foam_tone = 1100
+foam_delay = 60
+fizz = 0.5
+
+# Swell
+swell_level = -52
+swell_tone = 900
+swell_depth = 0.3
+swell_rate = 6
+swell_width = 0.9
+
+# Bubbles
+bubble_rate = 110
+bubble_pitch = 1900
+bubble_spread = 2.4
+bubble_decay = 16
+
+# Wash
+wash_level = -16
+wash_decay = 1100
+wash_tone = 1500
+sand = 0.35
+
+# Shore
+shore_type = Pebbles
+distance = 0.08
+air = 0.8
+width = 0.8
+space_amount = 0.1
+space_size = 0.35
+space_damping = 0.45
+
+# Filter
+filter_type = Lowpass
+highpass = 100
+filter_cutoff = 20000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 1200
+decay = 600
+sustain = 1
+release = 2200
+vel_to_level = 0.5
+vel_to_size = 0.4
+
+# Output
+gain = 0
+max_waves = 96
+seed = 0

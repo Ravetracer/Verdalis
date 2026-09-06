@@ -28,7 +28,7 @@ hand-drawn plugin window with no toolkit dependency.
 |--------|-----------|--------|
 | **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | in progress |
 | **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | in progress |
-| **ShoreBreak** | ocean waves | planned |
+| **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | in progress |
 | **SkyHowl** | winds, storms | planned |
 | **ChirpParade** | bird chirps | planned |
 | **RiverFlow** | rivers, streams | planned |
@@ -44,6 +44,11 @@ against a real recording of the thing it imitates.
 **ThunderClap** — shock-wave modelling from the bolt channel outwards, with
 distance-dependent air absorption. 17 presets from a distant rumble to a strike
 directly overhead, and a window that flashes with the bolt.
+
+**ShoreBreak** — a breaking wave in four overlapping layers: the crest
+collapsing into its bubble cloud, the foam it leaves, the wash back down the
+shore and the individual bubbles popping in it. 49 parameters, 17 presets, and
+Galvin's four breaker types, which measurably differ in the slope above 1.5 kHz.
 
 ## Build
 

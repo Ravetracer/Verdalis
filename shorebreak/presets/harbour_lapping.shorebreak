@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Harbour Lapping
+author = ShoreBreak
+description = Water slapping a pier: low, boxy and close, with the two channels far more correlated than open coast. The reference measures 0.71 against 0.26-0.50.
+features = harbour, close, low
+
+# Surf
+wave_period = 1600
+set_variation = 0.2
+wave_size = 0.4
+size_variation = 0.35
+break_attack = 180
+break_decay = 420
+break_tone = 160
+break_body = 1.5
+crest_sweep = 0.3
+breaker_type = Collapsing
+precursor = 0.15
+
+# Foam
+foam_level = -26
+foam_decay = 900
+foam_tone = 600
+foam_delay = 60
+fizz = 0.2
+
+# Swell
+swell_level = -13
+swell_tone = 100
+swell_depth = 0.2
+swell_rate = 14
+swell_width = 0.35
+
+# Bubbles
+bubble_rate = 25
+bubble_pitch = 600
+bubble_spread = 1.6
+bubble_decay = 35
+
+# Wash
+wash_level = -26
+wash_decay = 800
+wash_tone = 400
+sand = 0.25
+
+# Shore
+shore_type = Harbour
+distance = 0.05
+air = 0.5
+width = 0.3
+space_amount = 0.3
+space_size = 0.25
+space_damping = 0.3
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 5000
+filter_reso = 0.08
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 400
+sustain = 1
+release = 1800
+vel_to_level = 0.45
+vel_to_size = 0.3
+
+# Output
+gain = 0
+max_waves = 112
+seed = 0

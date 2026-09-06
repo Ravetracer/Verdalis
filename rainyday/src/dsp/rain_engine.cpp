@@ -283,15 +283,6 @@ inline float terminalVelocityMs(float diameterMm) {
    return std::max(0.0f, 9.65f - 10.3f * std::exp(-0.6f * diameterMm));
 }
 
-inline float softClip(float x) {
-   constexpr float t = 0.8f;
-   if (x > t)
-      return t + (1.0f - t) * std::tanh((x - t) / (1.0f - t));
-   if (x < -t)
-      return -t - (1.0f - t) * std::tanh((-x - t) / (1.0f - t));
-   return x;
-}
-
 inline bool noteMatches(const Voice &v, int16_t port, int16_t channel, int16_t key,
                         int32_t noteId) {
    if (noteId >= 0 && v.noteId >= 0)

@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Fast Swells
+author = ShoreBreak
+description = Short-period swell, one wave arriving before the last has finished. Busy and loud: the reference has the lowest crest factor of the shore recordings.
+features = swell, busy, energetic
+
+# Surf
+wave_period = 2100
+set_variation = 0.3
+wave_size = 0.7
+size_variation = 0.4
+break_attack = 420
+break_decay = 650
+break_tone = 620
+break_body = 0.6
+crest_sweep = 0.45
+breaker_type = Collapsing
+precursor = 0.3
+
+# Foam
+foam_level = -8
+foam_decay = 1900
+foam_tone = 900
+foam_delay = 200
+fizz = 0.3
+
+# Swell
+swell_level = -14
+swell_tone = 440
+swell_depth = 0.3
+swell_rate = 12
+swell_width = 0.9
+
+# Bubbles
+bubble_rate = 60
+bubble_pitch = 1250
+bubble_spread = 2.2
+bubble_decay = 28
+
+# Wash
+wash_level = -13
+wash_decay = 1500
+wash_tone = 1050
+sand = 0.45
+
+# Shore
+shore_type = Shingle
+distance = 0.2
+air = 0.55
+width = 0.85
+space_amount = 0.16
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 18000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 1200
+decay = 600
+sustain = 1
+release = 2600
+vel_to_level = 0.45
+vel_to_size = 0.4
+
+# Output
+gain = 0
+max_waves = 176
+seed = 0

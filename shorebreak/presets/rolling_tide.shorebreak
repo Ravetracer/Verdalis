@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Rolling Tide
+author = ShoreBreak
+description = Waves that roll rather than slam, each leaving a long bright wash. The reference's quiet stretches measure brighter than its breaks, which is the foam.
+features = surf, rolling
+
+# Surf
+wave_period = 2600
+set_variation = 0.35
+wave_size = 0.6
+size_variation = 0.45
+break_attack = 380
+break_decay = 560
+break_tone = 780
+break_body = 0.4
+crest_sweep = 0.5
+breaker_type = Collapsing
+precursor = 0.3
+
+# Foam
+foam_level = -6
+foam_decay = 2600
+foam_tone = 1100
+foam_delay = 180
+fizz = 0.4
+
+# Swell
+swell_level = -19
+swell_tone = 520
+swell_depth = 0.5
+swell_rate = 9
+swell_width = 0.9
+
+# Bubbles
+bubble_rate = 70
+bubble_pitch = 1300
+bubble_spread = 2.3
+bubble_decay = 25
+
+# Wash
+wash_level = -11
+wash_decay = 2200
+wash_tone = 950
+sand = 0.5
+
+# Shore
+shore_type = Sand
+distance = 0.2
+air = 0.6
+width = 0.88
+space_amount = 0.16
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 1200
+decay = 600
+sustain = 1
+release = 2500
+vel_to_level = 0.5
+vel_to_size = 0.35
+
+# Output
+gain = 0
+max_waves = 160
+seed = 0

@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Hollow Shore
+author = ShoreBreak
+description = A shore that rings: water working into a hollow under rock, so the space is a bigger part of the sound than the break is.
+features = cave, resonant, space
+
+# Surf
+wave_period = 4600
+set_variation = 0.45
+wave_size = 0.5
+size_variation = 0.45
+break_attack = 450
+break_decay = 600
+break_tone = 520
+break_body = 0.7
+crest_sweep = 0.5
+breaker_type = Plunging
+precursor = 0.3
+
+# Foam
+foam_level = -13
+foam_decay = 1600
+foam_tone = 800
+foam_delay = 140
+fizz = 0.25
+
+# Swell
+swell_level = -24
+swell_tone = 340
+swell_depth = 0.4
+swell_rate = 7
+swell_width = 0.7
+
+# Bubbles
+bubble_rate = 40
+bubble_pitch = 1100
+bubble_spread = 2
+bubble_decay = 45
+
+# Wash
+wash_level = -15
+wash_decay = 1800
+wash_tone = 800
+sand = 0.3
+
+# Shore
+shore_type = Rock
+distance = 0.15
+air = 0.5
+width = 0.7
+space_amount = 0.55
+space_size = 0.4
+space_damping = 0.2
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 14000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 1400
+decay = 700
+sustain = 1
+release = 3500
+vel_to_level = 0.45
+vel_to_size = 0.35
+
+# Output
+gain = 0
+max_waves = 128
+seed = 0

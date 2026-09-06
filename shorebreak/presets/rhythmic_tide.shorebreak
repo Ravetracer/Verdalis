@@ -1,0 +1,74 @@
+# ShoreBreak preset
+format = 1
+name = Rhythmic Tide
+author = ShoreBreak
+description = Almost metronomic surf. The reference's gaps scatter by only 0.3 s, which is as regular as the sea gets, so Set Variation is nearly off.
+features = surf, regular, rhythmic
+
+# Surf
+wave_period = 3900
+set_variation = 0.08
+wave_size = 0.6
+size_variation = 0.2
+break_attack = 380
+break_decay = 560
+break_tone = 760
+break_body = 0.35
+crest_sweep = 0.5
+breaker_type = Collapsing
+precursor = 0.3
+
+# Foam
+foam_level = -8
+foam_decay = 2400
+foam_tone = 1000
+foam_delay = 200
+fizz = 0.35
+
+# Swell
+swell_level = -20
+swell_tone = 500
+swell_depth = 0.45
+swell_rate = 8
+swell_width = 0.85
+
+# Bubbles
+bubble_rate = 55
+bubble_pitch = 1250
+bubble_spread = 2.1
+bubble_decay = 26
+
+# Wash
+wash_level = -12
+wash_decay = 2000
+wash_tone = 900
+sand = 0.45
+
+# Shore
+shore_type = Sand
+distance = 0.22
+air = 0.6
+width = 0.85
+space_amount = 0.15
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 1200
+decay = 600
+sustain = 1
+release = 2500
+vel_to_level = 0.45
+vel_to_size = 0.3
+
+# Output
+gain = 0
+max_waves = 144
+seed = 0

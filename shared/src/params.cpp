@@ -155,13 +155,18 @@ bool paramTextToValue(const ParamDesc &desc, const char *text, double *outRaw) {
    if (end == text)
       return false;
 
-   // Accept a k/K multiplier for Hz and ms fields, and a bare "s" on a
-   // millisecond field, which is how values over a second are displayed. A
-   // kilometre field is already in k, so a "k" there is its own unit.
+   // Accept a k/K multiplier for Hz and ms fields, a bare "s" on a millisecond
+   // field (which is how values over a second are displayed) and "ms" on a
+   // field that reads in seconds. A kilometre field is already in k, so a "k"
+   // there is its own unit. The "ms" test comes first: on a seconds field an
+   // "m" is only ever the start of "ms".
    while (*end == ' ')
       ++end;
    const bool kilometres = std::strcmp(desc.unit, "km") == 0;
-   if ((*end == 'k' || *end == 'K') && !kilometres)
+   const bool seconds = std::strcmp(desc.unit, "s") == 0;
+   if ((*end == 'm' || *end == 'M') && seconds && (end[1] == 's' || end[1] == 'S'))
+      v *= 0.001; // "500 ms" typed into a field that reads in seconds
+   else if ((*end == 'k' || *end == 'K') && !kilometres)
       v *= 1000.0;
    else if ((*end == 'm' || *end == 'M') && kilometres && end[1] != 'i')
       v *= 0.001; // "800 m"
