@@ -29,6 +29,7 @@ enum ParamId : uint32_t {
    kParamCrestSweep,
    kParamBreakerType,
    kParamPrecursor,
+   kParamBubbleMix,
 
    // Foam: what a break leaves behind.
    kParamFoamLevel,

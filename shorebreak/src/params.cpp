@@ -44,6 +44,9 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamPrecursor, "precursor", "Precursor", "Surf", 0.3,
        "The crest of an incipient breaker already bubbles before it collapses. This is "
        "how much of that you hear."),
+   PCT(kParamBubbleMix, "bubble_mix", "Bubble Mix", "Surf", 0.82,
+       "What the break is made of: turbulence at 0, a cascade of individual bubbles at 1. "
+       "A real break is mostly bubbles -- 15-28 of them a second are separately audible."),
 
    // ------------------------------------------------------------------ foam
    LIN(kParamFoamLevel, "foam_level", "Foam Level", "Foam", -60.0, 6.0, -8.0, "dB",
@@ -70,14 +73,14 @@ const ParamDesc kParams[kNumParams] = {
        "Stereo spread of the bed. The open sea is wide and barely correlated."),
 
    // --------------------------------------------------------------- bubbles
-   LOG(kParamBubbleRate, "bubble_rate", "Bubble Rate", "Bubbles", 0.45, 0.5, 400.0, "/s",
-       "Individual bubbles heard in the foam, each one a resonator of its own size."),
+   LOG(kParamBubbleRate, "bubble_rate", "Bubble Rate", "Bubbles", 0.5, 2.0, 600.0, "/s",
+       "Bubbles formed per second at the peak of a break. Keep it near the\n       references' 15-30: any faster and they overlap into noise instead of\n       being separately audible, which is the difference between a cascade and\n       a whoosh."),
    LOG(kParamBubblePitch, "bubble_pitch", "Bubble Pitch", "Bubbles", 0.45, 200.0, 5000.0, "Hz",
        "Centre pitch of a bubble, which is really its radius: small bubbles ring high."),
    LIN(kParamBubbleSpread, "bubble_spread", "Bubble Spread", "Bubbles", 0.0, 5.0, 2.2, "oct",
        "Spread of bubble sizes. A foam sheet holds every size at once."),
-   LOG(kParamBubbleDecay, "bubble_decay", "Bubble Decay", "Bubbles", 0.3, 2.0, 400.0, "ms",
-       "How long one bubble rings. Short and glassy, or a longer plink."),
+   LIN(kParamBubbleDecay, "bubble_decay", "Bubble Ring", "Bubbles", 4.0, 120.0, 34.0, "",
+       "How many cycles a bubble rings for. Ringing time follows pitch, as it does\n       physically: a small bubble is high and damps fast. 34 gives the measured\n       2-62 ms spread across the size range."),
 
    // ------------------------------------------------------------------ wash
    LIN(kParamWashLevel, "wash_level", "Wash Level", "Wash", -80.0, 6.0, -14.0, "dB",

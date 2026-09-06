@@ -138,6 +138,7 @@ private:
       p.crestSweep = static_cast<float>(realValue(kParamCrestSweep));
       p.breakerType = static_cast<int>(realValue(kParamBreakerType));
       p.precursor = static_cast<float>(realValue(kParamPrecursor));
+      p.bubbleMix = static_cast<float>(realValue(kParamBubbleMix));
 
       // Foam.
       p.foamGain = dbToGain(static_cast<float>(realValue(kParamFoamLevel)));
@@ -157,7 +158,7 @@ private:
       p.bubbleRateHz = static_cast<float>(realValue(kParamBubbleRate));
       p.bubblePitchHz = static_cast<float>(realValue(kParamBubblePitch));
       p.bubbleSpreadOct = static_cast<float>(realValue(kParamBubbleSpread));
-      p.bubbleDecaySec = static_cast<float>(realValue(kParamBubbleDecay)) * 0.001f;
+      p.bubbleQ = static_cast<float>(realValue(kParamBubbleDecay));
 
       // Wash.
       p.washGain = dbToGain(static_cast<float>(realValue(kParamWashLevel)));

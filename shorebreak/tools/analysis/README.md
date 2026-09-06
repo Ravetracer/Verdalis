@@ -25,6 +25,74 @@ The scripts here read a directory of references and print the numbers below.
 | L/R correlation | 0.26–0.50 open coast, 0.71 in a harbour | `Width`, `Swell Width` |
 | Distant HF rolloff | −50 dB at 12.5 kHz | `Distance` / `Air` |
 
+## The cascade: what a break is actually made of
+
+The first version of the engine built a break from a bandpass sweeping over
+noise. It sounded like a slowed-down whip crack, because that is what it was: a
+smooth spectral sweep. A break on a beach is not one sound but a **cascade of
+discrete bubble events**, and that is measurable.
+
+`bubbles.py` detects transient onsets in the 700 Hz - 9 kHz band by spectral
+flux and characterises each one:
+
+| Reference | onsets/s | onset pitch, median (10-90%) |
+|---|---|---|
+| Beach of Kattegat - Soft Waves | 27 | 1078 Hz (656-1880) |
+| Beach of Kattegat - Soft Waves, first wave 1.16-2.24 s | 15 | 1172 Hz (844-1734) |
+| Beach of Kattegat - Soft Waves, quiet gap 57.4-59.4 s | 21 | 1031 Hz (703-1889) |
+| Beach of Kattegat - Sand and Foam | 26 | 1219 Hz (652-4509) |
+| Kattegat Uproar - Big Waves Crashing | 24 | 914 Hz (422-1453) |
+| Shores of Kattegat - Rolling Tide | 25 | 938 Hz (516-1645) |
+| Beach of Kattegat - Rhythmic Tide | 30 | 1219 Hz (609-1833) |
+| The City Coast - Gentle Waves | 25 | 1055 Hz (562-1875) |
+| The City Harbor - Water Lapping on Pier | 17 | 469 Hz (422-848) |
+| Northsea - Earth-Toned Roar | 7 | 609 Hz (422-891) |
+
+Two things follow, and the second is the one that matters:
+
+1. **Onset pitches cluster around 1 kHz**, spanning roughly an octave either
+   side. By Minnaert that is a bubble about 3 mm across, and the spread is 1.7
+   to 5 mm. So `Bubble Spread` belongs near one octave, not the two and a half
+   the first version used.
+2. **The rate is low enough that bubbles do not overlap.** 27 onsets a second
+   with a 40 ms ring is a concurrency of about 1.1 -- roughly one bubble
+   sounding at a time. That is what makes them separately audible.
+
+The second point is what the first version got wrong twice over. Reasoning that
+"only a fraction of bubbles are resolvable", `Bubble Rate` was allowed up to
+6000/s and the presets used 1400/s. At a 38 ms ring that is **53 bubbles
+overlapping**, and fifty-three resonators sum straight back into noise. The
+cascade has to be sparse to be a cascade at all.
+
+The engine therefore now builds the break *from* bubbles, with `Bubble Mix`
+setting how much of it is the cascade and how much the turbulence underneath,
+and the spawn rate following the break envelope so bubbles form fastest as the
+crest collapses. A bubble's ringing time is derived from its pitch rather than
+set separately -- a fixed number of cycles, which is how a real bubble behaves
+and which reproduces the measured 2-62 ms spread from one control.
+
+`graininess.py` measures whether the result is grainy or smooth: the variation
+of the 4 ms envelope inside the loudest fifth of the signal, band-limited to
+where bubbles live.
+
+| | grain CV | p99/median |
+|---|---|---|
+| ref Soft Waves, within the first wave | 0.33 | 1.99 |
+| ref Soft Waves, within the quiet gap | 0.35 | 2.23 |
+| ref Gentle Waves | 0.61 | 3.89 |
+| ref Big Waves Crashing | 0.76 | 5.22 |
+| ref Sand and Foam | 1.08 | 8.36 |
+| Gentle Waves | 0.53 | 3.29 |
+| Big Waves Crashing | 0.67 | 3.70 |
+| Sand and Foam | 0.63 | 3.32 |
+
+Note the reference figures for whole files span several breaks and their gaps,
+while a six-second render holds about two waves, so the whole-file numbers are
+not strictly comparable; the within-wave rows are. On that comparison the
+synthesis is now at least as grainy as the reference. Sand and Foam is still
+the smoothest outlier, and the reason is that its foam bed is broadband noise
+where the reference's foam is itself granular.
+
 ## What the literature added
 
 `!dev/` holds the papers (gitignored, not ours to ship).

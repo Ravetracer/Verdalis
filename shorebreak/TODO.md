@@ -23,6 +23,12 @@
 
 ## Model
 
+- [ ] **Make the foam granular.** It is broadband noise; in the references the
+      foam is itself a cascade of small bubbles, which is why Sand and Foam
+      measures a grain CV of 0.63 against the reference's 1.08. A second, sparser
+      and higher-pitched bubble stream during the foam phase is the obvious fix,
+      and it is what the quiet gap at 57.4 s in Soft Waves actually is.
+
 - [ ] **Bubble pitch as a radius.** Minnaert gives f₀ ≈ 3.26 / r, so the
       parameter could read in millimetres, which is what it physically is. That
       would match the way RainyDay names its droplet sizes.

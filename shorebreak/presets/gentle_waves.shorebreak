@@ -16,6 +16,7 @@ break_tone = 850
 break_body = 0.05
 crest_sweep = 0.4
 breaker_type = Spilling
+bubble_mix = 0.6
 precursor = 0.3
 
 # Foam
@@ -33,10 +34,10 @@ swell_rate = 8
 swell_width = 0.9
 
 # Bubbles
-bubble_rate = 70
-bubble_pitch = 1400
-bubble_spread = 2.3
-bubble_decay = 20
+bubble_rate = 30
+bubble_pitch = 1055
+bubble_spread = 1.1
+bubble_decay = 32
 
 # Wash
 wash_level = -14

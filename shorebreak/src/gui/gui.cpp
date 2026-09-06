@@ -33,7 +33,7 @@ constexpr uint32_t kSurfParams[] = {
    kParamWavePeriod, kParamSetVariation, kParamWaveSize,  kParamSizeVariation,
    kParamBreakAttack, kParamBreakDecay,
    kParamBreakTone,  kParamBreakBody,    kParamCrestSweep, kParamBreakerType,
-   kParamPrecursor,
+   kParamPrecursor,   kParamBubbleMix,
 };
 constexpr uint32_t kFoamParams[] = {kParamFoamLevel, kParamFoamDecay, kParamFoamTone,
                                     kParamFoamDelay, kParamFizz};

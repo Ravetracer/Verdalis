@@ -380,9 +380,13 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    w.panR = std::sin(a);
 
    w.bubbleTimer = 0.0f;
+   // The size distribution starts high and slides down over the life of the
+   // break: small bubbles are formed first, larger ones coalesce after.
+   w.pitchScale = 1.0f + 0.35f * mP.crestSweep;
+   w.pitchScaleCoef = decayCoefFor(std::max(0.08f, atk + mP.breakDecaySec), mSampleRate);
 }
 
-void WaveEngine::spawnBubble(const Wave &w, float level) {
+void WaveEngine::spawnBubble(const Wave &w, float level, float pitchScale) {
    Bubble *slot = allocateBubble();
    if (!slot)
       return;
@@ -392,16 +396,28 @@ void WaveEngine::spawnBubble(const Wave &w, float level) {
 
    b.active = true;
    b.rng.seed(mRng.next() | 1u);
-   // A bubble's pitch is its radius. The sheet holds every size at once, so
-   // draw from a wide log-uniform spread.
+
+   // A bubble's pitch is its radius, by Minnaert: f0 ~= 3.26 / r, so 1 kHz is a
+   // bubble about 3 mm across. The cloud holds a range of sizes at once, and
+   // the references measure the audible ones between 650 and 1930 Hz.
    const float oct = (mRng.uniform() * 2.0f - 1.0f) * mP.bubbleSpreadOct;
-   const float f = clampf(mP.bubblePitchHz * st.bubbleTilt * std::pow(2.0f, oct), 80.0f,
-                          0.45f * sr);
+   const float f = clampf(mP.bubblePitchHz * st.bubbleTilt * pitchScale * std::pow(2.0f, oct),
+                          80.0f, 0.45f * sr);
+
+   // Ringing time follows pitch rather than being set independently: a bubble
+   // rings for a roughly fixed number of cycles, so a small high one damps fast
+   // and a large low one plinks. That is what produces the measured 2-62 ms
+   // spread from one setting.
+   const float cycles = clampf(mP.bubbleQ * (0.55f + 0.9f * mRng.uniform()), 2.0f, 400.0f);
+   const float ringSec = cycles / f;
+
    b.band.reset();
-   b.band.setCutoff(f, 6.0f + 10.0f * mRng.uniform(), sr);
-   b.level = level * (0.3f + 0.7f * mRng.uniform());
-   b.decayCoef = decayCoefFor(std::max(0.002f, mP.bubbleDecaySec * (0.5f + mRng.uniform())),
-                              mSampleRate);
+   // The Q of the filter is what makes it ring at all; the envelope below is
+   // what stops it. Both are wanted: the filter gives the pitch, the envelope
+   // gives the shape.
+   b.band.setCutoff(f, 8.0f + 14.0f * mRng.uniform(), sr);
+   b.level = level * (0.25f + 0.75f * mRng.uniform());
+   b.decayCoef = decayCoefFor(ringSec, mSampleRate);
    b.panL = w.panL;
    b.panR = w.panR;
 }
@@ -502,9 +518,26 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
          const float p2 = w.slopeLp2.tick(p1);
          band = p1 + (p2 - p1) * w.slopeMix;
 
-         float s = band * w.breakEnv * w.breakLevel;
+         // Bubble Mix decides what the break is made of. A real break is mostly
+         // the sound of bubbles being formed, so the turbulence band is only
+         // what is left over.
+         const float turb = 1.0f - clampf(mP.bubbleMix, 0.0f, 1.0f);
+         float s = band * w.breakEnv * w.breakLevel * turb;
          if (w.body > 0.0f)
             s += w.bodyLp.tick(n) * w.body * w.breakEnv * w.breakLevel * 0.9f;
+
+         // The cascade itself. The rate follows the break envelope, so bubbles
+         // are formed fastest as the crest collapses. This is the break; the
+         // filters above only colour what surrounds it.
+         w.pitchScale = 1.0f + (w.pitchScale - 1.0f) * w.pitchScaleCoef;
+         if (bubbleRate > 0.0f && mP.bubbleMix > 0.001f) {
+            const float drive = w.breakEnv * w.breakEnv; // fastest at the peak
+            w.bubbleTimer -= bubbleRate * drive;
+            while (w.bubbleTimer <= 0.0f) {
+               w.bubbleTimer += 1.0f;
+               spawnBubble(w, w.breakLevel * mP.bubbleMix * 3.2f, w.pitchScale);
+            }
+         }
 
          // The precursor bubbling, which fades as the break it announced takes
          // over. Reuses the foam highpass, being the same small bubbles.
@@ -531,12 +564,13 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
             const float f = w.foamHp.tick(w.rng.white());
             s += w.foamLp.tick(f) * w.foamEnv * w.foamLevel;
 
-            // Bubbles pop in the foam while it is loud enough to hide them.
-            if (bubbleRate > 0.0f && w.foamEnv > 0.02f) {
-               w.bubbleTimer -= bubbleRate * w.foamEnv;
+            // The cascade thins out but does not stop: the references resolve
+            // 21 onsets a second even in the quiet gap between waves.
+            if (bubbleRate > 0.0f && w.foamEnv > 0.01f && mP.bubbleMix > 0.001f) {
+               w.bubbleTimer -= bubbleRate * w.foamEnv * 0.22f;
                while (w.bubbleTimer <= 0.0f) {
                   w.bubbleTimer += 1.0f;
-                  spawnBubble(w, w.foamLevel * w.foamEnv * 0.5f);
+                  spawnBubble(w, w.foamLevel * w.foamEnv * 2.2f, w.pitchScale);
                }
             }
          }

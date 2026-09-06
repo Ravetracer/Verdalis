@@ -58,6 +58,7 @@ struct EngineParams {
    float crestSweep = 0.5f;
    int breakerType = kBreakerPlunging;
    float precursor = 0.3f;
+   float bubbleMix = 0.82f;
 
    // foam
    float foamGain = 0.4f; // linear
@@ -77,7 +78,7 @@ struct EngineParams {
    float bubbleRateHz = 40.0f;
    float bubblePitchHz = 1200.0f;
    float bubbleSpreadOct = 2.2f;
-   float bubbleDecaySec = 0.03f;
+   float bubbleQ = 34.0f;
 
    // wash
    float washGain = 0.2f; // linear
@@ -177,8 +178,16 @@ struct Wave {
    float panL = 0.7071f, panR = 0.7071f;
    RngLite rng;
 
-   // Bubbles are spawned from the foam of this wave.
+   // The cascade. A break is mostly the sound of bubbles being formed, so the
+   // spawn rate follows the break's own envelope: fastest as the crest
+   // collapses, thinning out as the foam that follows it decays.
    float bubbleTimer = 0.0f;
+   // Newly formed bubbles are small and ring high; larger ones appear and
+   // coalesce as the cloud develops, so the size distribution slides downwards.
+   // Klusek & Lisimenka see the same thing as a mean frequency that jumps at the
+   // plunging instant and falls afterwards.
+   float pitchScale = 1.0f;
+   float pitchScaleCoef = 0.0f;
 
    // Done when nothing is still rising and everything has faded out.
    inline bool finished() const {
@@ -248,7 +257,7 @@ public:
 private:
    void updateFilters();
    void spawnWave(Voice &v, float envLevel);
-   void spawnBubble(const Wave &w, float level);
+   void spawnBubble(const Wave &w, float level, float pitchScale);
    Wave *allocateWave();
    Bubble *allocateBubble();
    void processVoice(Voice &v, float *outL, float *outR, uint32_t numSamples);

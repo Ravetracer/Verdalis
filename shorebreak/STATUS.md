@@ -36,6 +36,22 @@ Spectral shape is a good fit across the library. Envelope character is right for
 shore breaks (Sand and Foam measures an envelope variation of 1.82 against the
 reference's 1.86; Rhythmic Tide 1.16 against 1.24).
 
+## The break is a cascade, not a sweep
+
+The first version built a break by sweeping a bandpass over noise, which sounds
+like a slowed-down whip crack rather than a wave. The references say a break is
+a cascade of discrete bubble events -- 15-30 separately audible onsets a second,
+clustered around 1 kHz -- so the engine now builds the break from bubbles and
+uses the noise band only as what surrounds them. `Bubble Mix` sets the balance.
+
+The rate matters more than anything: at the references' 27 onsets a second with
+a 40 ms ring, about one bubble sounds at a time. Push the rate up and they
+overlap into noise, which is how the first version ended up with a whoosh
+despite having a bubble layer all along.
+
+Measured graininess is now inside the reference range; see
+`tools/analysis/README.md`.
+
 ## What does not fit yet
 
 Both are in `TODO.md` with what is known about them:
@@ -45,6 +61,9 @@ Both are in `TODO.md` with what is known about them:
 2. **The steadiest sources are too eventful.** Distant Roar measures an
    envelope variation of 0.53 against the reference's 0.10; the individual
    waves still punch through what should be a continuous roar.
+3. **The foam bed is smooth where the references' is granular.** Sand and Foam
+   measures a grain CV of 0.63 against 1.08. The foam is broadband noise; in the
+   references it is itself made of bubbles. It wants its own sparse cascade.
 
 ## Known bugs found and fixed in this version
 
@@ -56,6 +75,10 @@ by listening, and the same class of mistake is easy to repeat:
   tail, which flattened the envelope and made everything far too bright.
 - `Bubble Rate` was a Log parameter with a lower display bound of zero, and
   `dispMin * (dispMax/dispMin)^raw` is NaN. The window showed `-nan /s`.
+- `Bubble Rate` was allowed up to 6000/s on the reasoning that only some
+  bubbles are separately audible. At 1400/s and a 38 ms ring that is 53 bubbles
+  overlapping, which sums back into noise -- the cascade has to be sparse to be
+  a cascade. The range is now 2-600/s and the presets sit at 12-60.
 - `noteOn` drew its initial swell phase and first wave timer from the shared RNG.
   Note events can arrive before the Seed parameter has been applied, so a fixed
   Seed did not promise the same sea. Both are now derived from the voice's slot

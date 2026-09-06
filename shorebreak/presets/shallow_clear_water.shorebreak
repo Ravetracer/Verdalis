@@ -16,6 +16,7 @@ break_tone = 1000
 break_body = 0.12
 crest_sweep = 0.45
 breaker_type = Surging
+bubble_mix = 0.6
 precursor = 0.2
 
 # Foam
@@ -33,10 +34,10 @@ swell_rate = 6
 swell_width = 0.9
 
 # Bubbles
-bubble_rate = 110
-bubble_pitch = 1900
-bubble_spread = 2.4
-bubble_decay = 16
+bubble_rate = 26
+bubble_pitch = 1150
+bubble_spread = 1.2
+bubble_decay = 30
 
 # Wash
 wash_level = -16

@@ -16,6 +16,7 @@ break_tone = 700
 break_body = 0.7
 crest_sweep = 0.7
 breaker_type = Plunging
+bubble_mix = 0.6
 precursor = 0.4
 
 # Foam
@@ -33,10 +34,10 @@ swell_rate = 6
 swell_width = 0.9
 
 # Bubbles
-bubble_rate = 60
-bubble_pitch = 1200
-bubble_spread = 2.4
-bubble_decay = 28
+bubble_rate = 34
+bubble_pitch = 910
+bubble_spread = 1.1
+bubble_decay = 34
 
 # Wash
 wash_level = -13
