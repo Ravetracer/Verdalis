@@ -16,7 +16,7 @@ break_tone = 160
 break_body = 1.5
 crest_sweep = 0.3
 breaker_type = Collapsing
-bubble_mix = 0.45
+bubble_mix = 0.3
 precursor = 0.15
 
 # Foam
@@ -24,6 +24,7 @@ foam_level = -26
 foam_decay = 900
 foam_tone = 600
 foam_delay = 60
+foam_bubbles = 0.4
 fizz = 0.2
 
 # Swell
@@ -34,10 +35,10 @@ swell_rate = 14
 swell_width = 0.35
 
 # Bubbles
-bubble_rate = 20
+bubble_rate = 22
 bubble_pitch = 470
 bubble_spread = 0.8
-bubble_decay = 42
+bubble_decay = 1
 
 # Wash
 wash_level = -26

@@ -37,6 +37,7 @@ enum ParamId : uint32_t {
    kParamFoamTone,
    kParamFoamDelay,
    kParamFizz,
+   kParamFoamBubbles,
 
    // Swell: the continuous bed the waves sit on.
    kParamSwellLevel,

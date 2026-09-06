@@ -23,11 +23,16 @@
 
 ## Model
 
-- [ ] **Make the foam granular.** It is broadband noise; in the references the
-      foam is itself a cascade of small bubbles, which is why Sand and Foam
-      measures a grain CV of 0.63 against the reference's 1.08. A second, sparser
-      and higher-pitched bubble stream during the foam phase is the obvious fix,
-      and it is what the quiet gap at 57.4 s in Soft Waves actually is.
+- [ ] **Settle the preset graininess by ear.** The measurements got the
+      character into range but several presets are now grainier than their
+      references. The metric cannot tell the difference between convincing
+      bubbling and too much of it.
+- [ ] **Couple the bubbles.** Xue et al.'s point is that bubbles in a cloud
+      force each other, and that this is what produces the low modes. The
+      collective mode is currently a single resonator at f0/cbrt(N); the real
+      thing is a spectrum of modes (their Figure 3 shows 386, 589, 732, 1121,
+      1579 Hz for one pour). A handful of resonators rather than one would be
+      closer, and is still cheap.
 
 - [ ] **Bubble pitch as a radius.** Minnaert gives f₀ ≈ 3.26 / r, so the
       parameter could read in millimetres, which is what it physically is. That

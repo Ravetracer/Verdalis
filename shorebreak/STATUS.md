@@ -36,6 +36,25 @@ Spectral shape is a good fit across the library. Envelope character is right for
 shore breaks (Sand and Foam measures an envelope variation of 1.82 against the
 reference's 1.86; Rhythmic Tide 1.16 against 1.24).
 
+## Bubbles are oscillators, not filtered noise
+
+A bubble is generated as a decaying sinusoid with a short pinch-off transient,
+which is the impulse response of the damped harmonic oscillator Xue et al.
+model. Its damping is computed from the physics rather than set by hand:
+radiative loss is a constant 0.01368 for every size and the thermal term goes as
+sqrt(f), giving Q from 20 to 46 and ring times of 2 to 124 ms across the size
+range -- against 5-100 ms measured. `Bubble Damping` multiplies that, 1 being
+physical.
+
+The foam runs a **second, finer cascade**: the slowed references measure the
+foam fizzle at 2.2 kHz and 29 onsets a second against the break's 850 Hz and 9,
+so foam bubbles are smaller, higher and faster than the ones a break makes.
+`Foam Bubbles` sets how much of the foam is that cascade rather than hiss.
+
+`Break Body` now drives a resonator at the cloud's collective mode,
+`bubblePitch / cbrt(N)` with N from wave size, which is where surf rumble
+physically comes from.
+
 ## The break is a cascade, not a sweep
 
 The first version built a break by sweeping a bandpass over noise, which sounds
@@ -61,9 +80,11 @@ Both are in `TODO.md` with what is known about them:
 2. **The steadiest sources are too eventful.** Distant Roar measures an
    envelope variation of 0.53 against the reference's 0.10; the individual
    waves still punch through what should be a continuous roar.
-3. **The foam bed is smooth where the references' is granular.** Sand and Foam
-   measures a grain CV of 0.63 against 1.08. The foam is broadband noise; in the
-   references it is itself made of bubbles. It wants its own sparse cascade.
+3. **Several presets are now grainier than their references.** Sand and Foam
+   matches almost exactly (0.99 against 1.08), but Big Waves measures 1.18
+   against 0.76 and Rhythmic Tide 1.19 against a comparable figure. Erring
+   toward more bubbling was deliberate after the first version was too smooth,
+   and Bubble Mix dials it back, but the presets should be settled by ear.
 
 ## Known bugs found and fixed in this version
 
@@ -75,6 +96,11 @@ by listening, and the same class of mistake is easy to repeat:
   tail, which flattened the envelope and made everything far too bright.
 - `Bubble Rate` was a Log parameter with a lower display bound of zero, and
   `dispMin * (dispMax/dispMin)^raw` is NaN. The window showed `-nan /s`.
+- Q values were passed to `Svf::setCutoff`, whose resonance argument is 0..1.
+  Anything above 1 silently clamped to maximum resonance, so the wash band was a
+  maximum-Q bandpass on continuous noise -- a whistle, loudest in Receding Sand
+  because it has the most Sand and the loudest wash. Resonance is now converted
+  from a Q properly, and the wash is barely resonant on purpose.
 - `Bubble Rate` was allowed up to 6000/s on the reasoning that only some
   bubbles are separately audible. At 1400/s and a 38 ms ring that is 53 bubbles
   overlapping, which sums back into noise -- the cascade has to be sparse to be

@@ -66,6 +66,7 @@ struct EngineParams {
    float foamToneHz = 2500.0f;
    float foamDelaySec = 0.15f;
    float fizz = 0.5f;
+   float foamBubbles = 0.7f;
 
    // swell
    float swellGain = 0.126f; // linear
@@ -78,7 +79,7 @@ struct EngineParams {
    float bubbleRateHz = 40.0f;
    float bubblePitchHz = 1200.0f;
    float bubbleSpreadOct = 2.2f;
-   float bubbleQ = 34.0f;
+   float bubbleDamping = 1.0f;
 
    // wash
    float washGain = 0.2f; // linear
@@ -164,6 +165,17 @@ struct Wave {
    bool foamRising = true;
    int foamDelaySamples = 0;
 
+   // The collective mode of the whole bubble cloud. Xue et al. show the lowest
+   // mode of a cloud of N bubbles falls as f0 / cbrt(N), so a thousand bubbles
+   // ring an order of magnitude below one -- which is where surf rumble comes
+   // from. It is not a lowpass of the break, it is a resonance of its own.
+   Svf cloudBand;
+   float cloudLevel = 0.0f;
+
+   // The foam runs its own, faster and higher cascade: smaller bubbles.
+   float foamBubbleTimer = 0.0f;
+   float foamPitchScale = 2.0f;
+
    // The wash: a mid band with a slow walk on it.
    Svf washBand;
    float washLevel = 0.0f;
@@ -199,11 +211,21 @@ struct Wave {
 // One bubble in the foam: a resonator at the pitch its radius gives it. Four
 // bytes of RNG state rather than a full generator, because there can be
 // hundreds alive and they are walked every sample.
+// One bubble: a damped harmonic oscillator, which is what Xue et al.'s
+// equation (2) reduces to once it has been struck. Its impulse response is a
+// decaying sinusoid, so that is what is generated -- directly, rather than by
+// ringing a filter, which gives exact control of level, pitch and decay for the
+// price of one table lookup a sample.
 struct Bubble {
    bool active = false;
-   Svf band;
+   float phase = 0.0f;
+   float inc = 0.0f;
    float level = 0.0f;
    float decayCoef = 0.0f;
+   // The entrainment transient: a few milliseconds of noise as the bubble is
+   // pinched off, which is the click under the tone.
+   float clickLevel = 0.0f;
+   float clickCoef = 0.0f;
    float panL = 0.7071f, panR = 0.7071f;
    RngLite rng;
 };

@@ -44,7 +44,7 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamPrecursor, "precursor", "Precursor", "Surf", 0.3,
        "The crest of an incipient breaker already bubbles before it collapses. This is "
        "how much of that you hear."),
-   PCT(kParamBubbleMix, "bubble_mix", "Bubble Mix", "Surf", 0.82,
+   PCT(kParamBubbleMix, "bubble_mix", "Bubble Mix", "Surf", 0.45,
        "What the break is made of: turbulence at 0, a cascade of individual bubbles at 1. "
        "A real break is mostly bubbles -- 15-28 of them a second are separately audible."),
 
@@ -58,7 +58,11 @@ const ParamDesc kParams[kNumParams] = {
    LOG(kParamFoamDelay, "foam_delay", "Foam Delay", "Foam", 0.35, 1.0, 2500.0, "ms",
        "How long after the break the foam arrives. Zero on a shore break, later off a bar."),
    PCT(kParamFizz, "fizz", "Fizz", "Foam", 0.5,
-       "Fineness of the foam: a wide sheet of small bubbles, or a coarser seething."),
+       "Fineness of the foam. Foam bubbles are smaller than the ones a break makes, so "
+       "they ring higher: this is how much higher."),
+   PCT(kParamFoamBubbles, "foam_bubbles", "Foam Bubbles", "Foam", 0.7,
+       "How much of the foam is separately audible bubbles rather than a bed of hiss. "
+       "The fizzling of foam on sand measures 29 onsets a second at 2.2 kHz."),
 
    // ----------------------------------------------------------------- swell
    LIN(kParamSwellLevel, "swell_level", "Swell Level", "Swell", -80.0, 6.0, -18.0, "dB",
@@ -79,8 +83,8 @@ const ParamDesc kParams[kNumParams] = {
        "Centre pitch of a bubble, which is really its radius: small bubbles ring high."),
    LIN(kParamBubbleSpread, "bubble_spread", "Bubble Spread", "Bubbles", 0.0, 5.0, 2.2, "oct",
        "Spread of bubble sizes. A foam sheet holds every size at once."),
-   LIN(kParamBubbleDecay, "bubble_decay", "Bubble Ring", "Bubbles", 4.0, 120.0, 34.0, "",
-       "How many cycles a bubble rings for. Ringing time follows pitch, as it does\n       physically: a small bubble is high and damps fast. 34 gives the measured\n       2-62 ms spread across the size range."),
+   LIN(kParamBubbleDecay, "bubble_damping", "Bubble Damping", "Bubbles", 0.25, 4.0, 1.0, "x",
+       "Multiplies the damping a bubble actually has. At 1 it is physical: radiative\n       plus thermal loss after Xue et al., which gives Q 20-46 and ring times of\n       2-124 ms across the size range. Below 1 rings longer, above 1 is deader."),
 
    // ------------------------------------------------------------------ wash
    LIN(kParamWashLevel, "wash_level", "Wash Level", "Wash", -80.0, 6.0, -14.0, "dB",

@@ -146,6 +146,7 @@ private:
       p.foamToneHz = static_cast<float>(realValue(kParamFoamTone));
       p.foamDelaySec = static_cast<float>(realValue(kParamFoamDelay)) * 0.001f;
       p.fizz = static_cast<float>(realValue(kParamFizz));
+      p.foamBubbles = static_cast<float>(realValue(kParamFoamBubbles));
 
       // Swell.
       p.swellGain = dbToGain(static_cast<float>(realValue(kParamSwellLevel)));
@@ -158,7 +159,7 @@ private:
       p.bubbleRateHz = static_cast<float>(realValue(kParamBubbleRate));
       p.bubblePitchHz = static_cast<float>(realValue(kParamBubblePitch));
       p.bubbleSpreadOct = static_cast<float>(realValue(kParamBubbleSpread));
-      p.bubbleQ = static_cast<float>(realValue(kParamBubbleDecay));
+      p.bubbleDamping = static_cast<float>(realValue(kParamBubbleDecay));
 
       // Wash.
       p.washGain = dbToGain(static_cast<float>(realValue(kParamWashLevel)));

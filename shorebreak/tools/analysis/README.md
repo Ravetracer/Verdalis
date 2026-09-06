@@ -93,6 +93,86 @@ synthesis is now at least as grainy as the reference. Sand and Foam is still
 the smoothest outlier, and the reason is that its foam bed is broadband noise
 where the reference's foam is itself granular.
 
+## Slowed references, and the two phases of a wave
+
+Two references were slowed to 40% speed in Audacity, which lowers the pitch by
+the same factor and pulls the individual bubbles far enough apart to be counted.
+The factor was checked rather than assumed: the spectral centroid and the 90%
+rolloff of the slowed files sit at 0.42-0.45 of the originals', so frequencies
+scale by 2.5 and durations by 0.4 to recover real values.
+
+Slowing them apart shows that a wave has **two distinct bubble phases**, and
+they are not the same sound:
+
+| Beach of Kattegat - Rhythmic Tide | onsets/s | pitch median | 10-90% |
+|---|---|---|---|
+| break / bubbling, 1.10 s | 9 | 850 Hz | 691-1301 |
+| foam fizzle, 2.57 s | **29** | **2168 Hz** | 1312-3516 |
+
+| Beach of Kattegat - Soft Waves | onsets/s | pitch median | 10-90% |
+|---|---|---|---|
+| break, 0.84 s | 20 | 1289 Hz | 832-1770 |
+| foam, 1.95 s | 24 | 1113 Hz | 645-1904 |
+
+The foam fizzle is **higher pitched and three times faster** than the break that
+left it -- finer bubbles, exactly as Minnaert would have it, since a break
+entrains large pockets and what survives is the small ones. The first version
+had both phases drawing from one distribution that slid *downwards*, which is
+backwards. The foam now runs its own cascade, higher and faster, controlled by
+`Foam Bubbles` and pitched by `Fizz`.
+
+## Bubble physics, from Xue et al.
+
+Xue, Aronson, Wang, Langlois & James, *Improved Water Sound Synthesis using
+Coupled Bubbles*, ACM TOG 42(4), 2023. Their `FluidSound` implementation is an
+offline coupled-oscillator solver over bubble tracks from a fluid simulation, so
+none of it runs in a plugin -- but the analytic parts do.
+
+**A bubble is a damped harmonic oscillator**, so its impulse response is a
+decaying sinusoid. That is now generated directly rather than by ringing a
+filter on noise: noise through a resonator is a hissing tone, where a bubble is
+struck once and rings down.
+
+**The damping is computable.** Their equation 3-5 gives
+delta = delta_rad + delta_vis + delta_th with
+
+- `delta_rad = omega0 * r / c`, and Minnaert's `r = 3.26 / f0` makes this
+  `2 pi * 3.26 / c = 0.01368` for **every** size -- radiative loss is the same
+  fraction whatever the bubble.
+- `delta_vis = 4 mu / (rho omega0 r^2)`, below 4e-4 for anything audible.
+- `delta_th`, which for audible bubbles is well approximated by
+  `2/sqrt(psi) = 4.743e-4 * sqrt(f0)`.
+
+So `delta(f) ~= 0.01368 + 4.743e-4 sqrt(f)` -- two constants and a square root,
+cheap enough per bubble. It predicts:
+
+| radius | f0 | delta | Q | ring to -20 dB |
+|---|---|---|---|---|
+| 0.5 mm | 6566 Hz | 0.051 | 20 | 2.2 ms |
+| 1.7 mm | 1931 Hz | 0.034 | 29 | 11 ms |
+| 3 mm | 1094 Hz | 0.029 | 34 | 23 ms |
+| 5 mm | 657 Hz | 0.026 | 39 | 43 ms |
+| 12 mm | 274 Hz | 0.022 | 46 | 124 ms |
+
+Against **5-100 ms measured** across the references' 650-1930 Hz onsets, which
+is a good agreement from first principles. `Bubble Damping` multiplies this,
+1 being physical.
+
+**The low-frequency roar is a coupled effect.** They show the lowest mode of a
+cloud of N bubbles falls as `f0 / cbrt(N)`, so a thousandfold increase in
+bubbles drops the frequency tenfold. Surf rumble is therefore not a lowpass of
+the break -- it is a resonance of the cloud oscillating in phase, and it lands
+below 400 Hz where Schindall & Heitmeyer put collective oscillations. `Break
+Body` now drives a resonator at `bubblePitch / cbrt(N)` with N following wave
+size, which for a large break puts it near 90 Hz.
+
+## Calibration against their published results
+
+The paper's supplementary video was measured with the same scripts. Its densest
+bubble passages run **38-52 onsets/s** with a grain CV of **0.44-0.63**, which
+is a useful sanity check that the metric tracks what people call good bubble
+sound. ShoreBreak's presets now measure 0.93-1.26.
+
 ## What the literature added
 
 `!dev/` holds the papers (gitignored, not ours to ship).

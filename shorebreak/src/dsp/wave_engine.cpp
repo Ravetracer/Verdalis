@@ -14,6 +14,30 @@ namespace {
 inline float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
+// A bubble's damping, after Xue et al. (2023) eq. 3-5. Three mechanisms add:
+//
+//   delta_rad = omega0 * r / c   and Minnaert gives r = 3.26 / f0, so this is
+//               2 * pi * 3.26 / c = 0.01368 whatever the size -- radiative loss
+//               is the same fraction for every bubble.
+//   delta_vis = 4 mu / (rho omega0 r^2), below 4e-4 for anything audible, so
+//               it is dropped.
+//   delta_th  = 2 (sqrt(psi - 3) - (3g-1)/(3(g-1))) / (psi - 4) with
+//               psi = 16 Gth / (9 (g-1)^2 f0), which for audible bubbles is
+//               well approximated by 2/sqrt(psi) = 4.743e-4 * sqrt(f0).
+//
+// Q is 1/delta: about 20 for a small high bubble and 46 for a large low one.
+// Predicted ring times run 2-124 ms across 0.5-12 mm, against 5-100 ms measured
+// in the references.
+inline float bubbleDelta(float f) { return 0.01368f + 4.743e-4f * std::sqrt(f); }
+
+// Svf::setCutoff takes resonance as 0..1, which it maps to k = 1/Q over 2..0.02.
+// Passing a Q straight in silently clamps to maximum resonance, which turns a
+// noise band into a whistle; convert properly instead.
+inline float resonanceFor(float q) {
+   const float k = 1.0f / std::max(0.5f, q);
+   return clampf((2.0f - k) / 1.98f, 0.0f, 1.0f);
+}
+
 // An exponential decay coefficient reaching -60 dB in `sec`.
 inline float decayCoefFor(float sec, double sampleRate) {
    const float n = std::max(1.0f, static_cast<float>(sec * sampleRate));
@@ -146,7 +170,7 @@ void WaveEngine::updateFilters() {
    mOutHpL.setCutoff(clampf(mP.highpassHz, 10.0f, 4000.0f), sr);
    mOutHpR.setCutoff(clampf(mP.highpassHz, 10.0f, 4000.0f), sr);
 
-   const float reso = 0.2f + mP.filterReso * 4.5f;
+   const float reso = clampf(0.05f + 0.90f * mP.filterReso, 0.0f, 0.98f);
    mOutFilterL.setCutoff(clampf(mP.filterCutoffHz, 20.0f, 0.45f * sr), reso, sr);
    mOutFilterR.setCutoff(clampf(mP.filterCutoffHz, 20.0f, 0.45f * sr), reso, sr);
 
@@ -317,9 +341,18 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
 
    w.breakBand.reset();
    w.bodyLp.reset();
-   // The collective mode of the bubble plume, which sits below 400 Hz
-   // (Schindall & Heitmeyer 1996) rather than with the individual bubbles.
    w.bodyLp.setCutoff(clampf(w.toneHz * 0.35f, 40.0f, 400.0f), sr);
+
+   // The collective mode. Xue et al. show the lowest mode of a cloud of N
+   // bubbles falls as f0 / cbrt(N), so a thousand bubbles ring an order of
+   // magnitude below one -- which is where surf rumble comes from. It is a
+   // resonance of the cloud, not a lowpass of the break, and it lands below
+   // 400 Hz exactly where Schindall & Heitmeyer put collective oscillations.
+   const float cloudN = 60.0f + 5000.0f * size * size;
+   const float cloudHz = clampf(mP.bubblePitchHz / std::cbrt(cloudN), 25.0f, 400.0f);
+   w.cloudBand.reset();
+   w.cloudBand.setCutoff(cloudHz, resonanceFor(3.5f), sr);
+   w.cloudLevel = w.body * 1.4f;
 
    // The slope above 1.5 kHz: steepest at the moment of collapse, relaxing
    // afterwards towards the breaker type's own figure.
@@ -364,7 +397,10 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    // Wash: a mid band with a slow walk, coarser shores rattling more.
    w.washBand.reset();
    const float washHz = clampf(mP.washToneHz * st.washTilt, 120.0f, 9000.0f);
-   w.washBand.setCutoff(washHz, 0.8f + 1.6f * mP.sand * st.grain, sr);
+   // A broad band, deliberately barely resonant: this is water draining
+   // through shingle, not a tuned pipe. The first version passed a Q here and
+   // it clamped to maximum resonance, which is what made Receding Sand whistle.
+   w.washBand.setCutoff(washHz, clampf(0.10f + 0.30f * mP.sand * st.grain, 0.0f, 0.55f), sr);
    w.washLevel = w.breakLevel * mP.washGain * (0.7f + 0.6f * mRng.uniform());
    w.washEnv = 0.0f;
    w.washRising = true;
@@ -380,6 +416,11 @@ void WaveEngine::spawnWave(Voice &v, float envLevel) {
    w.panR = std::sin(a);
 
    w.bubbleTimer = 0.0f;
+   w.foamBubbleTimer = 0.0f;
+   // Foam is made of finer bubbles than the break that left it: the slowed
+   // reference measures the fizzle at 2.2 kHz and 29 onsets a second against
+   // the break's 850 Hz and 9. Fizz is how much finer.
+   w.foamPitchScale = 1.0f + 2.6f * mP.fizz;
    // The size distribution starts high and slides down over the life of the
    // break: small bubbles are formed first, larger ones coalesce after.
    w.pitchScale = 1.0f + 0.35f * mP.crestSweep;
@@ -404,20 +445,20 @@ void WaveEngine::spawnBubble(const Wave &w, float level, float pitchScale) {
    const float f = clampf(mP.bubblePitchHz * st.bubbleTilt * pitchScale * std::pow(2.0f, oct),
                           80.0f, 0.45f * sr);
 
-   // Ringing time follows pitch rather than being set independently: a bubble
-   // rings for a roughly fixed number of cycles, so a small high one damps fast
-   // and a large low one plinks. That is what produces the measured 2-62 ms
-   // spread from one setting.
-   const float cycles = clampf(mP.bubbleQ * (0.55f + 0.9f * mRng.uniform()), 2.0f, 400.0f);
-   const float ringSec = cycles / f;
+   // Damping straight from the physics, scaled by the parameter. beta is the
+   // amplitude decay rate of the oscillator, pi f delta.
+   const float delta = clampf(bubbleDelta(f) * mP.bubbleDamping, 0.002f, 0.5f);
+   const float beta = 3.14159265f * f * delta;
 
-   b.band.reset();
-   // The Q of the filter is what makes it ring at all; the envelope below is
-   // what stops it. Both are wanted: the filter gives the pitch, the envelope
-   // gives the shape.
-   b.band.setCutoff(f, 8.0f + 14.0f * mRng.uniform(), sr);
-   b.level = level * (0.25f + 0.75f * mRng.uniform());
-   b.decayCoef = decayCoefFor(ringSec, mSampleRate);
+   b.phase = mRng.uniform();
+   b.inc = f / sr;
+   b.level = level * (0.55f + 0.45f * mRng.uniform());
+   b.decayCoef = std::exp(-beta / sr);
+
+   // The pinch-off transient. Short and broadband, and it is what makes a
+   // bubble read as an event rather than a tone.
+   b.clickLevel = b.level * 0.32f;
+   b.clickCoef = decayCoefFor(0.0015f, mSampleRate);
    b.panL = w.panL;
    b.panR = w.panR;
 }
@@ -428,7 +469,7 @@ void WaveEngine::spawnBubble(const Wave &w, float level, float pitchScale) {
 void WaveEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numSamples) {
    const float sr = static_cast<float>(mSampleRate);
    const float velLevel = 1.0f + mP.velToLevel * (v.velocity - 0.5f) * 1.8f;
-   const float reso = 0.7f;
+   const float reso = 0.28f;
    v.swellBandL.setCutoff(clampf(mP.swellToneHz, 40.0f, 0.45f * sr), reso, sr);
    v.swellBandR.setCutoff(clampf(mP.swellToneHz * 1.08f, 40.0f, 0.45f * sr), reso, sr);
    const float wide = clampf(mP.swellWidth, 0.0f, 1.0f);
@@ -505,7 +546,7 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
          // The cloud's resonance falls towards its final tone as it grows.
          w.toneSweptHz = w.toneHz + (w.toneSweptHz - w.toneHz) * w.sweepCoef;
          if ((i & 31u) == 0u)
-            w.breakBand.setCutoff(clampf(w.toneSweptHz, 40.0f, 0.45f * sr), 0.9f, sr);
+            w.breakBand.setCutoff(clampf(w.toneSweptHz, 40.0f, 0.45f * sr), 0.42f, sr);
 
          const float n = w.rng.white();
          float band = w.breakBand.bandpassNormalised(n);
@@ -523,8 +564,12 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
          // what is left over.
          const float turb = 1.0f - clampf(mP.bubbleMix, 0.0f, 1.0f);
          float s = band * w.breakEnv * w.breakLevel * turb;
-         if (w.body > 0.0f)
-            s += w.bodyLp.tick(n) * w.body * w.breakEnv * w.breakLevel * 0.9f;
+         if (w.body > 0.0f) {
+            s += w.bodyLp.tick(n) * w.body * w.breakEnv * w.breakLevel * 0.45f;
+            // The cloud oscillating as one thing, driven by the same turbulence.
+            s += w.cloudBand.bandpassNormalised(n) * w.cloudLevel * w.breakEnv *
+                 w.breakLevel * 0.8f;
+         }
 
          // The cascade itself. The rate follows the break envelope, so bubbles
          // are formed fastest as the crest collapses. This is the break; the
@@ -562,15 +607,18 @@ void WaveEngine::processWaves(float *outL, float *outR, uint32_t numSamples) {
                w.foamEnv *= w.foamDecayCoef;
             }
             const float f = w.foamHp.tick(w.rng.white());
-            s += w.foamLp.tick(f) * w.foamEnv * w.foamLevel;
+            s += w.foamLp.tick(f) * w.foamEnv * w.foamLevel *
+                 (1.0f - 0.65f * clampf(mP.foamBubbles, 0.0f, 1.0f));
 
-            // The cascade thins out but does not stop: the references resolve
-            // 21 onsets a second even in the quiet gap between waves.
-            if (bubbleRate > 0.0f && w.foamEnv > 0.01f && mP.bubbleMix > 0.001f) {
-               w.bubbleTimer -= bubbleRate * w.foamEnv * 0.22f;
-               while (w.bubbleTimer <= 0.0f) {
-                  w.bubbleTimer += 1.0f;
-                  spawnBubble(w, w.foamLevel * w.foamEnv * 2.2f, w.pitchScale);
+            // The foam's own cascade: finer bubbles, faster than the break's,
+            // and this is what carries the gap between waves. The slowed
+            // reference resolves 29 onsets a second here against the break's 9.
+            if (bubbleRate > 0.0f && w.foamEnv > 0.008f && mP.foamBubbles > 0.001f) {
+               w.foamBubbleTimer -= bubbleRate * w.foamEnv * (0.6f + 2.4f * mP.foamBubbles);
+               while (w.foamBubbleTimer <= 0.0f) {
+                  w.foamBubbleTimer += 1.0f;
+                  spawnBubble(w, w.foamLevel * w.foamEnv * mP.foamBubbles * 2.6f,
+                              w.foamPitchScale);
                }
             }
          }
@@ -605,12 +653,19 @@ void WaveEngine::processBubbles(float *outL, float *outR, uint32_t numSamples) {
       if (!b.active)
          continue;
       for (uint32_t i = 0; i < numSamples; ++i) {
-         const float s = b.band.bandpassNormalised(b.rng.white()) * b.level;
+         b.phase += b.inc;
+         if (b.phase >= 1.0f)
+            b.phase -= 1.0f;
+         float s = sin2piFast(b.phase) * b.level;
+         if (b.clickLevel > 1.0e-5f) {
+            s += b.rng.white() * b.clickLevel;
+            b.clickLevel *= b.clickCoef;
+         }
          outL[i] += s * b.panL;
          outR[i] += s * b.panR;
          b.level *= b.decayCoef;
       }
-      if (b.level < 1.0e-6f || !b.band.ringing(1.0e-7f))
+      if (b.level < 1.0e-5f)
          b.active = false;
    }
 }
