@@ -125,6 +125,10 @@ mkdir -p "$stage"
 
 # ------------------------------------------------------------------ the builds
 build_one() {
+   # `plugin` is a loop variable in the callers too, and a function that
+   # walks the plugin list without declaring it local leaves the caller
+   # iterating the last entry instead of its own.
+   local plugin
    local plugin="$1" target="$2" build_dir="$3" install_root="$4"
    local name upper
    name="$(project_name "$plugin")"
@@ -175,6 +179,7 @@ manual_dir="${here}/dist/manuals"
 rm -rf "$manual_dir"
 
 manual_for() {
+   local plugin
    echo "${manual_dir}/$(project_name "$1")-$(project_version "$1")-Manual.pdf"
 }
 
@@ -243,6 +248,7 @@ TXT
 }
 
 build_info() {
+   local plugin
    echo "Verdalis Plugin Suite ${version}"
    echo "built $(date -u '+%Y-%m-%d %H:%M UTC') on $(uname -srm)"
    echo
@@ -265,7 +271,30 @@ build_info() {
 }
 
 # --------------------------------------------------------------- archive extras
+#
+# A plugin may carry licence terms of its own on top of the suite's -- an
+# embedded third-party asset with an attribution requirement, for instance --
+# and those terms have to travel with anything that redistributes it. Where a
+# plugin's LICENSE differs from the suite's, its own copy is what goes into its
+# archives, and the suite archives carry it alongside as LICENSE-<Name>.
+plugin_license() {
+   if [ -f "${here}/$1/LICENSE" ] && ! cmp -s "${here}/$1/LICENSE" "${here}/LICENSE"; then
+      printf '%s\n' "${here}/$1/LICENSE"
+   fi
+}
+
+copy_extra_licenses() {
+   local d="$1" p extra
+   for p in "${plugins[@]}"; do
+      extra="$(plugin_license "$p")"
+      if [ -n "$extra" ]; then
+         cp "$extra" "${d}/LICENSE-$(project_name "$p")"
+      fi
+   done
+}
+
 cp "${here}/README.md" "${here}/LICENSE" "$stage/"
+copy_extra_licenses "$stage"
 
 cat > "${stage}/INSTALL.txt" <<'TXT'
 Verdalis Plugin Suite
@@ -337,7 +366,8 @@ for plugin in "${plugins[@]}"; do
       d="${name}-${pver}-${os}-x86_64"
       rm -rf "$d"; mkdir -p "$d"
       cp -r "${stage}/${os}/${name}" "${d}/"
-      cp "${here}/LICENSE" "${d}/"
+      own="$(plugin_license "$plugin")"
+      cp "${own:-${here}/LICENSE}" "${d}/LICENSE"
       [ -f "${here}/${plugin}/README.md" ] && cp "${here}/${plugin}/README.md" "${d}/"
       manual="$(manual_for "$plugin")"
       [ -f "$manual" ] && cp "$manual" "${d}/"
@@ -354,6 +384,7 @@ for os in "${targets[@]}"; do
    rm -rf "$d"; mkdir -p "$d"
    cp -r "${stage}/${os}/"* "${d}/"
    cp "${here}/README.md" "${here}/LICENSE" "${d}/"
+   copy_extra_licenses "$d"
    for plugin in "${plugins[@]}"; do
       manual="$(manual_for "$plugin")"
       [ -f "$manual" ] || continue
