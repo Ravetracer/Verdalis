@@ -223,3 +223,95 @@ from a distant roar to big waves crashing. Native CLAP, Linux and Windows,
 sample-accurate parameters, host modulation, bounded CPU cost, its own resizable
 window with a preset browser, typed value entry and a wave-activity meter. Not a
 single sample in it.
+
+---
+
+## SkyHowl
+
+### Variant 1
+
+**SkyHowl starts from an awkward fact: wind is silent.** Air in motion radiates
+essentially nothing on its own. Everything a listener calls wind is the flow
+meeting something — a hillside, a wire, a bare twig, a leaf, the edge of a gap.
+So SkyHowl is built in two halves: a flow field that makes no sound at all, and
+the sources that flow drives. It is why a gust in this plugin owns no filter and
+no noise source of its own. A gust is an envelope with a strength and a
+position; everything you hear of it is the rest of the model responding.
+
+It features a flow field with three things happening to it at once. Turbulence
+is shaped to Kolmogorov's inertial subrange — three filtered noise sources
+weighted so their sum falls at f^-5/3 — and its intensity reads as the
+percentage a weather station reports, measured 4 to 27 % across the reference
+library. Gusts arrive as a Poisson process from under one to over thirty a
+minute, heavy-tailed so that most are unremarkable and a few are much stronger.
+Under both sits a squall drift slower than a tenth of a hertz, which is not a
+detail: a median 43 % of the envelope variation in the references lives down
+there. What the flow drives is a broadband airflow bed with a four-pole
+spectral tilt, a low-frequency buffet, up to twelve aeolian tones, and foliage.
+
+53 parameters and 23 factory presets ship with it, fitted against 63 field
+recordings, running from a soft breath to a howling storm by way of a cave
+mouth, a city street and a dune. Native CLAP for Linux and Windows, with
+sample-accurate note and parameter handling, host modulation, CLAP preset
+discovery, a fixable random seed for repeatable takes, and the suite's window in
+SkyHowl's own dust coral, with streaklines running across the header the way a
+wind tunnel shows a flow it cannot otherwise photograph. No samples anywhere.
+
+### Variant 2
+
+**SkyHowl aims to put a whole wind behind one knob.** Turn *Wind Speed* and the
+level, the brightness, the pitch of the howl and the rate at which the foliage
+rustles all follow it — not because they are ganged together, but because in the
+model they genuinely follow the same wind speed. Sweep it from 2 to 40 m/s and
+the sound goes from a breath at a window to a gale over a ridge without touching
+anything else, which makes it the one parameter worth automating.
+
+It features the physics that makes that work. Aerodynamic sound from flow over a
+rigid surface radiates as a dipole, so its power goes as U⁶ and its amplitude as
+U³ — a doubling of wind speed is +18 dB, which is why a gust is such a large
+event and why *Speed Law* exists to scale the exponent when a physically correct
+wind will not fit in a mix. The buffet under it follows the dynamic pressure
+instead, U², so it grows more slowly than the bed. And the howl follows the
+Strouhal relation: a bluff body sheds vortices at f = St·U/d, so *Howl Size* is
+a real diameter and a 2.5 mm twig in an 8 m/s wind sheds at 640 Hz. Nine
+obstacles cover it, from a blade of grass to a cave mouth.
+
+Terrain works the same way. The eight choices — plain, meadow, forest, mountain,
+desert, coast, street, tundra — carry gustiness factors derived from tabulated
+roughness lengths, so choosing *Forest* really does make the wind two and a half
+times as gusty as *Plain*, and a street three. They also set how enclosed the
+space is: almost nothing on open ground, where there is nothing close enough to
+reflect, against a street with walls on both sides. 53 parameters, 23 presets,
+four filter types and a full ADSR with velocity routed to the wind speed itself,
+in one self-contained CLAP plugin.
+
+### Variant 3
+
+**SkyHowl aims to make a howl that behaves like a howl.** A wind tone is not a
+resonance being turned up: it is vortex shedding, and because both its pitch and
+its loudness follow the same wind speed, it has to rise in pitch as it gets
+louder. That is the one prediction of the model a recording can falsify, and the
+reference library confirms it — the tone's pitch rises with the level in 12 of
+the 17 recordings that hold a steady tone at all, reaching a correlation of 0.87
+in the ones whose file names actually say howling, and swooping a median two
+thirds of an octave as it does. *Howl Track* is how much of that you want.
+
+It features a bank of up to twelve aeolian resonators, each a resonant band on
+its own noise rather than an oscillator, because the measured Q across the
+references runs 1.1 to 16.5 with a median of 5.1 — a howl is a narrow band of
+noise, not a whistle. *Warble* is how far each one wanders around its own pitch,
+which is most of what makes a howl eerie rather than electronic. The gap and cave
+obstacles deliberately refuse to track the wind, because a cavity resonates at a
+frequency its own geometry fixes and the flow only excites it. And the whole
+layer is legitimately switchable off: only 17 of the 63 references hold a tone
+in the first place.
+
+As a bonus layer there is foliage, in eight kinds from summer broadleaf to bare
+branches. Leaves do not hiss, they click, so the rustle is a stream of short
+band-limited rings at roughly c/2L — a 40 mm leaf lands near 4.2 kHz, which is
+the median onset pitch measured across the library's foliage recordings — with a
+density ceiling taken from the same measurements, because past 15 to 40 onsets a
+second real leaves stop being separately audible and merge into a wash.
+Conifers and grass are set to merge on purpose; dry leaves are sparse and
+clatter. 53 parameters, 23 presets, native CLAP for Linux and Windows, and not a
+single sample in it.
