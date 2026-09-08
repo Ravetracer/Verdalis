@@ -76,8 +76,23 @@ Or build the whole suite and pack the release archives:
 
 That produces one `.zip` per plugin per platform, one per platform for the whole
 suite, and one containing everything. Each is self-contained, with the plugin,
-its presets and install instructions for that platform. Pass `--tarball` to get
-`.tar.gz` alongside.
+its presets, its manual as a PDF, and install instructions for that platform.
+Pass `--tarball` to get `.tar.gz` alongside.
+
+## Documentation
+
+Every plugin has a manual: what it models, how the synthesis works, a reference
+for every parameter and every factory preset, and notes on using it in a host.
+It ships as a PDF in the release archives, and its prose source is
+`<plugin>/docs/manual.md`. Build one with:
+
+```sh
+shared/tools/make-manual.sh rainyday        # -> dist/manuals/
+```
+
+The parameter reference and the preset library are generated from the plugin
+itself rather than written by hand, so they cannot drift from the build they
+describe.
 
 ### CLAP SDK
 

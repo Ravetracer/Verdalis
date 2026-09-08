@@ -28,6 +28,14 @@ makes thunder and no rain. Put them on two tracks.
 - A plugin window drawn with X11 and Cairo: every parameter, a preset browser,
   a shock-activity meter and a lightning bolt every time a flash fires
 
+## The manual
+
+This README is the developer's view. The user-facing manual is
+`docs/manual.md`, which builds to a PDF with
+`../shared/tools/make-manual.sh thunderclap` and ships in the release archives.
+Its parameter reference and preset library are generated from the plugin
+itself, so a new parameter documents itself.
+
 ## Build and install
 
 Requires a C++17 compiler, CMake ≥ 3.16 and the CLAP headers.

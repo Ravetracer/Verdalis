@@ -100,6 +100,8 @@ drawing primitives all come from `shared/`; see *Shared components* below.
 ├── README.md                user-facing documentation
 ├── STATUS.md                what works, what is measured
 ├── TODO.md                  planned work
+├── docs/manual.md           the manual's prose; the parameter reference and
+│                            the preset library are generated into it
 ├── presets/                 factory presets, one file per preset, .<plugin>
 ├── src/
 │   ├── <plugin>.h           identity constants + the preset bindings
@@ -234,15 +236,19 @@ RainyDay-1.5.1-windows-x86_64/
 │   ├── RainyDay.clap
 │   └── presets/            (17 files)
 ├── README.md
+├── RainyDay-1.5.1-Manual.pdf
 ├── LICENSE
 ├── INSTALL.txt             Windows only
 └── BUILD-INFO.txt
 ```
 
+The suite archives carry every plugin's manual in a `manuals/` folder instead.
+
 Options: `--tarball` adds `.tar.gz` beside every `.zip`; `--linux-only` skips
 the Windows half; `--windows-no-gui` allows a
-Windows build with no plugin window. Offline tools are switched off for release
-builds (`-D<PLUGIN>_BUILD_TOOLS=OFF`).
+Windows build with no plugin window; `--no-manuals` skips the PDF manuals.
+Offline tools are switched off for release builds
+(`-D<PLUGIN>_BUILD_TOOLS=OFF`).
 
 The suite archive carries its own version, independent of the individual plugin
 versions, which stay in each `CMakeLists.txt`.
@@ -289,7 +295,9 @@ shared/
 ├── src/gui/window.cpp          the window: layout, widgets, browser, entry
 ├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
 │                               clap_entry.version
-└── tools/                      install-plugin.sh, fithost.cpp, analysis/wavio.py
+└── tools/                      install-plugin.sh, fithost.cpp, analysis/wavio.py,
+                                and the manual toolchain: make-manual.sh,
+                                docgen.cpp, manual.py, manual.css
 ```
 
 A plugin pulls it in with
@@ -399,6 +407,49 @@ against all of them — see the verification recipe under *Working notes*.
    (a new accent, with the greys tinted towards it), its panel table, and a
    `HeaderOrnament` if it has something to animate. See *The window, and its
    theme*.
+
+## The manuals
+
+Every plugin ships a PDF manual in its release archives, built by
+`shared/tools/make-manual.sh <plugin>` into `dist/manuals/` as
+`<Plugin>-<version>-Manual.pdf`, with the HTML it was rendered from beside it —
+that HTML is self-contained (inlined stylesheet, logo as a data URI) and is
+what a website would publish.
+
+**Two of the chapters are generated, not written.** `shared/tools/docgen.cpp`
+reads the plugin's own `paramTable()` and its preset files and emits the
+parameter reference and the preset library as Markdown, which the script
+substitutes into `<plugin>/docs/manual.md` at `{{PARAMETER_REFERENCE}}` and
+`{{PRESET_LIBRARY}}` (`{{PLUGIN}}` and `{{VERSION}}` are substituted too, and an
+unsubstituted `{{...}}` is an error rather than silently shipped). So the
+parameter tables cannot drift from the build: every range, default, unit, enum
+choice and one-line explanation in the manual is the same `ParamDesc` field the
+window and the host read. A parameter added to `params.cpp` appears in the next
+manual with no documentation change at all.
+
+`docgen` is compiled directly with `g++` by the script rather than through the
+plugin's CMake project, because release builds switch the offline tools off and
+the manual still has to build. It needs only the plugin's `params.cpp` and the
+shared parameter code — no CLAP headers, no X11, no Cairo.
+
+The toolchain is `python3` with the `markdown` module, plus `wkhtmltopdf` for
+the PDF. `release.sh` treats it as optional: if it is missing the release says
+so and goes out without manuals rather than failing.
+
+**What each manual owns** is `docs/manual.md`: a key/value header (`tagline`,
+`subtitle`, `accent` — the plugin's own accent, which colours the headings and
+the rules), then the prose chapters. Keep the chapter structure the same across
+plugins; the three existing manuals are the template.
+
+Two constraints come from `wkhtmltopdf`, and both are in `manual.css`:
+
+- Its WebKit is old. No grid, no custom properties, no `@page` margin boxes —
+  page geometry is set on the command line.
+- The build on this machine is the unpatched-Qt one, which cannot write page
+  footers or a PDF outline. The manuals therefore have **no page numbers**, and
+  the contents page is a list of links instead. A row of a long table can also
+  be split across a page break and leave a sliver behind; `page-break-inside`
+  is only partly honoured.
 
 ## Branding
 

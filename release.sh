@@ -7,6 +7,7 @@
 #   ./release.sh 0.1.0                  Linux + Windows (needs cross-built Cairo)
 #   ./release.sh 0.1.0 --linux-only     skip the Windows half
 #   ./release.sh 0.1.0 --tarball        also emit .tar.gz beside the .zip files
+#   ./release.sh 0.1.0 --no-manuals     do not build or ship the PDF manuals
 #
 # Windows builds need a Cairo cross-built with mingw-w64. Build it once with
 #
@@ -30,18 +31,20 @@ version="${1:-}"
 shift || true
 
 if [ -z "$version" ]; then
-   echo "usage: $0 <version> [--linux-only] [--windows-no-gui] [--tarball]" >&2
+   echo "usage: $0 <version> [--linux-only] [--windows-no-gui] [--tarball] [--no-manuals]" >&2
    exit 1
 fi
 
 linux_only=0
 windows_no_gui=0
 tarball=0
+no_manuals=0
 for arg in "$@"; do
    case "$arg" in
       --linux-only)     linux_only=1 ;;
       --windows-no-gui) windows_no_gui=1 ;;
       --tarball)        tarball=1 ;;
+      --no-manuals)     no_manuals=1 ;;
       *) echo "unknown option: $arg" >&2; exit 1 ;;
    esac
 done
@@ -160,6 +163,37 @@ for plugin in "${plugins[@]}"; do
    fi
 done
 
+# ----------------------------------------------------------------- manuals
+#
+# One PDF per plugin, generated from <plugin>/docs/manual.md with the parameter
+# reference and the preset library read out of the plugin itself. They go into
+# that plugin's own archives and into a manuals/ folder in the suite archives.
+#
+# Documentation is not worth failing a release over: if the toolchain for it is
+# not installed, this says so and the archives simply go out without manuals.
+manual_dir="${here}/dist/manuals"
+rm -rf "$manual_dir"
+
+manual_for() {
+   echo "${manual_dir}/$(project_name "$1")-$(project_version "$1")-Manual.pdf"
+}
+
+if [ "$no_manuals" = 1 ]; then
+   echo "    manuals: skipped (--no-manuals)"
+else
+   echo "--> manuals"
+   for plugin in "${plugins[@]}"; do
+      step="$(project_name "$plugin") manual"
+      if [ ! -f "${here}/${plugin}/docs/manual.md" ]; then
+         echo "!!  ${plugin} has no docs/manual.md -- shipping it without a manual" >&2
+         continue
+      fi
+      if ! "${here}/shared/tools/make-manual.sh" "$plugin" "$manual_dir"; then
+         echo "!!  the ${plugin} manual could not be built -- shipping it without one" >&2
+      fi
+   done
+fi
+
 # ------------------------------------------------------------- install notes
 #
 # Written per operating system, because someone downloading the Windows build
@@ -253,6 +287,13 @@ Windows
 Then rescan plugins in your host. Tested with Bitwig Studio and Reaper.
 TXT
 
+for plugin in "${plugins[@]}"; do
+   manual="$(manual_for "$plugin")"
+   [ -f "$manual" ] || continue
+   mkdir -p "${stage}/manuals"
+   cp "$manual" "${stage}/manuals/"
+done
+
 build_info > "${stage}/BUILD-INFO.txt"
 
 # ----------------------------------------------------------------------- pack
@@ -298,6 +339,8 @@ for plugin in "${plugins[@]}"; do
       cp -r "${stage}/${os}/${name}" "${d}/"
       cp "${here}/LICENSE" "${d}/"
       [ -f "${here}/${plugin}/README.md" ] && cp "${here}/${plugin}/README.md" "${d}/"
+      manual="$(manual_for "$plugin")"
+      [ -f "$manual" ] && cp "$manual" "${d}/"
       install_note "$os" "${name} ${pver}" "the ${name} folder" > "${d}/INSTALL.txt"
       build_info > "${d}/BUILD-INFO.txt"
       pack "$d"
@@ -311,6 +354,12 @@ for os in "${targets[@]}"; do
    rm -rf "$d"; mkdir -p "$d"
    cp -r "${stage}/${os}/"* "${d}/"
    cp "${here}/README.md" "${here}/LICENSE" "${d}/"
+   for plugin in "${plugins[@]}"; do
+      manual="$(manual_for "$plugin")"
+      [ -f "$manual" ] || continue
+      mkdir -p "${d}/manuals"
+      cp "$manual" "${d}/manuals/"
+   done
    install_note "$os" "Verdalis Plugin Suite ${version}" "every plugin folder in this archive" \
       > "${d}/INSTALL.txt"
    build_info > "${d}/BUILD-INFO.txt"

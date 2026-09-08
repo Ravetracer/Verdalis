@@ -46,6 +46,14 @@ taken the top off everything else.
 the published work behind the spectral slope, the size-dependent decay and the
 precursor.
 
+## The manual
+
+This README is the developer's view. The user-facing manual is
+`docs/manual.md`, which builds to a PDF with
+`../shared/tools/make-manual.sh shorebreak` and ships in the release archives.
+Its parameter reference and preset library are generated from the plugin
+itself, so a new parameter documents itself.
+
 ## Build and install
 
 Requires a C++17 compiler, CMake ≥ 3.16 and the CLAP headers.

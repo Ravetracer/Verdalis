@@ -22,6 +22,14 @@ Play a MIDI note and it rains for as long as you hold it.
   typed value entry and a droplet-activity meter, resizable, with no toolkit
   dependency
 
+## The manual
+
+This README is the developer's view. The user-facing manual is
+`docs/manual.md`, which builds to a PDF with
+`../shared/tools/make-manual.sh rainyday` and ships in the release archives.
+Its parameter reference and preset library are generated from the plugin
+itself, so a new parameter documents itself.
+
 ## Build and install
 
 Requires a C++17 compiler, CMake ≥ 3.16 and the CLAP headers.
