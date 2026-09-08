@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Rustling Leaves
+author = SkyHowl
+description = The rustle on its own: dry leaves close by, with barely any wind bed under them. The reference rises to a peak at 8 kHz and has nothing below 250 Hz, and its onsets sit at 6.4 kHz -- the brightest in the library.
+features = leaves, rustle, dry, close
+
+# Wind
+wind_speed = 4
+turbulence = 4
+gust_rate = 4.7
+gust_depth = 0.25
+gust_length = 3000
+gust_shape = 0.5
+squall = 0.3
+squall_rate = 2
+
+# Airflow
+flow_level = -34
+flow_tone = 2500
+flow_tilt = -3
+buffet = -46
+buffet_tone = 70
+hiss = 0.4
+speed_law = 1
+
+# Howl
+howl_amount = 0.05
+obstacle = Open
+howl_size = 2.5
+howl_spread = 2
+howl_voices = 4
+howl_reso = 0.68
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.7
+foliage = Dry Leaves
+rustle_size = 31
+rustle_density = 70
+rustle_spread = 1.3
+rustle_decay = 25
+rustle_threshold = 0.15
+clatter = 0.45
+
+# Place
+terrain = Forest
+distance = 0.2
+air = 0.5
+width = 0.85
+space_amount = 0.18
+space_size = 0.4
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 140
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 4
+max_gusts = 64
+seed = 0

@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Between Houses
+author = SkyHowl
+description = Wind funnelled down a gap between buildings. The reference gusts 33 times a minute -- by far the fastest in the library -- and has no slow drift whatsoever, which is what a street does to a wind.
+features = street, urban, fast, funnelled
+
+# Wind
+wind_speed = 13
+turbulence = 4
+gust_rate = 33
+gust_depth = 0.35
+gust_length = 1200
+gust_shape = 0.5
+squall = 0.02
+squall_rate = 6
+
+# Airflow
+flow_level = -20
+flow_tone = 110
+flow_tilt = -6
+buffet = -9
+buffet_tone = 70
+hiss = 0.3
+speed_law = 1
+
+# Howl
+howl_amount = 0.35
+obstacle = Gap
+howl_size = 6.5
+howl_spread = 0.6
+howl_voices = 4
+howl_reso = 0.5
+howl_track = 0.2
+howl_threshold = 0.3
+warble = 0.3
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Street
+distance = 0.2
+air = 0.5
+width = 0.6
+space_amount = 0.35
+space_size = 0.35
+space_damping = 0.35
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

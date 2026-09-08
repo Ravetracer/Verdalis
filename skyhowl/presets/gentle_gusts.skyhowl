@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Gentle Gusts
+author = SkyHowl
+description = An unremarkable breezy afternoon: no tone worth the name, a broad flat bed and gusts that come and go. The reference's turbulence intensity is 18 %, which is high for open ground and is what makes it feel restless.
+features = gentle, gusty, broadband
+
+# Wind
+wind_speed = 5
+turbulence = 18
+gust_rate = 2.3
+gust_depth = 0.4
+gust_length = 6000
+gust_shape = 0.5
+squall = 0.6
+squall_rate = 1.1
+
+# Airflow
+flow_level = -16
+flow_tone = 400
+flow_tilt = -6
+buffet = -12
+buffet_tone = 70
+hiss = 0.55
+speed_law = 1
+
+# Howl
+howl_amount = 0.12
+obstacle = Open
+howl_size = 2.5
+howl_spread = 2.5
+howl_voices = 6
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.15
+foliage = Bushes
+rustle_size = 60
+rustle_density = 45
+rustle_spread = 1
+rustle_decay = 14
+rustle_threshold = 0.25
+clatter = 0.25
+
+# Place
+terrain = Plain
+distance = 0.2
+air = 0.5
+width = 0.98
+space_amount = 0.14
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

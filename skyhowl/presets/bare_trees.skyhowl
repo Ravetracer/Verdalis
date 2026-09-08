@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Bare Trees
+author = SkyHowl
+description = Winter trees in a town, with nothing on them. The rustle is sparse and woody -- twelve knocks a second rather than forty, each ringing three times as long as a leaf -- and the gusts are very long: the reference gusts less than once a minute.
+features = trees, winter, bare, clatter
+
+# Wind
+wind_speed = 10
+turbulence = 11
+gust_rate = 0.7
+gust_depth = 0.8
+gust_length = 14000
+gust_shape = 0.5
+squall = 0.45
+squall_rate = 0.8
+
+# Airflow
+flow_level = -18
+flow_tone = 100
+flow_tilt = -7
+buffet = -7
+buffet_tone = 55
+hiss = 0.2
+speed_law = 1
+
+# Howl
+howl_amount = 0.1
+obstacle = Twigs
+howl_size = 2
+howl_spread = 0.9
+howl_voices = 7
+howl_reso = 0.35
+howl_track = 0.85
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.4
+foliage = Bare Branches
+rustle_size = 18
+rustle_density = 12
+rustle_spread = 1.4
+rustle_decay = 60
+rustle_threshold = 0.3
+clatter = 0.75
+
+# Place
+terrain = Street
+distance = 0.2
+air = 0.5
+width = 0.6
+space_amount = 0.3
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

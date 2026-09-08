@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Mountain Ridge
+author = SkyHowl
+description = Wind across a bare ridge. Slow, heavy and almost ungusty in the short term -- a gust factor of 1.04, the lowest in the library -- with two thirds of its variation slower than a tenth of a hertz.
+features = mountain, slow, heavy, open
+
+# Wind
+wind_speed = 12
+turbulence = 8
+gust_rate = 1.2
+gust_depth = 0.2
+gust_length = 12000
+gust_shape = 0.5
+squall = 0.6
+squall_rate = 0.7
+
+# Airflow
+flow_level = -13
+flow_tone = 260
+flow_tilt = -6
+buffet = -12
+buffet_tone = 70
+hiss = 0.08
+speed_law = 1
+
+# Howl
+howl_amount = 0.25
+obstacle = Rocks
+howl_size = 1.5
+howl_spread = 1.6
+howl_voices = 6
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Mountain
+distance = 0.3
+air = 0.6
+width = 0.9
+space_amount = 0.35
+space_size = 0.85
+space_damping = 0.4
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

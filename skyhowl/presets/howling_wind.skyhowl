@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Howling Wind
+author = SkyHowl
+description = The archetype. The reference is the strongest confirmation in the library that howling is aeolian: its tone stands 15 dB above the bed, swoops two thirds of an octave, and its pitch tracks the level at a correlation of 0.87. Howl Track is therefore at maximum and the Q is deliberately low -- 1.2 measured, so a broad band rather than a whistle.
+features = howling, tonal, storm, eerie
+
+# Wind
+wind_speed = 10
+turbulence = 18
+gust_rate = 4.7
+gust_depth = 0.6
+gust_length = 4000
+gust_shape = 0.5
+squall = 0.5
+squall_rate = 1.5
+
+# Airflow
+flow_level = -26
+flow_tone = 280
+flow_tilt = -22
+buffet = -12
+buffet_tone = 70
+hiss = 0.02
+speed_law = 1
+
+# Howl
+howl_amount = 0.75
+obstacle = Twigs
+howl_size = 5
+howl_spread = 0.05
+howl_voices = 2
+howl_reso = 0.8
+howl_track = 1
+howl_threshold = 0.35
+warble = 0.3
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Plain
+distance = 0.1
+air = 0.5
+width = 0.7
+space_amount = 0.2
+space_size = 0.65
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

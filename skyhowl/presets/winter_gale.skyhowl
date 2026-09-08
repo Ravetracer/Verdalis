@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Winter Gale
+author = SkyHowl
+description = A hard cold gale. The reference is the gustiest in the library -- 22 % turbulence intensity and a gust factor of 1.41 -- and it is almost all low end, with one very narrow band left near a kilohertz. Buffet is nearly at unity and Flow Level is well down under it.
+features = winter, gale, cold, buffet
+
+# Wind
+wind_speed = 14
+turbulence = 22
+gust_rate = 4.7
+gust_depth = 0.7
+gust_length = 3000
+gust_shape = 0.5
+squall = 0.2
+squall_rate = 2
+
+# Airflow
+flow_level = -34
+flow_tone = 500
+flow_tilt = -11
+buffet = -4
+buffet_tone = 45
+hiss = 0.55
+speed_law = 1
+
+# Howl
+howl_amount = 0.18
+obstacle = Wires
+howl_size = 2.9
+howl_spread = 0.1
+howl_voices = 1
+howl_reso = 0.92
+howl_track = 0.6
+howl_threshold = 0.3
+warble = 0.2
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Tundra
+distance = 0.2
+air = 0.5
+width = 0.55
+space_amount = 0.16
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

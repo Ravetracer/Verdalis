@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Meadow Breeze
+author = SkyHowl
+description = A light wind over long grass. The reference has effectively nothing below 60 Hz, so Buffet is off and the whole sound sits in the mid band where the blades are.
+features = gentle, grass, summer
+
+# Wind
+wind_speed = 6
+turbulence = 8
+gust_rate = 1.2
+gust_depth = 0.25
+gust_length = 9000
+gust_shape = 0.5
+squall = 0.55
+squall_rate = 1
+
+# Airflow
+flow_level = -18
+flow_tone = 250
+flow_tilt = -6
+buffet = -60
+buffet_tone = 60
+hiss = 0
+speed_law = 1
+
+# Howl
+howl_amount = 0.1
+obstacle = Grass
+howl_size = 1.6
+howl_spread = 1.6
+howl_voices = 8
+howl_reso = 0.3
+howl_track = 0.9
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.06
+foliage = Grass
+rustle_size = 73
+rustle_density = 40
+rustle_spread = 1.2
+rustle_decay = 6
+rustle_threshold = 0.2
+clatter = 0.15
+
+# Place
+terrain = Meadow
+distance = 0.15
+air = 0.5
+width = 0.95
+space_amount = 0.1
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 190
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

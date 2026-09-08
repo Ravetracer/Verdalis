@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Wind In Birches
+author = SkyHowl
+description = Summer leaves on thin trunks. Rustle carries most of it: the reference detects 2.8 leaf onsets a second at a centroid of 3.5 kHz, which is a broadleaf of about fifty millimetres.
+features = trees, leaves, forest, summer
+
+# Wind
+wind_speed = 8
+turbulence = 4
+gust_rate = 5.9
+gust_depth = 0.25
+gust_length = 4000
+gust_shape = 0.5
+squall = 0.5
+squall_rate = 1.2
+
+# Airflow
+flow_level = -20
+flow_tone = 150
+flow_tilt = -9
+buffet = -17
+buffet_tone = 70
+hiss = 0.07
+speed_law = 1
+
+# Howl
+howl_amount = 0.08
+obstacle = Twigs
+howl_size = 3.5
+howl_spread = 1
+howl_voices = 6
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.22
+foliage = Broadleaf
+rustle_size = 50
+rustle_density = 40
+rustle_spread = 1.1
+rustle_decay = 22
+rustle_threshold = 0.2
+clatter = 0.3
+
+# Place
+terrain = Forest
+distance = 0.2
+air = 0.5
+width = 0.6
+space_amount = 0.3
+space_size = 0.55
+space_damping = 0.65
+
+# Filter
+filter_type = Lowpass
+highpass = 70
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

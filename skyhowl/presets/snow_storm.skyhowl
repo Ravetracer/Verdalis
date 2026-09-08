@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Snow Storm
+author = SkyHowl
+description = A blizzard: long slow swells of wind with very little detail in them. The reference has no content at all above about 10 kHz, so the output filter is brought down to match rather than pretending otherwise.
+features = snow, storm, blizzard, slow
+
+# Wind
+wind_speed = 16
+turbulence = 11
+gust_rate = 0.6
+gust_depth = 0.65
+gust_length = 15000
+gust_shape = 0.5
+squall = 0.6
+squall_rate = 0.8
+
+# Airflow
+flow_level = -16
+flow_tone = 400
+flow_tilt = -7
+buffet = -10
+buffet_tone = 70
+hiss = 0.5
+speed_law = 1
+
+# Howl
+howl_amount = 0.2
+obstacle = Open
+howl_size = 2.5
+howl_spread = 2.5
+howl_voices = 8
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.1
+foliage = Conifer
+rustle_size = 52
+rustle_density = 200
+rustle_spread = 1
+rustle_decay = 6
+rustle_threshold = 0.25
+clatter = 0.05
+
+# Place
+terrain = Tundra
+distance = 0.2
+air = 0.5
+width = 1
+space_amount = 0.22
+space_size = 0.85
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 9000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

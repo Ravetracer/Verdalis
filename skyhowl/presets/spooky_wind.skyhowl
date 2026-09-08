@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Spooky Wind
+author = SkyHowl
+description = A wind with something in it. The reference's tone is high-Q and only loosely tied to the level -- a cavity being blown across rather than a twig shedding -- and Warble is high, because a tone that wanders is the whole effect.
+features = spooky, eerie, tonal, warble
+
+# Wind
+wind_speed = 7
+turbulence = 5
+gust_rate = 3.5
+gust_depth = 0.3
+gust_length = 6000
+gust_shape = 0.5
+squall = 0.5
+squall_rate = 1.1
+
+# Airflow
+flow_level = -26
+flow_tone = 500
+flow_tilt = -18
+buffet = -20
+buffet_tone = 70
+hiss = 0
+speed_law = 1
+
+# Howl
+howl_amount = 0.35
+obstacle = Gap
+howl_size = 1.2
+howl_spread = 0.5
+howl_voices = 3
+howl_reso = 0.9
+howl_track = 0.35
+howl_threshold = 0.2
+warble = 0.6
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Mountain
+distance = 0.15
+air = 0.5
+width = 0.55
+space_amount = 0.45
+space_size = 0.6
+space_damping = 0.3
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

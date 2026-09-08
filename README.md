@@ -29,7 +29,7 @@ hand-drawn plugin window with no toolkit dependency.
 | **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | in progress |
 | **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | in progress |
 | **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | in progress |
-| **SkyHowl** | winds, storms | planned |
+| **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | in progress |
 | **ChirpParade** | bird chirps | planned |
 | **RiverFlow** | rivers, streams | planned |
 | **CrackleBlaze** | fire | planned |
@@ -49,6 +49,12 @@ directly overhead, and a window that flashes with the bolt.
 collapsing into its bubble cloud, the foam it leaves, the wash back down the
 shore and the individual bubbles popping in it. 49 parameters, 17 presets, and
 Galvin's four breaker types, which measurably differ in the slope above 1.5 kHz.
+
+**SkyHowl** — built on the fact that wind is silent: a flow field that makes no
+sound at all, and the sources it drives. Aeolian tones shed at the Strouhal
+frequency, so a howl's pitch swoops with every gust — which the reference
+library confirms. 53 parameters, 23 presets, and rustling foliage as a bonus
+layer.
 
 ## Build
 

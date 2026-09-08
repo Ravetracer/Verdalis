@@ -375,6 +375,11 @@ private:
       mNameRect = {mPrevRect.x + mPrevRect.w + 4, static_cast<double>(barY), 300, kBarH};
       mNextRect = {mNameRect.x + mNameRect.w + 4, static_cast<double>(barY), 26, kBarH};
       mSaveRect = {mNextRect.x + mNextRect.w + 14, static_cast<double>(barY), 58, kBarH};
+      // The version label, right-aligned in the header at baseline 44. The box
+      // is a fixed size anchored to the right edge rather than measured from
+      // the text, because the layout runs without a cairo context to measure
+      // with. Nothing else is drawn there, so it cannot catch a stray click.
+      mVersionRect = {static_cast<double>(kMargin + mSpec.contentW) - 56.0, 33.0, 56.0, 14.0};
       mBarY = barY;
       mHelpY = barY + kBarH + 4;
    }
@@ -1692,6 +1697,10 @@ private:
          openBrowser();
          return;
       }
+      if (be.button == kButtonLeft && mVersionRect.contains(x, y)) {
+         mDelegate.guiVersionClicked();
+         return;
+      }
 
       const int id = cellAt(x, y);
       if (id < 0)
@@ -1887,7 +1896,7 @@ private:
    std::vector<Cell> mCells;
    std::vector<Rect> mCellRects;
    Rect mMeter;
-   Rect mPrevRect, mNameRect, mNextRect, mSaveRect;
+   Rect mPrevRect, mNameRect, mNextRect, mSaveRect, mVersionRect;
    int mBarY = 0, mHelpY = 0;
 
    bool mDirty = true;

@@ -56,10 +56,11 @@ Seven plugins, each modelling one natural sound source:
 | 1 | **RainyDay** | `rainyday/` | WIP | rain |
 | 2 | **ThunderClap** | `thunderclap/` | WIP | thunder |
 | 3 | **ShoreBreak** | `shorebreak/` | WIP | ocean waves |
-| 4 | **SkyHowl** | `skyhowl/` | planned | winds, storms |
+| 4 | **SkyHowl** | `skyhowl/` | WIP | winds, storms |
 | 5 | **ChirpParade** | `chirpparade/` | planned | bird chirps |
 | 6 | **RiverFlow** | `riverflow/` | planned | rivers, streams |
 | 7 | **CrackleBlaze** | `crackleblaze/` | planned | fire |
+| 8 | **NightLife** | `nightlife/` | planned | night insects, crickets, howling wolfes, foxes, owls, night birds |
 
 Naming follows a consistent pattern: a two-word CamelCase compound naming the
 phenomenon, lowercase and joined for the folder, the CLAP id
@@ -341,6 +342,8 @@ with a coloured knob.
 |--------|--------|-----------|
 | RainyDay | `#58B6E8` | rain blue, cool neutral greys |
 | ThunderClap | `#B396FA` | lightning violet, greys an octave darker |
+| ShoreBreak | `#4FD0BA` | sea green, a warmer and greener chassis |
+| SkyHowl | `#F0845C` | dust coral -- the one warm plugin, greys with a red-brown cast |
 
 A new plugin picks its own accent and derives its greys from it. Do not reuse
 another plugin's theme, and do not fall back to the suite brand palette — that

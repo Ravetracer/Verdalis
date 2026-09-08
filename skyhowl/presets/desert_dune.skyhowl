@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Desert Dune
+author = SkyHowl
+description = Wind over sand. The reference has nothing below 125 Hz at all -- 48 dB down at 31 Hz -- so Buffet is off and a highpass keeps it that way. What is left is a broad bright band from a kilohertz upwards.
+features = desert, dry, bright, sand
+
+# Wind
+wind_speed = 9
+turbulence = 10
+gust_rate = 4.7
+gust_depth = 0.3
+gust_length = 5000
+gust_shape = 0.5
+squall = 0.45
+squall_rate = 1.3
+
+# Airflow
+flow_level = -17
+flow_tone = 800
+flow_tilt = -4
+buffet = -80
+buffet_tone = 70
+hiss = 0.55
+speed_law = 1
+
+# Howl
+howl_amount = 0.15
+obstacle = Grass
+howl_size = 2.5
+howl_spread = 2
+howl_voices = 6
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.12
+foliage = Grass
+rustle_size = 70
+rustle_density = 200
+rustle_spread = 1
+rustle_decay = 4
+rustle_threshold = 0.25
+clatter = 0.1
+
+# Place
+terrain = Desert
+distance = 0.2
+air = 0.5
+width = 0.9
+space_amount = 0.1
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 230
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

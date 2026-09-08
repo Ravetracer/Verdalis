@@ -64,6 +64,10 @@ public:
    // Writes the current parameter values into the user preset directory and
    // rescans it. Returns false and fills `error` if that did not work.
    virtual bool guiSavePreset(const std::string &name, std::string &error) = 0;
+
+   // The version label in the header was clicked. Most plugins have nothing to
+   // do with that, which is why it defaults to doing nothing.
+   virtual void guiVersionClicked() {}
 };
 
 class Gui {

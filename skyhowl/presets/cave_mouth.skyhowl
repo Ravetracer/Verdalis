@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Cave Mouth
+author = SkyHowl
+description = Wind across the opening of a cave. A cavity resonance rather than a shed vortex, so its pitch is fixed by the geometry and hardly moves with the wind -- the reference's tone is 15 dB prominent and its pitch/level correlation is zero. Howl Track is almost off, which the Cave obstacle enforces anyway.
+features = cave, cavity, drone, tonal
+
+# Wind
+wind_speed = 6
+turbulence = 5
+gust_rate = 4.7
+gust_depth = 0.2
+gust_length = 4000
+gust_shape = 0.5
+squall = 0.15
+squall_rate = 2
+
+# Airflow
+flow_level = -22
+flow_tone = 420
+flow_tilt = -20
+buffet = -10
+buffet_tone = 70
+hiss = 0.02
+speed_law = 1
+
+# Howl
+howl_amount = 0.7
+obstacle = Cave
+howl_size = 0.6
+howl_spread = 0.2
+howl_voices = 2
+howl_reso = 0.36
+howl_track = 0.2
+howl_threshold = 0.15
+warble = 0.35
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Mountain
+distance = 0.1
+air = 0.5
+width = 0.5
+space_amount = 0.55
+space_size = 0.75
+space_damping = 0.25
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

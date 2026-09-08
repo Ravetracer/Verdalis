@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Open Plain
+author = SkyHowl
+description = Wind over flat open ground with a wire fence somewhere in it. The reference is unusually tonal for an open site -- a narrow band near a kilohertz that holds its pitch to within a third of an octave -- so this is one wire, not a hedge.
+features = open, plain, tonal, steady
+
+# Wind
+wind_speed = 8
+turbulence = 8
+gust_rate = 1.2
+gust_depth = 0.25
+gust_length = 8000
+gust_shape = 0.5
+squall = 0.55
+squall_rate = 1
+
+# Airflow
+flow_level = -22
+flow_tone = 700
+flow_tilt = -15
+buffet = -22
+buffet_tone = 70
+hiss = 0.02
+speed_law = 1
+
+# Howl
+howl_amount = 0.75
+obstacle = Wires
+howl_size = 1.3
+howl_spread = 0.15
+howl_voices = 2
+howl_reso = 0.85
+howl_track = 0.5
+howl_threshold = 0.3
+warble = 0.15
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Plain
+distance = 0.15
+air = 0.5
+width = 0.95
+space_amount = 0.12
+space_size = 0.7
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 40
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

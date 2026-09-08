@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Autumn Leaves
+author = SkyHowl
+description = The same idea in a lighter wind, and mono: the reference's two channels are perfectly correlated, so Width is almost off. Flatter than Rustling Leaves and with the low buffet left in.
+features = leaves, autumn, light, mono
+
+# Wind
+wind_speed = 3.5
+turbulence = 10
+gust_rate = 4.7
+gust_depth = 0.45
+gust_length = 2500
+gust_shape = 0.5
+squall = 0.2
+squall_rate = 2.5
+
+# Airflow
+flow_level = -26
+flow_tone = 1600
+flow_tilt = -4
+buffet = -12
+buffet_tone = 45
+hiss = 0.85
+speed_law = 1
+
+# Howl
+howl_amount = 0.08
+obstacle = Open
+howl_size = 2.5
+howl_spread = 2
+howl_voices = 4
+howl_reso = 0.68
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.55
+foliage = Dry Leaves
+rustle_size = 42
+rustle_density = 30
+rustle_spread = 1.5
+rustle_decay = 35
+rustle_threshold = 0.12
+clatter = 0.7
+
+# Place
+terrain = Meadow
+distance = 0.2
+air = 0.5
+width = 0.05
+space_amount = 0.12
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

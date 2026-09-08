@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Underground
+author = SkyHowl
+description = Air moving in a tunnel. Almost nothing above a kilohertz survives -- the reference is 116 dB down at 16 kHz -- and what is left is a low cavity drone in a hard, close space.
+features = tunnel, underground, drone, enclosed
+
+# Wind
+wind_speed = 5
+turbulence = 10
+gust_rate = 1.2
+gust_depth = 0.35
+gust_length = 9000
+gust_shape = 0.5
+squall = 0.2
+squall_rate = 0.8
+
+# Airflow
+flow_level = -22
+flow_tone = 110
+flow_tilt = -10
+buffet = -8
+buffet_tone = 55
+hiss = 0
+speed_law = 1
+
+# Howl
+howl_amount = 0.25
+obstacle = Cave
+howl_size = 1
+howl_spread = 0.4
+howl_voices = 3
+howl_reso = 0.35
+howl_track = 0.1
+howl_threshold = 0.15
+warble = 0.2
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Street
+distance = 0.1
+air = 0.5
+width = 0.5
+space_amount = 0.6
+space_size = 0.5
+space_damping = 0.2
+
+# Filter
+filter_type = Lowpass
+highpass = 45
+filter_cutoff = 9000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

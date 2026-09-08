@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Arctic Cold
+author = SkyHowl
+description = Dry cold air over snow. The reference falls at 18 dB an octave -- almost nothing survives above 2 kHz -- and its two channels are anti-correlated, which is why Width is at maximum.
+features = arctic, cold, dark, wide
+
+# Wind
+wind_speed = 11
+turbulence = 18
+gust_rate = 3.5
+gust_depth = 0.45
+gust_length = 5000
+gust_shape = 0.5
+squall = 0.5
+squall_rate = 1.1
+
+# Airflow
+flow_level = -26
+flow_tone = 500
+flow_tilt = -17
+buffet = -6
+buffet_tone = 50
+hiss = 0.02
+speed_law = 1
+
+# Howl
+howl_amount = 0.18
+obstacle = Reeds
+howl_size = 1.7
+howl_spread = 0.3
+howl_voices = 3
+howl_reso = 0.55
+howl_track = 0.2
+howl_threshold = 0.3
+warble = 0.2
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Tundra
+distance = 0.25
+air = 0.7
+width = 1
+space_amount = 0.2
+space_size = 0.8
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

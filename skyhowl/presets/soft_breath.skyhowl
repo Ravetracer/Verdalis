@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Soft Breath
+author = SkyHowl
+description = Barely moving air, close by. The reference's spectrum rises towards the top rather than falling -- the only one in the library that does -- so Flow Tilt is nearly flat and most of the sound is Hiss.
+features = soft, quiet, close, hiss
+
+# Wind
+wind_speed = 2.5
+turbulence = 22
+gust_rate = 14
+gust_depth = 0.45
+gust_length = 900
+gust_shape = 0.5
+squall = 0.1
+squall_rate = 4
+
+# Airflow
+flow_level = -30
+flow_tone = 4000
+flow_tilt = -1
+buffet = -8
+buffet_tone = 40
+hiss = 1
+speed_law = 1
+
+# Howl
+howl_amount = 0.06
+obstacle = Reeds
+howl_size = 1.8
+howl_spread = 0.2
+howl_voices = 2
+howl_reso = 0.83
+howl_track = 0.1
+howl_threshold = 0.1
+warble = 0.12
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Coast
+distance = 0.05
+air = 0.5
+width = 0.8
+space_amount = 0.08
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 1200
+decay = 800
+sustain = 1
+release = 2500
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

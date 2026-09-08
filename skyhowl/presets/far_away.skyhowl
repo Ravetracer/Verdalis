@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Far Away
+author = SkyHowl
+description = A gale heard from a long way off. The reference peaks at 63 Hz and is 117 dB down at 16 kHz -- the most distant thing in the library -- and its channels are almost perfectly correlated, which is what distance does to a stereo image.
+features = distant, low, dark, gale
+
+# Wind
+wind_speed = 15
+turbulence = 10
+gust_rate = 1.2
+gust_depth = 0.4
+gust_length = 12000
+gust_shape = 0.5
+squall = 0.25
+squall_rate = 0.7
+
+# Airflow
+flow_level = -38
+flow_tone = 400
+flow_tilt = -4
+buffet = -6
+buffet_tone = 45
+hiss = 0
+speed_law = 1
+
+# Howl
+howl_amount = 0.15
+obstacle = Rocks
+howl_size = 3
+howl_spread = 1.5
+howl_voices = 5
+howl_reso = 0.25
+howl_track = 0.6
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Plain
+distance = 0.55
+air = 0.55
+width = 0.12
+space_amount = 0.25
+space_size = 0.95
+space_damping = 0.55
+
+# Filter
+filter_type = Lowpass
+highpass = 30
+filter_cutoff = 9000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 8000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 6
+max_gusts = 64
+seed = 0

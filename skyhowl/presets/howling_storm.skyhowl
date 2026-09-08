@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Howling Storm
+author = SkyHowl
+description = Named for what it sounds like rather than what it measures: the reference's peak frequency jumps almost an octave between frames, so there is no steady tone in it at all. It is a very fast, very broad storm bed -- 13 gusts a minute and almost no slow drift.
+features = storm, strong, broadband, fast
+
+# Wind
+wind_speed = 18
+turbulence = 6
+gust_rate = 13
+gust_depth = 0.25
+gust_length = 2500
+gust_shape = 0.5
+squall = 0.12
+squall_rate = 3
+
+# Airflow
+flow_level = -18
+flow_tone = 500
+flow_tilt = -7
+buffet = -17
+buffet_tone = 70
+hiss = 0.06
+speed_law = 1
+
+# Howl
+howl_amount = 0.3
+obstacle = Rocks
+howl_size = 2
+howl_spread = 2
+howl_voices = 8
+howl_reso = 0.35
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.2
+foliage = Bare Branches
+rustle_size = 25
+rustle_density = 18
+rustle_spread = 1
+rustle_decay = 50
+rustle_threshold = 0.25
+clatter = 0.7
+
+# Place
+terrain = Mountain
+distance = 0.2
+air = 0.5
+width = 1
+space_amount = 0.25
+space_size = 0.8
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

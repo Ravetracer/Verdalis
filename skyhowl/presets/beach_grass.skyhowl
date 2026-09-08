@@ -1,0 +1,75 @@
+# SkyHowl preset
+format = 1
+name = Beach Grass
+author = SkyHowl
+description = Marram grass on a dune. The steadiest wind in the library -- 4 % turbulence intensity -- and the most merged rustle after the conifers, because a grass blade is small and there are five hundred of them a second.
+features = grass, coast, steady, merged
+
+# Wind
+wind_speed = 8
+turbulence = 3
+gust_rate = 5.3
+gust_depth = 0.2
+gust_length = 4000
+gust_shape = 0.5
+squall = 0.25
+squall_rate = 1.5
+
+# Airflow
+flow_level = -17
+flow_tone = 500
+flow_tilt = -4
+buffet = -12
+buffet_tone = 70
+hiss = 0
+speed_law = 1
+
+# Howl
+howl_amount = 0.12
+obstacle = Grass
+howl_size = 3
+howl_spread = 1.8
+howl_voices = 8
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.08
+foliage = Grass
+rustle_size = 90
+rustle_density = 200
+rustle_spread = 0.9
+rustle_decay = 3
+rustle_threshold = 0.15
+clatter = 0
+
+# Place
+terrain = Coast
+distance = 0.2
+air = 0.5
+width = 0.85
+space_amount = 0.12
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
