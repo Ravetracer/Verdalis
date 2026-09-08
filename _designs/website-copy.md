@@ -255,7 +255,8 @@ mouth, a city street and a dune. Native CLAP for Linux and Windows, with
 sample-accurate note and parameter handling, host modulation, CLAP preset
 discovery, a fixable random seed for repeatable takes, and the suite's window in
 SkyHowl's own dust coral, with streaklines running across the header the way a
-wind tunnel shows a flow it cannot otherwise photograph. No samples anywhere.
+wind tunnel shows a flow it cannot otherwise photograph. Every sound the
+instrument makes is computed while it plays.
 
 ### Variant 2
 
@@ -313,5 +314,5 @@ the median onset pitch measured across the library's foliage recordings — with
 density ceiling taken from the same measurements, because past 15 to 40 onsets a
 second real leaves stop being separately audible and merge into a wash.
 Conifers and grass are set to merge on purpose; dry leaves are sparse and
-clatter. 53 parameters, 23 presets, native CLAP for Linux and Windows, and not a
-single sample in it.
+clatter. 53 parameters, 23 presets, native CLAP for Linux and Windows, and every
+sound of it computed while it plays.

@@ -55,6 +55,7 @@
 #include "verdalis/dsp/rng.h"
 
 #include <cstdint>
+#include <vector>
 
 namespace skyhowl {
 
@@ -181,37 +182,24 @@ struct Leaf {
    RngLite rng;
 };
 
-// A relaxation oscillation: turbulent flow forced through a constricted,
-// compliant aperture that flaps as it passes.
+// A one-shot player for the embedded recordings.
 //
-// It is the same family of problem as the aeolian howl above -- flow meeting a
-// boundary that resonates -- but two octaves lower, far more heavily amplitude
-// modulated, and driven by a falling pressure rather than a steady wind. Each
-// closure of the aperture is an impulse that rings the two bands, so the rate
-// of closure is the pitch; the turbulence that gets through between closures is
-// the hiss over the top.
+// This is the single exception to the suite's synthesis-only rule, and it is
+// deliberate rather than an oversight: the synthesised version of this
+// particular sound was not convincing, and the recordings are licensed so that
+// they can be shipped. See tools/make-vent-samples.py for what they are, where
+// they came from, and the attribution their licence requires.
 //
-// Fitted against 54 reference recordings: 0.13-1.69 s long (median 0.30),
-// fundamental 28-300 Hz (median 113), spectral centroid 367-3267 Hz (median
-// 999), a flutter rate of 4-148 Hz (median 8) and an envelope variation of
-// 0.48-1.93 (median 0.92). Every trigger draws a fresh set from those ranges,
-// so no two are alike -- which is the same rule the rest of the plugin follows.
+// Stored at 48 kHz, so at that rate `step` is exactly 1.0 and playback is a
+// straight read of the original samples. Only a host running at some other
+// rate interpolates.
 struct Vent {
    bool active = false;
-   Svf band;    // the aperture itself: low and resonant
-   Svf formant; // what the cavity behind it does to the result
-   float phase = 0.0f;      // aperture cycle, 0..1; one impulse per turn
-   float inc = 0.0f;
-   float glide = 1.0f;      // per-sample change in inc: the pressure falling
-   float level = 0.0f;
-   float decayCoef = 0.0f;
-   float flutterPhase = 0.0f;
-   float flutterInc = 0.0f;
-   float flutterDepth = 0.0f;
-   float hiss = 0.0f;
-   float formantMix = 0.0f;
+   uint32_t sample = 0;
+   double pos = 0.0;
+   double step = 1.0;
+   float gain = 1.0f;
    float panL = 0.7071f, panR = 0.7071f;
-   RngLite rng;
 };
 
 // One aeolian source: an obstacle of a particular diameter, shedding.
@@ -346,6 +334,7 @@ private:
    Gust mGusts[kMaxGusts];
    Leaf mLeaves[kMaxLeaves];
    Vent mVents[kMaxVents];
+   uint32_t mLastVent = 0;
 
    Rng mRng;
    int mAppliedSeed = 0;

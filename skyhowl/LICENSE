@@ -19,3 +19,25 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Third-party audio
+-----------------
+
+SkyHowl embeds a small amount of recorded audio by Jagadamba, obtained from
+freesound.org (sound ids 253799-253826), used under the Creative Commons
+Attribution 4.0 International licence:
+
+    https://creativecommons.org/licenses/by/4.0/
+
+The recordings were modified: decoded to 48 kHz 16-bit mono, loudness matched
+and embedded in the plugin binary. They are provided by their author without
+warranty of any kind.
+
+Everything SkyHowl's wind engine produces -- the flow, the airflow bed, the
+buffet, the aeolian tones and the foliage -- is computed at run time and
+contains no recorded material.
+
+Reference recordings used elsewhere during development are not part of the
+release and are not redistributable.

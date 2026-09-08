@@ -1,5 +1,7 @@
 #include "wind_engine.h"
 
+#include "vent_samples.h"
+
 #include "verdalis/dsp/fastmath.h"
 
 #include <algorithm>
@@ -174,6 +176,44 @@ uint32_t rngStateForSeed(int seed) {
 
 std::atomic<uint32_t> gInstanceCounter{0};
 
+// The embedded recordings, decoded once and shared by every instance: the data
+// is immutable, so there is no reason for each plugin in a project to carry its
+// own 2.4 MB of it. The first call does the work, which is why prepare() asks
+// for it -- the audio thread must never be the one to take that lock.
+const std::vector<int16_t> &ventSamples() {
+   static const std::vector<int16_t> data = [] {
+      static const signed char kInv[] = {
+         62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+         -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+         20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+         35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51};
+      std::vector<uint8_t> bytes;
+      bytes.reserve(static_cast<size_t>(kVentSampleFrames) * 2);
+      uint32_t acc = 0;
+      int bits = 0;
+      for (const char *p = kVentSampleBase64; *p; ++p) {
+         const int c = static_cast<unsigned char>(*p);
+         if (c < '+' || c > 'z')
+            continue;
+         const signed char v = kInv[c - '+'];
+         if (v < 0)
+            continue;
+         acc = (acc << 6) | static_cast<uint32_t>(v);
+         bits += 6;
+         if (bits >= 8) {
+            bits -= 8;
+            bytes.push_back(static_cast<uint8_t>((acc >> bits) & 0xFFu));
+         }
+      }
+      std::vector<int16_t> out(bytes.size() / 2);
+      for (size_t i = 0; i < out.size(); ++i)
+         out[i] = static_cast<int16_t>(static_cast<uint16_t>(bytes[i * 2]) |
+                                      (static_cast<uint16_t>(bytes[i * 2 + 1]) << 8));
+      return out;
+   }();
+   return data;
+}
+
 } // namespace
 
 void WindEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
@@ -186,6 +226,9 @@ void WindEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
    // The buffet runs lower than surf rumble and about as low as thunder, so
    // the tank's loop highpass has to sit under it rather than over it.
    mSpace.prepare(static_cast<float>(sampleRate), 22.0f);
+   // Force the one-off decode here, on the main thread, rather than letting the
+   // first click pay for it inside process().
+   (void)ventSamples().size();
    reset();
    updateFilters();
 }
@@ -892,57 +935,35 @@ void WindEngine::triggerVent() {
       }
    }
    if (!slot) {
-      // The pool is full, which means several are already sounding. Take the
-      // quietest rather than dropping the request: a button that sometimes
-      // does nothing reads as broken.
-      float lowest = 1.0e9f;
+      // The pool is full, which means several are already playing. Take the one
+      // furthest through itself rather than dropping the request: a button that
+      // sometimes does nothing reads as broken.
+      double most = -1.0;
       for (auto &v : mVents) {
-         if (v.level < lowest) {
-            lowest = v.level;
+         const double through =
+            v.pos / std::max(1.0, static_cast<double>(kVentSpans[v.sample].frames));
+         if (through > most) {
+            most = through;
             slot = &v;
          }
       }
    }
    Vent &v = *slot;
-   const float sr = static_cast<float>(mSampleRate);
+
+   // A fresh pick every time, never the same one twice running. The recordings
+   // are already loudness matched, so nothing else is randomised: the point of
+   // embedding them was to get them back unaltered.
+   uint32_t pick = mRng.next() % kNumVentSamples;
+   if (kNumVentSamples > 1 && pick == mLastVent)
+      pick = (pick + 1u + (mRng.next() % (kNumVentSamples - 1))) % kNumVentSamples;
+   mLastVent = pick;
 
    v.active = true;
-   v.rng.seed(mRng.next() | 1u);
-   v.band.reset();
-   v.formant.reset();
-   v.phase = 0.0f;
-   v.flutterPhase = 0.0f;
-
-   // Every field is drawn fresh, from the ranges the references measure. A
-   // log-uniform draw is the right shape for all of them: the quantities span
-   // more than an octave and their medians sit below the midpoint.
-   auto logDraw = [&](float lo, float hi) {
-      return lo * std::exp2(std::log2(hi / lo) * v.rng.uniformPositive());
-   };
-
-   const float f0 = logDraw(45.0f, 280.0f);          // measured 28-300, median 113
-   const float seconds = logDraw(0.18f, 1.7f);       // measured 0.13-1.69, median 0.30
-   const float formantHz = logDraw(500.0f, 2400.0f); // centroid 367-3267, median 999
-
-   v.inc = clampf(f0 / sr, 1.0e-6f, 0.2f);
-   // The pressure behind it falls, and the pitch falls with it -- though not
-   // always: a few of the references rise instead.
-   const float total = 0.5f + 1.2f * v.rng.uniformPositive();
-   v.glide = std::pow(total, 1.0f / std::max(1.0f, seconds * sr));
-   v.decayCoef = decayCoef(seconds, sr);
-   v.level = 0.5f + 0.5f * v.rng.uniformPositive();
-
-   v.flutterInc = logDraw(4.5f, 60.0f) / sr;         // measured 4-148, median 8
-   v.flutterDepth = 0.30f + 0.65f * v.rng.uniformPositive();
-   v.hiss = 0.10f + 0.60f * v.rng.uniformPositive();
-   v.formantMix = 0.25f + 0.55f * v.rng.uniformPositive();
-
-   v.band.setCutoff(clampf(f0, 20.0f, 0.45f * sr), resonanceFor(4.0f + 12.0f * v.rng.uniformPositive()),
-                    sr);
-   v.formant.setCutoff(clampf(formantHz, 60.0f, 0.45f * sr),
-                       resonanceFor(1.2f + 2.3f * v.rng.uniformPositive()), sr);
-
-   const float pan = 0.35f * v.rng.white();
+   v.sample = pick;
+   v.pos = 0.0;
+   v.step = static_cast<double>(kVentSampleRate) / std::max(1.0, mSampleRate);
+   v.gain = 1.0f;
+   const float pan = 0.2f * (2.0f * mRng.uniform() - 1.0f);
    v.panL = std::sqrt(clampf(0.5f * (1.0f - pan), 0.0f, 1.0f));
    v.panR = std::sqrt(clampf(0.5f * (1.0f + pan), 0.0f, 1.0f));
 }
@@ -954,45 +975,43 @@ void WindEngine::processVents(float *outL, float *outR, uint32_t numSamples) {
    if (!any)
       return;
 
+   const std::vector<int16_t> &data = ventSamples();
+   constexpr float kScale = 1.0f / 32768.0f;
+
    for (auto &v : mVents) {
       if (!v.active)
          continue;
+      const VentSampleSpan span = kVentSpans[v.sample];
       for (uint32_t i = 0; i < numSamples; ++i) {
-         v.inc = clampf(v.inc * v.glide, 1.0e-6f, 0.2f);
-         v.phase += v.inc;
-         float pulse = 0.0f;
-         if (v.phase >= 1.0f) {
-            v.phase -= std::floor(v.phase);
-            pulse = 1.0f; // the aperture closing: one impulse a turn
+         const double p = v.pos;
+         // Strictly greater, so the last frame of the recording is played
+         // rather than dropped: stopping at frames - 1 silently truncated
+         // every one of them by a sample.
+         if (p > static_cast<double>(span.frames) - 1.0) {
+            v.active = false;
+            break;
          }
-
-         v.flutterPhase += v.flutterInc;
-         if (v.flutterPhase >= 1.0f)
-            v.flutterPhase -= std::floor(v.flutterPhase);
-         const float flutter =
-            1.0f - v.flutterDepth * (0.5f - 0.5f * sin2piFast(0.25f + v.flutterPhase));
-
-         const float n = v.rng.white();
-         const float exc = (pulse * 5.0f + n * v.hiss) * flutter * v.level;
-         // The aperture band carries most of it. Weighted up rather than
-         // turning the formant down, because a normalised bandpass has unity
-         // peak gain whatever its Q, so the low band and the mid one arrive
-         // equal -- and the references put a median 38 % of the energy below
-         // 500 Hz, against 14 % when the two were simply summed.
-         const float s = 1.4f * v.band.bandpassNormalised(exc) +
-                         v.formantMix * v.formant.bandpassNormalised(exc);
+         const size_t k = static_cast<size_t>(p);
+         const size_t j = span.offset + k;
+         // The interpolation partner is clamped inside the recording. Without
+         // that, the final frame of the final one reads off the end of the
+         // buffer, and at 48 kHz the read is weighted zero anyway.
+         const size_t j2 = (k + 1 < span.frames) ? j + 1 : j;
+         const float frac = static_cast<float>(p - std::floor(p));
+         // At 48 kHz the step is exactly 1 and frac is always 0, so this reads
+         // the stored samples untouched. Only another host rate interpolates.
+         const float a = static_cast<float>(data[j]) * kScale;
+         const float b = static_cast<float>(data[j2]) * kScale;
+         const float sig = (a + frac * (b - a)) * v.gain;
 
          // Added after the output chain rather than through it, so that a patch
          // with a 2 kHz highpass on it does not silence the thing entirely. It
          // still takes Output Gain, and the sum is clipped again, so the result
          // stays bounded whatever it lands on top of.
-         outL[i] = softClip(outL[i] + s * v.panL * mP.gain);
-         outR[i] = softClip(outR[i] + s * v.panR * mP.gain);
-
-         v.level *= v.decayCoef;
+         outL[i] = softClip(outL[i] + sig * v.panL * mP.gain);
+         outR[i] = softClip(outR[i] + sig * v.panR * mP.gain);
+         v.pos += v.step;
       }
-      if (v.level < 1.0e-5f && !v.band.ringing(1.0e-5f) && !v.formant.ringing(1.0e-5f))
-         v.active = false;
    }
 }
 

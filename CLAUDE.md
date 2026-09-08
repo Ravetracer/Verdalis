@@ -1,7 +1,8 @@
 # Verdalis Plugin Suite
 
 Verdalis is a suite of native **CLAP** audio plugins built around one idea:
-**everything is synthesised, nothing is sampled.** Each plugin models a natural
+**everything is synthesised, nothing is sampled.** (One documented exception
+exists; see *Suite-wide goals*.) Each plugin models a natural
 sound phenomenon from first principles — noise, oscillators, filters, physical
 statistics — so no two instances ever produce the same output.
 
@@ -486,7 +487,13 @@ brand surfaces only: README, site, packaging.
 
 ## Suite-wide goals
 
-- **Pure synthesis.** No samples ship in any plugin, ever.
+- **Pure synthesis.** Every sound a plugin's engine produces is computed at run
+  time. The single exception is a small block of CC-BY licensed audio embedded
+  in SkyHowl for one hidden, non-instrument function, added deliberately after
+  the synthesised version was rejected by ear; the attribution its licence
+  requires is in `skyhowl/LICENSE`, and `skyhowl/tools/make-vent-samples.py`
+  records what it is and how it was prepared. Do not treat it as a precedent:
+  no plugin engine ships sampled material.
 - **Shared visual identity.** One window design across the suite, distinguished
   only by accent colour; brand assets in `_designs/`.
 - **No toolkit dependency.** GUI is X11/Win32 plus Cairo, drawn by hand.

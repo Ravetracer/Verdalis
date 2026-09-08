@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>A suite of native CLAP instruments that synthesise the weather.</strong><br>
-  No samples. Everything computed at run time.
+  Every sound the instruments make is computed at run time.
 </p>
 
 ---

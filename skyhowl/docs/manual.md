@@ -8,9 +8,9 @@ accent: #F0845C
 
 # Introduction
 
-{{PLUGIN}} is a CLAP instrument that generates wind. It contains no samples:
-every gust, every aeolian tone and every rustling leaf is computed from noise,
-filters and resonators while the plugin plays. No two winds are ever alike.
+{{PLUGIN}} is a CLAP instrument that generates wind. Every gust, every aeolian
+tone and every rustling leaf is computed from noise, filters and resonators
+while the plugin plays -- nothing is played back. No two winds are ever alike.
 
 The model starts from an awkward fact. **Wind is silent.** Air in motion
 radiates essentially nothing on its own; everything a listener calls wind is the
@@ -490,9 +490,14 @@ new.
 
 ## License
 
-MIT. {{PLUGIN}} contains no samples and no third-party code. The only external
-dependencies are the CLAP headers, which are MIT licensed, plus X11 and Cairo for
-the plugin window.
+MIT. The only external dependencies are the CLAP headers, which are MIT
+licensed, plus X11 and Cairo for the plugin window.
+
+Everything the wind engine produces is computed at run time. {{PLUGIN}} also
+embeds a small amount of recorded audio by Jagadamba, obtained from
+freesound.org (sound ids 253799-253826) and used under the Creative Commons
+Attribution 4.0 International licence; it was decoded, loudness matched and
+embedded. See the LICENSE file in the plugin folder for the full notice.
 
 Reference recordings used during development are not part of the release and are
 not redistributable.

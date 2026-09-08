@@ -1,12 +1,11 @@
 # SkyHowl
 
-> Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather,
-> no samples. Built and released from the suite root.
+> Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather.
+> Built and released from the suite root.
 
-A native **CLAP** instrument that generates wind — entirely by synthesis. There
-are no samples anywhere in this project: every gust, every aeolian tone and every
-rustling leaf is computed from noise, oscillators and filters at run time. No two
-winds are ever alike.
+A native **CLAP** instrument that generates wind — by synthesis. Every gust,
+every aeolian tone and every rustling leaf is computed from noise, oscillators
+and filters at run time, not played back. No two winds are ever alike.
 
 Play a MIDI note and the wind blows for as long as you hold it.
 
