@@ -45,9 +45,23 @@ std::string display(const ParamDesc &d, double raw) {
 // Markdown table cells cannot contain an unescaped pipe, and the tips are
 // written as prose with "--" for a dash, which the Markdown step turns into an
 // en dash by itself.
+//
+// A tip written across several source lines carries real newlines, and a
+// Markdown table row ends at the first one -- which silently truncated the
+// row and left the rest of the tip as a stray paragraph. Every run of
+// whitespace therefore collapses to a single space.
 std::string cell(const char *text) {
    std::string out;
+   bool space = false;
    for (const char *p = text; *p; ++p) {
+      const bool isSpace = *p == ' ' || *p == '\n' || *p == '\t' || *p == '\r';
+      if (isSpace) {
+         space = true;
+         continue;
+      }
+      if (space && !out.empty())
+         out += ' ';
+      space = false;
       if (*p == '|')
          out += "\\|";
       else
