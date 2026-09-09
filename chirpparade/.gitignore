@@ -23,3 +23,6 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+# The analysis venv, for the tools that need librosa (see
+# tools/analysis/setup-venv.sh). Half a gigabyte of scipy and numba.
+.venv/

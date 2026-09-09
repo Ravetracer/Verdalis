@@ -3,7 +3,6 @@ format = 1
 name = Jungle Screech
 author = ChirpParade
 description = The one species with no reference of its own. Screech borrows the eight most extreme contours in the whole library -- the ones whose pitch travels furthest, 7.5 to 10.3 octaves of path -- which is what 'every range at once' honestly means when there is nothing to measure. Kept because a plugin for birds should be able to make a noise no bird makes.
-features = exotic, screech, chaotic, canopy
 
 # Syllable
 pitch = 3400
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0.5
 radiate = 0.35
+partials = 0.3
 
 # Phrase
 syllables = 2
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 8.2
+gain = 6.6
 seed = 0

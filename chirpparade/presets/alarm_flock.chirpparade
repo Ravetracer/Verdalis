@@ -3,7 +3,6 @@ format = 1
 name = Alarm Flock
 author = ChirpParade
 description = Short, high and fast, which is what an alarm call is for: hard to locate and impossible to ignore. 45 ms syllables at sixteen a second, seven birds, and Restless well up so the density lurches rather than holding steady.
-features = alarm, nervous, fast, bright
 
 # Syllable
 pitch = 3400
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 6
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -2.9
+gain = -0.8
 seed = 0

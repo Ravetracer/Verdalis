@@ -3,7 +3,6 @@ format = 1
 name = Far Treeline
 author = ChirpParade
 description = Birds a field away. Distance takes the level down by its inverse and the top off by air absorption, and the highpass and the output filter finish what the air started. Detail is pulled back a little: fine contour motion is the first thing distance takes, so smoothing it is what makes far birds sound far rather than quiet.
-features = distant, ambience, soft, background
 
 # Syllable
 pitch = 2600
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 3

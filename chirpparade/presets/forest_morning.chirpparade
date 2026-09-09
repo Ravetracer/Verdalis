@@ -3,7 +3,6 @@ format = 1
 name = Forest Morning
 author = ChirpParade
 description = A wood with a woodpecker in it. The drum sits 14 dB under the birds and arrives four times a minute, which is roughly what a walk through a wood in spring gives you, and the space is damped the way somewhere full of leaves is.
-features = forest, ambience, drum, wide
 
 # Syllable
 pitch = 2600
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 3
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -0.8
+gain = 2.4
 seed = 0

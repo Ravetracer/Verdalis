@@ -3,7 +3,6 @@ format = 1
 name = Garden Sparrows
 author = ChirpParade
 description = The library's middle, made audible. Everything here is a median of the 4268 syllables measured across the reference recordings -- 96 ms, 2.6 kHz, three to a phrase at seven and a half a second, five birds spread over 0.8 of an octave -- and the contour is a real sparrow syllable played at its measured depth. The starting point rather than a destination.
-features = garden, day, flock, bright
 # fit pitch=3172 harmonics=1 rough=-29
 
 # Syllable
@@ -26,6 +25,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 3
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 2.2
+gain = 3.8
 seed = 0

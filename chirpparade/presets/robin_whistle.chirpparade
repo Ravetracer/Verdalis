@@ -3,7 +3,6 @@ format = 1
 name = Robin Whistle
 author = ChirpParade
 description = The purest voice in the library. The robin recordings measure one harmonic and a spectral flatness of -34 dB, the cleanest of any group, so Voice sits at the bottom where the valve never closes and what comes out is a sine. Four notes with a slight fall between them.
-features = whistle, pure, high, solo
 # fit harmonics=1 rough=-34
 
 # Syllable
@@ -26,6 +25,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 4
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -2
+gain = -0.1
 seed = 0

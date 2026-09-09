@@ -163,6 +163,119 @@ def extract(x, sr):
     return freq[a:b + 1], amp[a:b + 1], dt
 
 
+# How many partials to store, and how many terms each gets.
+#
+# Measured over 1777 syllables in 57 files before committing to it:
+#
+#   energy inside a 10-harmonic comb        median 0.67  (0.10 .. 0.99)
+#   harmonic balance drift over a syllable  median 4.4 dB (0.8 .. 7.3)
+#   harmonics above -24 dB                  median 2.2   (1.0 .. 8.8)
+#
+# The middle row is the one that justifies this. The balance *moves* by 4.4 dB
+# across a single syllable, and a fixed valve through a fixed tract cannot do
+# that -- so the timbral evolution of a real syllable is not reachable without
+# measuring it. Six partials covers the 8.8 at the top of the range with room
+# to spare; twelve terms puts the fastest basis function at six cycles across
+# the syllable, which is far more than a 4.4 dB drift needs.
+HARMONICS = 6
+HARM_TERMS = 12
+
+
+def harmonic_balance(seg, sr, nfft=512, pad=2048, hop=32):
+    """How the energy is shared between the partials, frame by frame.
+
+    Returns HARMONICS curves in dB, normalised so that the partials of each
+    frame sum to unit power -- the overall envelope is the level curve's job, so
+    these carry only the balance, and the two multiply back together.
+
+    It runs its own STFT rather than reusing the contour tracker's. The tracker
+    uses a 5.3 ms window because that is what keeps the scribble; resolving the
+    harmonics of a 200 Hz corvid needs 10.7 ms. The balance moves slowly -- 4.4 dB
+    across a whole syllable -- so the coarser window costs it nothing, and
+    keeping them separate means adding this cannot disturb the contours that are
+    already shipping.
+
+    The fundamental is not assumed to be the tracked partial. The loudest
+    partial of a corvid is often its second or third, so the divisor is searched
+    per syllable by which one puts the most energy into its own comb.
+    """
+    if len(seg) < nfft * 2:
+        return None
+    win = np.hanning(nfft)
+    n = 1 + (len(seg) - nfft) // hop
+    if n < 6:
+        return None
+    idx = np.arange(nfft)[None, :] + hop * np.arange(n)[:, None]
+    mag = np.abs(np.fft.rfft(seg[idx] * win, pad, axis=1))
+    fr = np.fft.rfftfreq(pad, 1.0 / sr)
+    band = (fr >= 250.0) & (fr <= min(12000.0, 0.45 * sr))
+    energy = (mag[:, band] ** 2).sum(axis=1)
+    if energy.max() <= 0.0:
+        return None
+    live = np.nonzero(energy > 0.20 * energy.max())[0]
+    if len(live) < 6:
+        return None
+
+    # The loudest partial per live frame, as the starting point for the divisor.
+    bf = fr[band]
+    peak = bf[np.argmax(mag[:, band], axis=1)]
+
+    def comb_share(divisor):
+        tot = share = 0.0
+        for i in live:
+            f0 = peak[i] / divisor
+            if f0 < F0_LO_HARM:
+                return -1.0
+            row = mag[i]
+            tot += float((row ** 2).sum())
+            for k in range(1, HARMONICS + 1):
+                f = f0 * k
+                if f > fr[-1]:
+                    break
+                sel = (fr > f * 0.94) & (fr < f * 1.06)
+                if sel.any():
+                    share += float((row[sel] ** 2).sum())
+        return share / tot if tot > 0.0 else -1.0
+
+    best, divisor = -1.0, 1
+    for d in range(1, 5):
+        # A lower candidate's comb contains the one above it, so it is
+        # penalised -- the same reasoning as the fundamental search in
+        # syllables.py.
+        sc = comb_share(d) - 0.06 * (d - 1)
+        if sc > best:
+            best, divisor = sc, d
+    if best <= 0.0:
+        return None
+
+    curves = np.zeros((HARMONICS, len(live)))
+    for j, i in enumerate(live):
+        f0 = peak[i] / divisor
+        row = mag[i]
+        a = np.zeros(HARMONICS)
+        for k in range(1, HARMONICS + 1):
+            f = f0 * k
+            if f > fr[-1]:
+                break
+            sel = (fr > f * 0.94) & (fr < f * 1.06)
+            if sel.any():
+                a[k - 1] = float(row[sel].max())
+        power = float((a ** 2).sum())
+        if power <= 0.0:
+            a[0] = 1.0
+            power = 1.0
+        a /= np.sqrt(power)
+        curves[:, j] = 20.0 * np.log10(np.maximum(a, 1.0e-3))
+
+    return ([fit_series(curves[h], HARM_TERMS) for h in range(HARMONICS)],
+            divisor, float(best))
+
+
+# Below this the harmonics of a candidate fundamental fall on top of each other
+# at the analysis resolution, and the divisor search stops meaning anything.
+F0_LO_HARM = 180.0
+
+
 def fit_series(v, terms=TERMS):
     """Least-squares fit of a cosine series in normalised time on [0, 1].
 
@@ -247,7 +360,21 @@ def syllables_of(path, seconds=30.0, limit=400):
 # birds at once, and the result is a contour no bird ever sang.
 MIN_DUR = 0.018
 MAX_DUR = 0.400
-MIN_TONALITY_DB = 6.0
+# How tonal a syllable has to be to become an archetype. Swept, because it
+# turned out to be the single most consequential number in the pipeline: it
+# selects *for tonality*, so a strict gate fills the table with each species'
+# cleanest syllables and leaves the corvids sounding thinner than they are.
+#
+#   gate dB    usable    fit err    Crow candidates    Crow harmonics
+#      6.0        808      32 c            56               1.9
+#      2.0        967      34 c            79               2.1
+#      0.0       1026      35 c            83               2.2
+#     -3.0       1100      36 c           110               2.5
+#
+# 0 dB buys 27 % more usable contours and 48 % more corvid candidates for three
+# cents of fit error. Below that the comb share starts falling away, which means
+# the harmonic measurement stops being worth much.
+MIN_TONALITY_DB = 0.0
 MAX_FIT_CENTS = 90.0
 
 
@@ -340,10 +467,21 @@ def harvest(groups, seconds=30.0, verbose=True):
                 if not usable(freq, amp, dt, syl, ec):
                     continue
                 centre = float(2.0 ** np.median(np.log2(np.maximum(freq, 20.0))))
+                # The harmonic balance, and how much of the energy it actually
+                # accounts for. A syllable whose comb captures little is either
+                # inharmonic or has a second bird in it, and the engine scales
+                # its use of the measurement by this rather than trusting it.
+                hb = harmonic_balance(seg, sr)
+                if hb is None:
+                    harm = [np.zeros(HARM_TERMS) for _ in range(HARMONICS)]
+                    harm[0][0] = 0.0
+                    hfit = 0.0
+                else:
+                    harm, _divisor, hfit = hb
                 got.append({
                     "pitch": fc, "level": acl, "centre": centre,
                     "dur": len(freq) * dt, "err": ec, "file": name,
-                    "shape": shape(fc),
+                    "shape": shape(fc), "harm": harm, "harmFit": hfit,
                 })
         out[species] = got
         if verbose:
@@ -431,9 +569,13 @@ def emit(path, seconds=25.0):
 // (van Hunter Adams, Cornell ECE 4760), with forty terms instead of one because
 // a real syllable turns direction up to forty times and one term cannot.
 //
-// pitch[] is in octaves about the syllable's own centre, term 0 removed, so the
-// table carries shape only and the engine transposes it.
+// pitch[] is in octaves about the syllable's loudest moment, so the table
+// carries shape only and the engine transposes it.
 // level[] is in dB with the peak at 0.
+// harm[] is the balance between the first six partials across the syllable, in
+// dB. It is what makes the timbre *evolve*: measured over 1777 syllables the
+// balance moves 4.4 dB across a single syllable, and a fixed valve through a
+// fixed tract cannot do that.
 //
 // Regenerating needs the reference recordings in !dev/references, which are not
 // part of this repository:
@@ -446,12 +588,22 @@ namespace chirpparade {
 
 constexpr int kPitchTerms = %d;
 constexpr int kLevelTerms = %d;
+constexpr int kHarmonics = %d;
+constexpr int kHarmTerms = %d;
 
 struct Contour {
    float durationSec;
    float centreHz;
+   // How much of the syllable's energy the harmonic comb below accounts for.
+   // Low means the syllable is inharmonic or has a second bird in it, and the
+   // engine scales its use of the measurement by this instead of trusting it.
+   float harmFit;
    float pitch[kPitchTerms];
    float level[kLevelTerms];
+   // The balance between the partials across the syllable, in dB, normalised so
+   // that each frame's partials sum to unit power -- the overall envelope is
+   // level[]'s job, and the two multiply back together.
+   float harm[kHarmonics][kHarmTerms];
 };
 
 struct ContourRange {
@@ -459,7 +611,7 @@ struct ContourRange {
    int count;
 };
 
-''' % (PITCH_TERMS, LEVEL_TERMS))
+''' % (PITCH_TERMS, LEVEL_TERMS, HARMONICS, HARM_TERMS))
         f.write("constexpr Contour kContours[] = {\n")
         for c in table:
             pc = np.array(c["pitch"], float).copy()
@@ -473,8 +625,10 @@ struct ContourRange {
             curve = sum(pc[k] * np.cos(np.pi * k * t) for k in range(len(pc)))
             lvl = sum(c["level"][k] * np.cos(np.pi * k * t) for k in range(len(c["level"])))
             pc[0] = -float(curve[int(np.argmax(lvl))])
-            f.write("   {%.6ff, %.1ff,\n    {\n%s\n    },\n    {\n%s\n    }},\n"
-                    % (c["dur"], c["centre"], arr(pc), arr(c["level"])))
+            harm = ",\n".join("     {\n%s\n     }" % arr(h) for h in c["harm"])
+            f.write("   {%.6ff, %.1ff, %.3ff,\n    {\n%s\n    },\n    {\n%s\n    },\n"
+                    "    {\n%s\n    }},\n"
+                    % (c["dur"], c["centre"], c["harmFit"], arr(pc), arr(c["level"]), harm))
         f.write("};\n\n")
         f.write("constexpr int kNumContours = %d;\n\n" % len(table))
         f.write("// One range per SpeciesKind, in enum order.\n")
@@ -482,8 +636,12 @@ struct ContourRange {
         for name, (first, count) in zip(SPECIES_ORDER, ranges):
             f.write("   {%3d, %2d},  // %s\n" % (first, count, name))
         f.write("};\n\n} // namespace chirpparade\n")
-    print("\nwrote %s: %d archetypes, %d floats" %
-          (path, len(table), len(table) * (PITCH_TERMS + LEVEL_TERMS)))
+    per = PITCH_TERMS + LEVEL_TERMS + HARMONICS * HARM_TERMS
+    print("\nwrote %s: %d archetypes, %d floats (%.0f kB)" %
+          (path, len(table), len(table) * per, len(table) * per * 4 / 1024.0))
+    fits = [c["harmFit"] for c in table]
+    print("harmonic comb share across the table: %.2f .. %.2f, median %.2f"
+          % (min(fits), max(fits), float(np.median(fits))))
     print("\nmedian archetype duration per species -- this is what the engine's")
     print("SpeciesTraits lengthSec should be, so that Length and the contours agree:")
     for name, (first, count) in zip(SPECIES_ORDER, ranges):

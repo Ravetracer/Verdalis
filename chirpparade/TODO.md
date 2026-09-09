@@ -2,7 +2,26 @@
 
 ## Contours
 
-- **The archetype sets are uneven.** Goose has **one** contour and Raven four,
+- **Relaxing the tonality gate further is probably still worth it.** It moved
+  from 6 dB to 0 dB, which bought 27 % more usable contours and 48 % more corvid
+  candidates for three cents of fit error. At −3 dB there were 1100 usable and
+  110 corvid candidates, but the harmonic comb share started falling — so the
+  contours keep improving while the partial measurement degrades. They may want
+  separate gates.
+- **Warbler and Goose render about half the length their archetype median says.**
+  Both species now have archetypes of very mixed duration, and stretching a
+  short curve to a long `Length` turns its internal amplitude modulation into
+  separate notes, which the segmenter then counts separately. Choosing the
+  archetype partly by how close its own duration is to `Length` would fix it.
+- **`Partials` thins the corvids.** Turning it up makes a crow's timbre evolve
+  the way a real one's does — its balance drift goes from 1.7 to 2.7 dB against
+  the references' 4.4 — while dropping its harmonic count from 4.3 to 3.0. That
+  is not the engine exaggerating: the archetype's spectrum is what that syllable
+  actually had, and the gate selected the cleanest ones. The corvid presets
+  therefore ship with `Partials` at 35 % rather than 60 %. A wider gate is the
+  real fix.
+- **The archetype sets are still uneven.** Goose has **three** contours and
+  Raven four,
   because only one goose and one raven recording exist in the library and few of
   their syllables passed the quality gate. `Contour` does nothing on a Goose.
   More references for the waterfowl and the corvids would be worth more than any
@@ -21,6 +40,10 @@
   bird: the pitch tends to peak where the level does. Fitting them jointly, or
   storing their correlation, would let `Variation` perturb them in a way that
   stays plausible instead of drifting apart.
+- **Six partials is where the measurement stops, not the bird.** Above the sixth
+  the engine has only the valve, so a syllable with real energy at the eighth or
+  tenth harmonic gets a synthetic version of it. Storing more is cheap; whether
+  the measurement is trustworthy that high is the question.
 - **`Detail` is a one-pole.** It smooths the contour as it is read, which is
   cheap and does the right thing perceptually, but it also delays it. A
   zero-phase smoother over the table at spawn would be more honest and costs
@@ -70,6 +93,18 @@
   and it is what separates a live tree from a dead one.
 - **Distance is inverse-distance plus air absorption, nothing else.** No ground
   reflection, and birds are usually above the listener.
+
+## Rejected, with the reason recorded
+
+- **Mel spectrograms with Griffin-Lim** (SoundPlot). 92.9 ms analysis window at
+  librosa's defaults, Griffin-Lim's worst case is exactly this material, and its
+  own metrics report a negative SNR. Also the wrong side of the suite's line: a
+  mel spectrogram at usable resolution is the recording with the phase removed.
+- **pYIN for the pitch track.** Swept over three frame lengths and three
+  confidence gates; it discards 80 % of the contour path and cuts the peak slew
+  from 424 to 16 oct/s. Its Viterbi smoothing assumes slowly-varying pitch.
+  `setup-venv.sh` still installs librosa, because its spectral features may yet
+  be useful for choosing archetypes that differ in timbre as well as in shape.
 
 ## Verification
 

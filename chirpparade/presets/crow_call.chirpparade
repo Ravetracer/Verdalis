@@ -3,7 +3,6 @@ format = 1
 name = Crow Call
 author = ChirpParade
 description = Three caws and a gap. The crow recordings are the roughest voices measured, at -21 dB of spectral flatness against the library's -28, and they carry five harmonics -- so the valve is shut for a good part of every cycle, and Rasp makes each closure differ from the last.
-features = crow, caw, harsh, solo
 # fit pitch=800 harmonics=5
 
 # Syllable
@@ -26,6 +25,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0.15
 radiate = 0.35
+partials = 0.35
 
 # Phrase
 syllables = 3
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 6.1
+gain = 4.9
 seed = 0

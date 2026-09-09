@@ -269,6 +269,32 @@ of the flow rather than the flow, which tilts the harmonics up by 6 dB an
 octave, referenced to a fixed frequency so it stays a tilt and not a gain that
 changes with the note.
 
+## The partials: reaching for the recording
+
+The valve gives a plausible harmonic stack. What it cannot give is a stack that
+**changes shape** as the syllable goes — and real ones do. Measured over 1777
+syllables, the balance between the first partials moves **4.4 dB** across a
+single syllable. A fixed valve through a fixed tract is flat by construction.
+
+So each archetype also carries six measured amplitude curves, one per harmonic,
+and *Partials* crossfades the valve into them. They are phase-locked to the same
+oscillator, because a harmonic source is.
+
+Two things to know about it:
+
+**It is scaled by how much the measurement is worth.** Each archetype records
+what share of its own energy fell inside the harmonic comb. A syllable that was
+inharmonic, or had a second bird in it, has a low share and barely responds —
+which is honest, rather than asserting a balance that was never measured.
+
+**It thins the corvids, and that is the library's fault rather than the
+engine's.** The contour quality gate selects for tonality, so the archetypes are
+each species' *cleanest* syllables. Turn *Partials* up on a Crow and its timbre
+starts evolving the way a real one's does — but its harmonic count falls, because
+that particular syllable really did have fewer harmonics than a crow's average.
+The corvid presets ship at 35 % for that reason. On the whistlers and warblers,
+turn it up.
+
 ## Three families, found rather than chosen
 
 Sorting every syllable in the library by harmonic count alone splits it into
@@ -557,9 +583,14 @@ borrowing the library's most extreme contours, and its measured pitch runs 54 %
 low because those curves swing so far that a fundamental estimate is
 meaningless. It is an effect, not a bird.
 
-**The quality gate throws away 61 % of the library** — 4268 syllables found,
-1641 usable. Most rejections are the dense multi-bird recordings, where the
+**The quality gate still throws away most of the library.** Relaxing it in this
+version widened every species' set — Goose went from one contour to three — but
+most of the dense multi-bird recordings are still rejected, because there the
 tracker follows two birds at once.
+
+**Warbler and Goose come out about half the length their table says.** Both have
+archetypes of very mixed duration, and stretching a short curve to a long
+*Length* turns its own amplitude modulation into separate notes.
 
 # Reference and limits
 
@@ -598,8 +629,8 @@ they eventually found in themselves.
 - Linux and Windows, x86-64. Plugin state is stored little-endian.
 - 16 voices, with 64 syllables, 64 drum strikes, 64 phrases and 16 birds per
   voice in shared pools.
-- 67 measured contours, 4288 coefficients, 17 KB. No recorded audio of any kind.
-- 60 s of *Dawn Chorus* — twelve birds, 48 voices — renders in 0.78 s, about 77
+- 71 measured contours, 9656 coefficients, 38 KB. No recorded audio of any kind.
+- 60 s of *Dawn Chorus* — twelve birds, 48 voices — renders in 1.07 s, about 56
   times realtime.
 - Scheduling runs at a control rate of one update per 32 samples. Everything
   audible runs per sample.

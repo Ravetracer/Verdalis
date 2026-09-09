@@ -23,6 +23,7 @@ is what makes the medians below worth quoting.
 | `drums.py` | woodpecker drumming: strikes, rate, drift, knock spectrum |
 | `gestures.py` | the one prediction of the model the references can falsify |
 | `fit.py` | the plugin's own output, measured back against all of the above |
+| `setup-venv.sh` | a local venv with librosa, for the one thing that wanted it |
 
 `wavio.py` comes from `shared/tools/analysis`.
 
@@ -87,8 +88,50 @@ medoids. The number of terms was chosen by measuring the fit error:
 82-cent column and then some.** Refitting a real syllable and resynthesising it
 as a bare sine lands within **41 cents of pitch and 0.5 dB of level**.
 
-The table that ships is 67 archetypes, **4288 floats, 17 KB, no audio**. A
-contour is a formula in exactly the sense Adams' is.
+The table that ships is 71 archetypes, **9656 floats, 38 KB, no audio** — 40
+pitch terms, 24 level terms and six harmonic-balance curves of 12 terms each per
+archetype. A contour is a formula in exactly the sense Adams' is.
+
+### The partial balance
+
+The contour gives the pitch and the overall envelope. It does not give the
+*timbre*, and a fixed valve through a fixed tract gives a timbre that never
+changes shape. Measured over 1777 syllables in 57 files:
+
+| | median | range |
+|---|---|---|
+| energy inside a 6–10 harmonic comb | **0.67** | 0.10 … 0.99 |
+| **harmonic balance drift across one syllable** | **4.4 dB** | 0.8 … 7.3 |
+| harmonics above −24 dB | 2.2 | 1.0 … 8.8 |
+
+The middle row is what justified adding it: the balance *moves*, by 4.4 dB over
+a single syllable, and nothing static can do that. So each archetype carries six
+amplitude curves, normalised so the partials of each frame sum to unit power —
+the overall envelope is the level curve's job, and the two multiply back
+together.
+
+Each archetype also stores **what share of its own energy the comb accounted
+for**, and the engine scales its use of the measurement by that. An archetype
+that was inharmonic, or had a second bird in it, simply does not respond much.
+
+### The tonality gate is the most consequential number in the pipeline
+
+It decides which syllables become archetypes, and it selects *for tonality* — so
+a strict gate fills the table with each species' cleanest syllables and leaves
+the corvids thinner than they are. Swept:
+
+| gate | usable | fit error | Crow candidates | Crow harmonics |
+|---|---|---|---|---|
+| 6 dB | 808 | 32 ¢ | 56 | 1.9 |
+| 2 dB | 967 | 34 ¢ | 79 | 2.1 |
+| **0 dB** | **1026** | **35 ¢** | **83** | **2.2** |
+| −3 dB | 1100 | 36 ¢ | 110 | 2.5 |
+
+0 dB buys 27 % more usable contours and 48 % more corvid candidates for three
+cents of fit error, and it took Goose from one archetype to three and Crane from
+six to eight. Below that the comb share starts falling, so the contours keep
+improving while the *partial* measurement degrades — they may eventually want
+separate gates.
 
 ### Medoids, not means
 
@@ -445,6 +488,42 @@ above it — gives both a fundamental and a harmonic count.
 carries its own pitch offset, so a "nominal" isolated render came out a third of
 an octave off and looked convincingly like an oscillator running sharp. It is in
 `fit.py`'s isolation list now, with a note.
+
+## Two things tried and rejected
+
+**Mel spectrograms with Griffin-Lim resynthesis**, from the SoundPlot framework
+(MIT, so the licence was never the obstacle). Its synthesis is Griffin-Lim over
+a 128-band mel spectrogram, and librosa's defaults put the analysis window at
+**92.9 ms** at 22.05 kHz — four times coarser than the 21 ms that broke the
+first version of this plugin. Griffin-Lim's worst case is frequency-modulated
+transient material, which is what birdsong is, and the framework's own published
+figures are `SNR −0.81 ± 0.42 dB` (negative: the error exceeds the signal) and
+`Spectral Corr 0.57`; its headline `Mel Correlation 0.929` is measured in the
+same mel domain it reconstructs from. Separately, a mel spectrogram at a
+resolution that *would* work is the recording with its phase discarded, which is
+a different thing from a coefficient table.
+
+**librosa's pYIN** for the pitch track. This one was worth testing properly,
+because the numpy tracker rejects most of the library and pYIN is a better
+fundamental estimator in general. Swept over three frame lengths and three
+confidence gates; on identical syllables:
+
+| tracker | span | path | peak slew | turns |
+|---|---|---|---|---|
+| numpy STFT | 0.518 | 2.013 | **424 oct/s** | 23 |
+| pYIN, 1024 | 0.198 | 0.388 | 16 | 11 |
+| pYIN, 2048 | 0.142 | 0.205 | 7 | 5 |
+
+It discards 80 % of the contour's path and cuts the peak slew by a factor of 26.
+Its Viterbi smoothing assumes slowly-varying pitch, so it does to the contour
+exactly what a long analysis window does — and its own confidence figures agree,
+since gating at 0.55 drops the usable yield to 20 %. A fit error of 3 cents
+against the numpy tracker's 42 looked like a win until the path length was
+checked, which is the same trap as before: a smooth curve fits beautifully and
+is the wrong curve.
+
+`setup-venv.sh` still installs librosa, because its spectral features may yet be
+useful for choosing archetypes that differ in timbre as well as in shape.
 
 ## Two bugs in the measurement code itself
 

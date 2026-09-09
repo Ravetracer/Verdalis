@@ -97,6 +97,7 @@ struct EngineParams {
    float formant = 0.55f;
    float rasp = 0.0f;
    float radiate = 0.35f;
+   float partials = 0.6f;
 
    // phrase
    int syllables = 3;
@@ -206,6 +207,9 @@ struct Chirp {
    float osc = 0.0f;
    float closure = 0.0f; // Voice: the fraction of the cycle the valve is shut
    float rasp = 0.0f;
+   // How much of the timbre is the archetype's measured partial balance rather
+   // than the valve, already scaled by how much that measurement is worth.
+   float partials = 0.0f;
    float closureNow = 0.0f; // jittered per cycle when Rasp is up
    float prevFlow = 0.0f;   // for the radiation derivative
    OnePoleHp dcBlock;
@@ -369,6 +373,12 @@ public:
    // motion the whole thing is for. 512 gives twelve points per cycle of the
    // fastest term.
    static constexpr int kContourPoints = 512;
+
+   // The partial balance moves slowly -- 4.4 dB across a whole syllable -- so its
+   // tables need far fewer points than the pitch contour, whose whole purpose is
+   // the fast motion. Twelve terms over 128 points is twenty-one points per
+   // cycle of the fastest one.
+   static constexpr int kHarmPoints = 128;
 
 private:
    void updateFilters();

@@ -3,7 +3,6 @@ format = 1
 name = Nightingale Trill
 author = ChirpParade
 description = Eighteen syllables a second, which is the top of the range the library measures before the ear stops counting them. A trill is not a modulation: only 10 of the library's 4268 syllables carry a wobble of their own pitch. It is syllables arriving too fast to separate, which is Syllable Rate high and Legato high and nothing else.
-features = trill, fast, virtuoso, solo
 
 # Syllable
 pitch = 5200
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 18
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -2.1
+gain = -1.8
 seed = 0

@@ -3,7 +3,6 @@ format = 1
 name = Raven Croak
 author = ChirpParade
 description = Slower and longer than a crow. The raven recording has the longest syllables in the library at 267 ms and the slowest rate at 88 a minute. Its harmonic count is the one figure the engine overrides its own measurement on -- see the analysis notes for why -- and only four of its syllables survived the quality gate, so its contour set is the smallest here.
-features = raven, croak, deep, ominous
 
 # Syllable
 pitch = 2530
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0.45
 radiate = 0.35
+partials = 0.35
 
 # Phrase
 syllables = 2
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 8.4
+gain = 6.7
 seed = 0

@@ -19,6 +19,10 @@ Play a note and one bird sings once. Hold it and a flock carries on by itself.
   syrinx is shut. At zero it passes a pure sine, which is what 59 % of the
   library's syllables are; closing it makes the airflow a one-sided pulse with
   the harmonic stack a corvid has
+- **`Partials` reaches for the recording itself.** Each archetype also carries
+  the measured balance between its first six partials *across* the syllable —
+  because that balance moves 4.4 dB over one syllable, and a fixed valve through
+  a fixed tract cannot do that at all
 - Ten species, each a measurement: pitch register, syllable length, harmonic
   richness, roughness and rate are the medians of the recordings of that bird
 - Woodpecker drumming as a separate layer, because it is sonation rather than
@@ -43,6 +47,7 @@ Play a note and one bird sings once. Hold it and a flock carries on by itself.
 |---|---|
 | **The contour** | Two measured curves read out over the syllable: pitch in octaves about its loudest moment, level in dB. `Contour` chooses the archetype, `Detail` how much of its fine motion survives, `Sweep` how far it travels, `Skew` how its time is warped. |
 | **The valve** | A phase accumulator at the contour's frequency through a one-sided hinge. Air passes only while the labia are apart, and *that* is where the even harmonics come from — a symmetric oscillator has none at all. |
+| **The partials** | Six measured amplitude curves, one per harmonic, phase-locked to the same accumulator. `Partials` crossfades the valve into them, scaled by how much of that syllable's energy the measurement actually accounted for. |
 | **The tract** | The trachea as a closed tube at `c/4L`, with the beak both raising the resonance and making it follow the pitch the way a songbird's gape does. |
 | **The phrase** | Syllables at a rate of their own, with a motif, drift and variation, separated by a gap 5.9× the one inside them. |
 | **The flock** | Birds as individuals, each with its own pitch, position, distance and voice, calling as a Poisson process and answering each other. |
@@ -77,8 +82,25 @@ a spectrogram and fitting one sine term; this does it automatically, over the
 whole library, with forty. Refitting a real syllable lands within **41 cents of
 pitch and 0.5 dB of level**.
 
-`contours_generated.h` holds **4288 floats** — 17 KB, no audio. A contour is a
-formula in exactly the sense `f(x) = -260·sin(-πx/5200) + 1740` is.
+`contours_generated.h` holds **9656 floats** — 38 KB, no audio: 71 archetypes ×
+(40 pitch + 24 level + 6 × 12 harmonic) coefficients. A contour is a formula in
+exactly the sense `f(x) = -260·sin(-πx/5200) + 1740` is.
+
+### What was tried and rejected
+
+**Mel spectrograms with Griffin-Lim resynthesis** (the SoundPlot approach).
+librosa's defaults are a 92.9 ms window at 22.05 kHz — four times coarser than
+the window that broke 0.1.0 — and Griffin-Lim's worst case is exactly
+frequency-modulated transient material. A mel spectrogram at usable resolution
+is also the recording with its phase discarded, which is the wrong side of the
+suite's line.
+
+**librosa's pYIN** for the pitch tracking, swept over three frame lengths and
+three confidence gates. On the same syllables it discards 80 % of the contour's
+path and cuts the peak slew from 424 to 16 oct/s: its Viterbi smoothing assumes
+slowly-varying pitch, which birdsong violates. `tools/analysis/setup-venv.sh`
+still installs it, and `contours.py` will use it if asked, but the pipeline does
+not.
 
 ## The manual
 

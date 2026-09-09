@@ -3,7 +3,6 @@ format = 1
 name = Tui Bell
 author = ChirpParade
 description = What the tract does on its own. A short trachea and a wide beak put the resonance high and broad, and Formant well up makes it most of what is heard -- the source is the same valve as everything else. In the library's harmonic syllables the loudest harmonic is not the first in 80 % of cases, and this is that effect used deliberately.
-features = exotic, bell, tract, strange
 
 # Syllable
 pitch = 2400
@@ -25,6 +24,7 @@ beak = 0.8
 formant = 0.85
 rasp = 0.2
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 4
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -1.8
+gain = 0.6
 seed = 0

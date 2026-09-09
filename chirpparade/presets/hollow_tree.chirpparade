@@ -3,7 +3,6 @@ format = 1
 name = Hollow Tree
 author = ChirpParade
 description = A dead trunk instead of a live branch: the first body mode down at 380 Hz and a contact five times longer, in a space with hard surfaces. A few crows in the background, because that is where they are.
-features = drum, low, resonant, dead wood
 
 # Syllable
 pitch = 2600
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.35
 
 # Phrase
 syllables = 3
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 6.7
+gain = 6.6
 seed = 0

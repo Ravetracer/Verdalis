@@ -3,7 +3,6 @@ format = 1
 name = Crow Mob
 author = ChirpParade
 description = Eight crows all answering. Answer is high, which is what turns a set of independent Poisson processes into a row: one bird's phrase provokes another from somewhere else a fraction of a second later.
-features = crows, mobbing, alarm, chaos
 
 # Syllable
 pitch = 2100
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0.2
 radiate = 0.35
+partials = 0.35
 
 # Phrase
 syllables = 2
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 3.2
+gain = 2.5
 seed = 0

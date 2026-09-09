@@ -40,9 +40,9 @@ constexpr uint32_t kSyllableParams[] = {
    kParamPitch,  kParamSweep, kParamContour,   kParamDetail, kParamLength,
    kParamSkew,   kParamJitter, kParamPulseRate, kParamPulseDepth,
 };
-constexpr uint32_t kTimbreParams[] = {kParamSpecies, kParamVoice,   kParamBreath,
-                                      kParamTract,   kParamBeak,    kParamFormant,
-                                      kParamRasp,    kParamRadiate};
+constexpr uint32_t kTimbreParams[] = {kParamSpecies,  kParamVoice, kParamPartials,
+                                      kParamBreath,   kParamRasp,  kParamTract,
+                                      kParamBeak,     kParamFormant, kParamRadiate};
 constexpr uint32_t kPhraseParams[] = {kParamSyllables, kParamSyllableRate, kParamRateDrift,
                                       kParamLegato,    kParamMotif,        kParamVariation,
                                       kParamPhraseGap, kParamRepeats};
@@ -66,7 +66,7 @@ constexpr uint32_t kOutParams[] = {kParamGain, kParamSeed};
    { title, cols, rows, arr, static_cast<int>(sizeof(arr) / sizeof(arr[0])) }
 
 constexpr PanelSpec kPanelSpecs[] = {
-   PANEL("SYLLABLE", 5, 2, kSyllableParams), PANEL("TIMBRE", 4, 2, kTimbreParams),
+   PANEL("SYLLABLE", 5, 2, kSyllableParams), PANEL("TIMBRE", 5, 2, kTimbreParams),
    PANEL("PHRASE", 4, 2, kPhraseParams),     PANEL("FLOCK", 5, 2, kFlockParams),
    PANEL("DRUM", 4, 2, kDrumParams),         PANEL("PLACE", 4, 2, kPlaceParams),
    PANEL("OUTPUT", 2, 1, kOutParams),        PANEL("FILTER", 5, 1, kFilterParams),

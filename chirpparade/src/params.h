@@ -96,6 +96,11 @@ enum ParamId : uint32_t {
    kParamGain,
    kParamSeed,
 
+   // Appended after the fact, so its id is last -- the ids are persisted in
+   // presets and state and are never reordered. It belongs to Timbre and the
+   // window puts it there.
+   kParamPartials,
+
    kNumParams
 };
 

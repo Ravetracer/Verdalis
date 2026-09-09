@@ -1,6 +1,12 @@
 # ChirpParade status
 
-Version 0.2.0. The syllable model was replaced: 0.1.0's physical syrinx, fitted
+Version 0.3.0. Adds `Partials`: each archetype now carries the measured balance
+between its first six harmonics across the syllable, and one control crossfades
+the synthetic valve into it. Also relaxes the contour quality gate, which widened
+every species' archetype set — Goose went from one contour to three, Crane from
+six to eight.
+
+Version 0.2.0 replaced the syllable model: 0.1.0's physical syrinx, fitted
 to aggregate statistics, is gone and measured contours drive the oscillator
 instead. **0.1.0 presets and saved state do not load meaningfully** — the
 syllable parameters changed meaning and one was replaced. Nothing was released
@@ -49,10 +55,16 @@ at 0.1.0.
   scrolling across the header — one stroke per syllable, deterministic in the
   syllable number, and a few dim strokes held when nothing is playing.
 - **Self-test**: 0 failures.
+- **Measured partial balance.** Six amplitude curves per archetype, phase-locked
+  to the same accumulator, crossfaded in by `Partials` and scaled by how much of
+  that syllable's energy the harmonic comb accounted for — so an archetype with
+  a second bird in it does not pretend to know. It moves a sparrow's measured
+  balance drift from 1.0 to 3.2 dB, against the references' 4.4.
 - **Reproducible renders**: all 22 presets byte-identical across two runs at
   44.1, 48 and 96 kHz with `Random Seed` pinned.
-- **CPU**: 60 s of *Dawn Chorus* — twelve birds, 48 voices — renders in 0.78 s,
-  **77× realtime**. Dropping 0.1.0's ODE and its up-to-eight integration
+- **CPU**: 60 s of *Dawn Chorus* — twelve birds, 48 voices — renders in 1.07 s,
+  **56× realtime**; the six extra partial oscillators cost about a quarter of
+  the previous headroom. Dropping 0.1.0's ODE and its up-to-eight integration
   substeps per sample is most of that.
 
 ## What is measured
@@ -109,11 +121,33 @@ really measuring 0.42× what it thought. The slope came out at 17.7 dB/decade
 instead of 13, and the default landed four times too high. It now reports both
 the parameter and the effective value.
 
+## What was tried and rejected
+
+**Mel spectrograms with Griffin-Lim resynthesis**, from the SoundPlot framework.
+Its analysis window at librosa's defaults is 92.9 ms — four times coarser than
+the 21 ms that broke 0.1.0 — Griffin-Lim's worst case is frequency-modulated
+transient material, and its own published metrics are `SNR −0.81 dB` and
+`Spectral Corr 0.57`. A mel spectrogram at a resolution that would work is also
+the recording with its phase thrown away.
+
+**librosa's pYIN** for the pitch tracking, swept over three frame lengths and
+three confidence gates. On identical syllables:
+
+| tracker | span | path | peak slew | turns |
+|---|---|---|---|---|
+| numpy STFT | 0.518 | 2.013 | **424 oct/s** | 23 |
+| pYIN, 1024 | 0.198 | 0.388 | 16 | 11 |
+| pYIN, 2048 | 0.142 | 0.205 | 7 | 5 |
+
+It discards 80 % of the path and cuts the slew by 26×, because its Viterbi
+smoothing assumes slowly-varying pitch. `tools/analysis/setup-venv.sh` installs
+it and the finding is recorded so nobody repeats it.
+
 ## What is not verified
 
 - **Whether it sounds right.** That is the user's call and the whole reason
-  0.1.0 shipped wrong. `!dev/listen-v2/` holds all 22 presets plus sweeps of
-  `Contour`, `Detail` and `Voice`; `tools/analysis/contours.py --wav` writes
+  0.1.0 shipped wrong. `!dev/listen-v3/` holds all 22 presets plus a `Partials`
+  sweep on three species; `tools/analysis/contours.py --wav` writes
   reference/resynthesis pairs.
 - **Pointer interaction with the window.** It opens at its design size, lays out
   correctly, animates and its theme was checked by screenshot, but `xdotool`'s

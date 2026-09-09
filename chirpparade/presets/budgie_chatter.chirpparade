@@ -3,7 +3,6 @@ format = 1
 name = Budgie Chatter
 author = ChirpParade
 description = Four birds talking over each other. The budgie recordings are the busiest in the library -- 293 syllables a minute, and the shortest rise of any group at 17 ms -- and they carry three harmonics, so the valve closes a little and the sine grows a stack.
-features = chatter, cage, busy, warm
 # fit harmonics=3
 
 # Syllable
@@ -26,6 +25,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 8
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -6.66134e-16
+gain = -1.4
 seed = 0

@@ -48,16 +48,16 @@ std::atomic<uint32_t> gInstanceCounter{0};
 //
 //                        pitch    len    harm  rough   rate
 constexpr SpeciesTraits kSpecies[kNumSpecies] = {
-   /* Whistler   */ {4748.0f, 0.089f, 1.0f, -34.0f, 288.0f},
-   /* Sparrow    */ {3147.0f, 0.060f, 1.0f, -29.0f, 276.0f},
-   /* Warbler    */ {1128.0f, 0.107f, 2.0f, -27.0f, 369.0f},
-   /* Budgie     */ {1351.0f, 0.037f, 3.0f, -28.0f, 293.0f},
-   /* Woodpecker */ {3312.0f, 0.099f, 2.0f, -25.0f, 301.0f},
-   /* Crane      */ {982.0f, 0.048f, 4.0f, -26.0f, 140.0f},
-   /* Goose      */ {566.0f, 0.090f, 4.0f, -32.0f, 239.0f},
-   /* Crow       */ {806.0f, 0.114f, 5.0f, -21.0f, 132.0f},
+   /* Whistler   */ {4748.0f, 0.081f, 1.0f, -34.0f, 288.0f},
+   /* Sparrow    */ {3147.0f, 0.069f, 1.0f, -29.0f, 276.0f},
+   /* Warbler    */ {1128.0f, 0.116f, 2.0f, -27.0f, 369.0f},
+   /* Budgie     */ {1351.0f, 0.040f, 3.0f, -28.0f, 293.0f},
+   /* Woodpecker */ {3312.0f, 0.077f, 2.0f, -25.0f, 301.0f},
+   /* Crane      */ {982.0f, 0.045f, 4.0f, -26.0f, 140.0f},
+   /* Goose      */ {566.0f, 0.108f, 4.0f, -32.0f, 239.0f},
+   /* Crow       */ {806.0f, 0.075f, 5.0f, -21.0f, 132.0f},
    /* Raven      */ {1171.0f, 0.197f, 6.0f, -30.0f, 88.0f},
-   /* Screech    */ {1800.0f, 0.095f, 6.0f, -16.0f, 150.0f},
+   /* Screech    */ {1800.0f, 0.067f, 6.0f, -16.0f, 150.0f},
 };
 
 // How much of each cycle the valve is shut, for a given harmonic count.
@@ -96,21 +96,33 @@ inline float closureForHarmonics(float harmonics) {
 // not pay for it.
 struct ContourTables {
    static constexpr int kN = ChirpEngine::kContourPoints;
-   float pitch[kNumContours][kN]; // octaves about the syllable's own centre
-   float level[kNumContours][kN]; // linear, peak 1
+   static constexpr int kH = ChirpEngine::kHarmPoints;
+   float pitch[kNumContours][kN];            // octaves about the loudest moment
+   float level[kNumContours][kN];            // linear, peak 1
+   float harm[kNumContours][kHarmonics][kH]; // linear, partials sum to unit power
 
    ContourTables() {
+      constexpr float kPi = 3.14159265358979f;
       for (int c = 0; c < kNumContours; ++c) {
          for (int i = 0; i < kN; ++i) {
             const float t = (static_cast<float>(i) + 0.5f) / static_cast<float>(kN);
             float p = 0.0f;
             for (int k = 0; k < kPitchTerms; ++k)
-               p += kContours[c].pitch[k] * std::cos(3.14159265358979f * k * t);
+               p += kContours[c].pitch[k] * std::cos(kPi * k * t);
             float l = 0.0f;
             for (int k = 0; k < kLevelTerms; ++k)
-               l += kContours[c].level[k] * std::cos(3.14159265358979f * k * t);
+               l += kContours[c].level[k] * std::cos(kPi * k * t);
             pitch[c][i] = p;
             level[c][i] = std::pow(10.0f, clampf(l, -80.0f, 6.0f) / 20.0f);
+         }
+         for (int h = 0; h < kHarmonics; ++h) {
+            for (int i = 0; i < kH; ++i) {
+               const float t = (static_cast<float>(i) + 0.5f) / static_cast<float>(kH);
+               float a = 0.0f;
+               for (int k = 0; k < kHarmTerms; ++k)
+                  a += kContours[c].harm[h][k] * std::cos(kPi * k * t);
+               harm[c][h][i] = std::pow(10.0f, clampf(a, -60.0f, 6.0f) / 20.0f);
+            }
          }
       }
    }
@@ -162,6 +174,18 @@ constexpr float kSyllableNorm = 1.20f;
 // The same for a drum strike, so a roll at Drum Level 0 dB sits where a phrase
 // at Shot Level 0 dB does.
 constexpr float kStrikeNorm = 3.5f;
+
+// The additive path against the valve path, so that `Partials` is a change of
+// timbre and not of level. Measured: at 1.9 the additive path came out 7.6 dB
+// hotter than the valve.
+constexpr float kPartialNorm = 0.79f;
+
+// How much the valve is ducked as the partials come in. A full crossfade, after
+// trying the alternative: laying the partials *over* a ducked valve was tried
+// and is worse on both counts -- it moved the balance barely at all (a sparrow's
+// drift went 1.0 to 1.2 dB instead of 1.0 to 3.2) and it still thinned the
+// corvids. See the comment at the blend for what the crossfade costs.
+constexpr float kPartialDuck = 1.0f;
 
 // Breath against measured roughness. Rendering a whistle at a sweep of Breath
 // and measuring its spectral flatness with the same estimator that measured the
@@ -742,6 +766,11 @@ void ChirpEngine::spawnChirp(const Voice &v, Phrase &ph) {
    c.closure = clampf(closure, 0.0f, clampf(ceiling, 0.0f, 0.92f));
    c.closureNow = c.closure;
    c.rasp = clampf(mP.rasp, 0.0f, 1.0f);
+   // Scaled by how much of that syllable's energy the harmonic measurement
+   // actually accounted for. An archetype with a second bird in it, or an
+   // inharmonic one, has a low share and simply does not respond much -- which
+   // degrades honestly instead of asserting a balance it never measured.
+   c.partials = clampf(mP.partials, 0.0f, 1.0f) * clampf(ct.harmFit, 0.0f, 1.0f);
    c.prevFlow = 0.0f;
    c.osc = 0.0f;
    c.dcBlock.reset();
@@ -782,7 +811,6 @@ void ChirpEngine::spawnChirp(const Voice &v, Phrase &ph) {
    c.rng.seed(ph.rng.next() | 1u);
    c.active = true;
    ++mSyllableCounter;
-   (void)ct;
 }
 
 void ChirpEngine::spawnStrike(const Voice &v, Phrase &ph) {
@@ -843,6 +871,8 @@ void ChirpEngine::processChirps(float *outL, float *outR, uint32_t numSamples) {
          continue;
       const float *pitchTab = tab.pitch[c.archetype];
       const float *levelTab = tab.level[c.archetype];
+      const float (*harmTab)[ChirpEngine::kHarmPoints] = tab.harm[c.archetype];
+      const float nyquist = 0.45f * sr;
 
       for (uint32_t i = 0; i < numSamples; ++i) {
          // ------------------------------------------------------- the contour
@@ -908,11 +938,53 @@ void ChirpEngine::processChirps(float *outL, float *outR, uint32_t numSamples) {
          // A one-sided flow has a mean, and that mean is modulated at the
          // syllable rate, which is a thump rather than a bird.
          y = c.dcBlock.tick(y);
-         y += c.breath * 0.8f * lvl * c.rng.white();
 
          // ----------------------------------------------- the tube and the beak
          const float bp = c.tract.bandpassNormalised(y);
          y += c.formant * 1.2f * bp;
+
+         // --------------------------------------------- the measured partials
+         //
+         // The other half of the timbre, and the half the valve cannot reach.
+         // Six partials of the same phase accumulator, at the balance this
+         // archetype's own recording had at this point in the syllable. The
+         // partials are phase-locked to the fundamental because a harmonic
+         // source is, and sin2piFast wraps its argument, so the h-th one is
+         // free.
+         if (c.partials > 1.0e-4f) {
+            const float hx = t * static_cast<float>(ChirpEngine::kHarmPoints - 1);
+            int hk = static_cast<int>(hx);
+            hk = hk < 0 ? 0 : (hk > ChirpEngine::kHarmPoints - 2
+                                  ? ChirpEngine::kHarmPoints - 2
+                                  : hk);
+            const float hfrac = hx - static_cast<float>(hk);
+            float add = 0.0f;
+            for (int h = 0; h < kHarmonics; ++h) {
+               // Stop at Nyquist rather than folding a partial back into the
+               // band. A high syllable simply has fewer of them, which is also
+               // true of the bird.
+               if (f0 * static_cast<float>(h + 1) > nyquist)
+                  break;
+               const float *ht = harmTab[h];
+               const float a = ht[hk] + hfrac * (ht[hk + 1] - ht[hk]);
+               add += a * sin2piFast(c.osc * static_cast<float>(h + 1));
+            }
+            // A crossfade, and it has a known cost. The archetypes that
+            // survived the contour quality gate are the *cleanest* syllables of
+            // each species -- the gate selects for tonality -- so their measured
+            // balance is more fundamental-dominated than a typical bird of that
+            // species is. Turning this up therefore makes a corvid's timbre
+            // evolve the way a real one's does (its drift goes from 1.7 to
+            // 2.7 dB against the references' 4.4) while reducing its harmonic
+            // count from 4.3 to 3.0.
+            //
+            // That is not the engine exaggerating: the archetype's spectrum is
+            // what that syllable actually had. It is the library, and the fix is
+            // a wider gate rather than a thumb on this scale -- see TODO.
+            y = y * (1.0f - kPartialDuck * c.partials) + add * kPartialNorm * c.partials;
+         }
+
+         y += c.breath * 0.8f * lvl * c.rng.white();
          y = c.top.tick(y);
          y = c.air.tick(y);
 

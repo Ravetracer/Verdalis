@@ -3,7 +3,6 @@ format = 1
 name = Dawn Chorus
 author = ChirpParade
 description = Twelve birds over two octaves, answering each other at half again the library's densest measured rate, each drawing from the eight measured sparrow contours with Variation letting them wander between. Nothing is played: Shot Level is off and the whole thing runs from the flock, so a held note is a morning rather than a bird.
-features = chorus, dense, morning, wide
 # fit harmonics=1
 
 # Syllable
@@ -26,6 +25,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 4
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -3.4
+gain = -2.9
 seed = 0

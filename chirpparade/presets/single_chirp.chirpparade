@@ -3,7 +3,6 @@ format = 1
 name = Single Chirp
 author = ChirpParade
 description = One syllable, one bird, no flock: the plugin reduced to what a note does. The contour is one measured sparrow chirp and nothing is smoothing it, so this is the preset to sweep Contour on and hear what the archetypes actually are. Dry on purpose -- the room is the next thing to add, not part of the syllable.
-features = one shot, dry, close, placed
 # fit pitch=3172 length=60 harmonics=1 rough=-29
 
 # Syllable
@@ -26,6 +25,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 1
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -4.9
+gain = -4.7
 seed = 0

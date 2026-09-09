@@ -3,7 +3,6 @@ format = 1
 name = Blackbird Song
 author = ChirpParade
 description = A phrase that goes somewhere. Five syllables with three semitones between them, drawn from the warbler contours and exaggerated to 140 % of their measured depth, repeating after a gap four times the one inside it -- which is the ratio the library measures between the two.
-features = song, phrase, motif, garden
 # fit harmonics=2
 
 # Syllable
@@ -26,6 +25,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 5
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -1.8
+gain = -0.4
 seed = 0

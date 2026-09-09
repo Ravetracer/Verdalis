@@ -256,6 +256,19 @@ const ParamDesc kParams[kNumParams] = {
        "Output level."),
    STEP(kParamSeed, "seed", "Random Seed", "Output", 0.0, 999.0, 0.0, "",
         "Non-zero gives the same birds every time. Zero is always different."),
+
+   // ------------------------------------------------------- timbre, appended
+   PCT(kParamPartials, "partials", "Partials", "Timbre", 0.6,
+       "How much of the timbre is the archetype's own *measured* balance between "
+       "its first six partials rather than the synthetic valve. This is the one "
+       "control that reaches for the recording itself: across 1777 measured "
+       "syllables the balance between the partials moves 4.4 dB over the course of "
+       "a single syllable, and a fixed valve through a fixed tract cannot do that "
+       "at all. At zero the voice is Voice, Breath, Rasp and the tract, all of "
+       "which stay alterable; turning it up hands the spectral evolution back to "
+       "the bird. Scaled by how much of that syllable's energy the measurement "
+       "actually accounts for, so an archetype with a second bird in it does not "
+       "pretend to know."),
 };
 
 #undef LIN

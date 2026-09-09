@@ -3,7 +3,6 @@ format = 1
 name = Woodpecker Drum
 author = ChirpParade
 description = Drumming only, and only on a note: Drum Rate is zero, so every note is one roll and nothing arrives unasked. Fourteen strikes accelerating by a quarter across the roll, which is what the library measures -- 22 of its 35 rolls speed up, against the usual claim that they slow down.
-features = drum, roll, one shot, wood
 
 # Syllable
 pitch = 2600
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 3

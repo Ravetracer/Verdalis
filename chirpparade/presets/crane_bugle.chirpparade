@@ -3,7 +3,6 @@ format = 1
 name = Crane Bugle
 author = ChirpParade
 description = A bugle carrying across water. Cranes are the second slowest group measured at 140 syllables a minute, with four harmonics on a one kilohertz fundamental. Distance is well up and the air is dry, so what arrives is the middle of the call and none of its top.
-features = crane, bugle, distant, wetland
 
 # Syllable
 pitch = 2620
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 2
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 8
+gain = 7.3
 seed = 0

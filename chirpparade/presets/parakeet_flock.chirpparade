@@ -3,7 +3,6 @@ format = 1
 name = Parakeet Flock
 author = ChirpParade
 description = The same voice driven hard and made irregular. Rasp is the closure varying from one cycle to the next -- a contact that is never the same twice -- which is broadband in a way no harmonic stack is. Ten of them at once is a street full of parakeets rather than a cage.
-features = exotic, flock, screech, loud
 
 # Syllable
 pitch = 4200
@@ -25,6 +24,7 @@ beak = 0.5
 formant = 0.55
 rasp = 0.3
 radiate = 0.35
+partials = 0.6
 
 # Phrase
 syllables = 5
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = -0.1
+gain = -3.8
 seed = 0

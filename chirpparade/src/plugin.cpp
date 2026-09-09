@@ -146,6 +146,7 @@ private:
       p.formant = static_cast<float>(realValue(kParamFormant));
       p.rasp = static_cast<float>(realValue(kParamRasp));
       p.radiate = static_cast<float>(realValue(kParamRadiate));
+      p.partials = static_cast<float>(realValue(kParamPartials));
 
       // Phrase.
       p.syllables = static_cast<int>(realValue(kParamSyllables));
