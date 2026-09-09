@@ -14,7 +14,8 @@ namespace {
 
 const char *const kFilterNames[] = {"Lowpass", "Bandpass", "Highpass", "Notch"};
 const char *const kSpeciesNames[] = {"Whistler", "Sparrow", "Warbler", "Budgie",
-                                     "Woodpecker", "Crane", "Goose", "Screech"};
+                                     "Woodpecker", "Crane", "Goose", "Screech",
+                                     "Piper"};
 
 // Defaults are the medians measured across the reference library: 4287
 // syllables in 58 recordings. See tools/analysis/README.md for every number

@@ -56,12 +56,13 @@ frequency, so a howl's pitch swoops with every gust — which the reference
 library confirms. 53 parameters, 23 presets, and rustling foliage as a bonus
 layer.
 
-**ChirpParade** — a bird syllable *is* its frequency contour, so 67 of them were
+**ChirpParade** — a bird syllable *is* its frequency contour, so 72 of them were
 measured off real recordings and ship as coefficients that drive the oscillator
-directly. Above them a one-sided valve, which is where every even harmonic comes
-from, and a tracheal resonance that follows the pitch the way a beak does.
-61 parameters, 22 presets, ten species, woodpecker drumming as a layer of its
-own. Plays one shot on a note and a flock while it is held.
+directly, each at its own measured duration. Above them a one-sided valve, which
+is where every even harmonic comes from, and a tracheal resonance that follows
+the pitch the way a beak does. 62 parameters, 18 presets, nine species,
+woodpecker drumming as a layer of its own. Plays one shot on a note and a flock
+while it is held.
 
 ## Build
 

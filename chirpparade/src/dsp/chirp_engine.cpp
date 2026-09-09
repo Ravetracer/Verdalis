@@ -47,14 +47,17 @@ std::atomic<uint32_t> gInstanceCounter{0};
 //
 //                        pitch    len    harm  rough   rate
 constexpr SpeciesTraits kSpecies[kNumSpecies] = {
-   /* Whistler   */ {3816.0f, 0.143f, 1.0f, -31.0f, 223.0f},
-   /* Sparrow    */ {3148.0f, 0.061f, 1.0f, -29.0f, 276.0f},
-   /* Warbler    */ {2655.0f, 0.097f, 1.0f, -30.0f, 321.0f},
-   /* Budgie     */ {1351.0f, 0.069f, 3.0f, -28.0f, 293.0f},
-   /* Woodpecker */ {3121.0f, 0.097f, 1.0f, -27.0f, 235.0f},
-   /* Crane      */ {762.0f, 0.156f, 5.0f, -24.0f, 233.0f},
-   /* Goose      */ {743.0f, 0.078f, 4.0f, -25.0f, 176.0f},
-   /* Screech    */ {1800.0f, 0.134f, 6.0f, -16.0f, 150.0f},
+   /* Whistler   */ {3728.0f, 0.094f, 1.0f, -34.0f, 218.0f},
+   /* Sparrow    */ {3491.0f, 0.071f, 1.0f, -32.0f, 303.0f},
+   /* Warbler    */ {2812.0f, 0.078f, 1.0f, -30.0f, 321.0f},
+   /* Budgie     */ {1353.0f, 0.066f, 3.0f, -27.0f, 293.0f},
+   /* Woodpecker */ {2550.0f, 0.129f, 2.0f, -30.0f, 344.0f},
+   /* Crane      */ {821.0f, 0.137f, 5.0f, -25.0f, 233.0f},
+   /* Goose      */ {528.0f, 0.178f, 6.0f, -25.0f, 182.0f},
+   // Screech is invented and its four voice figures stay as configured; only
+   // lengthSec follows its archetypes, because those did change.
+   /* Screech    */ {1800.0f, 0.208f, 6.0f, -16.0f, 150.0f},
+   /* Piper      */ {2559.0f, 0.059f, 2.0f, -33.0f, 527.0f},
 };
 
 // How much of each cycle the valve is shut, for a given harmonic count.
@@ -317,7 +320,6 @@ void ChirpEngine::updateFilters() {
    // A species biases the syllable controls rather than replacing them, so
    // everything here is a ratio to the library-wide median.
    mSpeciesPitchMul = sp.pitchHz / kLibraryPitchHz;
-   mSpeciesLengthMul = sp.lengthSec / kLibraryLengthSec;
    mSpeciesRateMul = sp.ratePerMin / kLibraryRatePerMin;
    mSpeciesClosure = closureForHarmonics(sp.harmonics);
    // A species' measured roughness, turned back into a Breath multiplier. Note
@@ -733,12 +735,35 @@ void ChirpEngine::spawnChirp(const Voice &v, Phrase &ph) {
    // Skew bends the syllable's time. 0.5 leaves the measured contour alone.
    c.warp = std::exp2(3.0f * (2.0f * clampf(mP.skew, 0.0f, 1.0f) - 1.0f));
 
-   float len = mP.lengthSec * mSpeciesLengthMul * b.lengthMul * std::exp2(0.7f * var * rl);
+   // The archetype plays at its *own* measured duration, scaled by Length.
+   //
+   // `Contour::durationSec` has been measured and stored for every archetype
+   // since the table existed and was never read: the length came from the
+   // species median alone, so every curve was stretched to the same target and
+   // a species could only vary its syllable length by the +-2.3x that Variation
+   // gives. One nightingale recording spans 21 to 1296 ms -- 60x -- and that
+   // range is most of what makes it sound like a bird rather than a machine.
+   //
+   // At the species' median archetype `durationSec / kLibraryLengthSec` equals
+   // the species length multiplier this replaces, so a median syllable is timed
+   // exactly as before and the change is entirely in the spread around it. It
+   // also removes a trap: that multiplier silently rescaled every preset's
+   // Length whenever a species' measured median moved, which is what shortened
+   // Nightingale Trill by 20 % at 0.5.0 and broke it into separate tones.
+   float len = mP.lengthSec * (ct.durationSec / kLibraryLengthSec) * b.lengthMul *
+               std::exp2(0.7f * var * rl);
+
+   // A syllable longer than the nominal interval takes the time it needs: one
+   // bird cannot overlap itself, and truncating the curve is what produced the
+   // clipped, mechanical phrases. Everything at or under the pace keeps the
+   // interval, so Syllable Rate still means what it says.
+   ph.slot = std::max(ph.interval, clampf(len, 0.004f, 8.0f));
+
    // Legato: the syllable is stretched towards filling its own slot. 70 % of the
    // library's syllable pairs have no silence between them at all, so this
    // defaults high. It only applies where there is something to run into.
    const float leg = ph.remaining > 1 ? clampf(mP.legato, 0.0f, 1.0f) : 0.0f;
-   len = len * (1.0f - leg) + ph.interval * leg;
+   len = len * (1.0f - leg) + ph.slot * leg;
    len = clampf(len, 0.004f, 8.0f);
    c.phaseInc = 1.0f / (len * sr);
 
@@ -1144,7 +1169,8 @@ void ChirpEngine::process(float *outL, float *outR, uint32_t numSamples) {
                   p.active = false;
                }
             } else {
-               p.timer += static_cast<double>(clampf(p.interval, 0.002f, 30.0f));
+               p.timer += static_cast<double>(clampf(p.drum ? p.interval : p.slot,
+                                                     0.002f, 30.0f));
             }
          }
       }

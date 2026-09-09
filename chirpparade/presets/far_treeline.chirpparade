@@ -7,9 +7,9 @@ description = Birds a field away. Distance takes the level down by its inverse a
 # Syllable
 pitch = 2600
 sweep = 100
-contour = 0.5
+contour = 0.8
 detail = 0.7
-length = 96
+length = 82
 skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2

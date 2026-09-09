@@ -28,11 +28,25 @@ SECONDS = float(os.environ.get("CHIRPPARADE_SECONDS", "45"))
 # species in the name for exactly this reason -- the site's own file names say
 # "carrioncrow" and "jackdaw", and a prefix table that had to list every bird
 # on a 515-species site would be the wrong place to keep that knowledge.
+#
+# A group is an *acoustic* class, not a taxonomic one. The engine's species
+# bias pitch, length, harmonic richness, roughness and rate together, so a bird
+# belongs where those five put it -- which is why a great spotted woodpecker's
+# sharp 5 kHz "kik" is filed under Whistler rather than under Woodpecker, whose
+# table is built from the green woodpecker's laugh and looks nothing like it.
+# The assignments below were made by measuring each file and taking its
+# distance to every existing group's centroid in those five quantities; the
+# ones added this way sat within 1.1 of the group they joined.
 GROUPS = [
     ("Whistler", ["whistling_single_robin", "single_bird_chirp",
-                  "fss_whistler_"]),
+                  "fss_whistler_",
+                  # blackbird 0.5/1.0, treecreeper 0.6, nuthatch 0.8,
+                  # great spotted woodpecker 0.9 -- all high and single-harmonic
+                  "blackbird", "short-toed-treecreeper", "eurasian-nuthatch",
+                  "great-spotted-woodpecker"]),
     ("Sparrow", ["chirps_", "multiple_bird_chirps", "multiple_birds_",
-                 "chirping_birds_and_woodpecker", "fss_sparrow_"]),
+                 "chirping_birds_and_woodpecker", "fss_sparrow_",
+                 "winter-wren"]),
     ("Warbler", ["nightingale", "tui", "fss_warbler_"]),
     ("Budgie", ["budgies_"]),
     ("Woodpecker", ["green_woodpecker_chirp", "red_headed_woodpecker_chirping",
@@ -41,7 +55,11 @@ GROUPS = [
               "multiple_crows_calling", "fss_crow_"]),
     ("Raven", ["raven", "fss_raven_"]),
     ("Goose", ["goose", "fss_goose_"]),
-    ("Crane", ["crane_bird_calling", "fss_crane_"]),
+    ("Crane", ["crane_bird_calling", "fss_crane_", "pheasant"]),
+    # Piping: fast, clean and mid-pitched, which no other group is. Its nearest
+    # neighbour is Woodpecker at 1.5, far enough that folding it in would have
+    # moved that table rather than joined it.
+    ("Piper", ["eurasian-oystercatchers", "oystercatcher"]),
     # Drumming is sonation rather than voice and is measured by drums.py; the
     # files are listed here only so that nothing is silently left out.
     ("(drumming)", ["woodpecker_hammering", "multiple_bird_chirps_and_woodpecker"]),

@@ -8,9 +8,9 @@ description = The library's middle, made audible. Everything here is a median of
 # Syllable
 pitch = 2600
 sweep = 100
-contour = 0.5
+contour = 0.8
 detail = 1
-length = 96
+length = 82
 skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2

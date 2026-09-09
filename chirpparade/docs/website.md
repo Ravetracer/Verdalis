@@ -10,6 +10,8 @@ samples in it, and no two calls it makes are ever identical.
 Play a short note and one bird sings one phrase. Hold the note and a flock
 carries on around it, calling and answering, for as long as you hold it.
 
+![The ChirpParade window](chirpparade-window.png)
+
 ---
 
 ## A bird syllable *is* its frequency contour
@@ -36,6 +38,11 @@ What ships is the coefficients. They are a formula, not a recording: a few
 thousand numbers, tens of kilobytes, from which the sound is computed afresh
 every time. Refitting a real syllable and measuring it back lands within a few
 tens of cents of the original pitch and a fraction of a decibel of its level.
+
+Each archetype keeps its own measured **duration**, too, which matters more than
+it sounds like it should. One nightingale recording runs from 21 ms syllables to
+1296 ms ones — a sixty-fold range — and that unwillingness to repeat itself is
+most of why a nightingale sounds like a nightingale rather than a machine.
 
 ## Timbre is a valve, not a filter
 
@@ -88,17 +95,22 @@ sonation rather than voice — a bill against wood, not air through a syrinx. Tw
 broad wooden modes excited by a contact, in a roll that accelerates by the
 measured amount.
 
-## Eight species
+## Nine species
 
 Choosing a species moves the pitch register, the syllable length, the harmonic
 richness, the roughness, the rate *and* the whole set of measured contours at
 once — because in the recordings all of those move together.
 
-**Whistler · Sparrow · Warbler · Budgie · Woodpecker · Crane · Goose · Screech**
+**Whistler · Sparrow · Warbler · Budgie · Woodpecker · Crane · Goose · Piper ·
+Screech**
 
 Every number in that table is a median measured from recordings of that bird.
 Pitch at its default is the library-wide median, so each species at its default
 sings in its own register without being transposed there by hand.
+
+**Piper** is the newest, from oystercatchers: fast, clean and mid-pitched, at
+over five hundred syllables a minute. Nothing else in the table is all three at
+once, which is why it became a species rather than being folded into one.
 
 Screech is the exception and is labelled as one: it has no reference of its
 own, takes the most extreme contours in the library, and is kept as an effect
@@ -130,7 +142,7 @@ These are written up in full in the manual and in `STATUS.md`, with the numbers.
 ## Technical
 
 - Native **CLAP**, Linux (x86-64) and Windows (x86-64)
-- 61 parameters — syllable, voice, tract, phrase, flock, drumming, distance,
+- 62 parameters — syllable, voice, tract, phrase, flock, drumming, distance,
   full ADSR
 - Sample-accurate note and parameter handling, host modulation, bounded voice
   pools

@@ -561,8 +561,12 @@ def pick(got, k=PER_SPECIES):
     return sorted([got[i] for i in idx], key=lambda g: g["centre"])
 
 
+# Must match the engine's SpeciesKind enum, in order: kContourRange is indexed
+# by it. Piper is last because the enum appends -- inserting it anywhere else
+# would shift every index below it and break saved state, which is what
+# removing Crow and Raven did in 0.4.0.
 SPECIES_ORDER = ["Whistler", "Sparrow", "Warbler", "Budgie", "Woodpecker",
-                 "Crane", "Goose", "Screech"]
+                 "Crane", "Goose", "Screech", "Piper"]
 # Crow and Raven are measured by species.py -- they are still in the reference
 # library and still part of its census -- but they are not species the engine
 # offers, so no archetypes are extracted for them. See TODO.md.

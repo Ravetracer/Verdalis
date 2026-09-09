@@ -218,8 +218,14 @@ work, whatever its physics said.
    that zig-zag out of phase gives a smooth glide, which is exactly the thing
    being avoided.
 
-1641 syllables passed the quality gate; 67 became archetypes. What ships is
-**4288 numbers, 17 KB, and no audio at all.**
+5749 syllables passed the quality gate; 72 became archetypes, eight for each
+of the nine species. What ships is **13824 numbers, 54 KB, and no audio at
+all.**
+
+Each archetype keeps its own measured duration as well as its shape, and the
+engine plays it at that duration rather than stretching every curve to one
+length. A single nightingale recording spans 21 ms to 1296 ms, and that refusal
+to repeat itself is most of what makes it sound like a bird.
 
 ## The four contour controls
 
@@ -306,7 +312,7 @@ three groups that barely overlap:
 | rich, ≥ 6 harmonics | 17 % | median 399 Hz | −22 dB |
 
 Harmonic richness, roughness and pitch move together and downwards: the rich
-voices are the low ones. So the eight species are not eight presets of the same
+voices are the low ones. So the nine species are not nine presets of the same
 thing — they sit in genuinely different places, and choosing one moves pitch,
 length, richness, roughness, rate and the whole archetype set at once, because
 in the recordings those move together.
@@ -366,7 +372,12 @@ from the last, and it is the difference between a bird and a sequencer.
 What the ear calls a trill in these recordings is syllables arriving too fast to
 separate — up to 22.8 a second — with no silence between them. So there is no
 trill oscillator: a trill is *Syllable Rate* high and *Legato* high.
-**Nightingale Trill** is exactly that and nothing else.
+
+A nightingale, though, is not a trill. Across 45 s of reference it sings 254
+syllables from 21 to 1296 ms and 1644 to 5731 Hz, whose shapes differ from one
+another by a median pairwise distance of 5.22 — so **Nightingale Song** runs
+*Variation* wide enough to cross the whole archetype set instead of settling on
+one shape and repeating it.
 
 The fine motion *inside* a syllable is real and abundant — two to forty
 direction changes — but it is not periodic, which is a different thing, and the

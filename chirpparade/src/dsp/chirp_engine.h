@@ -165,7 +165,10 @@ struct EngineParams {
 // taking them away.
 struct SpeciesTraits {
    float pitchHz;   // median fundamental of that bird's recordings
-   float lengthSec; // median syllable duration
+   // Median duration of this species' archetypes. Documentation and the
+   // analysis tools' target only: since 0.5.0 the engine takes each syllable's
+   // length from the archetype it actually plays, not from this median.
+   float lengthSec;
    float harmonics; // above -24 dB of the loudest
    float roughDb;   // spectral flatness of the syllable band
    float ratePerMin;
@@ -298,6 +301,12 @@ struct Phrase {
    float interval = 0.1f;
    float driftMul = 1.0f;
    float gapAfter = 0.3f;
+   // The slot the last syllable actually took. A measured archetype longer than
+   // `interval` cannot be squeezed into it -- one bird cannot overlap itself --
+   // so it pushes the next syllable out instead of being truncated. Equal to
+   // `interval` for everything at or under the nominal pace, which is most of
+   // the library, so the common case is timed exactly as before.
+   float slot = 0.1f;
 
    float pitchHz = 2580.0f;
    float motifSemis = 0.0f;
@@ -415,7 +424,6 @@ private:
 
    // Derived once per parameter change rather than per sample.
    float mSpeciesPitchMul = 1.0f;
-   float mSpeciesLengthMul = 1.0f;
    float mSpeciesRateMul = 1.0f;
    float mSpeciesClosure = 0.0f;
    float mSpeciesBreathMul = 1.0f;

@@ -60,17 +60,18 @@ ISOLATE = [
 # The two differ where only some of a species' syllables passed the contour
 # quality gate. contours.py prints these.
 SPECIES = {
-    "Whistler": (3816, 143, 1, -31),
-    "Sparrow": (3148, 61, 1, -29),
-    "Warbler": (2655, 97, 1, -30),
-    "Budgie": (1351, 69, 3, -28),
-    "Woodpecker": (3121, 97, 1, -27),
-    "Crane": (762, 156, 5, -24),
-    "Goose": (743, 78, 4, -25),
+    "Whistler": (3728, 94, 1, -34),
+    "Sparrow": (3491, 71, 1, -32),
+    "Warbler": (2812, 78, 1, -30),
+    "Budgie": (1353, 66, 3, -27),
+    "Woodpecker": (2550, 129, 2, -30),
+    "Crane": (821, 137, 5, -25),
+    "Goose": (528, 178, 6, -25),
     # Screech has no reference of its own; these are the engine's own settings,
     # so the row checks that it does what it is configured to do and nothing
     # more. It is an effect, not a bird.
-    "Screech": (1800, 134, 6, -16),
+    "Screech": (1800, 208, 6, -16),
+    "Piper": (2559, 59, 2, -33),
 }
 
 
@@ -100,19 +101,34 @@ def rel(got, want):
     return "%+4.0f%%" % (100.0 * (got - want) / abs(want))
 
 
+# Each species has ARCHETYPES contours and Contour walks across them, so one
+# render at the default Contour measures one arbitrary archetype rather than the
+# species. That was harmless while every syllable was stretched to the species
+# median; since 0.5.0 each archetype plays at its own measured duration, so the
+# length column only means something as a median over the whole set. Every
+# column is taken that way now, which is also what the targets in SPECIES are.
+ARCHETYPES = 8
+
+
 def do_species(tmp):
-    print("Every Species, rendered as one isolated syllable and measured back.")
-    print("Sweep and contour shape are not here: they are measured curves now,")
-    print("and contours.py is what checks them.")
+    print("Every Species, rendered as one isolated syllable per archetype and")
+    print("measured back. Sweep and contour shape are not here: they are measured")
+    print("curves now, and contours.py is what checks them.")
     print()
     print("%-11s %15s %6s %14s %6s %10s %12s" %
           ("species", "pitch Hz", "", "length ms", "", "harmonics", "roughness dB"))
     for name, (f0, ln, nh, ro) in SPECIES.items():
-        out = os.path.join(tmp, "sp_%s.wav" % name)
-        if not render(out, extra=ISOLATE + ["--param", "species=%s" % name]):
-            print("%-11s render failed" % name)
-            continue
-        sy = measure(out)
+        sy = []
+        for i in range(ARCHETYPES):
+            out = os.path.join(tmp, "sp_%s_%d.wav" % (name, i))
+            # --param takes the *displayed* value, and Contour is a percentage.
+            # Passing the raw 0..1 fraction here selected archetype 0 eight
+            # times over and made the whole sweep meaningless.
+            where = 100.0 * (i + 0.5) / float(ARCHETYPES)
+            if not render(out, extra=ISOLATE + ["--param", "species=%s" % name,
+                                                "--param", "contour=%.3f" % where]):
+                continue
+            sy.extend(measure(out) or [])
         if not sy:
             print("%-11s nothing voiced in the render" % name)
             continue
