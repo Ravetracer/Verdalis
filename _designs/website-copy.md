@@ -316,3 +316,81 @@ second real leaves stop being separately audible and merge into a wash.
 Conifers and grass are set to merge on purpose; dry leaves are sparse and
 clatter. 53 parameters, 23 presets, native CLAP for Linux and Windows, and every
 sound of it computed while it plays.
+
+---
+
+## ChirpParade
+
+### Variant 1
+
+**ChirpParade aims to be birdsong you can play.** A recording of a bird is one
+bird, once, in one place — loop it and the ear finds the loop immediately,
+because real song never repeats itself. ChirpParade computes every syllable as
+it sounds, so a phrase never comes out twice the same way, and a note is a bird
+rather than a sample trigger.
+
+What it carries instead of audio is contours. A bird syllable is not a note with
+a shape on it: it is a scribble, travelling several times further than the gap
+between its highest and lowest point and changing direction up to forty times,
+far too fast for an ordinary spectrogram to show. So 88 field recordings were
+segmented into single syllables, each tracked, fitted as a cosine series and
+clustered by shape, and one real syllable from each cluster kept — 72 of them,
+54 kB of coefficients and no audio at all. Each keeps its own measured duration
+as well as its shape, which is why a nightingale here runs from short syllables
+to long ones the way the recording does rather than repeating one length.
+
+It features 62 parameters across the syllable, the voice, the tube above it, the
+phrase, the flock, drumming, distance and a full ADSR, with nine species —
+Whistler, Sparrow, Warbler, Budgie, Woodpecker, Crane, Goose, Piper and Screech
+— whose pitch, length, harmonic richness, roughness and rate are all medians
+measured from recordings of that bird. 18 factory presets ship, each checked by
+rendering it back and measuring it. Native CLAP for Linux and Windows.
+
+### Variant 2
+
+**ChirpParade is a bird synthesiser, and the interesting part is the timbre.**
+Air passes through a bird's syrinx only while its two membranes are apart, so
+*Voice* is the fraction of each cycle they are shut. At zero the valve never
+closes and a pure sine comes out — which is what 59 % of the syllables in the
+reference library actually are. Close it and the flow becomes a one-sided pulse
+with a full harmonic stack, evens as well as odds.
+
+That one-sidedness is the whole point. A symmetric oscillator has energy at f,
+3f, 5f and nothing between, and no amount of drive gives it the even harmonics a
+low, rough call has. Above the valve sits the trachea as a tube closed at one
+end; *Beak* opens the far end, so the resonance rises, broadens and begins to
+track the pitch across the syllable the way a songbird's gape does. *Partials*
+goes further and crossfades in the measured balance between a syllable's first
+six harmonics, because that balance moves about 4.4 dB across one syllable and
+no fixed valve through a fixed tract can do that.
+
+Two instruments share the window. A note fires a deliberate phrase that always
+completes however short the note; while a note is held, a flock of individuals
+calls unprompted, each with its own pitch, position, distance and voice, and
+*Answer* makes one bird's phrase provoke a reply from another. Either half turns
+fully off. Woodpecker drumming is a third layer, kept separate because drumming
+is sonation rather than voice.
+
+### Variant 3
+
+**ChirpParade generates birdsong from first principles and ships no samples.**
+It is built for two jobs that usually need different tools: a playable bird, one
+phrase per note, and an ambience bed that runs unattended for as long as a note
+is held. The same engine does both, so the flock in the background is made of
+the same birds as the melody on top.
+
+The design is measured rather than guessed, and it is honest about where that
+stops. Every species figure is a median taken from recordings of that bird, and
+the contours that drive the oscillator are real syllables rather than curves
+someone drew. Where the model does not reach, the feature is not shipped: there
+is no crow and no raven, because a corvid's roughness has a structure this
+engine renders as a rough tone instead of a croak, and a raven that is not a
+raven is worse than no raven at all.
+
+62 parameters, 18 fitted factory presets, nine species, CLAP preset discovery so
+the presets appear in the host's own browser, sample-accurate note and parameter
+handling, host modulation and bounded voice pools. Renders a twelve-bird dawn
+chorus many times faster than realtime, and with the seed pinned the output is
+bit-identical across runs and sample rates. The window is hand-drawn — X11 or
+Win32 plus Cairo, no toolkit dependency — with a sonogram scrolling across its
+header, one stroke per syllable.

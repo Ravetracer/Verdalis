@@ -10,7 +10,7 @@ samples in it, and no two calls it makes are ever identical.
 Play a short note and one bird sings one phrase. Hold the note and a flock
 carries on around it, calling and answering, for as long as you hold it.
 
-![The ChirpParade window](chirpparade-window.png)
+![The ChirpParade window](../../_designs/chirpparade.png)
 
 ---
 

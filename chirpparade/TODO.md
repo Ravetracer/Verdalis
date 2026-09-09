@@ -244,7 +244,6 @@ before the 0.4.0 widening, all of them two library revisions stale:
   pre-widening table as the one in `contours.py`.
 - `docs/manual.md`: "1641 syllables passed the quality gate; 67 became
   archetypes." It also predates `Piper`.
-- `docs/website.md`: lists the eight species without `Piper`.
 - `presets/jungle_screech.chirpparade`'s description still claims Screech spans
   "7.5 to 10.3 octaves of path". It spans 16.7 to 24.1.
 
