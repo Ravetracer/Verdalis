@@ -37,7 +37,7 @@ Above the contour sits a **valve**. Air passes through a bird's syrinx only
 while the two membranes are apart, and *Voice* is the fraction of each cycle
 they are shut. At the bottom the valve never closes and what comes out is a pure
 sine — which is what 59 % of the library's syllables are. Close it and the
-airflow becomes a one-sided pulse with the harmonic stack a crow has, evens as
+airflow becomes a one-sided pulse with the harmonic stack a goose has, evens as
 well as odds. That is not a filter; there is nothing between the two settings
 because there is nothing between them in the bird.
 
@@ -147,7 +147,7 @@ CLAP checkout it cannot find by itself.
 3. Now hold a long one. The same phrase fires, and then a flock carries on by
    itself for as long as the note lasts.
 4. Open the preset browser by clicking the preset name and try **Single Chirp**,
-   then **Dawn Chorus**, then **Crow Call**.
+   then **Dawn Chorus**, then **Goose Flight**.
 
 Those two behaviours are the two halves of the plugin, and they are separate
 controls. *Shot Level* is the phrase a note fires — the deliberate one, on the
@@ -170,11 +170,11 @@ sine. Somewhere in the middle a second harmonic appears, then a third, and by
 the top it is a rasping stack. Nothing was filtered — the valve is closing, and
 air only passes while it is open.
 
-**Change *Species*.** Ten of them, and each carries its own set of measured
+**Change *Species*.** Eight of them, and each carries its own set of measured
 contours as well as its own pitch register, length, richness, roughness and
 rate — because in the recordings those move together. *Pitch* at its default is
-the median of the whole library, so selecting Crow at the default lands at
-812 Hz, which is a crow.
+the median of the whole library, so selecting Goose at the default lands at
+743 Hz, which is a goose.
 
 **Play a chord, then a melody.** Each note is its own bird with its own flock.
 For melodies, load **Melody Bird**: one syllable a note, almost no variation, a
@@ -244,7 +244,7 @@ shows, a 24 ms rise against a 41 ms fall, is already in the curve.
 default is the library median, every species at the default sings in its own
 register.
 
-## The valve, and why a symmetric oscillator cannot be a crow
+## The valve, and why a symmetric oscillator cannot be a goose
 
 The tone comes from a phase accumulator at the contour's frequency, through a
 one-sided valve. *Voice* is the fraction of each cycle the valve is shut:
@@ -260,7 +260,7 @@ one-sided pulse.
 That one-sidedness is not a detail. It is where every **even** harmonic comes
 from. A symmetric oscillator — and the syrinx equation in the physics papers is
 symmetric — has energy at f, 3f, 5f and nothing between, and no amount of drive
-makes it a crow: a 234 Hz fundamental comes out as 234, 656 and 1125 Hz. Air
+makes it a goose: a 234 Hz fundamental comes out as 234, 656 and 1125 Hz. Air
 passes only while the membranes are apart, and rectifying at that point is the
 same step that makes a human glottal pulse rich rather than sinusoidal.
 
@@ -287,13 +287,12 @@ what share of its own energy fell inside the harmonic comb. A syllable that was
 inharmonic, or had a second bird in it, has a low share and barely responds —
 which is honest, rather than asserting a balance that was never measured.
 
-**It thins the corvids, and that is the library's fault rather than the
-engine's.** The contour quality gate selects for tonality, so the archetypes are
-each species' *cleanest* syllables. Turn *Partials* up on a Crow and its timbre
-starts evolving the way a real one's does — but its harmonic count falls, because
-that particular syllable really did have fewer harmonics than a crow's average.
-The corvid presets ship at 35 % for that reason. On the whistlers and warblers,
-turn it up.
+**It thins the low, rough voices**, and that is the library's fault rather
+than the engine's. The contour quality gate selects for tonality, so the
+archetypes are each species' *cleanest* syllables. Turn *Partials* up on a Goose
+and its timbre starts evolving the way a real one's does — but its harmonic
+count falls, because that particular syllable really did have fewer harmonics
+than a goose's average. On the whistlers and warblers, turn it up freely.
 
 ## Three families, found rather than chosen
 
@@ -307,7 +306,7 @@ three groups that barely overlap:
 | rich, ≥ 6 harmonics | 17 % | median 399 Hz | −22 dB |
 
 Harmonic richness, roughness and pitch move together and downwards: the rich
-voices are the low ones. So the ten species are not ten presets of the same
+voices are the low ones. So the eight species are not eight presets of the same
 thing — they sit in genuinely different places, and choosing one moves pitch,
 length, richness, roughness, rate and the whole archetype set at once, because
 in the recordings those move together.
@@ -562,15 +561,16 @@ measure twelve. Closing it further aliases. The likely answer is a second
 syringeal side — a bird has two, controlled independently, which is how some
 species produce two notes at once.
 
-**Roughness cannot be met for the rich species.** Crow comes out 8 dB rougher
-than its references and Raven 17 dB. A harmonic stack is spectrally flat whether
-or not any noise is present, and the flatness measure cannot tell the two
-apart — so this may be a limit of the measurement rather than of the engine.
+**Roughness cannot be met for the roughest voices.** A harmonic stack is
+spectrally flat whether or not any noise is present, and the flatness measure
+cannot tell the two apart — so this may be a limit of the measurement rather
+than of the engine.
 
-**Goose has one contour and Raven four.** Only one goose and one raven recording
-exist in the library, and few of their syllables passed the quality gate, so
-*Contour* does nothing on a Goose. More references for the waterfowl and the
-corvids would help more than any further fitting.
+**There is no crow and no raven.** Both were modelled and both were removed. A
+corvid's call is not a shaped tone with noise on it; it is rough in a way this
+engine reproduces as a rough tone rather than as a croak, and no amount of
+fitting closed that gap. The reference recordings are still in the library and
+still part of its census — they just do not become an instrument.
 
 **Nothing morphs between contours.** *Contour* steps from one measured curve to
 the next. Interpolating them naively would give smooth glides, since two curves

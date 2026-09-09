@@ -34,10 +34,9 @@ std::atomic<uint32_t> gInstanceCounter{0};
 // These five are the ones a median genuinely describes. tools/analysis/species.py
 // prints them and the grouping it used.
 //
-// Raven's harmonic count is the one figure overridden, and the reason is
-// recorded rather than quietly applied: the measurement says 1, over the six
-// syllables of the single raven recording, and the estimator reported one
-// harmonic in one frame and nine in the next for that same file.
+// No figure in this table is overridden any more. Crow and Raven were, and they
+// are gone: see TODO.md, "The corvids were removed". Everything below is the
+// median species.py measured, with lengthSec from contours.py.
 //
 // lengthSec is the median duration of that species' *archetypes*, not of all
 // its measured syllables. The two differ where only some of a species'
@@ -48,16 +47,14 @@ std::atomic<uint32_t> gInstanceCounter{0};
 //
 //                        pitch    len    harm  rough   rate
 constexpr SpeciesTraits kSpecies[kNumSpecies] = {
-   /* Whistler   */ {4748.0f, 0.081f, 1.0f, -34.0f, 288.0f},
-   /* Sparrow    */ {3147.0f, 0.069f, 1.0f, -29.0f, 276.0f},
-   /* Warbler    */ {1128.0f, 0.116f, 2.0f, -27.0f, 369.0f},
-   /* Budgie     */ {1351.0f, 0.040f, 3.0f, -28.0f, 293.0f},
-   /* Woodpecker */ {3312.0f, 0.077f, 2.0f, -25.0f, 301.0f},
-   /* Crane      */ {982.0f, 0.045f, 4.0f, -26.0f, 140.0f},
-   /* Goose      */ {566.0f, 0.108f, 4.0f, -32.0f, 239.0f},
-   /* Crow       */ {806.0f, 0.075f, 5.0f, -21.0f, 132.0f},
-   /* Raven      */ {1171.0f, 0.197f, 6.0f, -30.0f, 88.0f},
-   /* Screech    */ {1800.0f, 0.067f, 6.0f, -16.0f, 150.0f},
+   /* Whistler   */ {3816.0f, 0.143f, 1.0f, -31.0f, 223.0f},
+   /* Sparrow    */ {3148.0f, 0.061f, 1.0f, -29.0f, 276.0f},
+   /* Warbler    */ {2655.0f, 0.097f, 1.0f, -30.0f, 321.0f},
+   /* Budgie     */ {1351.0f, 0.069f, 3.0f, -28.0f, 293.0f},
+   /* Woodpecker */ {3121.0f, 0.097f, 1.0f, -27.0f, 235.0f},
+   /* Crane      */ {762.0f, 0.156f, 5.0f, -24.0f, 233.0f},
+   /* Goose      */ {743.0f, 0.078f, 4.0f, -25.0f, 176.0f},
+   /* Screech    */ {1800.0f, 0.134f, 6.0f, -16.0f, 150.0f},
 };
 
 // How much of each cycle the valve is shut, for a given harmonic count.

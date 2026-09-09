@@ -11,25 +11,25 @@ Play a note and one bird sings once. Hold it and a flock carries on by itself.
 
 - 61 parameters covering the syllable, the voice and the tube above it, the
   phrase, the flock, woodpecker drumming, distance and a full ADSR
-- 22 factory presets, each checked by rendering it back and measuring it
-- **A bird syllable *is* its frequency contour.** 67 contours measured off real
-  recordings — the medoids of 1641 clustered syllables — ship as cosine
-  coefficients and drive the oscillator directly
+- 19 factory presets, each checked by rendering it back and measuring it
+- **A bird syllable *is* its frequency contour.** 64 contours measured off real
+  recordings — the medoids of 3567 clustered syllables out of 98 field
+  recordings — ship as cosine coefficients and drive the oscillator directly
 - **Timbre is a valve, not a filter.** `Voice` is the fraction of each cycle the
   syrinx is shut. At zero it passes a pure sine, which is what 59 % of the
   library's syllables are; closing it makes the airflow a one-sided pulse with
-  the harmonic stack a corvid has
+  the harmonic stack a goose has
 - **`Partials` reaches for the recording itself.** Each archetype also carries
   the measured balance between its first six partials *across* the syllable —
   because that balance moves 4.4 dB over one syllable, and a fixed valve through
   a fixed tract cannot do that at all
-- Ten species, each a measurement: pitch register, syllable length, harmonic
+- Eight species, each a measurement: pitch register, syllable length, harmonic
   richness, roughness and rate are the medians of the recordings of that bird
 - Woodpecker drumming as a separate layer, because it is sonation rather than
   voice: a bill against wood, in a roll that accelerates
 - One shot and drone at once: a note fires a deliberate phrase that always
   completes, and a flock of individuals calls and answers around it
-- 77× realtime for a twelve-bird dawn chorus
+- 67× realtime for a twelve-bird dawn chorus (60 s rendered in 0.90 s)
 - The suite's plugin window in ChirpParade's own finch-gold theme, with a
   sonogram scrolling across its header
 

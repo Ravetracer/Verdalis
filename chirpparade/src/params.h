@@ -121,8 +121,6 @@ enum SpeciesKind {
    kSpeciesWoodpecker,   // the green woodpecker's laugh: up-sweeps at ten a second
    kSpeciesCrane,        // a waterbird's bugle: 1 kHz, four harmonics
    kSpeciesGoose,        // honking: 570 Hz, the widest sweeps in the library
-   kSpeciesCrow,         // 800 Hz, five harmonics, the roughest voice measured
-   kSpeciesRaven,        // lower and slower than a crow, and much longer syllables
    kSpeciesScreech,      // no reference: the top of every range at once, for effect
    kNumSpecies
 };

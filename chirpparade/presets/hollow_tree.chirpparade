@@ -2,7 +2,7 @@
 format = 1
 name = Hollow Tree
 author = ChirpParade
-description = A dead trunk instead of a live branch: the first body mode down at 380 Hz and a contact five times longer, in a space with hard surfaces. A few crows in the background, because that is where they are.
+description = A dead trunk instead of a live branch: the first body mode down at 380 Hz and a contact five times longer, in a space with hard surfaces. A few low, rough calls in the background, because that is where they are.
 
 # Syllable
 pitch = 2600
@@ -16,7 +16,7 @@ pulse_rate = 13.2
 pulse_depth = 0
 
 # Timbre
-species = Crow
+species = Crane
 voice = 0.22
 breath = 0.05
 tract = 4.9

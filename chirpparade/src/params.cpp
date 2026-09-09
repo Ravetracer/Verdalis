@@ -13,8 +13,8 @@ namespace chirpparade {
 namespace {
 
 const char *const kFilterNames[] = {"Lowpass", "Bandpass", "Highpass", "Notch"};
-const char *const kSpeciesNames[] = {"Whistler", "Sparrow",  "Warbler", "Budgie", "Woodpecker",
-                                     "Crane",    "Goose",    "Crow",    "Raven",  "Screech"};
+const char *const kSpeciesNames[] = {"Whistler", "Sparrow", "Warbler", "Budgie",
+                                     "Woodpecker", "Crane", "Goose", "Screech"};
 
 // Defaults are the medians measured across the reference library: 4287
 // syllables in 58 recordings. See tools/analysis/README.md for every number
@@ -77,7 +77,7 @@ const ParamDesc kParams[kNumParams] = {
        "How much of each cycle the syrinx is shut. Air passes only while the labia "
        "are apart, so this is not a filter: at the bottom the valve never closes and "
        "a pure sine comes out, which is what 59 % of the library's syllables are, and "
-       "closing it makes the airflow a one-sided pulse with the harmonic stack a crow "
+       "closing it makes the airflow a one-sided pulse with the harmonic stack a goose "
        "has -- evens as well as odds, which a symmetric oscillator cannot produce at "
        "all. 16 % of the library has six harmonics or more, so both ends are real."),
    PCT(kParamBreath, "breath", "Breath", "Timbre", 0.05,

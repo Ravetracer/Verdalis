@@ -60,16 +60,17 @@ ISOLATE = [
 # The two differ where only some of a species' syllables passed the contour
 # quality gate. contours.py prints these.
 SPECIES = {
-    "Whistler": (4748, 81, 1, -34),
-    "Sparrow": (3147, 69, 1, -29),
-    "Warbler": (1128, 116, 2, -27),
-    "Budgie": (1351, 40, 3, -28),
-    "Woodpecker": (3312, 77, 2, -25),
-    "Crane": (982, 45, 4, -26),
-    "Goose": (566, 108, 4, -32),
-    "Crow": (806, 75, 5, -21),
-    "Raven": (1171, 197, 6, -30),
-    "Screech": (1800, 67, 6, -16),
+    "Whistler": (3816, 143, 1, -31),
+    "Sparrow": (3148, 61, 1, -29),
+    "Warbler": (2655, 97, 1, -30),
+    "Budgie": (1351, 69, 3, -28),
+    "Woodpecker": (3121, 97, 1, -27),
+    "Crane": (762, 156, 5, -24),
+    "Goose": (743, 78, 4, -25),
+    # Screech has no reference of its own; these are the engine's own settings,
+    # so the row checks that it does what it is configured to do and nothing
+    # more. It is an effect, not a bird.
+    "Screech": (1800, 134, 6, -16),
 }
 
 

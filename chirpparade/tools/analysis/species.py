@@ -24,18 +24,24 @@ SECONDS = float(os.environ.get("CHIRPPARADE_SECONDS", "45"))
 
 # Which reference belongs to which species. Prefix match, longest first, so
 # that "crow_call" is not caught by "crane". Files not matched are reported.
+# Anything named fss_<species>_ came from fetch-fss.py, which encodes the
+# species in the name for exactly this reason -- the site's own file names say
+# "carrioncrow" and "jackdaw", and a prefix table that had to list every bird
+# on a 515-species site would be the wrong place to keep that knowledge.
 GROUPS = [
-    ("Whistler", ["whistling_single_robin", "single_bird_chirp"]),
+    ("Whistler", ["whistling_single_robin", "single_bird_chirp",
+                  "fss_whistler_"]),
     ("Sparrow", ["chirps_", "multiple_bird_chirps", "multiple_birds_",
-                 "chirping_birds_and_woodpecker"]),
-    ("Warbler", ["nightingale", "tui"]),
+                 "chirping_birds_and_woodpecker", "fss_sparrow_"]),
+    ("Warbler", ["nightingale", "tui", "fss_warbler_"]),
     ("Budgie", ["budgies_"]),
-    ("Woodpecker", ["green_woodpecker_chirp", "red_headed_woodpecker_chirping"]),
+    ("Woodpecker", ["green_woodpecker_chirp", "red_headed_woodpecker_chirping",
+                    "fss_woodpecker_"]),
     ("Crow", ["crow_call_single", "crows_alarm_call", "crows_calling",
-              "multiple_crows_calling"]),
-    ("Raven", ["raven"]),
-    ("Goose", ["goose"]),
-    ("Crane", ["crane_bird_calling"]),
+              "multiple_crows_calling", "fss_crow_"]),
+    ("Raven", ["raven", "fss_raven_"]),
+    ("Goose", ["goose", "fss_goose_"]),
+    ("Crane", ["crane_bird_calling", "fss_crane_"]),
     # Drumming is sonation rather than voice and is measured by drums.py; the
     # files are listed here only so that nothing is silently left out.
     ("(drumming)", ["woodpecker_hammering", "multiple_bird_chirps_and_woodpecker"]),

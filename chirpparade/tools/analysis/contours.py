@@ -359,7 +359,10 @@ def syllables_of(path, seconds=30.0, limit=400):
 # partial -- in the dense multi-bird files the tracker is often following two
 # birds at once, and the result is a contour no bird ever sang.
 MIN_DUR = 0.018
-MAX_DUR = 0.400
+# A croak is not a chirp. At 0.400 this cut every raven syllable longer than
+# 300 ms, and a raven's call is mostly longer than that. Past a second a
+# "syllable" is a phrase the segmenter failed to split, so a ceiling stays.
+MAX_DUR = 0.900
 # How tonal a syllable has to be to become an archetype. Swept, because it
 # turned out to be the single most consequential number in the pipeline: it
 # selects *for tonality*, so a strict gate fills the table with each species'
@@ -378,7 +381,23 @@ MIN_TONALITY_DB = 0.0
 MAX_FIT_CENTS = 90.0
 
 
-def usable(freq, amp, dt, syl, err_cents):
+# How fast the *fitted* contour is allowed to move, in octaves per second of
+# path travelled. The library's own census bounds the bird at a peak slew of
+# 20..440 oct/s, so this is headroom over the fastest thing ever measured
+# rather than a taste judgement.
+#
+# It exists because nothing else here looks at the fitted curve. Duration, fit
+# error, tonality and span are all properties of the tracked contour or of how
+# well the series threads it -- and fit error is evaluated *at* the tracked
+# points, so a series that oscillates between them scores perfectly. With 40
+# terms that was survivable, since the basis could not ring hard enough to
+# matter. At 96 it is not: one sparrow archetype came through travelling 1089
+# octaves in 255 ms, which is 4300 oct/s, and Screech selects for exactly this
+# by construction because it takes the highest-path contours in the library.
+MAX_PATH_OCT_PER_SEC = 500.0
+
+
+def usable(freq, amp, dt, syl, err_cents, coef=None):
     dur = len(freq) * dt
     if dur < MIN_DUR or dur > MAX_DUR:
         return False
@@ -386,6 +405,12 @@ def usable(freq, amp, dt, syl, err_cents):
         return False
     if syl.hnr < MIN_TONALITY_DB:
         return False
+    if coef is not None and dur > 0:
+        # Densely, not at shape()'s sample count: the point is to catch motion
+        # that lives between the samples.
+        v = eval_series(coef, max(512, 8 * len(coef)))
+        if float(np.abs(np.diff(v)).sum()) / dur > MAX_PATH_OCT_PER_SEC:
+            return False
     # A tracked contour that leaves the band it started in, or that moves faster
     # than any bird, is the tracker losing the bird rather than the bird moving.
     lg = np.log2(np.maximum(freq, 20.0))
@@ -394,8 +419,18 @@ def usable(freq, amp, dt, syl, err_cents):
     return True
 
 
-def shape(coef, n=64):
-    """The archetype's pitch shape: mean removed, resampled to a fixed length."""
+def shape(coef, n=None):
+    """The archetype's pitch shape: mean removed, resampled to a fixed length.
+
+    n must stay above the Nyquist rate of the series, or the clustering runs on
+    an aliased curve rather than on the contour. It was a fixed 64, which is
+    below Nyquist for the 40 terms fitted even before this was noticed: a
+    cos(pi k t) with k up to 39 sampled at 64 points folds its top third back
+    down, so two contours that differ only in their fine motion could land on
+    top of each other and the medoid picked between them arbitrarily.
+    """
+    if n is None:
+        n = max(256, 4 * len(coef))
     v = eval_series(coef, n)
     return v - v.mean()
 
@@ -412,7 +447,14 @@ def kmedoids(shapes, k, seed=7):
     if n <= k:
         return list(range(n))
     X = np.stack(shapes)
-    D = np.sqrt(((X[:, None, :] - X[None, :, :]) ** 2).mean(axis=2))
+    # ||a-b||^2 = |a|^2 + |b|^2 - 2ab, rather than materialising the n x n x d
+    # difference. The explicit form cost n^2 d floats, which was survivable
+    # while shape() sampled at 64 points and is not now that it samples above
+    # the series' Nyquist rate: Sparrow's 1699 contours at 384 points wanted
+    # 8.9 GB and were killed by the OOM reaper.
+    sq = np.einsum("ij,ij->i", X, X)
+    d2 = sq[:, None] + sq[None, :] - 2.0 * (X @ X.T)
+    D = np.sqrt(np.maximum(d2, 0.0) / X.shape[1])
     rng = np.random.RandomState(seed)
     # k-means++ style seeding on the distance matrix.
     med = [int(rng.randint(n))]
@@ -439,7 +481,26 @@ def kmedoids(shapes, k, seed=7):
 
 # ------------------------------------------------------------------ the table
 
-PITCH_TERMS = 40
+# The fit budget is per syllable, so it is also a resolution: 40 terms over a
+# 60 ms chirp is one every 1.5 ms, and over a 900 ms croak one every 22 ms.
+# The fit error then carried the syllable's duration, and MAX_FIT_CENTS
+# rejected long syllables for being long -- 28 of the 30 raven syllables over
+# 300 ms were dropped, several with an HNR above 20 dB.
+#
+# The number is set by how far the fitted contour travels against how far the
+# tracked one does, measured densely rather than at shape()'s sample count:
+#
+#   terms   fitted path   tracked path
+#      40      2.3 oct      2.9 oct     over-smoothed, 79 % of the real motion
+#      64      3.5          4.1         85 %
+#      96      4.9          4.5         109 %
+#     128      5.8          4.8         121 %, ringing between the samples
+#
+# 96 is the closest to reproducing what was measured. Fit error is not the
+# criterion and cannot be: it is evaluated at the tracked points, so a
+# high-order series threads them exactly while oscillating in between, and it
+# falls monotonically with the term count all the way into nonsense.
+PITCH_TERMS = 96
 LEVEL_TERMS = 24
 PER_SPECIES = 8
 
@@ -464,7 +525,7 @@ def harvest(groups, seconds=30.0, verbose=True):
                 fc, ac, ec, ed = fit_syllable(freq, amp, PITCH_TERMS)
                 acl = fit_series(20.0 * np.log10(np.maximum(
                     amp / max(amp.max(), 1e-12), 1e-4)), LEVEL_TERMS)
-                if not usable(freq, amp, dt, syl, ec):
+                if not usable(freq, amp, dt, syl, ec, fc):
                     continue
                 centre = float(2.0 ** np.median(np.log2(np.maximum(freq, 20.0))))
                 # The harmonic balance, and how much of the energy it actually
@@ -501,7 +562,10 @@ def pick(got, k=PER_SPECIES):
 
 
 SPECIES_ORDER = ["Whistler", "Sparrow", "Warbler", "Budgie", "Woodpecker",
-                 "Crane", "Goose", "Crow", "Raven", "Screech"]
+                 "Crane", "Goose", "Screech"]
+# Crow and Raven are measured by species.py -- they are still in the reference
+# library and still part of its census -- but they are not species the engine
+# offers, so no archetypes are extracted for them. See TODO.md.
 
 
 def emit(path, seconds=25.0):

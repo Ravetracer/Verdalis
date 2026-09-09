@@ -1,10 +1,47 @@
 # ChirpParade status
 
-Version 0.3.0. Adds `Partials`: each archetype now carries the measured balance
+Version 0.4.0. The reference library grew from 58 recordings to 98, the contour
+pipeline was rebuilt around what that exposed, and **Crow and Raven were
+removed**.
+
+- **40 more references**, fetched with `tools/analysis/fetch-fss.py` and
+  recorded in `!dev/references/fss/PROVENANCE.tsv`. 4268 segmented syllables
+  became 7965. Raven went from 6 measured syllables to 146 and Goose from 12 to
+  286 — figures that were never medians of anything before.
+- **The fit budget was a hidden duration filter.** `PITCH_TERMS` was a fixed 40
+  regardless of syllable length, so fit error carried duration and
+  `MAX_FIT_CENTS` rejected long syllables for being long: 28 of the 30 raven
+  syllables over 300 ms were dropped, several with an HNR above 20 dB. It is 96
+  now, chosen by how far the fitted contour travels against how far the tracked
+  one does — 40 terms reproduced only 79 % of the real motion, so every contour
+  in every previous version was over-smoothed.
+- **`shape()` clustered on an aliased curve.** It sampled the cosine series at a
+  fixed 64 points, below Nyquist for even the old 40 terms, so contours
+  differing only in fine motion could collide and the medoid between them was
+  arbitrary. It now samples above Nyquist.
+- **Nothing checked the fitted curve.** Every gate tested the tracked contour or
+  how well the series threads it, and fit error is evaluated *at* the tracked
+  points — so a series oscillating between them scored perfectly. With 96 terms
+  one archetype came through travelling 1089 octaves in 255 ms.
+  `MAX_PATH_OCT_PER_SEC` now bounds the fitted curve at 500 oct/s, headroom over
+  the 440 the library's fastest syllable measures.
+- **k-medoids built an n×n×d intermediate**, which the wider `shape()` turned
+  into an 8.9 GB allocation and an OOM kill. Rewritten via
+  `||a-b||² = |a|² + |b|² - 2ab`; identical medoids, 23 MB.
+
+**Crow and Raven are gone.** They were modelled, measured, refitted against
+twelve new corvid recordings, and still did not sound like corvids. A crow's
+roughness has structure — subharmonics, period doubling — and this engine
+reproduces it as a rough *tone*. The recordings stay in the library and stay in
+its census; they no longer become an instrument. `Screech` is unaffected and is
+still labelled as an effect rather than a bird.
+
+**0.3.0 presets that selected Crow or Raven do not load meaningfully**, and the
+three that did have been removed. 19 factory presets ship.
+
+Version 0.3.0 added `Partials`: each archetype carries the measured balance
 between its first six harmonics across the syllable, and one control crossfades
-the synthetic valve into it. Also relaxes the contour quality gate, which widened
-every species' archetype set — Goose went from one contour to three, Crane from
-six to eight.
+the synthetic valve into it.
 
 Version 0.2.0 replaced the syllable model: 0.1.0's physical syrinx, fitted
 to aggregate statistics, is gone and measured contours drive the oscillator
@@ -14,9 +51,9 @@ at 0.1.0.
 
 ## What works
 
-- **Measured contours as the voice.** 67 archetypes, the medoids of 1641
+- **Measured contours as the voice.** 64 archetypes, the medoids of 3567
   clustered syllables extracted from the reference library, shipped as cosine
-  coefficients in `src/dsp/contours_generated.h` — 4288 floats, 17 KB, no audio.
+  coefficients in `src/dsp/contours_generated.h` — 12288 floats, 48 KB, no audio.
   Refitting a real syllable lands within **41 cents of pitch and 0.5 dB of
   level**.
 - **`Contour`, `Detail`, `Sweep`, `Skew`** over those curves: which archetype,
@@ -60,10 +97,10 @@ at 0.1.0.
   that syllable's energy the harmonic comb accounted for — so an archetype with
   a second bird in it does not pretend to know. It moves a sparrow's measured
   balance drift from 1.0 to 3.2 dB, against the references' 4.4.
-- **Reproducible renders**: all 22 presets byte-identical across two runs at
+- **Reproducible renders**: all 19 presets byte-identical across two runs at
   44.1, 48 and 96 kHz with `Random Seed` pinned.
-- **CPU**: 60 s of *Dawn Chorus* — twelve birds, 48 voices — renders in 1.07 s,
-  **56× realtime**; the six extra partial oscillators cost about a quarter of
+- **CPU**: 60 s of *Dawn Chorus* — twelve birds, 48 voices — renders in 0.90 s,
+  **67× realtime**; the six extra partial oscillators cost about a quarter of
   the previous headroom. Dropping 0.1.0's ODE and its up-to-eight integration
   substeps per sample is most of that.
 
@@ -78,18 +115,33 @@ back with the same estimators:
 
 | Species | pitch got/want | length got/want | harmonics |
 |---|---|---|---|
-| Whistler | 4734 / 4748 (−0 %) | 91 / 89 ms | 1 / 1 |
-| Sparrow | 3106 / 3147 (−1 %) | 59 / 60 ms | 1 / 1 |
-| Warbler | 1209 / 1128 (+7 %) | 107 / 107 ms | 1 / 2 |
-| Budgie | 1292 / 1351 (−4 %) | 37 / 37 ms | 2 / 3 |
-| Woodpecker | 3328 / 3312 (+0 %) | 101 / 99 ms | 1 / 2 |
-| Crane | 947 / 982 (−4 %) | 48 / 48 ms | 3 / 4 |
-| Goose | 604 / 566 (+7 %) | 91 / 90 ms | 2 / 4 |
-| Crow | 807 / 806 (+0 %) | 117 / 114 ms | 5 / 5 |
-| Raven | 1161 / 1171 (−1 %) | 197 / 197 ms | 7 / 6 |
+| Whistler | 3784 / 3816 (−1 %) | 72 / 143 ms | 1 / 1 |
+| Sparrow | 2958 / 3148 (−6 %) | 32 / 61 ms | 1 / 1 |
+| Warbler | 2541 / 2655 (−4 %) | 96 / 97 ms | 1 / 1 |
+| Budgie | 473 / 1351 (−65 %) | 21 / 69 ms | 2 / 3 |
+| Woodpecker | 3051 / 3121 (−2 %) | 96 / 97 ms | 2 / 1 |
+| Crane | 770 / 762 (+1 %) | 155 / 156 ms | 6 / 5 |
+| Goose | 697 / 743 (−6 %) | 80 / 78 ms | 3 / 4 |
+| Screech | 875 / 1800 (−51 %) | 133 / 134 ms | 13 / 6 |
 
-Nine of ten within ±7 % on pitch and ±3 % on length. All 22 factory presets meet
-the targets stated in their own files.
+Six of eight within ±6 % on pitch; five of eight within ±3 % on length. Two
+rows fail and both are understood:
+
+- **Budgie and Screech read low on pitch** because their archetypes swing so far
+  that a fundamental estimate over the syllable is not a meaningful quantity.
+  Screech has no reference and is an effect; Budgie's contours are the widest of
+  any real species. The estimator is the limit here, not the engine.
+- **Whistler and Sparrow render about half their `lengthSec`.** Stretching a
+  short measured curve to a longer `Length` turns its internal amplitude
+  modulation into separate notes, which the segmenter then counts separately.
+  Choosing the archetype partly by how close its own duration is to `Length`
+  would fix it; see TODO.md.
+
+**18 of the 19 factory presets** meet the targets stated in their own files.
+The exception is `single_chirp`, which misses on roughness (−21.2 dB measured
+against its stated target): it is one dry syllable in silence, and spectral
+flatness over a single fast-sweeping chirp carries the contour's motion rather
+than the breath — the same limit recorded under *Fit* in TODO.md.
 
 Two calibrations, both measured on the plugin's own output:
 
