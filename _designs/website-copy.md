@@ -8,6 +8,49 @@ Pick one per plugin, or mix paragraphs between them. Every factual claim is
 taken from the plugin's README, STATUS and parameter table — re-check them if a
 version changes the numbers.
 
+The suite text below is for the page that offers the whole thing as one
+download, and deliberately names no individual instrument.
+
+---
+
+## The suite — download page
+
+**Verdalis is a suite of audio instruments in which everything is synthesised
+and nothing is sampled.** Each one models a natural sound source from first
+principles — the physics of how the sound is actually made — and computes every
+moment of it while it plays. Nothing is recorded, nothing is looped, and no two
+instances ever produce the same output. There is no loop point to find, because
+there is no loop.
+
+That constraint is the point rather than a limitation to work around. A
+recording arrives with its distance, its surroundings and its particular
+moment already fixed in it, and no amount of processing moves it somewhere
+else. A model has none of that baked in: the same sound can be near or far,
+sparse or dense, in a small room or an open landscape, and it stays coherent
+because it is being generated rather than reshaped. Play a note and it starts;
+hold it and it continues, differently, for as long as you hold it.
+
+The models are measured rather than invented. Each instrument was fitted against
+real reference recordings — segmented, tracked and measured — and what ships is
+the measurement: tables of coefficients from which the audio is computed afresh
+every time. Where a model does not reach far enough, the feature is left out
+rather than approximated, and each instrument's documentation says plainly what
+it does well and what it does not. (One instrument contains a small block of
+licensed audio for a single hidden, non-instrument function; it is the one
+documented exception to the rule above, and its licence file records it.)
+
+One download contains everything: five instruments, 92 factory presets and 254
+parameters, built for both Linux and Windows, with a PDF manual for each. They
+are native **CLAP** plugins for x86-64, with sample-accurate note and parameter
+handling, host modulation, bounded CPU cost, preset discovery so the presets
+appear in the host's own browser, plain-text preset files, and a fixable random
+seed so a take can be reproduced exactly when you need it to be. The windows are
+drawn by hand — X11 or Win32 plus Cairo, no toolkit dependency — and share one
+layout and one set of interactions, so learning one is learning all of them.
+
+MIT licensed. More instruments are in progress, and they arrive in this same
+download.
+
 ---
 
 ## RainyDay
