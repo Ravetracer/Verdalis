@@ -31,3 +31,7 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+
+# Website copy. Marketing text for the site, not part of the released suite and
+# deliberately not published here -- it lives on this machine only.
+_designs/website-copy.md
