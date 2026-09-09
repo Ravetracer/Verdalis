@@ -1,0 +1,86 @@
+# ChirpParade preset
+format = 1
+name = Dawn Chorus
+author = ChirpParade
+description = Everything at once, which is what a dawn chorus is: twelve birds over two octaves of pitch spread, answering each other at half again the library's densest measured rate. Nothing is played -- Shot Level is off and the whole thing runs from the flock, so a held note is a morning rather than a bird.
+features = chorus, dense, morning, wide
+# fit harmonics=1
+
+# Syllable
+pitch = 2600
+sweep = 0.35
+contour = 0.25
+turns = 0.25
+length = 96
+skew = 0.37
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Sparrow
+voice = 0.3
+breath = 0.1
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+
+# Phrase
+syllables = 4
+syllable_rate = 8.5
+rate_drift = 0
+legato = 0.7
+motif = 0
+variation = 0.5
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -60
+flock_level = -6
+flock_rate = 700
+birds = 12
+pitch_spread = 2.2
+voice_spread = 0.6
+answer = 0.5
+restless = 0.55
+max_voices = 48
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.45
+distance_spread = 0.7
+air = 0.5
+width = 0.8
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 2
+seed = 0

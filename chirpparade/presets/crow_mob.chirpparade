@@ -1,0 +1,85 @@
+# ChirpParade preset
+format = 1
+name = Crow Mob
+author = ChirpParade
+description = Eight crows all answering. Answer is high, which is what turns a set of independent Poisson processes into a row: one bird's phrase provokes another from somewhere else a fraction of a second later.
+features = crows, mobbing, alarm, chaos
+
+# Syllable
+pitch = 2100
+sweep = 0.35
+contour = 0.25
+turns = 0.25
+length = 96
+skew = 0.37
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Crow
+voice = 0.22
+breath = 0.1
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0.2
+radiate = 0.35
+
+# Phrase
+syllables = 2
+syllable_rate = 2.6
+rate_drift = 0
+legato = 0.2
+motif = 0
+variation = 0.35
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -60
+flock_level = -6
+flock_rate = 260
+birds = 8
+pitch_spread = 0.6
+voice_spread = 0.45
+answer = 0.7
+restless = 0.5
+max_voices = 32
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.35
+distance_spread = 0.6
+air = 0.5
+width = 0.8
+space_amount = 0.35
+space_size = 0.55
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 0
+seed = 0

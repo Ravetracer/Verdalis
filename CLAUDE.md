@@ -58,7 +58,7 @@ Seven plugins, each modelling one natural sound source:
 | 2 | **ThunderClap** | `thunderclap/` | WIP | thunder |
 | 3 | **ShoreBreak** | `shorebreak/` | WIP | ocean waves |
 | 4 | **SkyHowl** | `skyhowl/` | WIP | winds, storms |
-| 5 | **ChirpParade** | `chirpparade/` | planned | bird chirps |
+| 5 | **ChirpParade** | `chirpparade/` | WIP | bird chirps |
 | 6 | **RiverFlow** | `riverflow/` | planned | rivers, streams |
 | 7 | **CrackleBlaze** | `crackleblaze/` | planned | fire |
 | 8 | **NightLife** | `nightlife/` | planned | night insects, crickets, howling wolfes, foxes, owls, night birds |
@@ -85,8 +85,19 @@ retrofitting:
   modelling; ThunderClap's `Lp2` air-absorption filter generalises directly.
 - CrackleBlaze and RainyDay share **stochastic impulse spawning** — the Poisson
   process in `rng.h` already covers both.
-- ChirpParade is the outlier: it needs pitched, formant-shaped voices rather
-  than noise, so expect it to add to the shared DSP rather than reuse much.
+- ChirpParade was the outlier, and it turned out that way: it needs pitched,
+  formant-shaped voices rather than noise, and it reuses only the parameter
+  model, the preset format, the window, `Svf`/`Lp2`/`OnePoleHp`, `Space` and
+  `rng.h`. What it adds is worth taking back into `shared/` when a second
+  plugin needs it -- see its `TODO.md`:
+  - **a one-sided flow source.** Any plugin modelling a valve (a syrinx, a
+    glottis, a reed) needs it, and the trap it avoids is easy to fall into
+    twice: an odd-symmetric oscillator has no even harmonics at all, whatever
+    it is driven with.
+  - **the phrase scheduler with per-individual identities.** RainyDay,
+    ShoreBreak and CrackleBlaze all spawn events at a rate; ChirpParade is the
+    first to model *individuals* -- each with its own pitch, position, distance
+    and voice, answering each other -- and NightLife will want exactly that.
 
 ## Plugin anatomy
 
@@ -344,7 +355,8 @@ with a coloured knob.
 | RainyDay | `#58B6E8` | rain blue, cool neutral greys |
 | ThunderClap | `#B396FA` | lightning violet, greys an octave darker |
 | ShoreBreak | `#4FD0BA` | sea green, a warmer and greener chassis |
-| SkyHowl | `#F0845C` | dust coral -- the one warm plugin, greys with a red-brown cast |
+| SkyHowl | `#F0845C` | dust coral -- greys with a red-brown cast |
+| ChirpParade | `#F2C744` | finch gold, greys with an olive cast |
 
 A new plugin picks its own accent and derives its greys from it. Do not reuse
 another plugin's theme, and do not fall back to the suite brand palette — that
@@ -358,7 +370,11 @@ there is nothing like that.
 subclass drawn behind the wordmark, clipped to the header. RainyDay runs rain
 streaks whose density follows `voiceLoad`; ThunderClap grows a bolt from
 `eventCounter`, deterministic in the flash number so the same flash always draws
-the same bolt. `animating()` decides whether the window repaints, and must not
+the same bolt. ChirpParade scrolls a sonogram, one stroke per syllable, deterministic in the
+syllable number, so the same syllable always draws the same stroke -- and it
+keeps a few dim strokes on screen when nothing is playing, because a sonogram
+with nothing on it reads as a broken graph rather than a quiet one.
+`animating()` decides whether the window repaints, and must not
 change state. A plugin with nothing to animate leaves `ornament` null.
 
 **The delegate** (`verdalis/gui/gui.h`) is deliberately generic:
@@ -384,7 +400,7 @@ One file remains substantially shared but is **not** extracted:
 
 | File | Size | Differing lines | What blocks extraction |
 |------|------|-----------------|------------------------|
-| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface, and is best done when a third plugin shows which parts are really common. |
+| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface. With five copies of it now, the question of which parts are really common is answered: everything except the engine type and `syncEngineParams`. |
 
 ### Rule for a shared change
 

@@ -1,0 +1,86 @@
+# ChirpParade preset
+format = 1
+name = Crow Call
+author = ChirpParade
+description = Three caws and a gap. The crow recordings are the roughest voices measured, at -21 dB of spectral flatness against the library's -28, and they carry five harmonics -- so the drive is high, the labia close for most of every cycle, and Rasp adds what noise alone cannot reach.
+features = crow, caw, harsh, solo
+# fit pitch=800 harmonics=5
+
+# Syllable
+pitch = 2000
+sweep = 0.35
+contour = 0.25
+turns = 1.5
+length = 150
+skew = 0.37
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Crow
+voice = 0.22
+breath = 0.12
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0.15
+radiate = 0.35
+
+# Phrase
+syllables = 3
+syllable_rate = 2.2
+rate_drift = 0
+legato = 0.15
+motif = 0
+variation = 0.35
+phrase_gap = 0.6
+repeats = 1
+
+# Flock
+shot_level = 0
+flock_level = -60
+flock_rate = 273
+birds = 5
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.2
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.3
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 3
+seed = 0

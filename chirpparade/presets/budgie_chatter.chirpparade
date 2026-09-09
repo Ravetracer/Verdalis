@@ -1,0 +1,86 @@
+# ChirpParade preset
+format = 1
+name = Budgie Chatter
+author = ChirpParade
+description = Four birds talking over each other. The budgie recordings are the busiest in the library -- 293 syllables a minute with the shortest rise of any group, 17 ms -- and they carry three harmonics, so this sits between a whistle and a call.
+features = chatter, cage, busy, warm
+# fit harmonics=3
+
+# Syllable
+pitch = 2700
+sweep = 0.35
+contour = 0.25
+turns = 0.5
+length = 96
+skew = 0.37
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Budgie
+voice = 0.32
+breath = 0.15
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+
+# Phrase
+syllables = 8
+syllable_rate = 12
+rate_drift = 0
+legato = 0.8
+motif = 0
+variation = 0.6
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -4
+flock_level = -8
+flock_rate = 500
+birds = 4
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.6
+restless = 0.5
+max_voices = 32
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.2
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.25
+space_size = 0.55
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 1
+seed = 0

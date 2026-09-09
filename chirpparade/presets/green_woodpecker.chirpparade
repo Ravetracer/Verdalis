@@ -1,0 +1,85 @@
+# ChirpParade preset
+format = 1
+name = Green Woodpecker
+author = ChirpParade
+description = The yaffle: a falling laugh of up-swept notes at ten a second. The two woodpecker recordings are the only groups in the library whose contours arch rather than fall, so Contour sits three quarters of a turn round from the default, and the phrase slows as it goes.
+features = laugh, yaffle, up-sweep, woodland
+
+# Syllable
+pitch = 1450
+sweep = 0.7
+contour = 0.75
+turns = 0.25
+length = 95
+skew = 0.37
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Woodpecker
+voice = 0.3
+breath = 0.1
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+
+# Phrase
+syllables = 14
+syllable_rate = 10
+rate_drift = -0.15
+legato = 0.55
+motif = 0
+variation = 0.25
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = 0
+flock_level = -60
+flock_rate = 273
+birds = 5
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.35
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 4
+seed = 0

@@ -30,7 +30,7 @@ hand-drawn plugin window with no toolkit dependency.
 | **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | in progress |
 | **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | in progress |
 | **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | in progress |
-| **ChirpParade** | bird chirps | planned |
+| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | in progress |
 | **RiverFlow** | rivers, streams | planned |
 | **CrackleBlaze** | fire | planned |
 
@@ -55,6 +55,13 @@ sound at all, and the sources it drives. Aeolian tones shed at the Strouhal
 frequency, so a howl's pitch swoops with every gust — which the reference
 library confirms. 53 parameters, 23 presets, and rustling foliage as a bonus
 layer.
+
+**ChirpParade** — the syrinx itself, as a nonlinear oscillator held just past
+its bifurcation and driven by two gestures: air sac pressure and syringeal
+tension. The phase between them *is* the shape of the syllable, so up-sweeps,
+arches and dips are one knob. 61 parameters, 22 presets, ten species each of
+them the median of the recordings of that bird, and woodpecker drumming as a
+layer of its own. Plays one shot on a note and a flock while it is held.
 
 ## Build
 

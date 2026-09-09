@@ -1,0 +1,85 @@
+# ChirpParade preset
+format = 1
+name = Parakeet Flock
+author = ChirpParade
+description = The same voice pushed past its harmonic regime. Rasp feeds the trachea's own back-pressure into the labia, which is the documented route to period doubling in birdsong, and ten of them at once is a street full of parakeets rather than a cage.
+features = exotic, flock, screech, loud
+
+# Syllable
+pitch = 4200
+sweep = 0.35
+contour = 0.25
+turns = 0.25
+length = 96
+skew = 0.37
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Budgie
+voice = 0.45
+breath = 0.1
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0.25
+radiate = 0.35
+
+# Phrase
+syllables = 5
+syllable_rate = 11
+rate_drift = 0
+legato = 0.7
+motif = 0
+variation = 0.35
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -60
+flock_level = -4
+flock_rate = 800
+birds = 10
+pitch_spread = 1.5
+voice_spread = 0.5
+answer = 0.55
+restless = 0.5
+max_voices = 40
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.3
+distance_spread = 0.5
+air = 0.5
+width = 0.85
+space_amount = 0.3
+space_size = 0.55
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 0
+seed = 0

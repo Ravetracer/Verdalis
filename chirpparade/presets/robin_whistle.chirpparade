@@ -1,0 +1,86 @@
+# ChirpParade preset
+format = 1
+name = Robin Whistle
+author = ChirpParade
+description = The purest voice in the library. The three robin recordings measure one harmonic, a spectral flatness of -34 dB -- the cleanest of any group -- and a 4.7 kHz fundamental, so Breath is almost shut and the drive is low enough that the labia barely leave a sinusoid. Four notes with a slight fall between them.
+features = whistle, pure, high, solo
+# fit harmonics=1 rough=-34
+
+# Syllable
+pitch = 2560
+sweep = 0.22
+contour = 0.25
+turns = 0.25
+length = 130
+skew = 0.37
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Whistler
+voice = 0.2
+breath = 0.05
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+
+# Phrase
+syllables = 4
+syllable_rate = 5
+rate_drift = 0
+legato = 0.4
+motif = -2
+variation = 0.3
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = 0
+flock_level = -60
+flock_rate = 273
+birds = 5
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.15
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.3
+space_size = 0.6
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 3
+seed = 0

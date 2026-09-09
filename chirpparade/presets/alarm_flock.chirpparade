@@ -1,0 +1,85 @@
+# ChirpParade preset
+format = 1
+name = Alarm Flock
+author = ChirpParade
+description = Short, high and fast, which is what an alarm call is for: hard to locate and impossible to ignore. 45 ms syllables at sixteen a second, seven birds, and Restless well up so the density lurches rather than holding steady.
+features = alarm, nervous, fast, bright
+
+# Syllable
+pitch = 3400
+sweep = 0.6
+contour = 0.25
+turns = 0.25
+length = 45
+skew = 0.37
+jitter = 0.2
+pulse_rate = 13.2
+pulse_depth = 0.2
+
+# Timbre
+species = Sparrow
+voice = 0.3
+breath = 0.1
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+
+# Phrase
+syllables = 6
+syllable_rate = 16
+rate_drift = 0
+legato = 0.75
+motif = 0
+variation = 0.3
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -3
+flock_level = -6
+flock_rate = 640
+birds = 7
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.6
+restless = 0.6
+max_voices = 40
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.25
+distance_spread = 0.4
+air = 0.5
+width = 0.75
+space_amount = 0.3
+space_size = 0.55
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 3
+seed = 0
