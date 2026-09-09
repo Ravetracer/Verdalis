@@ -2,24 +2,24 @@
 format = 1
 name = Green Woodpecker
 author = ChirpParade
-description = The yaffle: a falling laugh of up-swept notes at ten a second. The two woodpecker recordings are the only groups in the library whose contours arch rather than fall, so Contour sits three quarters of a turn round from the default, and the phrase slows as it goes.
+description = The yaffle: a falling laugh at ten notes a second. Both woodpecker recordings arch rather than fall, and the archetypes carry that -- this sits at the top of their set, where the widest of them are. The phrase slows as it goes.
 features = laugh, yaffle, up-sweep, woodland
 
 # Syllable
 pitch = 1450
-sweep = 0.7
-contour = 0.75
-turns = 0.25
+sweep = 130
+contour = 0.85
+detail = 1
 length = 95
-skew = 0.37
+skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Woodpecker
 voice = 0.3
-breath = 0.1
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 4
+gain = -6.66134e-16
 seed = 0

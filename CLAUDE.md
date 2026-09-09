@@ -503,13 +503,43 @@ brand surfaces only: README, site, packaging.
 
 ## Suite-wide goals
 
-- **Pure synthesis.** Every sound a plugin's engine produces is computed at run
-  time. The single exception is a small block of CC-BY licensed audio embedded
-  in SkyHowl for one hidden, non-instrument function, added deliberately after
-  the synthesised version was rejected by ear; the attribution its licence
-  requires is in `skyhowl/LICENSE`, and `skyhowl/tools/make-vent-samples.py`
-  records what it is and how it was prepared. Do not treat it as a precedent:
-  no plugin engine ships sampled material.
+- **Pure synthesis, and what that does and does not forbid.** Every sound a
+  plugin's engine produces is computed at run time. **A sample is a recorded
+  piece of sound.** Tables of numbers are not samples, and the suite is free to
+  ship them: coefficients, calculation tables, measured contours, fitted curves,
+  lookup tables. The test is whether audio is being reproduced, not whether a
+  number came from a recording — a pitch contour extracted from a real bird and
+  stored as forty cosine coefficients is a formula, in the same sense as
+  `f(x) = -260 sin(-pi x / 5200) + 1740` read off a spectrogram by hand. The
+  only limit is size: a plugin binary must not balloon.
+
+  This is a deliberate widening of the rule, made after ChirpParade's first
+  attempt failed. Fitting a physical model to *aggregate statistics* — medians
+  of duration, sweep, harmonic count — produced something that measured
+  correctly on twenty quantities and sounded nothing like a bird, because the
+  statistics had been taken through an analysis window too long to see what a
+  syllable actually does. Measured contours are what fixed it.
+
+  **It applies to every plugin, not just ChirpParade**, and the others are worth
+  revisiting on the strength of it: RainyDay's droplet resonances, ShoreBreak's
+  breaker envelopes and ThunderClap's N-wave shapes are all currently
+  parametric where a measured curve would be truer.
+
+  The one genuine exception in the suite remains the small block of CC-BY
+  licensed *audio* embedded in SkyHowl for one hidden, non-instrument function,
+  added deliberately after the synthesised version was rejected by ear; the
+  attribution its licence requires is in `skyhowl/LICENSE`, and
+  `skyhowl/tools/make-vent-samples.py` records what it is and how it was
+  prepared. That is a recording, so it is an exception. A coefficient table is
+  not.
+
+- **Validate by ear, then by measurement.** ChirpParade 0.1.0 was 11,000 lines
+  validated entirely against statistics the plugin's own analysis code produced,
+  and it was wrong. Measurement catches what the ear cannot quantify; it does
+  not replace the ear, and a number agreeing with a number proves nothing about
+  the sound. Render A/B pairs against the references and listen before declaring
+  a fit good.
+
 - **Shared visual identity.** One window design across the suite, distinguished
   only by accent colour; brand assets in `_designs/`.
 - **No toolkit dependency.** GUI is X11/Win32 plus Cairo, drawn by hand.

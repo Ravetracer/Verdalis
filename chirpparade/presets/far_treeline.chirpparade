@@ -2,24 +2,24 @@
 format = 1
 name = Far Treeline
 author = ChirpParade
-description = Birds a field away. Distance takes the level down by the inverse of it and the top off by air absorption, and the highpass and the output filter finish what the air started -- so what is left is the middle of a wood, at a level that sits under something else.
+description = Birds a field away. Distance takes the level down by its inverse and the top off by air absorption, and the highpass and the output filter finish what the air started. Detail is pulled back a little: fine contour motion is the first thing distance takes, so smoothing it is what makes far birds sound far rather than quiet.
 features = distant, ambience, soft, background
 
 # Syllable
 pitch = 2600
-sweep = 0.35
-contour = 0.25
-turns = 0.25
+sweep = 100
+contour = 0.5
+detail = 0.7
 length = 96
-skew = 0.37
+skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Sparrow
 voice = 0.3
-breath = 0.1
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 10
+gain = 12
 seed = 0

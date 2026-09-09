@@ -2,24 +2,24 @@
 format = 1
 name = Forest Morning
 author = ChirpParade
-description = A wood with a woodpecker in it. The drum sits 14 dB under the birds and arrives four times a minute, which is roughly what a walk through a wood in spring actually gives you, and the space is damped the way somewhere full of leaves is.
+description = A wood with a woodpecker in it. The drum sits 14 dB under the birds and arrives four times a minute, which is roughly what a walk through a wood in spring gives you, and the space is damped the way somewhere full of leaves is.
 features = forest, ambience, drum, wide
 
 # Syllable
 pitch = 2600
-sweep = 0.35
-contour = 0.25
-turns = 0.25
+sweep = 100
+contour = 0.5
+detail = 1
 length = 96
-skew = 0.37
+skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Sparrow
 voice = 0.3
-breath = 0.1
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 6
+gain = -0.8
 seed = 0

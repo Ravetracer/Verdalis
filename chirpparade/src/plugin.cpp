@@ -128,9 +128,9 @@ private:
       // Syllable: one note of one bird, which is the unit everything else in
       // the engine is built out of.
       p.pitchHz = static_cast<float>(realValue(kParamPitch));
-      p.sweepOct = static_cast<float>(realValue(kParamSweep));
+      p.sweep = static_cast<float>(realValue(kParamSweep)) * 0.01f;
       p.contour = static_cast<float>(realValue(kParamContour));
-      p.turns = static_cast<float>(realValue(kParamTurns));
+      p.detail = static_cast<float>(realValue(kParamDetail));
       p.lengthSec = static_cast<float>(realValue(kParamLength)) * 0.001f;
       p.skew = static_cast<float>(realValue(kParamSkew));
       p.jitter = static_cast<float>(realValue(kParamJitter));

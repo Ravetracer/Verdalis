@@ -24,30 +24,36 @@ const ParamDesc kParams[kNumParams] = {
    LOG(kParamPitch, "pitch", "Pitch", "Syllable", 0.6953, 200.0, 8000.0, "Hz",
        "Where the syllable sits. The fundamental across the library runs 292 Hz to "
        "5.9 kHz with a median of 2580, which is the default: corvids at the bottom, "
-       "a robin's whistle at the top. It is the pitch at the moment the syllable is "
-       "loudest, whatever the contour does around it."),
-   LIN(kParamSweep, "sweep", "Sweep", "Syllable", 0.0, 3.0, 0.35, "oct",
-       "How far the pitch travels inside one syllable, over its audible part. "
-       "Measured 0.03 to 1.01 octaves, median 0.35 -- a chirp is a sweep, not a note."),
-   PCT(kParamContour, "contour", "Contour", "Syllable", 0.25,
-       "The phase between the pressure gesture and the tension gesture, over a whole "
-       "turn. This one control is the shape of the syllable: in phase the pitch "
-       "arches with the level, a quarter turn on it sweeps down, half a turn and it "
-       "dips, three quarters and it sweeps up. The library's shapes come out at 28 % "
-       "which is what a spread "
-       "of this parameter looks like: 29 % down, 21 % up, 15 % flat, 8 % dipping, "
-       "7 % arched."),
-   LIN(kParamTurns, "turns", "Turns", "Syllable", 0.25, 4.0, 0.25, "",
-       "How much of a gesture cycle one syllable spans, which is the same thing as "
-       "how many times its pitch turns round. A quarter turn is a plain sweep and is "
-       "the library's median; a half turn arches or dips once; more than that is a "
-       "warble. Measured 0.25 to 4.0. Sweep stays the whole excursion whatever this "
-       "is, so the two controls do not fight."),
+       "a robin's whistle at the top. The contour is measured about its own centre, "
+       "so this transposes it -- and because the default is the library median, every "
+       "species at the default sings in its own register."),
+   LIN(kParamSweep, "sweep", "Sweep", "Syllable", 0.0, 300.0, 100.0, "%",
+       "Scales how far the contour travels. 100 % is the measured curve exactly; "
+       "below that it flattens towards a held note, above it exaggerates. A "
+       "multiplier rather than a width, because the contour already carries the real "
+       "excursion -- the archetypes travel 0.16 to 1.16 octaves of span and up to 3.2 "
+       "octaves of path. It goes past 100 % on purpose: the range is wanted, and a "
+       "percentage that stops at 100 cannot reach it."),
+   PCT(kParamContour, "contour", "Contour", "Syllable", 0.5,
+       "Which syllable. Each species carries up to eight contours measured off real "
+       "recordings -- the medoids of its clustered syllables -- and this walks across "
+       "them, lowest-sitting first. It is the most important control in the plugin: a "
+       "syllable's identity is its frequency contour, and these are measured curves "
+       "rather than a shape derived from summary statistics."),
+   PCT(kParamDetail, "detail", "Detail", "Syllable", 1.0,
+       "How much of the contour's fine motion survives. A real syllable changes "
+       "direction 2 to 40 times and slews at up to 440 octaves a second, and that "
+       "scribble is most of what makes it a bird rather than a whistle. At 100 % the "
+       "measured curve passes through; lower it and the contour smooths towards the "
+       "glide that a summary statistic would have given -- which is exactly what the "
+       "first version of this plugin could only do, and why it did not work."),
    LOG(kParamLength, "length", "Length", "Syllable", 0.4668, 15.0, 800.0, "ms",
        "How long one syllable lasts. Measured 27 to 481 ms, median 96."),
-   PCT(kParamSkew, "skew", "Skew", "Syllable", 0.37,
-       "Where inside the syllable the level peaks. Measured rise 24 ms against fall "
-       "41 ms, so a syllable is front-loaded: 0.37 rather than the symmetric 0.5."),
+   PCT(kParamSkew, "skew", "Skew", "Syllable", 0.5,
+       "Bends the syllable's own time axis: below a half it crowds the contour "
+       "towards the start, above it towards the end. 0.5 plays the measured curve at "
+       "its measured pace, and the asymmetry the library shows -- a 24 ms rise against "
+       "a 41 ms fall -- is already in it."),
    PCT(kParamJitter, "jitter", "Jitter", "Syllable", 0.12,
        "How much the pitch wanders off its own contour. A syrinx is not a "
        "synthesiser: without this every syllable of a phrase is identical, which no "
@@ -55,10 +61,11 @@ const ParamDesc kParams[kNumParams] = {
    LOG(kParamPulseRate, "pulse_rate", "Pulse Rate", "Syllable", 0.3294, 4.0, 150.0, "Hz",
        "Rate of the amplitude pulsing inside a syllable -- the flutter of a trill "
        "held on one breath. Measured 8.5 to 66 Hz, median 13.2."),
-   PCT(kParamPulseDepth, "pulse_depth", "Pulse Depth", "Syllable", 0.2,
-       "How deep that pulsing is. 25 % of the library's syllables pulse, and those "
-       "that do pulse at a depth of 0.82; the default is the product, which is what "
-       "a syllable drawn at random averages."),
+   PCT(kParamPulseDepth, "pulse_depth", "Pulse Depth", "Syllable", 0.0,
+       "How deep that pulsing is, added on top of whatever the measured level "
+       "contour already does. Defaults to nothing: the contours carry the real "
+       "amplitude modulation, so this is for pushing further rather than for "
+       "supplying what is missing."),
 
    // ---------------------------------------------------------------- timbre
    ENUM(kParamSpecies, "species", "Species", "Timbre", 1.0, kSpeciesNames,
@@ -67,19 +74,20 @@ const ParamDesc kParams[kNumParams] = {
         "they move together. Every one is the median of the recordings of that bird; "
         "only Screech is invented."),
    PCT(kParamVoice, "voice", "Voice", "Timbre", 0.30,
-       "How hard the syrinx is driven, as the ratio of air sac pressure to syringeal "
-       "tension. This is the model's own timbre control and it is not a filter: at "
-       "the bottom the labia oscillate almost sinusoidally and the bird whistles; "
-       "raise it and the oscillation goes into relaxation, growing the harmonic "
-       "stack a crow has. 59 % of the library's syllables have one harmonic and 16 % "
-       "have six or more, so both ends are real."),
-   PCT(kParamBreath, "breath", "Breath", "Timbre", 0.10,
+       "How much of each cycle the syrinx is shut. Air passes only while the labia "
+       "are apart, so this is not a filter: at the bottom the valve never closes and "
+       "a pure sine comes out, which is what 59 % of the library's syllables are, and "
+       "closing it makes the airflow a one-sided pulse with the harmonic stack a crow "
+       "has -- evens as well as odds, which a symmetric oscillator cannot produce at "
+       "all. 16 % of the library has six harmonics or more, so both ends are real."),
+   PCT(kParamBreath, "breath", "Breath", "Timbre", 0.05,
        "Turbulent air past the labia. It is also what starts the oscillation: the "
        "noise is injected into the oscillator rather than added to its output, which "
        "is why a syllable's onset is never twice the same. Calibrated against the "
        "library: rendering a whistle at a sweep of this and measuring its spectral "
-       "flatness gives 17.7 dB per decade, and 10 % is the library's median "
-       "roughness of -28 dB. The chosen species scales it."),
+       "flatness gives 13 dB per decade, and 5 % is where a sparrow lands on the "
+       "library's median roughness of -28 dB. The chosen species scales it, from "
+       "0.42 for the cleanest to 2.8 for the roughest."),
    LOG(kParamTract, "tract", "Tract Length", "Timbre", 0.5001, 1.0, 24.0, "cm",
        "Length of the trachea above the syrinx, which resonates at c/4L like any "
        "closed tube. In the library's harmonic syllables the loudest harmonic is not "
@@ -91,15 +99,17 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamFormant, "formant", "Formant", "Timbre", 0.55,
        "How strongly the tract colours the source. At zero the syrinx is heard raw."),
    PCT(kParamRasp, "rasp", "Rasp", "Timbre", 0.0,
-       "Pushes the oscillator past its harmonic regime into period doubling and "
-       "chaos, which is where a corvid's rasp and a jay's screech actually come "
-       "from. The roughest recordings in the library measure 9 dB flatter in the "
-       "spectrum than the cleanest, and no amount of harmonics alone gets there."),
+       "How irregular the closure is from one cycle to the next. A corvid's rasp is "
+       "not extra harmonics, it is a contact that is never the same twice, and that "
+       "is broadband in a way no harmonic stack is. The roughest recordings in the "
+       "library measure 9 dB flatter in the spectrum than the cleanest."),
    PCT(kParamRadiate, "radiate", "Radiate", "Timbre", 0.35,
        "How much of the output is the labial velocity rather than its displacement. "
-       "The model gives the radiated pressure as a1*x + a2*x', and this is the "
-       "balance: the derivative term tilts the spectrum up by 6 dB an octave, which "
-       "is what makes a small source sound small."),
+       "The radiated pressure of a small source follows the rate of change of the "
+       "airflow rather than the flow, and this is the balance between the two: the "
+       "derivative term tilts the harmonics up by 6 dB an octave, referenced to the "
+       "library's median pitch so it stays a tilt and not a gain that changes with "
+       "the note. It is what makes a small source sound small."),
 
    // ---------------------------------------------------------------- phrase
    STEP(kParamSyllables, "syllables", "Syllables", "Phrase", 1.0, 24.0, 3.0, "",

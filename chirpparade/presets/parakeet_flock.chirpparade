@@ -2,28 +2,28 @@
 format = 1
 name = Parakeet Flock
 author = ChirpParade
-description = The same voice pushed past its harmonic regime. Rasp feeds the trachea's own back-pressure into the labia, which is the documented route to period doubling in birdsong, and ten of them at once is a street full of parakeets rather than a cage.
+description = The same voice driven hard and made irregular. Rasp is the closure varying from one cycle to the next -- a contact that is never the same twice -- which is broadband in a way no harmonic stack is. Ten of them at once is a street full of parakeets rather than a cage.
 features = exotic, flock, screech, loud
 
 # Syllable
 pitch = 4200
-sweep = 0.35
-contour = 0.25
-turns = 0.25
+sweep = 150
+contour = 0.85
+detail = 1
 length = 96
-skew = 0.37
+skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Budgie
-voice = 0.45
-breath = 0.1
+voice = 0.5
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
-rasp = 0.25
+rasp = 0.3
 radiate = 0.35
 
 # Phrase
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 0
+gain = -0.1
 seed = 0

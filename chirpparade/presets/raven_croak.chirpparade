@@ -2,28 +2,28 @@
 format = 1
 name = Raven Croak
 author = ChirpParade
-description = Slower and longer than a crow. The raven recording has the longest syllables in the library at 267 ms and the slowest rate at 88 a minute, and its contour arches rather than falls. Its harmonic count is the one figure in the species table that overrides its own measurement -- see the analysis notes for why.
+description = Slower and longer than a crow. The raven recording has the longest syllables in the library at 267 ms and the slowest rate at 88 a minute. Its harmonic count is the one figure the engine overrides its own measurement on -- see the analysis notes for why -- and only four of its syllables survived the quality gate, so its contour set is the smallest here.
 features = raven, croak, deep, ominous
 
 # Syllable
 pitch = 2530
-sweep = 0.35
-contour = 0
-turns = 0.5
+sweep = 100
+contour = 0.5
+detail = 1
 length = 260
-skew = 0.37
+skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Raven
-voice = 0.32
-breath = 0.1
+voice = 0.34
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
-rasp = 0.5
+rasp = 0.45
 radiate = 0.35
 
 # Phrase
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 5
+gain = 8.4
 seed = 0

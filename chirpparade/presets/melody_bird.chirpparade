@@ -2,25 +2,25 @@
 format = 1
 name = Melody Bird
 author = ChirpParade
-description = For playing tunes with. One syllable a note, hardly any variation, hardly any jitter and a short sweep, so the pitch that comes out is the pitch of the key -- Pitch is anchored to the loudest moment of the syllable, which is what makes that true. Velocity moves the pitch as well as the level, the way a bird calling harder goes up.
+description = For playing tunes with. One syllable a note and hardly any variation, on the flattest of the whistler contours with Sweep pulled down, so the pitch that comes out is the pitch of the key -- the contour is measured about its own centre and Pitch transposes it, which is what makes that true. Velocity moves the pitch as well as the level, the way a bird calling harder goes up.
 features = playable, keyboard, tuned, one shot
 # fit harmonics=1
 
 # Syllable
 pitch = 2580
-sweep = 0.15
-contour = 0.25
-turns = 0.25
+sweep = 35
+contour = 0.55
+detail = 1
 length = 140
-skew = 0.37
+skew = 0.5
 jitter = 0.05
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Whistler
-voice = 0.3
-breath = 0.1
+voice = 0
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.35
 
 # Output
-gain = 3
+gain = -3
 seed = 0

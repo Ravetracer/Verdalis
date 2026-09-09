@@ -7,19 +7,19 @@ features = alarm, nervous, fast, bright
 
 # Syllable
 pitch = 3400
-sweep = 0.6
-contour = 0.25
-turns = 0.25
+sweep = 130
+contour = 0.2
+detail = 1
 length = 45
-skew = 0.37
+skew = 0.5
 jitter = 0.2
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Sparrow
 voice = 0.3
-breath = 0.1
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 3
+gain = -2.9
 seed = 0

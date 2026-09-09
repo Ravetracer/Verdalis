@@ -2,25 +2,25 @@
 format = 1
 name = Blackbird Song
 author = ChirpParade
-description = A phrase that goes somewhere. Five syllables with three semitones between them and half a turn of contour each, so every note arches rather than sliding, and the whole thing repeats after a gap four times the one inside it -- which is the ratio the library measures between the two.
+description = A phrase that goes somewhere. Five syllables with three semitones between them, drawn from the warbler contours and exaggerated to 140 % of their measured depth, repeating after a gap four times the one inside it -- which is the ratio the library measures between the two.
 features = song, phrase, motif, garden
 # fit harmonics=2
 
 # Syllable
 pitch = 3000
-sweep = 0.5
-contour = 0.25
-turns = 0.5
+sweep = 140
+contour = 0.7
+detail = 1
 length = 180
-skew = 0.37
+skew = 0.5
 jitter = 0.12
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Warbler
 voice = 0.3
-breath = 0.1
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -82,5 +82,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 2
+gain = -1.8
 seed = 0

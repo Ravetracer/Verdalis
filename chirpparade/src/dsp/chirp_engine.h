@@ -1,60 +1,66 @@
 #pragma once
 
-// ChirpParade's synthesis: a syrinx, a tube above it, and birds taking turns.
+// ChirpParade's synthesis: measured contours, driving an oscillator.
 //
-// The starting point is that **a bird is an oscillator held just past its
-// bifurcation**. Nothing here is a sine with a pitch envelope on it. The voice
-// is the Gardner-Laje-Mindlin model of a syringeal labium
-// (Phys. Rev. Lett. 87, 208101; Phys. Rev. E 65, 051921; Phys. Rev. E 72,
-// 051926), which is two equations:
+// A bird syllable *is* its frequency contour. That is the whole finding, and it
+// took a wrong version of this plugin to reach it.
 //
-//     x' = y
-//     y' = -eps*x - C*x^2*y + B*y
+// The first attempt modelled the syrinx from first principles -- the
+// Gardner-Laje-Mindlin labium, two gestures, the phase between them as the
+// syllable's shape -- and fitted it to the medians of the reference library.
+// Every number agreed and it sounded nothing like a bird, because the medians
+// had been measured through a 21 ms analysis window:
 //
-// x is how far the labium has moved from where it sits before phonation. eps is
-// the restitution of the tissue, so it sets the frequency: f = sqrt(eps)/2pi.
-// B is the *net* dissipation -- the energy the airflow puts in through the
-// interlabial pressure, less what the tissue loses -- so B > 0 is the Hopf
-// bifurcation and phonation begins there. C is the nonlinear loss that stops
-// the labia from passing through each other. The radiated pressure is
-// a1*x + a2*x'.
+//     through a 21 ms window     peak slew   2.7 oct/s,  0.25 direction changes
+//     at 0.33 ms resolution      peak slew    20-440 oct/s,  2-40 changes
 //
-// Two things fall out of that, and they are why the model is worth the trouble.
+// A real syllable is a scribble. A single sinusoidal gesture cannot draw one,
+// and no amount of correct physics above it helps.
 //
-//   **A syllable is two gestures.** Zysman et al. show that B is proportional
-//   to the air sac pressure and eps to the tension of the syringeal muscle, and
-//   that both can be recovered from a recording -- the envelope gives one and
-//   the pitch gives the other. Gardner et al. show that syllables "of quite
-//   diverse acoustic nature" follow from nothing but the *phase* between the
-//   two. So this engine has no shape menu: it has a `Contour` knob, which is
-//   that phase, and the up-sweeps, down-sweeps, arches and dips a sonogram
-//   reader names are four readings of it. The reference library confirms the
-//   ordering -- see tools/analysis/gestures.py.
+// So the contour is measured instead. tools/analysis/contours.py pulls the
+// pitch and level contour of every well-isolated syllable in the library out of
+// the WAV, fits each as a cosine series in normalised syllable time, clusters
+// them per species and keeps the medoids. Forty terms lands within a third of a
+// semitone of the real thing; one term -- which is what a single gesture is --
+// is out by most of a semitone before it starts.
 //
-//   **Timbre is one number, and it is not a filter.** Written as a van der Pol
-//   the equation has a single shape parameter mu = B/sqrt(eps), the ratio of
-//   pressure to tension. Small mu and the labia move almost sinusoidally: the
-//   bird whistles, one harmonic, which is 59 % of the library. Large mu and the
-//   oscillation goes into relaxation, growing the harmonic stack a crow has,
-//   which is the other end and 16 % of it. There is no filter in between,
-//   because there is none in the bird.
+// That is the same procedure van Hunter Adams uses to synthesise a northern
+// cardinal, and the same one the Bitwig Grid patch in !dev uses: read the
+// contour off the recording and drive an oscillator with it. Adams does it by
+// drawing lines on a spectrogram in PowerPoint and fitting one sine term; this
+// does it automatically, at scale, with forty.
 //
-// Above the syrinx: the trachea, a closed tube resonating at c/4L, and the
-// beak, which shortens and damps it. In the library's harmonic syllables the
-// loudest harmonic is not the first in 81 % of cases and sits at a median
-// 1741 Hz, which is a 4.9 cm trachea.
+// **No audio is stored.** contours_generated.h holds coefficients -- a pitch
+// curve and a level curve per archetype, 4288 floats in total. A contour is a
+// formula in exactly the sense Adams' is.
 //
-// Above that: scheduling, which is most of what makes birds sound like birds.
-// Syllables into phrases at a rate of their own, phrases separated by a gap
-// 5.9 times the gap inside them, and a flock of individuals each with its own
-// pitch, position, distance and voice, calling as a Poisson process and
-// answering each other.
+// What the engine does per syllable:
 //
-// And one layer that is not a voice at all: woodpecker drumming, which is
-// sonation -- a bill against wood. Measured separately and modelled as an
-// excited resonator.
+//   the contour   Two tables read out over the syllable: pitch in octaves about
+//                 its own centre, level in dB. `Contour` chooses which
+//                 archetype, `Detail` how much of its fine motion survives,
+//                 `Sweep` how far it travels, `Skew` how its time is warped.
 //
-// No samples. Nothing here is a recording of a bird.
+//   the voice     A phase accumulator at the contour's frequency, through a
+//                 one-sided valve. `Voice` is the fraction of each cycle the
+//                 valve is shut: at zero it passes a pure sine, which is what
+//                 59 % of the library's syllables are, and closing it grows the
+//                 harmonic stack a corvid has. Air only passes while the valve
+//                 is open, and that one-sidedness is where the even harmonics
+//                 come from -- a symmetric oscillator has none at all.
+//
+//   the tract     The trachea as a closed tube at c/4L, with the beak both
+//                 raising the resonance and making it follow the pitch, the way
+//                 a songbird's gape does. Measured: in the library's harmonic
+//                 syllables the loudest harmonic is not the first in 80 % of
+//                 cases, and it sits at a median 1749 Hz -- a 4.9 cm trachea.
+//
+// Above the syllable, unchanged from the first version because it was not what
+// was wrong: syllables into phrases at a rate of their own, phrases separated by
+// a gap 5.9 times the gap inside them, and a flock of individuals each with its
+// own pitch, position, distance and voice, calling as a Poisson process and
+// answering each other. And one layer that is not a voice at all: woodpecker
+// drumming, which is sonation -- a bill against wood.
 
 #include "../params.h"
 
@@ -73,11 +79,11 @@ struct EngineParams {
 
    // syllable
    float pitchHz = 2580.0f;
-   float sweepOct = 0.35f;
-   float contour = 0.25f; // 0..1 of a whole turn
-   float turns = 0.25f;
+   float contour = 0.5f;   // which archetype, across the species' set
+   float detail = 1.0f;    // how much of the contour's fine motion survives
+   float sweep = 1.0f;     // scales the contour's pitch excursion
    float lengthSec = 0.096f;
-   float skew = 0.37f;
+   float skew = 0.5f;      // time warp; 0.5 is none
    float jitter = 0.12f;
    float pulseRateHz = 13.4f;
    float pulseDepth = 0.2f;
@@ -157,90 +163,71 @@ struct EngineParams {
 // absolute values, so choosing a species moves the knobs' meaning without
 // taking them away.
 struct SpeciesTraits {
-   float pitchHz;
-   float sweepOct;
-   float lengthSec;
-   float skew;      // rise / (rise + fall)
+   float pitchHz;   // median fundamental of that bird's recordings
+   float lengthSec; // median syllable duration
    float harmonics; // above -24 dB of the loudest
    float roughDb;   // spectral flatness of the syllable band
    float ratePerMin;
-   float contour; // the group's most common shape, as a Contour offset
-   float turns;   // measured from how often the group's contours turn
 };
+
+// Sweep, contour shape and skew are no longer here. They were columns of this
+// table in the first version, and they were the wrong three numbers: a
+// syllable's shape is not summarised by a sweep width and a turn count. It is
+// in contours_generated.h, as measured curves.
 
 // The library-wide medians the table above is relative to.
 constexpr float kLibraryPitchHz = 2580.0f;
-constexpr float kLibrarySweepOct = 0.35f;
 constexpr float kLibraryLengthSec = 0.096f;
-constexpr float kLibrarySkew = 0.37f;
 constexpr float kLibraryRoughDb = -28.0f;
 constexpr float kLibraryRatePerMin = 273.0f;
-constexpr float kLibraryTurns = 0.25f;
 
 const SpeciesTraits &speciesTraits(int species);
 
-// One sounding syllable: one turn of the two gestures, and the oscillator they
-// drive. This is the only thing in the engine that makes a voiced sound.
+// One sounding syllable: one measured contour, read out over its own duration.
 struct Chirp {
    bool active = false;
    int voice = -1;
 
-   // The gesture clock, 0 to 1 across the syllable.
+   // The syllable clock, 0 to 1 across it.
    float phase = 0.0f;
    float phaseInc = 0.0f;
 
-   // The syringeal oscillator, in normalised time and in Lienard coordinates:
-   // u is the labial displacement over its own limit-cycle scale, and w is
-   // v + F(u) rather than the velocity itself. See processChirps for why.
-   float u = 0.0f;
-   float w = 0.0f;
-   float mu = 0.3f;   // peak B/sqrt(eps): the relaxation parameter
-   float bth = 0.03f; // where B crosses zero, as a share of the gesture peak
-   // The gap the labia sit at before they move. When the oscillation is bigger
-   // than this they close on each other and the airflow stops, and that
-   // one-sidedness is where every even harmonic comes from.
-   float gap0 = 2.0f;
-   OnePoleHp dcBlock;
+   // Which contour, and how it is read. The tables themselves are shared and
+   // resolved once at prepare(); a chirp only holds where to look and how.
+   int archetype = 0;
+   float depth = 1.0f;   // Sweep: scales the contour's pitch excursion
+   float warp = 0.5f;    // Skew: bends the syllable's own time axis
+   float smoothCoef = 1.0f; // Detail: a one-pole on the contour as it is read
+   float pitchOct = 0.0f;   // where the archetype's centre is placed, in octaves
+   float smoothed = 0.0f;   // the smoother's state
+   bool primed = false;
 
-   // The tension gesture, which is the pitch. `contourScale` and
-   // `contourAnchor` are worked out once at spawn so that two things are true
-   // whatever Contour and Turns are set to: the pitch equals Pitch at the
-   // moment the syllable is loudest, and the whole excursion is Sweep octaves.
-   // Without them a contour that turns twice swept twice as far as its label
-   // said, and the pitch of a syllable was never the pitch of its knob.
-   float pitchHz = 2580.0f;
-   float contourPhase = 0.0f; // in turns
-   float contourScale = 0.0f; // octaves per unit of the gesture
-   float contourAnchor = 0.0f;
-   float turns = 0.5f;
-   float skew = 0.37f;
+   // The oscillator, and the valve above it.
+   float osc = 0.0f;
+   float closure = 0.0f; // Voice: the fraction of the cycle the valve is shut
+   float rasp = 0.0f;
+   float closureNow = 0.0f; // jittered per cycle when Rasp is up
+   float prevFlow = 0.0f;   // for the radiation derivative
+   OnePoleHp dcBlock;
 
    float level = 1.0f;
    float pulsePhase = 0.0f;
    float pulseInc = 0.0f;
    float pulseDepth = 0.0f;
 
-   // The tube above the syrinx, and the radiation off the end of it. The
-   // second-order lowpass is not decoration: a resonant bandpass falls away at
-   // only 6 dB/octave, and with the velocity term tilting the source up by 6,
-   // the top of the spectrum ended up being set by the filter's own skirt.
+   // The tube above the valve, and the radiation off the end of it.
    Svf tract;
    Lp2 top;
    float formant = 0.55f;
    float radiate = 0.35f;
-   // The tract, held rather than baked into the filter, because the resonance
-   // follows the pitch across the syllable: an open beak tracks it.
-   float tractHz = 1741.0f;
+   float breath = 0.18f;
+   float tractHz = 1749.0f;
    float tractReso = 0.5f;
    float tractTrack = 0.5f;
    uint32_t tractCounter = 0;
-   float breath = 0.18f;
-   float rasp = 0.0f;
-   float feedback = 0.0f; // the tract's back-pressure on the labia
-   float tractOut = 0.0f; // last tract output, which is what feeds back
 
-   // Pitch jitter as a random walk rather than per-sample noise: a syrinx
-   // drifts, it does not dither.
+   // Pitch jitter as a random walk rather than per-sample noise: a bird drifts,
+   // it does not dither.
    float jitter = 0.0f;
    float walk = 0.0f;
    float walkCoef = 0.0f;
@@ -376,6 +363,13 @@ public:
    static constexpr uint32_t kMaxBirds = 16;
    static constexpr uint32_t kModInterval = 32; // control rate for the scheduling
 
+   // How finely the archetype tables are rendered. The 40th cosine term makes
+   // twenty full cycles across a syllable, so a table has to carry a good many
+   // points per cycle for linear interpolation not to lose exactly the fine
+   // motion the whole thing is for. 512 gives twelve points per cycle of the
+   // fastest term.
+   static constexpr int kContourPoints = 512;
+
 private:
    void updateFilters();
    void configureBirds(Voice &v);
@@ -411,13 +405,9 @@ private:
 
    // Derived once per parameter change rather than per sample.
    float mSpeciesPitchMul = 1.0f;
-   float mSpeciesSweepMul = 1.0f;
    float mSpeciesLengthMul = 1.0f;
    float mSpeciesRateMul = 1.0f;
-   float mSpeciesTurnsMul = 1.0f;
-   float mSpeciesSkew = 0.37f;
-   float mSpeciesContour = 0.0f;
-   float mSpeciesMu = 0.3f;
+   float mSpeciesClosure = 0.0f;
    float mSpeciesBreathMul = 1.0f;
    float mFormantHz = 1741.0f;
    float mFormantQ = 0.55f;

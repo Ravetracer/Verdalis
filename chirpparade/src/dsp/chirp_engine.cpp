@@ -1,5 +1,7 @@
 #include "chirp_engine.h"
 
+#include "contours_generated.h"
+
 #include "verdalis/dsp/fastmath.h"
 
 #include <algorithm>
@@ -24,136 +26,157 @@ std::atomic<uint32_t> gInstanceCounter{0};
 
 // ------------------------------------------------------------------ species
 //
-// Measured, not chosen. tools/analysis/species.py groups the reference library
-// by what each recording is named and prints exactly this table; these rows are
-// its output. Only Screech has no reference behind it -- it is every range at
-// once, kept because a plugin for birds should be able to make a noise no bird
-// makes -- though not without limit: its first draft asked for eight harmonics
-// at 5.2 kHz, which is a fortieth harmonic above Nyquist, and the engine's own
-// anti-alias clamp quietly refused. Six at 1.8 kHz is what the band allows, and
-// that is what it now asks for.
+// What is left of the species table after the contours took over its middle.
+// Sweep, contour shape, turns and skew were columns here in the first version
+// and they were the wrong four numbers: a syllable's shape is not summarised by
+// a sweep width and a turn count. It is in contours_generated.h now, measured.
 //
-// Raven's harmonic count is the one deviation, and it is deliberate. The
-// measurement says 1, over the six syllables of the single raven recording, and
-// the estimator reported one harmonic in one frame and nine in the next for
-// that same file. A raven is audibly rougher than a crow, so the value here is
-// 6 rather than the measurement, and the reason is recorded rather than
-// quietly applied.
+// These five are the ones a median genuinely describes. tools/analysis/species.py
+// prints them and the grouping it used.
 //
-//                         pitch  sweep   len   skew  harm  rough   rate  contour turns
+// Raven's harmonic count is the one figure overridden, and the reason is
+// recorded rather than quietly applied: the measurement says 1, over the six
+// syllables of the single raven recording, and the estimator reported one
+// harmonic in one frame and nine in the next for that same file.
+//
+// lengthSec is the median duration of that species' *archetypes*, not of all
+// its measured syllables. The two differ where only some of a species'
+// syllables passed the contour quality gate -- Crane's usable contours are its
+// short ones -- and using the wrong one stretches a 48 ms curve to 133 ms,
+// which turns its internal amplitude modulation into separate notes.
+// contours.py prints these when it regenerates the table.
+//
+//                        pitch    len    harm  rough   rate
 constexpr SpeciesTraits kSpecies[kNumSpecies] = {
-   /* Whistler   */ {4748.0f, 0.21f, 0.128f, 0.35f, 1.0f, -34.0f, 288.0f, 0.00f, 0.25f},
-   /* Sparrow    */ {3147.0f, 0.34f, 0.096f, 0.40f, 1.0f, -29.0f, 276.0f, 0.00f, 0.25f},
-   /* Warbler    */ {1128.0f, 0.37f, 0.087f, 0.43f, 2.0f, -27.0f, 369.0f, 0.00f, 0.25f},
-   /* Budgie     */ {1351.0f, 0.47f, 0.099f, 0.26f, 3.0f, -28.0f, 293.0f, 0.00f, 0.25f},
-   /* Woodpecker */ {3312.0f, 0.31f, 0.096f, 0.35f, 2.0f, -25.0f, 301.0f, -0.25f, 0.50f},
-   /* Crane      */ {982.0f, 0.36f, 0.133f, 0.33f, 4.0f, -26.0f, 140.0f, 0.00f, 0.75f},
-   /* Goose      */ {566.0f, 0.51f, 0.206f, 0.60f, 4.0f, -32.0f, 239.0f, 0.50f, 0.50f},
-   /* Crow       */ {806.0f, 0.45f, 0.144f, 0.41f, 5.0f, -21.0f, 132.0f, 0.00f, 1.50f},
-   /* Raven      */ {1171.0f, 0.38f, 0.267f, 0.42f, 6.0f, -30.0f, 88.0f, -0.25f, 0.50f},
-   /* Screech    */ {1800.0f, 1.60f, 0.260f, 0.30f, 6.0f, -16.0f, 150.0f, 0.50f, 2.50f},
+   /* Whistler   */ {4748.0f, 0.089f, 1.0f, -34.0f, 288.0f},
+   /* Sparrow    */ {3147.0f, 0.060f, 1.0f, -29.0f, 276.0f},
+   /* Warbler    */ {1128.0f, 0.107f, 2.0f, -27.0f, 369.0f},
+   /* Budgie     */ {1351.0f, 0.037f, 3.0f, -28.0f, 293.0f},
+   /* Woodpecker */ {3312.0f, 0.099f, 2.0f, -25.0f, 301.0f},
+   /* Crane      */ {982.0f, 0.048f, 4.0f, -26.0f, 140.0f},
+   /* Goose      */ {566.0f, 0.090f, 4.0f, -32.0f, 239.0f},
+   /* Crow       */ {806.0f, 0.114f, 5.0f, -21.0f, 132.0f},
+   /* Raven      */ {1171.0f, 0.197f, 6.0f, -30.0f, 88.0f},
+   /* Screech    */ {1800.0f, 0.095f, 6.0f, -16.0f, 150.0f},
 };
 
-// How many harmonics a given relaxation parameter produces, and its inverse.
+// How much of each cycle the valve is shut, for a given harmonic count.
 //
-// The van der Pol form of the model has one shape parameter, mu = B/sqrt(eps).
-// Near zero the labia move sinusoidally and the bird has one harmonic; as mu
-// grows the oscillation goes into relaxation, the labia start closing on each
-// other, and the stack fills in. Measured on the engine's own output with the
-// same estimator that counted the references' harmonics:
+// At zero the valve never closes and a pure sine comes out, which is what 59 %
+// of the library's syllables are. Closing it makes the airflow a one-sided
+// pulse, and a one-sided pulse has both even and odd harmonics -- which is the
+// one thing the first version got right and the reason it is kept: a symmetric
+// oscillator has no even harmonics at all, whatever it is driven with.
 //
-//     mu          0.15   0.58   1.43   3.52
-//     harmonics   1      2      4      9
+// Measured on the engine's own output with the same estimator that counted the
+// references' harmonics, at 900 Hz with no breath:
 //
-// which is harmonics = 1 + 1.70 mu^1.22 over the whole range. Inverting it is
-// what turns a species' *measured* harmonic count into a drive setting, so the
-// table stays a measurement and this stays the only place a fit lives.
-// tools/analysis/fit.py --voice reprints the sweep above.
-constexpr float kHarmonicsScale = 1.70f;
-constexpr float kHarmonicsExponent = 1.22f;
+//     closure     0.00  0.13  0.26  0.39  0.52  0.65  0.78  0.91
+//     harmonics      1     2     3     3     3     4     5     5
+//
+// which fits harmonics = 1 + 5.5 * closure^0.6 and saturates near five. The
+// valve alone does not reach the twelve harmonics the noisiest references
+// measure -- see the plugin's TODO -- so the species table's harmonic counts
+// above six are met approximately and the rest is Breath and Rasp.
+// tools/analysis/fit.py --voice reprints the sweep.
+constexpr float kHarmonicsPerClosure = 5.5f;
+constexpr float kClosureExponent = 0.6f;
 
-// Even a pure whistle needs a mu well above zero. At the bifurcation itself the
-// oscillation neither grows nor decays, so a syllable with mu near nothing
-// takes hundreds of milliseconds to start and as long again to stop -- the
-// first version of this had a whistle with a 400 ms tail, where the references
-// measure 41 ms. This floor is what a sinusoidal limit cycle that starts and
-// stops inside a 96 ms syllable actually needs.
-constexpr float kMuFloor = 0.15f;
+inline float closureForHarmonics(float harmonics) {
+   if (harmonics <= 1.0f)
+      return 0.0f;
+   return clampf(std::pow((harmonics - 1.0f) / kHarmonicsPerClosure, 1.0f / kClosureExponent),
+                 0.0f, 0.90f);
+}
 
-// The limit cycle of the normalised oscillator has an amplitude of about 2
-// whatever mu is, so one calibration constant turns that into a level: a single
-// syllable at Shot Level 0 dB, full velocity and no distance peaks a little
-// under -3 dBFS, which leaves a flock of them room before the output stage has
-// to saturate.
-constexpr float kSyllableNorm = 0.35f;
+// ------------------------------------------------------- the contour tables
+//
+// The archetypes' cosine series, rendered once into tables the audio thread
+// reads. Built on first use and forced from prepare(), so the first note does
+// not pay for it.
+struct ContourTables {
+   static constexpr int kN = ChirpEngine::kContourPoints;
+   float pitch[kNumContours][kN]; // octaves about the syllable's own centre
+   float level[kNumContours][kN]; // linear, peak 1
 
-// The same for a drum strike: a burst of unit amplitude through two broad
-// resonators comes out well below where a syllable does, so a roll at Drum
-// Level 0 dB sits where a phrase at Shot Level 0 dB does.
+   ContourTables() {
+      for (int c = 0; c < kNumContours; ++c) {
+         for (int i = 0; i < kN; ++i) {
+            const float t = (static_cast<float>(i) + 0.5f) / static_cast<float>(kN);
+            float p = 0.0f;
+            for (int k = 0; k < kPitchTerms; ++k)
+               p += kContours[c].pitch[k] * std::cos(3.14159265358979f * k * t);
+            float l = 0.0f;
+            for (int k = 0; k < kLevelTerms; ++k)
+               l += kContours[c].level[k] * std::cos(3.14159265358979f * k * t);
+            pitch[c][i] = p;
+            level[c][i] = std::pow(10.0f, clampf(l, -80.0f, 6.0f) / 20.0f);
+         }
+      }
+   }
+};
+
+const ContourTables &contourTables() {
+   static const ContourTables tables;
+   return tables;
+}
+
+// The archetype an index lands on, within one species' own set. Species with
+// too few usable references to cluster fall back to Sparrow's, which is the
+// group with 1282 of them.
+inline int archetypeFor(int species, float where) {
+   const int sp = clampi(species, 0, kNumSpecies - 1);
+   ContourRange r = kContourRange[sp];
+   if (r.count <= 0)
+      r = kContourRange[kSpeciesSparrow];
+   const int k = static_cast<int>(clampf(where, 0.0f, 0.99999f) * static_cast<float>(r.count));
+   return r.first + clampi(k, 0, r.count - 1);
+}
+
+// Bends a syllable's own time axis. The standard bias curve: one divide, and
+// k = 1 leaves it alone.
+inline float warpTime(float t, float k) {
+   return t / (t + (1.0f - t) * k + 1.0e-9f);
+}
+
+// A soft hinge, for the one-sided valve. max(g, 0) is what aliases; widening
+// the corner with frequency is both the cure and what a real valve does, since
+// it cannot snap shut arbitrarily fast. The width matters: too much of it and
+// the pulse rounds back into the sine it came from.
+inline float softHinge(float g, float w) {
+   return 0.5f * (g + std::sqrt(g * g + w * w));
+}
+
+// The frequency the radiation derivative is referenced to, so that `Radiate`
+// gives the model's a1*x + a2*x' with a fixed a2 -- a +6 dB/octave tilt about
+// the library's median pitch rather than a gain that changes with the note.
+constexpr float kRadiateRefHz = 2580.0f;
+
+// The valve's output is bounded, so one calibration constant turns it into a
+// level. Measured rather than chosen: a single syllable at Shot Level 0 dB,
+// full velocity and no distance came out at -15.1 dBFS with this at 0.35, so
+// 1.20 puts it a little under -5 dBFS -- loud enough to use on its own, with
+// room left for a flock of them before the output stage has to saturate.
+constexpr float kSyllableNorm = 1.20f;
+
+// The same for a drum strike, so a roll at Drum Level 0 dB sits where a phrase
+// at Shot Level 0 dB does.
 constexpr float kStrikeNorm = 3.5f;
 
 // Breath against measured roughness. Rendering a whistle at a sweep of Breath
 // and measuring its spectral flatness with the same estimator that measured the
-// references gives a straight line in log breath:
+// references:
 //
-//     Breath   0     2 %   5 %   10 %  18 %  30 %  50 %
-//     rough  -37.4 -36.5 -33.0 -28.1 -23.6 -19.5 -15.3  dB
+//     effective breath   0    4.3 %  12.9 %  25.9 %
+//     roughness       -31.5  -27.8   -22.0   -17.7  dB
 //
-// which is 17.7 dB per decade above about 3 %. That is what lets a species'
-// measured roughness be turned back into a Breath setting instead of guessed,
-// and it is why the default Breath is 10 %: the library's median roughness is
-// -28 dB.
-constexpr float kRoughDbPerDecade = 17.7f;
-
-// The relaxation pitch drop, and the compensation for it.
-//
-// A van der Pol oscillator driven towards relaxation does not only change
-// timbre: its period lengthens. That is real physics and not an artefact --
-// measured on the engine's own output, with the pitch exact at low drive, the
-// frequency falls as
-//
-//     mu     0.15   0.58   0.69   1.38   3.52
-//     f/f0   1.000  0.986  0.975  0.926  0.686
-//
-// which fits 1 / (1 + 0.043 mu^2) across the whole range (the textbook
-// small-mu result is mu^2/16, and this is the same shape with the coefficient
-// the engine's own normalisation gives).
-//
-// It is compensated rather than left in, because `Pitch` has to mean the pitch
-// that comes out: an instrument played from a keyboard cannot go a fifth flat
-// when a timbre control is turned up. What is *not* compensated is the timbre
-// itself, which is the point of the control.
-constexpr float kRelaxationPull = 0.043f;
-
-// Where the syllable stops being audible, as a value of the pressure gesture.
-// The output amplitude goes as sqrt(B), so -12 dB of amplitude is B/Bmax = 1/16
-// and, with the bifurcation at bth, a raw gesture of about 0.16.
-constexpr float kAudibleGesture = 0.16f;
-
-inline float muForHarmonics(float harmonics) {
-   if (harmonics <= 1.0f)
-      return kMuFloor;
-   return clampf(std::pow((harmonics - 1.0f) / kHarmonicsScale, 1.0f / kHarmonicsExponent),
-                 kMuFloor, 6.0f);
-}
-
-// ------------------------------------------------------------------ gestures
-
-// The pressure gesture: how hard the air sac is squeezed across one syllable.
-//
-// An asymmetric raised cosine, peaking at `skew`. That asymmetry is measured
-// rather than stylistic: across the library a syllable rises in 24 ms and falls
-// in 41, so its peak sits at 0.37 of its length and not at the middle.
-inline float pressureGesture(float s, float skew) {
-   if (s <= 0.0f || s >= 1.0f)
-      return 0.0f;
-   skew = clampf(skew, 0.02f, 0.98f);
-   // cos(pi*t) written as sin(2*pi*(0.25 - t/2)), so the shared sine table does
-   // the work and there is no call to cosf per sample per syllable.
-   const float t = s < skew ? s / skew : (s - skew) / (1.0f - skew);
-   const float c = sin2piFast(0.25f - 0.5f * t);
-   return s < skew ? 0.5f * (1.0f - c) : 0.5f * (1.0f + c);
-}
+// which is 13 dB per decade above the floor. *Effective* breath: the species
+// multiplier below scales the parameter, and the first version of this
+// calibration measured the parameter while the multiplier was silently scaling
+// it -- on a Whistler, whose multiplier is 0.42 -- so the slope came out at
+// 15.7 and the default landed four times too high. tools/analysis/fit.py
+// --breath now reports both numbers.
+constexpr float kRoughDbPerDecade = 13.0f;
 
 // Svf::setCutoff takes resonance as 0..1, which it maps to k = 1/Q over
 // 2..0.02. Passing a Q straight in silently clamps to maximum resonance, so
@@ -226,8 +249,10 @@ void ChirpEngine::reset() {
       c.tract.reset();
       c.top.reset();
       c.air.reset();
-      c.u = c.w = 0.0f;
-      c.tractOut = 0.0f;
+      c.osc = 0.0f;
+      c.prevFlow = 0.0f;
+      c.smoothed = 0.0f;
+      c.primed = false;
       c.dcBlock.reset();
    }
    for (auto &s : mStrikes) {
@@ -271,13 +296,9 @@ void ChirpEngine::updateFilters() {
    // A species biases the syllable controls rather than replacing them, so
    // everything here is a ratio to the library-wide median.
    mSpeciesPitchMul = sp.pitchHz / kLibraryPitchHz;
-   mSpeciesSweepMul = sp.sweepOct / kLibrarySweepOct;
    mSpeciesLengthMul = sp.lengthSec / kLibraryLengthSec;
    mSpeciesRateMul = sp.ratePerMin / kLibraryRatePerMin;
-   mSpeciesTurnsMul = sp.turns / kLibraryTurns;
-   mSpeciesSkew = sp.skew;
-   mSpeciesContour = sp.contour;
-   mSpeciesMu = muForHarmonics(sp.harmonics);
+   mSpeciesClosure = closureForHarmonics(sp.harmonics);
    // A species' measured roughness, turned back into a Breath multiplier. Note
    // what this does *not* claim: spectral flatness cannot tell turbulent noise
    // apart from a chaotic source, so what is measured here is carried as noise,
@@ -470,9 +491,10 @@ Chirp *ChirpEngine::allocateChirp() {
    free->tract.reset();
    free->top.reset();
    free->air.reset();
-   free->u = 0.0f;
-   free->w = 0.0f;
-   free->tractOut = 0.0f;
+   free->osc = 0.0f;
+   free->prevFlow = 0.0f;
+   free->smoothed = 0.0f;
+   free->primed = false;
    free->dcBlock.reset();
    free->walk = 0.0f;
    free->phase = 0.0f;
@@ -661,105 +683,71 @@ void ChirpEngine::spawnChirp(const Voice &v, Phrase &ph) {
    const float sr = static_cast<float>(mSampleRate);
    const float var = ph.variation;
 
-   // Drawn once per syllable, from the phrase's own generator, so that a
-   // phrase is reproducible from its seed however many other birds are
-   // sounding at the same time.
+   // Drawn once per syllable, from the phrase's own generator, so a phrase is
+   // reproducible from its seed however many other birds are sounding.
    const float rp = ph.rng.white();
    const float rl = ph.rng.white();
    const float rc = ph.rng.white();
-   const float rs = ph.rng.white();
-   const float rv = ph.rng.white();
+   const float rd = ph.rng.white();
 
-   // Motif: the pitch steps by a fixed interval from one syllable to the next,
-   // which is what turns a repeated syllable into a figure.
+   // ------------------------------------------------------------- the contour
+   //
+   // Which measured syllable this is. Contour walks across the species' set,
+   // and Variation lets a phrase wander off it -- which is what stops a phrase
+   // being one shape repeated.
+   const float where = clampf(mP.contour + 0.45f * var * rc, 0.0f, 1.0f);
+   c.archetype = archetypeFor(mP.species, where);
+   const Contour &ct = kContours[c.archetype];
+
+   // Motif: the pitch steps by a fixed interval from one syllable to the next.
    const float motif = ph.motifSemis * static_cast<float>(ph.index);
-   c.pitchHz = clampf(ph.pitchHz * std::exp2((motif + 4.0f * var * rp) / 12.0f), 40.0f,
-                      0.45f * sr);
+   const float pitch = clampf(ph.pitchHz * std::exp2((motif + 4.0f * var * rp) / 12.0f),
+                              40.0f, 0.45f * sr);
+   // The table holds shape only, about the syllable's own centre, so placing it
+   // is a transposition. Held in octaves: the readout adds the contour to it and
+   // takes one exp2 rather than a multiply and an exp2.
+   c.pitchOct = std::log2(pitch);
 
-   float len = mP.lengthSec * mSpeciesLengthMul * b.lengthMul *
-               std::exp2(0.7f * var * rl);
-   // Legato: the syllable is stretched towards filling its own slot. 70 % of
-   // the library's syllable pairs have no silence between them at all, so this
-   // defaults high and a phrase of separated notes is the exception. It only
-   // applies where there is something to run into: stretching the last syllable
-   // of a phrase towards an interval that is never used made a one-syllable
-   // call 50 % longer than its Length said.
+   c.depth = clampf(mP.sweep * std::exp2(0.5f * var * rd), 0.0f, 4.0f);
+   // Skew bends the syllable's time. 0.5 leaves the measured contour alone.
+   c.warp = std::exp2(3.0f * (2.0f * clampf(mP.skew, 0.0f, 1.0f) - 1.0f));
+
+   float len = mP.lengthSec * mSpeciesLengthMul * b.lengthMul * std::exp2(0.7f * var * rl);
+   // Legato: the syllable is stretched towards filling its own slot. 70 % of the
+   // library's syllable pairs have no silence between them at all, so this
+   // defaults high. It only applies where there is something to run into.
    const float leg = ph.remaining > 1 ? clampf(mP.legato, 0.0f, 1.0f) : 0.0f;
    len = len * (1.0f - leg) + ph.interval * leg;
    len = clampf(len, 0.004f, 8.0f);
    c.phaseInc = 1.0f / (len * sr);
 
-   const float sweep =
-      clampf(mP.sweepOct * mSpeciesSweepMul * b.sweepMul * std::exp2(0.6f * var * rs), 0.0f, 6.0f);
-   c.contourPhase = mP.contour + mSpeciesContour + b.contourOff + 0.2f * var * rc;
-   c.turns = clampf(mP.turns * mSpeciesTurnsMul, 0.05f, 12.0f);
-   c.skew = clampf(mP.skew * (mSpeciesSkew / kLibrarySkew), 0.05f, 0.95f);
+   // Detail: a one-pole on the contour as it is read out. At the top the
+   // measured curve passes through; lower down the scribble smooths towards a
+   // glide, which is what the first version of this plugin could only do.
+   const float detail = clampf(mP.detail, 0.0f, 1.0f);
+   const float corner = 8.0f * std::pow(400.0f, detail); // 8 Hz .. 3.2 kHz
+   c.smoothCoef = detail >= 0.999f ? 1.0f : onePoleCoef(1.0f / corner, sr);
+   c.smoothed = 0.0f;
+   c.primed = false;
 
-   // The gesture is a sinusoid over the syllable, and its raw excursion depends
-   // on Turns as well as Sweep -- a quarter turn covers part of a cycle, two
-   // turns cover all of it twice. So it is measured here, over the syllable, and
-   // scaled to the Sweep asked for, and offset so that the pitch at the peak of
-   // the pressure gesture is the Pitch asked for.
+   // --------------------------------------------------------------- the voice
    //
-   // Measured over the *audible* part of the syllable, not all of it. A
-   // syllable's onset and offset ramps carry pitch that nobody hears, and
-   // including them made the excursion that a measurement of the output reports
-   // about 0.7 of the Sweep asked for. The window is where the pressure gesture
-   // keeps the output within 12 dB of its peak, which is the same window the
-   // analysis measures a reference syllable's pitch range over.
-   //
-   // 33 samples is exact enough for both: the gesture has at most a dozen turns
-   // in it.
-   float lo = 1.0f, hi = -1.0f;
-   for (int i = 0; i <= 32; ++i) {
-      const float t = static_cast<float>(i) / 32.0f;
-      if (pressureGesture(t, c.skew) < kAudibleGesture)
-         continue;
-      const float g = sin2piFast(c.turns * t + c.contourPhase);
-      lo = std::min(lo, g);
-      hi = std::max(hi, g);
-   }
-   if (hi < lo) { // a skew so extreme that no sample landed inside the window
-      lo = -1.0f;
-      hi = 1.0f;
-   }
-   c.contourAnchor = sin2piFast(c.turns * c.skew + c.contourPhase);
-   c.contourScale = sweep / std::max(hi - lo, 1.0e-3f);
-   // Where B crosses zero. Not near zero: B is the *net* dissipation, so below
-   // the bifurcation it is the tissue's own passive loss, which is a real
-   // fraction of the peak drive and not an epsilon. It is also what sets the
-   // syllable's release -- at 0.03 the tail ran ten times longer than the
-   // measured 41 ms.
-   c.bth = 0.10f;
-
-   // The relaxation parameter: the species' measured richness, moved by Voice
-   // and spread across the flock.
-   float mu = mSpeciesMu * std::exp2(6.5f * (clampf(mP.voice, 0.0f, 1.0f) - 0.30f)) *
-              std::exp2(2.0f * mP.voiceSpread * b.voiceOff);
-   mu = std::max(mu, kMuFloor);
-   // A syrinx cannot sustain a relaxation oscillation at any frequency: the
-   // higher it sings the closer the labia are to sinusoidal. Which is also
-   // exactly the clamp that keeps the harmonics inside the band -- a whistle at
-   // 6 kHz with a crow's mu would alias, and a real bird does not do it either.
-   const float dtauNom = 6.2831853f * c.pitchHz / sr;
-   c.mu = clampf(mu, kMuFloor, 0.55f / std::max(dtauNom, 1.0e-3f));
-
-   // Ask the oscillator for a higher frequency than is wanted, by exactly what
-   // the relaxation regime will take away again.
-   c.pitchHz = clampf(c.pitchHz * (1.0f + kRelaxationPull * c.mu * c.mu), 40.0f, 0.45f * sr);
-
-   // How far apart the labia sit before they move, against an oscillation whose
-   // own amplitude is 2. Driving the syrinx harder both raises B/sqrt(eps) and
-   // adducts the labia further, so the two move together and this follows Voice
-   // rather than taking a control of its own: a whistle barely closes, and a
-   // crow is shut for most of every cycle.
-   c.gap0 = 2.0f * (1.0f - 0.85f * clampf((c.mu - kMuFloor) * 0.5f, 0.0f, 1.0f));
+   // How much of each cycle the valve is shut. The species' measured harmonic
+   // count sets it and Voice moves it; a narrow pulse at a high pitch would
+   // alias, and a real syrinx cannot snap shut arbitrarily fast either, so the
+   // ceiling falls with frequency.
+   float closure = mSpeciesClosure + (clampf(mP.voice, 0.0f, 1.0f) - 0.30f) * 1.3f +
+                   0.5f * mP.voiceSpread * b.voiceOff;
+   const float ceiling = 0.92f - 2.2f * pitch / sr;
+   c.closure = clampf(closure, 0.0f, clampf(ceiling, 0.0f, 0.92f));
+   c.closureNow = c.closure;
+   c.rasp = clampf(mP.rasp, 0.0f, 1.0f);
+   c.prevFlow = 0.0f;
+   c.osc = 0.0f;
    c.dcBlock.reset();
-   c.dcBlock.setCutoff(150.0f, sr);
+   c.dcBlock.setCutoff(clampf(0.35f * pitch, 60.0f, 900.0f), sr);
 
-   c.jitter = clampf(mP.jitter, 0.0f, 1.0f) * 0.06f;
-   // A syrinx drifts rather than dithers, so the jitter is a random walk with a
-   // corner a few tens of hertz up, not per-sample noise.
+   c.jitter = clampf(mP.jitter, 0.0f, 1.0f) * 0.05f;
    c.walkCoef = onePoleCoef(0.006f, sr);
    c.walk = 0.0f;
 
@@ -770,25 +758,15 @@ void ChirpEngine::spawnChirp(const Voice &v, Phrase &ph) {
    c.breath = clampf(mP.breath * mSpeciesBreathMul, 0.0f, 1.0f);
    c.formant = clampf(mP.formant, 0.0f, 1.0f);
    c.radiate = clampf(mP.radiate, 0.0f, 1.0f);
-   const float rasp = clampf(mP.rasp, 0.0f, 1.0f);
-   c.rasp = rasp;
-   // The trachea's back-pressure on the labia. Source-tract coupling is the
-   // documented route to period doubling and chaos in birdsong, and it is what
-   // a corvid's rasp actually is: no amount of harmonics alone reaches the 9 dB
-   // of extra spectral flatness the roughest references measure.
-   c.feedback = rasp * rasp * 1.6f * (0.4f + 0.6f * (1.0f + rv) * 0.5f);
 
    c.tractHz = clampf(mFormantHz, 60.0f, 0.45f * sr);
    c.tractReso = resonanceFor(mFormantQ);
    c.tractTrack = clampf(mP.beak, 0.0f, 1.0f);
    c.tractCounter = 0;
    c.tract.setCutoff(c.tractHz, c.tractReso, sr);
-   // A resonant bandpass falls away at only 6 dB/octave and the velocity term
-   // tilts the source up by another 6, so without this the top of the spectrum
-   // was the filter's own skirt rather than the bird. Placed relative to the
-   // fundamental and to how rich the voice is, so a whistle is closed down just
-   // above its own pitch and a crow keeps its stack.
-   c.top.setCutoff(clampf(c.pitchHz * (2.5f + 9.0f * c.mu), 800.0f, 0.45f * sr), sr);
+   // The valve's own corner and the tract's skirt both fall at 6 dB/octave, so
+   // without this the top of the spectrum is the filter rather than the bird.
+   c.top.setCutoff(clampf(pitch * (3.0f + 22.0f * c.closure), 1200.0f, 0.45f * sr), sr);
 
    const float d = clampf(mP.distance + 0.5f * mP.distanceSpread * b.distance, 0.0f, 1.0f);
    c.air.setCutoff(clampf(20000.0f * std::pow(0.05f, d * (1.4f - 0.7f * mP.air)), 400.0f,
@@ -804,6 +782,7 @@ void ChirpEngine::spawnChirp(const Voice &v, Phrase &ph) {
    c.rng.seed(ph.rng.next() | 1u);
    c.active = true;
    ++mSyllableCounter;
+   (void)ct;
 }
 
 void ChirpEngine::spawnStrike(const Voice &v, Phrase &ph) {
@@ -855,162 +834,97 @@ void ChirpEngine::spawnStrike(const Voice &v, Phrase &ph) {
 void ChirpEngine::processChirps(float *outL, float *outR, uint32_t numSamples) {
    const float sr = static_cast<float>(mSampleRate);
    const float invSr = 1.0f / sr;
+   const ContourTables &tab = contourTables();
+   constexpr int kLast = ChirpEngine::kContourPoints - 2;
+   const float kDeriv = sr / (6.2831853f * kRadiateRefHz);
 
    for (auto &c : mChirps) {
       if (!c.active)
          continue;
-      for (uint32_t i = 0; i < numSamples; ++i) {
-         const float s = c.phase;
+      const float *pitchTab = tab.pitch[c.archetype];
+      const float *levelTab = tab.level[c.archetype];
 
-         // ------------------------------------------------- the two gestures
+      for (uint32_t i = 0; i < numSamples; ++i) {
+         // ------------------------------------------------------- the contour
          //
-         // Everything about the syllable is these two lines. The pressure
-         // gesture is the envelope and the switch: B crosses zero at `bth`, and
-         // that crossing is the Hopf bifurcation, so the syllable begins and
-         // ends by itself rather than being gated. The tension gesture is the
-         // pitch, and the phase between the two is the syllable's shape.
-         const float p = pressureGesture(s, c.skew);
-         const float drive = (p - c.bth) / (1.0f - c.bth);
+         // The whole syllable is these few lines: read a measured pitch curve
+         // and a measured level curve out over the syllable's own duration.
+         // Everything the first version tried to derive from two sinusoids --
+         // the shape, the sweep, the turns, the envelope's asymmetry -- is in
+         // the tables, because it was measured off a real bird.
+         const float t = warpTime(clampf(c.phase, 0.0f, 1.0f), c.warp);
+         const float x = t * static_cast<float>(ChirpEngine::kContourPoints - 1);
+         int k = static_cast<int>(x);
+         k = k < 0 ? 0 : (k > kLast ? kLast : k);
+         const float frac = x - static_cast<float>(k);
+
+         float oct = pitchTab[k] + frac * (pitchTab[k + 1] - pitchTab[k]);
+         // Detail smooths the contour as it is read. Primed on the first sample
+         // so a syllable does not glide in from wherever the smoother was.
+         if (!c.primed) {
+            c.smoothed = oct;
+            c.primed = true;
+         }
+         c.smoothed += c.smoothCoef * (oct - c.smoothed);
+         oct = c.smoothed;
+
+         const float lvl = levelTab[k] + frac * (levelTab[k + 1] - levelTab[k]);
 
          c.walk += c.walkCoef * (c.jitter * c.rng.white() - c.walk);
-         const float g = sin2piFast(c.turns * s + c.contourPhase);
-         const float f0 = c.pitchHz * std::exp2(c.contourScale * (g - c.contourAnchor) + c.walk);
+         const float f0 = std::exp2(c.pitchOct + oct * c.depth + c.walk);
 
-         // ---------------------------------------------- the discretisation
+         // --------------------------------------------------------- the valve
          //
-         // The oscillator has to run at exactly the frequency the tension
-         // gesture asks for, and getting that right took two goes.
-         //
-         // Written as it stands in the paper, the nonlinear term is a *scaling*
-         // of the velocity. Discretised that way it is a shear rather than a
-         // rotation, and a shear moves the frequency as well as the amplitude.
-         // Nor does the shift average out over a cycle: around the limit cycle
-         // the mean of (1 - u^2/h) is -1, not zero. A 4.7 kHz whistle came out
-         // four and a half per cent flat, and a hard-driven crow was out by
-         // eighty.
-         //
-         // The fix is to change coordinates, not the equation. In Lienard form,
-         // with
-         //
-         //     F(u) = mu (u^3/3h - u),      w = v + F(u)
-         //
-         // the same system reads
-         //
-         //     du/dtau = w - F(u),      dw/dtau = -u
-         //
-         // and the nonlinearity has become an *additive* term. An additive term
-         // forces the oscillator; it does not shear it, so the rotation keeps
-         // its own frequency, which the magic-circle step size
-         // d = 2 sin(pi f / sr) makes exactly 2 pi f / sr for any f under
-         // Nyquist. The velocity, where it is needed for the radiated
-         // pressure, is w - F(u).
-         const float wturn = clampf(f0 * invSr, 1.0e-5f, 0.49f);
-
-         // ------------------------------------------- the labial oscillation
-         //
-         //   x' = y ;  y' = -eps x - C x^2 y + B y
-         //
-         // in normalised time, with the amplitude scaled by its own limit cycle
-         // so that u is the displacement over sqrt(B/C) and the limit amplitude
-         // is 2 sqrt(B/Bmax). The envelope therefore comes out of the equation
-         // rather than being multiplied on afterwards, and a syllable starts and
-         // stops at the bifurcation the way a bird's does.
-         const float muInst = c.mu * drive;
-         const float h = drive > 1.0e-3f ? drive : 1.0e-3f;
-         const float inv3h = 1.0f / (3.0f * h);
-
-         // The additive term is integrated explicitly, so its slope has to stay
-         // inside the step: |dF/du| reaches 3*muInst at the limit cycle. One
-         // substep is enough for most of the range and a hard-driven low voice
-         // takes a handful, which is where the cost belongs -- the whistles that
-         // need the smallest steps are the ones with the least nonlinearity.
-         const float dNom = 6.2831853f * wturn;
-         int nsub = 1 + static_cast<int>(12.0f * dNom * c.mu);
-         if (nsub > 8)
-            nsub = 8;
-         const float dsub = 2.0f * sin2piFast(0.5f * wturn / static_cast<float>(nsub));
-
-         float velocity = 0.0f;
-         for (int k = 0; k < nsub; ++k) {
-            const float uu = c.u;
-            // Below the bifurcation the labia are simply damped, and the cubic
-            // term is irrelevant at the amplitude they have left -- as well as
-            // being a division by a vanishing h.
-            const float F = drive > 0.0f ? muInst * (uu * uu * uu * inv3h - uu) : -muInst * uu;
-            velocity = c.w - clampf(F, -16.0f, 16.0f);
-            c.u += dsub * velocity;
-            c.w -= dsub * c.u;
+         // A phase accumulator at the contour's frequency, through a one-sided
+         // valve: air passes only while the labia are apart. `closure` is the
+         // fraction of the cycle they are shut, so at zero this passes a pure
+         // sine -- which is what 59 % of the library's syllables are -- and
+         // closing it grows the harmonic stack a corvid has, evens as well as
+         // odds. A symmetric oscillator has no even harmonics at all.
+         c.osc += clampf(f0 * invSr, 0.0f, 0.49f);
+         if (c.osc >= 1.0f) {
+            c.osc -= 1.0f;
+            // Rasp: the contact is not the same twice. Irregular closure is
+            // what a corvid's rasp physically is, and it is broadband in a way
+            // that no amount of extra harmonics is.
+            c.closureNow = clampf(c.closure + c.rasp * 0.45f * c.rng.white(), 0.0f, 0.93f);
          }
+         const float sine = sin2piFast(c.osc);
+         const float gap = sine + (1.0f - 2.0f * c.closureNow);
+// The corner is what aliases, so it is widened with frequency -- but only
+         // just enough. At 0.12 + 7*f/sr it rounded a narrow pulse back into a
+         // sine and Voice could not reach past four harmonics at any setting.
+         const float w = 0.010f + 3.0f * f0 * invSr;
+         const float flow = softHinge(gap, w);
 
-         const float noise = c.rng.white();
-         // Turbulent air past the labia. It is injected into the oscillator
-         // rather than added to its output because that is where it is: it is
-         // also what starts the oscillation, which is why the onset of a
-         // syllable is never twice the same. The floor is deliberate -- the
-         // labia are never perfectly still, and with none of this a syllable
-         // with Breath at zero would never leave equilibrium at all.
-         c.w += dNom * (0.004f + 0.30f * c.breath) * (0.05f + p) * noise;
-         // The trachea pushing back on the labia.
-         c.w += dNom * c.feedback * c.tractOut;
+         // The radiated pressure of a small source follows the rate of change
+         // of the flow rather than the flow, which tilts the harmonics up by
+         // 6 dB an octave. Referenced to a fixed frequency so `Radiate` is a
+         // tilt and not a gain that changes with the note.
+         const float dflow = (flow - c.prevFlow) * kDeriv;
+         c.prevFlow = flow;
 
-         // The nonlinear loss is strongly stabilising, but a parameter jump
-         // mid-syllable can still put the state somewhere silly, and this is a
-         // pool slot that will be reused.
-         c.u = clampf(c.u, -8.0f, 8.0f);
-         c.w = clampf(c.w, -16.0f, 16.0f);
+         float y = (1.0f - c.radiate) * flow + c.radiate * dflow;
+         // A one-sided flow has a mean, and that mean is modulated at the
+         // syllable rate, which is a thump rather than a bird.
+         y = c.dcBlock.tick(y);
+         y += c.breath * 0.8f * lvl * c.rng.white();
+
+         // ----------------------------------------------- the tube and the beak
+         const float bp = c.tract.bandpassNormalised(y);
+         y += c.formant * 1.2f * bp;
+         y = c.top.tick(y);
+         y = c.air.tick(y);
 
          // The tract resonance follows the pitch, by as much as the beak is
-         // open. Songbirds track the frequency they are producing with their
-         // beak gape, and an open beak shortens the effective tube, so a
-         // resonance that stays put while the fundamental sweeps past it is
-         // wrong twice: it is not what a bird does, and it hands the loudest
-         // partial from one harmonic to the next in the middle of a syllable.
-         // Updated every 16 samples -- a formant does not need a tan() a
-         // sample, and a syllable is thousands of them.
+         // open: songbirds track the frequency they are producing with their
+         // gape. Updated every 16 samples -- a formant does not need a tan() a
+         // sample.
          if ((c.tractCounter++ & 15u) == 0u) {
-            const float track = c.tractTrack * std::log2(std::max(f0, 20.0f) / c.pitchHz);
+            const float track = c.tractTrack * (std::log2(std::max(f0, 20.0f)) - c.pitchOct);
             c.tract.setCutoff(clampf(c.tractHz * std::exp2(track), 60.0f, 0.45f * sr),
                               c.tractReso, sr);
          }
-
-         // ---------------------------------------------------- the airflow
-         //
-         // The source is not the labial displacement. It is the air that gets
-         // past, and air only gets past while the labia are apart -- so the
-         // flow is the *one-sided* part of the gap, and it stops dead for the
-         // fraction of every cycle in which they are closed.
-         //
-         // That is not a detail. The equation above is odd-symmetric: u -> -u,
-         // v -> -v leaves it unchanged, because the nonlinear loss goes as u^2.
-         // An odd-symmetric oscillator has only odd harmonics, and taking its
-         // displacement as the output gives a spectrum at f, 3f, 5f with
-         // nothing between -- which is not a bird, and is why the first version
-         // of this could not make a crow however hard it was driven. Zysman et
-         // al. say as much in as many words: "more realistic models for this
-         // force lead to signals with different harmonic contents", and note
-         // that a richer model is needed for the species with a wide timbre.
-         // Rectifying at the point of closure is that model, and it is the same
-         // step that makes a glottal pulse rich rather than sinusoidal.
-         //
-         // The radiated pressure of a small source follows the rate of change
-         // of the flow rather than the flow, so `Radiate` mixes the two.
-         const float gap = c.gap0 + c.u;
-         const float open = gap > 0.0f ? 1.0f : 0.0f;
-         float x = (1.0f - c.radiate) * (open * gap) + c.radiate * (open * velocity);
-         // A one-sided flow has a mean, and that mean is modulated at the
-         // syllable rate, which is a thump rather than a bird. It does not
-         // radiate in the first place, so it goes here.
-         x = c.dcBlock.tick(x);
-         x += c.breath * 0.9f * p * noise;
-         const float bp = c.tract.bandpassNormalised(x);
-         c.tractOut = bp;
-         // A resonance adds to the source, it does not replace it. Crossfading
-         // into the bandpass was tried first and is wrong twice over: it loses
-         // 7 dB whenever the fundamental is nowhere near the formant, and it
-         // takes the source away instead of colouring it.
-         x += c.formant * 1.2f * bp;
-         x = c.top.tick(x);
-         x = c.air.tick(x);
 
          c.pulsePhase += c.pulseInc;
          if (c.pulsePhase >= 1.0f)
@@ -1018,20 +932,14 @@ void ChirpEngine::processChirps(float *outL, float *outR, uint32_t numSamples) {
          const float pulse =
             1.0f - c.pulseDepth * 0.5f * (1.0f - sin2piFast(c.pulsePhase + 0.25f));
 
-         const float amp = c.level * pulse;
-         outL[i] += x * amp * c.panL;
-         outR[i] += x * amp * c.panR;
+         const float amp = c.level * lvl * pulse;
+         outL[i] += y * amp * c.panL;
+         outR[i] += y * amp * c.panR;
 
          c.phase += c.phaseInc;
          if (c.phase >= 1.0f) {
-            // The gesture is over, but the labia are still moving: a syllable
-            // has a tail of its own and cutting it off clicks. Freed when the
-            // oscillator has actually stopped, or after one more syllable's
-            // worth of time, whichever comes first.
-            if ((std::fabs(c.u) + std::fabs(c.w)) < 2.0e-4f || c.phase > 1.25f) {
-               c.active = false;
-               break;
-            }
+            c.active = false;
+            break;
          }
       }
    }

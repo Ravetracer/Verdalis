@@ -37,7 +37,7 @@ constexpr int kWindowH = 740;
 // The syllable first, because it is the unit; the syrinx that makes it next;
 // then the structures built out of it, and the place they happen in.
 constexpr uint32_t kSyllableParams[] = {
-   kParamPitch,  kParamSweep, kParamContour,   kParamTurns, kParamLength,
+   kParamPitch,  kParamSweep, kParamContour,   kParamDetail, kParamLength,
    kParamSkew,   kParamJitter, kParamPulseRate, kParamPulseDepth,
 };
 constexpr uint32_t kTimbreParams[] = {kParamSpecies, kParamVoice,   kParamBreath,

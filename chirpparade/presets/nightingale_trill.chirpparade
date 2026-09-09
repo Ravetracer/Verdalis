@@ -2,24 +2,24 @@
 format = 1
 name = Nightingale Trill
 author = ChirpParade
-description = Eighteen syllables in a second, which is the top of the range the library measures before the ear stops counting them. The trill is not a modulation inside one syllable -- only ten of the library's 4287 syllables have one of those -- it is syllables arriving too fast to separate, with Legato high enough that they run together.
+description = Eighteen syllables a second, which is the top of the range the library measures before the ear stops counting them. A trill is not a modulation: only 10 of the library's 4268 syllables carry a wobble of their own pitch. It is syllables arriving too fast to separate, which is Syllable Rate high and Legato high and nothing else.
 features = trill, fast, virtuoso, solo
 
 # Syllable
 pitch = 5200
-sweep = 0.35
-contour = 0.25
-turns = 0.25
+sweep = 100
+contour = 0.15
+detail = 1
 length = 40
-skew = 0.37
+skew = 0.5
 jitter = 0.12
-pulse_rate = 30
-pulse_depth = 0.4
+pulse_rate = 13.2
+pulse_depth = 0
 
 # Timbre
 species = Warbler
 voice = 0.3
-breath = 0.1
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 1
+gain = -2.1
 seed = 0

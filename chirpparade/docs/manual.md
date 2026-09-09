@@ -11,45 +11,54 @@ accent: #F2C744
 {{PLUGIN}} is a CLAP instrument that generates birds. Every syllable is computed
 while the plugin plays — nothing is played back. No two calls are ever alike.
 
-It does not work the way a bird synthesiser usually does. There is no oscillator
-with a pitch envelope on it, and no sample of a chirp. The voice is a model of
-the **syrinx** itself: a membrane in the bird's throat, driven by two things it
-controls independently — the pressure in its air sacs, and the tension of the
-muscle that holds the membrane. Below a certain pressure nothing sounds at all;
-above it the membrane oscillates. A syllable is one push of pressure and one
-pull of tension, and the sound is what the airflow does between them.
+It does not work the way a bird synthesiser usually does, and it does not work
+the way the first version of it did either.
 
-That model has two consequences you will feel immediately at the controls.
+**A bird syllable is its frequency contour.** Not a pitch envelope on an
+oscillator — the actual shape the pitch traces, which for a real chirp changes
+direction between two and forty times in fifty milliseconds and slews at up to
+four hundred octaves a second. That scribble is the bird. Smooth it out and you
+have a whistle.
 
-**A syllable's shape is one knob.** Whether a chirp sweeps up, sweeps down,
-arches over or dips in the middle is not four different settings — it is the
-*phase* between the pressure gesture and the tension gesture. *Contour* is that
-phase. Turning it walks continuously through all four shapes.
+So {{PLUGIN}} does not compute those shapes. It **measures** them. 67 frequency
+contours were extracted from real recordings, fitted as formulas, and they drive
+the oscillator directly. *Contour* chooses which one. There is no audio in the
+plugin — a contour is forty numbers describing a curve, which is the same thing
+van Hunter Adams gets when he reads a cardinal's trace off a spectrogram and
+writes down
 
-**Timbre is not a filter.** *Voice* is how hard the syrinx is driven, as the
-ratio of pressure to tension. Low down, the membrane moves almost like a sine
-wave and the bird whistles: one harmonic, pure. Turn it up and the oscillation
-goes into a relaxation regime, the membrane starts closing against itself, and a
-whole harmonic stack appears — which is what a crow is. There is nothing in
-between because there is nothing in between in the bird.
+```
+f(x) = -260 sin(-pi x / 5200) + 1740
+```
 
-Above the syrinx sits the trachea, a closed tube that resonates at `c/4L`, with
-the beak both raising that resonance and following the pitch with it the way a
-songbird's gape does. Above *that* sits the part that actually makes birds sound
-like birds: syllables into phrases, phrases separated by silence, and a flock of
+except with forty terms instead of one, because one term cannot draw a scribble.
+
+Above the contour sits a **valve**. Air passes through a bird's syrinx only
+while the two membranes are apart, and *Voice* is the fraction of each cycle
+they are shut. At the bottom the valve never closes and what comes out is a pure
+sine — which is what 59 % of the library's syllables are. Close it and the
+airflow becomes a one-sided pulse with the harmonic stack a crow has, evens as
+well as odds. That is not a filter; there is nothing between the two settings
+because there is nothing between them in the bird.
+
+Above *that* sits the trachea — a closed tube resonating at `c/4L`, with the
+beak both raising the resonance and following the pitch with it the way a
+songbird's gape does — and above that, the part that makes birds sound like
+birds: syllables into phrases, phrases separated by silence, and a flock of
 individuals calling and answering.
 
-Every layer came out of measurement. The model, the ten species and the factory
-presets were fitted against 58 field recordings — 4268 measured syllables — by
-measuring the recording and the plugin's own output with the same analysis code
-and moving values until the two agreed. Where a number in this manual comes from
-a measurement or a paper, it says so.
+Every layer came out of measurement, and the measurement is checkable: the
+analysis code that measured the recordings also measures the plugin's own output
+and compares the two. `tools/analysis/README.md` in the source tree records all
+of it, including the first version's failure and the two bugs found in the
+measurement code itself.
 
-> **{{PLUGIN}} {{VERSION}} is an early version.** The engine, the parameter set
-> and the window are complete, the self-test passes and every preset meets its
-> own targets, but the fit is a first one. *What is still being fitted* at the
-> end of this manual lists what is known not to match yet, and it is worth
-> reading before concluding that something is broken.
+> **{{PLUGIN}} {{VERSION}} replaced the syllable model.** Version 0.1.0 modelled
+> the syrinx from first principles and was fitted to averages; it measured
+> correctly on twenty quantities and sounded nothing like a bird. Presets and
+> saved state from 0.1.0 do not load meaningfully. Nothing was released at that
+> version. *What is still being fitted* at the end of this manual lists what is
+> known not to match yet.
 
 ## What is in this manual
 
@@ -148,155 +157,138 @@ is the first with no second, and **Dawn Chorus** is the second with no first.
 
 ## Four things to try first
 
-**Turn *Contour* slowly, on Single Chirp.** From zero it goes arch, down-sweep,
-dip, up-sweep and back to arch, continuously. That one knob is the phase between
-the two gestures, and it is the whole shape vocabulary of the instrument. Then
-turn *Turns* up a little and the syllable starts folding back on itself.
+**Step *Contour* through, on Single Chirp.** Each position is a different real
+syllable, measured off a recording. This is the control that decides what kind
+of bird it is, more than anything else in the plugin.
 
-**Turn *Voice* from bottom to top, on a low pitch.** At the bottom it is a
-whistle. Somewhere in the middle a second harmonic appears, then a third, and by
-the top it is a rasping stack of nine or ten. Nothing was filtered — the membrane
-is being driven harder and has started slamming shut against itself, which is
-what a crow's voice physically is.
+**Then sweep *Detail* on the same note.** At 100 % you hear the measured
+contour; at the bottom it smooths into a glide. Nothing else changes. That
+difference is the whole reason this version of the plugin exists.
 
-**Change *Species*.** Ten of them, and each one moves pitch, sweep, length,
-harmonic richness, roughness, syllable rate and contour together — because in the
-recordings they move together. Every entry is the median of the recordings of
-that bird. *Pitch* at its default is the median of the whole library, so
-selecting Crow at the default lands at 812 Hz, which is a crow.
+**Turn *Voice* from bottom to top, on a low pitch.** At the bottom it is a pure
+sine. Somewhere in the middle a second harmonic appears, then a third, and by
+the top it is a rasping stack. Nothing was filtered — the valve is closing, and
+air only passes while it is open.
+
+**Change *Species*.** Ten of them, and each carries its own set of measured
+contours as well as its own pitch register, length, richness, roughness and
+rate — because in the recordings those move together. *Pitch* at its default is
+the median of the whole library, so selecting Crow at the default lands at
+812 Hz, which is a crow.
 
 **Play a chord, then a melody.** Each note is its own bird with its own flock.
-For melodies, load **Melody Bird**: one syllable a note, almost no variation, and
-*Pitch* anchored to the loudest moment of the syllable so that what you hear is
-the key you pressed.
+For melodies, load **Melody Bird**: one syllable a note, almost no variation, a
+flat contour and *Sweep* pulled down, so what you hear is the key you pressed.
 
 # How it works
 
-## The syrinx, and the two gestures
+## The contour is the bird
 
-Birds do not have vocal cords. They have a syrinx, at the bottom of the trachea,
-whose membranes — labia — are pushed apart by air from the air sacs and pulled
-back by their own elasticity. The physics is a single equation for how far one
-labium has moved from where it rests:
+Put a recording of a chirp on a spectrogram and the syllable is a line. That
+line is what you recognise: not its average pitch, not how wide it sweeps, but
+its **shape**. Two birds with the same pitch, the same duration and the same
+sweep width sound like different birds if their lines differ.
 
-```
-x'' + (C·x² − B)·x' + ε·x = 0
-```
+Measured at a third of a millisecond, a real syllable is far busier than it
+looks on a normal spectrogram:
 
-- **ε** is the elasticity of the tissue, so it sets the frequency: `f = √ε / 2π`.
-  The bird controls it with a muscle, and that is why pitch is a *gesture*.
-- **B** is the net energy going in — what the airflow adds through the pressure
-  between the labia, less what the tissue loses. When B is negative the labium is
-  damped and silent; when it crosses zero it starts oscillating. That crossing is
-  a *bifurcation*, and it is where a syllable begins and ends.
-- **C** stops the labia passing through each other.
-
-So a syllable is two curves over about a tenth of a second: a push of pressure
-and a pull of tension. {{PLUGIN}} draws exactly two, and *Skew* says where the
-pressure peaks — 0.37 of the way through, because across the library a syllable
-rises in 24 ms and falls in 41.
-
-## Why the shape is a phase
-
-This is the part worth understanding, because it explains a control that looks
-arbitrary.
-
-Both gestures are curves of the same length. The pitch you hear during the
-syllable is whatever the tension gesture is doing *while the pressure gesture is
-loud*. Slide one against the other and that changes:
-
-| The two gestures | What the pitch does | The shape |
+| | measured through a 21 ms window | at 0.33 ms |
 |---|---|---|
-| in phase | rises and falls with the level | an arch |
-| a quarter turn apart | sweeps through the loud part | a down-sweep |
-| half a turn | dips where the level peaks | a dip |
-| three quarters | sweeps the other way | an up-sweep |
+| peak pitch slew | 2.7 oct/s | **20 to 440 oct/s** |
+| direction changes | 0.25 | **2 to 40** |
+| octaves travelled | 0.35 | **0.2 to 6.8** — against an end-to-end range of 0.2 to 1.0 |
 
-That is *Contour*, over a whole turn. It is not a menu of shapes with
-crossfades — it is one number, and the shapes are what it looks like at four
-places along it.
+A syllable travels three to seven times further than its range, because it
+doubles back. That is the sound of a bird, and it is why the first version of
+{{PLUGIN}} — which drew each syllable as one smooth sinusoidal gesture — did not
+work, whatever its physics said.
 
-*Turns* is the other half: how much of a gesture cycle one syllable spans. A
-quarter turn is a plain sweep, which is what the library's median syllable is. A
-half turn arches or dips once. More than one and the pitch folds back several
-times, which is a warble.
+## Where the contours come from
 
-*Sweep* stays the whole pitch excursion whatever *Turns* is set to, measured over
-the part of the syllable you can actually hear. The two controls do not fight.
+67 of them, extracted from the reference library:
 
-## What the references confirm, and what they do not
+1. Every well-isolated syllable is found and its dominant partial tracked at
+   0.33 ms resolution.
+2. The pitch track and the level track are each fitted as a cosine series in
+   normalised syllable time. **Forty terms** lands within 30 cents of the real
+   curve; eight is out by 82; one — which is what a single gesture is — is out
+   by more than that before it starts.
+3. The contours are clustered per species, and the **medoid** of each cluster is
+   kept: one real measured syllable, never an average. Averaging two contours
+   that zig-zag out of phase gives a smooth glide, which is exactly the thing
+   being avoided.
 
-The claim above is testable, and it is the one place the model could have been
-wrong. If a syllable is one turn of two coupled gestures, the correlation between
-its envelope and its pitch contour has to be positive for arches, negative for
-dips, and near zero for sweeps.
+1641 syllables passed the quality gate; 67 became archetypes. What ships is
+**4288 numbers, 17 KB, and no audio at all.**
 
-Measured over 3600 syllables, the ordering holds across all six shapes it names:
+## The four contour controls
 
-| shape | arch | down | up | flat | wobble | dip |
+*Contour* walks across the archetypes of the current species, lowest-sitting
+first. It is the most important control in the plugin.
+
+*Detail* is how much of the contour's fine motion survives. At 100 % the
+measured curve passes through; turn it down and the scribble smooths towards a
+glide. It is worth sweeping once on **Single Chirp** just to hear what the
+difference is — the bottom of this knob is where the first version of the plugin
+lived.
+
+*Sweep* scales how far the contour travels: 100 % is the measured curve, and it
+goes to 300 % because the range is wanted.
+
+*Skew* bends the syllable's own time axis, crowding the contour towards the
+start or the end. 0.5 plays it at its measured pace — the asymmetry the library
+shows, a 24 ms rise against a 41 ms fall, is already in the curve.
+
+*Pitch* transposes the whole thing. The contour is anchored at the syllable's
+**loudest moment**, so what you hear is what the knob says; and because the
+default is the library median, every species at the default sings in its own
+register.
+
+## The valve, and why a symmetric oscillator cannot be a crow
+
+The tone comes from a phase accumulator at the contour's frequency, through a
+one-sided valve. *Voice* is the fraction of each cycle the valve is shut:
+
+| Voice → closure | 0.00 | 0.13 | 0.26 | 0.65 | 0.78 | 0.91 |
 |---|---|---|---|---|---|---|
-| correlation | **+0.27** | +0.16 | +0.15 | +0.11 | +0.08 | **−0.10** |
+| harmonics | 1 | 2 | 3 | 4 | 5 | 5 |
 
-29 % of arches correlate above +0.5, against 4 % of dips; 18 % of dips
-anticorrelate below −0.5, against 3 % of arches.
+At the bottom the valve never closes and a **pure sine** comes out, which is
+what 59 % of the library's syllables are. Close it and the airflow becomes a
+one-sided pulse.
 
-It is weaker than two clean sinusoids would give, and the dips especially so.
-Two reasons, and only one is the model's fault: the library carries a general
-positive bias, because a bird's pitch and level do broadly rise together — which
-is the same model with the gestures broadly in phase — and a real syllable is not
-one clean cycle of anything. So the phase control is justified and the claim that
-it is *sufficient* is not, which is why *Turns* and *Variation* exist. Neither is
-in the papers.
+That one-sidedness is not a detail. It is where every **even** harmonic comes
+from. A symmetric oscillator — and the syrinx equation in the physics papers is
+symmetric — has energy at f, 3f, 5f and nothing between, and no amount of drive
+makes it a crow: a 234 Hz fundamental comes out as 234, 656 and 1125 Hz. Air
+passes only while the membranes are apart, and rectifying at that point is the
+same step that makes a human glottal pulse rich rather than sinusoidal.
 
-## Timbre is the drive
+*Radiate* is the last part of it. A small source radiates the *rate of change*
+of the flow rather than the flow, which tilts the harmonics up by 6 dB an
+octave, referenced to a fixed frequency so it stays a tilt and not a gain that
+changes with the note.
 
-Written another way, the equation has a single shape parameter: `μ = B/√ε`, the
-ratio of pressure to tension. That is *Voice*, and it is the only timbre control
-in the plugin that is not a filter.
+## Three families, found rather than chosen
 
-Measured on the plugin's own output with the same estimator that counted the
-references' harmonics:
+Sorting every syllable in the library by harmonic count alone splits it into
+three groups that barely overlap:
 
-| μ | 0.15 | 0.58 | 1.43 | 3.52 |
-|---|---|---|---|---|
-| harmonics above −24 dB | 1 | 2 | 4 | 9 |
-
-Across the library, 59 % of syllables have one harmonic and 17 % have six or
-more, so both ends of that are real birds. And the three families it splits into
-are not something anyone chose:
-
-| Family | Share of the library | Fundamental | Roughness |
+| Family | Share | Fundamental | Roughness |
 |---|---|---|---|
 | whistle, ≤ 1 harmonic | 59 % | median 3329 Hz | −30 dB |
 | stack, 2–5 harmonics | 25 % | median 1325 Hz | −26 dB |
 | rich, ≥ 6 harmonics | 17 % | median 399 Hz | −22 dB |
 
-Harmonic richness, roughness and pitch move together, and downwards — the rich
-voices are the low ones. Which is what the model says, since μ falls as ε rises:
-a bird singing high cannot sustain a relaxation oscillation, and neither can this
-plugin.
+Harmonic richness, roughness and pitch move together and downwards: the rich
+voices are the low ones. So the ten species are not ten presets of the same
+thing — they sit in genuinely different places, and choosing one moves pitch,
+length, richness, roughness, rate and the whole archetype set at once, because
+in the recordings those move together.
 
-## The airflow is one-sided, and that is where the even harmonics are
-
-The equation above is symmetric: flip the displacement and it is unchanged. A
-symmetric oscillator has only odd harmonics — energy at f, 3f, 5f and nothing
-between — and no amount of drive will make it sound like a crow. This is not a
-limitation of the plugin; it is a property of the equation, and the paper it
-comes from says so.
-
-The missing physics is that the sound is not the labium moving. It is the **air
-that gets past it**, and air only gets past while the labia are apart. For part
-of every cycle they are shut and the flow is *zero*. That one-sidedness is where
-every even harmonic comes from, and it is the same step that makes a human
-glottal pulse rich rather than sinusoidal.
-
-*Voice* therefore does two things at once, as it does in the bird: it drives the
-oscillation harder and it closes the labia further, so a whistle barely touches
-and a crow is shut for most of every cycle.
-
-*Radiate* is the last part of that. A small source radiates the *rate of change*
-of the flow rather than the flow, which tilts the harmonic series up by 6 dB an
-octave — and is a large part of why a bird sounds small.
+*Breath* is turbulent air past the membranes. It is calibrated: 13 dB of
+spectral flatness per decade, with 5 % putting a sparrow on the library's median
+roughness of −28 dB.
 
 ## The tract: a tube and a beak
 
@@ -320,15 +312,12 @@ raw. *Breath* is turbulent air past the labia — and it is also what *starts* t
 oscillation, because the noise is injected into the oscillator rather than added
 to its output. That is why a syllable's onset is never twice the same.
 
-## Rasp is a real mechanism
+## Rasp is irregularity, not more harmonics
 
-A corvid's rasp is not noise and it is not more harmonics. It is the oscillator
-being pushed past its harmonic regime into period doubling and chaos, and the
-documented route to that in birdsong is the trachea pushing back on the labia.
-*Rasp* feeds a scaled tract output into the oscillator, which is that coupling.
-
-The roughest recordings in the library measure 9 dB flatter in the spectrum than
-the cleanest, and no amount of harmonics alone reaches it.
+A corvid's rasp is a contact that is never the same twice. *Rasp* varies the
+valve's closure from one cycle to the next, which is broadband in a way that no
+harmonic stack is — the roughest recordings in the library measure 9 dB flatter
+in the spectrum than the cleanest, and stacking harmonics does not get there.
 
 ## A phrase, and why its gap matters
 
@@ -349,17 +338,19 @@ from the last, and it is the difference between a bird and a sequencer.
 
 ## A trill is not a modulation
 
-Only **10 of the library's 4268 syllables** carry a periodic wobble of their own
-pitch. What the ear calls a trill in these recordings is syllables arriving too
-fast to separate — up to 22.8 a second — with no silence between them.
+What the ear calls a trill in these recordings is syllables arriving too fast to
+separate — up to 22.8 a second — with no silence between them. So there is no
+trill oscillator: a trill is *Syllable Rate* high and *Legato* high.
+**Nightingale Trill** is exactly that and nothing else.
 
-So there is no trill oscillator. A trill is *Syllable Rate* high and *Legato*
-high, which is what a trill measurably is. **Nightingale Trill** is exactly that
-and nothing else.
+The fine motion *inside* a syllable is real and abundant — two to forty
+direction changes — but it is not periodic, which is a different thing, and the
+measured contours carry it directly.
 
-Amplitude *pulsing* within a syllable is a separate and real thing: a quarter of
-the library's syllables have it, at a median 13 Hz and a depth of 0.82. That is
-*Pulse Rate* and *Pulse Depth*.
+Amplitude pulsing within a syllable is also real: a quarter of the library's
+syllables have it, at a median 13 Hz and a depth of 0.82. That is now in the
+measured level contours, which is why *Pulse Depth* defaults to nothing — it is
+there to push further, not to supply what is missing.
 
 ## The flock is individuals, not a rate
 
@@ -537,80 +528,79 @@ and more if *Repeats* or *Phrase Gap* are up.
 
 # What is still being fitted
 
-{{PLUGIN}} {{VERSION}} is a first fit, and the measurements say where it is not
-there yet. All of this is in the plugin's `TODO.md` with what is known about it.
+{{PLUGIN}} {{VERSION}} is a first fit of a new model, and the measurements say
+where it is not there yet. All of this is in the plugin's `TODO.md`.
 
-**Roughness and harmonic count cannot both be met for three species.** Goose,
-Raven and Budgie measure spectrally peaked *and* harmonically rich in the
-library, and a relaxation waveform is spectrally flat whether or not any noise
-has been added to it. Goose comes out 10 dB rougher than its references, Raven
-9 dB, Budgie 6 dB. The likely answer is a second syringeal labium — a bird has
-two, controlled independently — which would give the harmonic density without the
-flatness.
+**The valve saturates around five harmonics** and the noisiest references
+measure twelve. Closing it further aliases. The likely answer is a second
+syringeal side — a bird has two, controlled independently, which is how some
+species produce two notes at once.
 
-**Sweep is off by more than 10 % for the three species whose contours turn more
-than once**: Woodpecker −33 %, Crow +37 %, Raven −53 %. The six with a plain
-sweep are within 10 %.
+**Roughness cannot be met for the rich species.** Crow comes out 8 dB rougher
+than its references and Raven 17 dB. A harmonic stack is spectrally flat whether
+or not any noise is present, and the flatness measure cannot tell the two
+apart — so this may be a limit of the measurement rather than of the engine.
 
-**A syllable measures 6–33 % longer than *Length*.** The measurement includes
-the onset and offset ramps and the oscillator's own tail; the setting is the
-length of the gesture. Both are defensible, and the references were measured the
-same way — but it means a preset aiming at a particular audible duration sets
-*Length* below it.
+**Goose has one contour and Raven four.** Only one goose and one raven recording
+exist in the library, and few of their syllables passed the quality gate, so
+*Contour* does nothing on a Goose. More references for the waterfowl and the
+corvids would help more than any further fitting.
 
-**Screech does not fit and cannot.** It is the one species with no reference
-behind it, and it asks for more harmonics than the band has room for at its own
-pitch; the anti-alias clamp refuses and the pitch compensation then overshoots by
-38 %. It is kept because a plugin for birds should be able to make a noise no
-bird makes.
+**Nothing morphs between contours.** *Contour* steps from one measured curve to
+the next. Interpolating them naively would give smooth glides, since two curves
+that zig-zag out of phase average to a straight line — the exact failure this
+version was built to avoid — so a continuous control needs the curves aligned
+first.
 
-**The reference library is not evenly sampled.** 25 of the 58 files are ordinary
-small birds, while Goose and Raven have one file each — 12 and 6 syllables
-respectively. Those two rows of the species table are the weakest numbers in it,
-and Raven's harmonic count is in fact the one figure the engine overrides its own
-measurement on, for a reason recorded in `tools/analysis/README.md`.
+**Screech does not fit and cannot.** It is the one species with no reference,
+borrowing the library's most extreme contours, and its measured pitch runs 54 %
+low because those curves swing so far that a fundamental estimate is
+meaningless. It is an effect, not a bird.
 
-**No preset was fitted band by band against a specific recording.** The fit is
-per quantity — pitch, sweep, length, harmonics, roughness — rather than spectral,
-so tract errors that a third-octave comparison would catch are currently
-invisible.
+**The quality gate throws away 61 % of the library** — 4268 syllables found,
+1641 usable. Most rejections are the dense multi-bird recordings, where the
+tracker follows two birds at once.
 
 # Reference and limits
 
 ## Where the model comes from
 
+- **Adams, V. H.**, *Birdsong synthesis* and the Cornell ECE 4760 birdsong lab —
+  the method this plugin uses: read the frequency contour off a spectrogram, fit
+  a formula, drive an oscillator with it. `f(x) = -260 sin(-pi x / 5200) + 1740`
+  is his cardinal swoop, and *Contour* is that idea automated over 58
+  recordings with forty terms instead of one.
 - **Gardner, T., Cecchi, G., Magnasco, M., Laje, R. and Mindlin, G. B.**,
-  *Simple motor gestures for birdsongs*, Phys. Rev. Lett. **87**, 208101 (2001) —
-  that syllables of diverse acoustic character follow from the phase between two
-  gestures. That is *Contour*.
-- **Laje, R., Gardner, T. and Mindlin, G. B.**, *Continuous model for vocal
-  production in oscine birds*, Phys. Rev. E **65**, 051921 (2002) — the reduced
-  two-equation model the voice is built from.
+  *Simple motor gestures for birdsongs*, Phys. Rev. Lett. **87**, 208101 (2001)
+  — that a syllable is two coupled gestures with a phase between them. The
+  reference library confirms the ordering that predicts, which is why forty
+  cosine terms describe a syllable so well; it is *not* enough to make two
+  sinusoids draw one.
+- **Laje, R., Gardner, T. and Mindlin, G. B.**, Phys. Rev. E **65**, 051921
+  (2002) — the reduced two-equation syrinx model.
 - **Zysman, D., Méndez, J. M., Pando, B., Aliaga, J., Goller, F. and
-  Mindlin, G. B.**, *Synthesizing bird song*, Phys. Rev. E **72**, 051926
-  (2005) — that the air sac pressure is proportional to the sound envelope and
-  the syringeal tension to the pitch, so both gestures can be recovered from a
-  recording. Also the observation, quoted in the source, that a richer model is
-  needed for species with a wide timbre, which is what the one-sided airflow
-  above is.
+  Mindlin, G. B.**, *Synthesizing bird song*, Phys. Rev. E **72**, 051926 (2005)
+  — that air sac pressure tracks the sound envelope and syringeal tension the
+  pitch, so both can be recovered from a recording. Also the observation,
+  quoted in the source, that a richer model is needed for species with a wide
+  timbre — which is the one-sided airflow above.
 - **Mindlin, G. B. and Laje, R.**, *The Physics of Birdsong*, Springer (2005).
-- **Goller, F. and Suthers, R. A.**, on the syringeal muscles and the
-  relationship between muscle activity and frequency.
-- **van der Pol, B.** — the relaxation oscillator, and its Liénard form, which is
-  what makes the model integrable at audio rates without oversampling.
 - **Sabine, W. C.** — the decay time of the space model, as elsewhere in the
   suite.
 
 The papers themselves are not part of the release; they are not ours to
 redistribute. `tools/analysis/README.md` in the source tree records every
-measurement the library was fitted to, and the ten bugs the measurements found —
-each of which had already survived sounding plausible.
+measurement, the eleven bugs the measurements found in the engine, and the two
+they eventually found in themselves.
 
 ## Notes and limits
 
 - Linux and Windows, x86-64. Plugin state is stored little-endian.
 - 16 voices, with 64 syllables, 64 drum strikes, 64 phrases and 16 birds per
   voice in shared pools.
+- 67 measured contours, 4288 coefficients, 17 KB. No recorded audio of any kind.
+- 60 s of *Dawn Chorus* — twelve birds, 48 voices — renders in 0.78 s, about 77
+  times realtime.
 - Scheduling runs at a control rate of one update per 32 samples. Everything
   audible runs per sample.
 - Host parameter modulation is supported globally. Per-note modulation and note
@@ -623,6 +613,8 @@ each of which had already survived sounding plausible.
   and excluded from the measurements.
 - The syllable controls are committed when a syllable starts, so automating them
   changes the next syllable rather than the current one.
+- The contour tables are rendered once when the plugin is activated, not per
+  note, and shared between instances.
 
 ## Versioning
 
@@ -631,13 +623,18 @@ or a change that breaks existing presets or saved host state. **MINOR** adds
 something — a parameter, a layer, presets. **PATCH** is fixes that add nothing
 new.
 
+While the version is below 1.0 the model itself is still settling, and 0.2.0
+replaced 0.1.0's synthesis outright. Presets and saved state are not carried
+across a 0.x bump.
+
 ## License
 
 MIT. The only external dependencies are the CLAP headers, which are MIT
 licensed, plus X11 and Cairo for the plugin window.
 
 Everything {{PLUGIN}} produces is computed at run time. It contains no recorded
-audio of any kind.
+audio of any kind — the measured contours are coefficients describing two
+curves, in the same sense that `f(x) = -260 sin(-pi x / 5200) + 1740` is.
 
 Reference recordings used during development are not part of the release and are
 not redistributable.

@@ -56,12 +56,12 @@ frequency, so a howl's pitch swoops with every gust — which the reference
 library confirms. 53 parameters, 23 presets, and rustling foliage as a bonus
 layer.
 
-**ChirpParade** — the syrinx itself, as a nonlinear oscillator held just past
-its bifurcation and driven by two gestures: air sac pressure and syringeal
-tension. The phase between them *is* the shape of the syllable, so up-sweeps,
-arches and dips are one knob. 61 parameters, 22 presets, ten species each of
-them the median of the recordings of that bird, and woodpecker drumming as a
-layer of its own. Plays one shot on a note and a flock while it is held.
+**ChirpParade** — a bird syllable *is* its frequency contour, so 67 of them were
+measured off real recordings and ship as coefficients that drive the oscillator
+directly. Above them a one-sided valve, which is where every even harmonic comes
+from, and a tracheal resonance that follows the pitch the way a beak does.
+61 parameters, 22 presets, ten species, woodpecker drumming as a layer of its
+own. Plays one shot on a note and a flock while it is held.
 
 ## Build
 

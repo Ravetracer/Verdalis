@@ -5,29 +5,20 @@
     python3 fit.py --presets      # every factory preset against its own target
     python3 fit.py --voice        # the Voice -> harmonics calibration
     python3 fit.py --breath       # the Breath -> roughness calibration
-    python3 fit.py --pull         # what is left of the relaxation pitch drop
 
 This is the loop that closes the argument. `species.py` measures what a crow
 is; the engine's Species table is that measurement; and this renders a crow out
 of the engine and measures it back with the same estimator, so a claim that the
 table was applied can be checked rather than believed.
 
-Two systematic offsets showed up the first time it was run and were fixed in
-the engine rather than absorbed here:
+What it cannot check is whether the result sounds like a bird. That was the
+whole failure of the first version: 61 parameters agreeing with 4268 syllables'
+worth of statistics, and it sounded like nothing. Render the presets and listen;
+these numbers only catch what the ear cannot quantify.
 
-  * a syllable's measured pitch was 13 % above its Pitch setting, because the
-    pressure gesture peaks at 0.37 of the syllable and a measurement reads the
-    loud part rather than the middle. The engine now anchors the contour so that
-    the pitch at the peak *is* Pitch, and the statistic compared here is the
-    pitch at the loudest frame rather than the median over the syllable -- the
-    two differ by 10 % for a swept syllable, which is not an error in either.
-
-  * a syllable's measured sweep was up to three times its Sweep setting for the
-    species whose contours turn more than once, because the gesture's raw
-    excursion depends on Turns. The engine now scales the contour so that the
-    excursion is Sweep octaves whatever Turns is.
-
-What remains unfitted is listed in README.md under *What does not fit*.
+Sweep is now a percentage of the measured contour rather than a width in
+octaves, so it is not compared against the library here -- the contour carries
+the excursion and contours.py is what checks that.
 """
 import os
 import subprocess
@@ -43,22 +34,6 @@ ROOT = os.path.abspath(os.path.join(HERE, "../.."))
 PLUGIN = os.path.join(ROOT, "build/ChirpParade.clap")
 RENDER = os.path.join(ROOT, "build/chirpparade-render")
 PRESETS = os.path.join(ROOT, "presets")
-
-# What species.py measured for each group: pitch at the loudest frame in Hz,
-# sweep octaves, length ms, harmonics, roughness dB. The engine's table carries
-# the same numbers.
-SPECIES = {
-    "Whistler": (4748, 0.21, 128, 1, -34),
-    "Sparrow": (3147, 0.34, 96, 1, -29),
-    "Warbler": (1128, 0.37, 87, 2, -27),
-    "Budgie": (1351, 0.47, 99, 3, -28),
-    "Woodpecker": (3312, 0.31, 96, 2, -25),
-    "Crane": (982, 0.36, 133, 4, -26),
-    "Goose": (566, 0.51, 206, 4, -32),
-    "Crow": (806, 0.45, 144, 5, -21),
-    "Raven": (1171, 0.38, 267, 6, -30),
-    "Screech": (1800, 1.60, 260, 6, -16),
-}
 
 # Isolating one syllable: no flock, no reverb, no distance, and none of the
 # per-syllable variation, so that what is measured is the syllable the
@@ -77,6 +52,25 @@ ISOLATE = [
     "--param", "pitchspread=0",
     "--param", "randomseed=7",
 ]
+
+# The species table no longer carries a sweep or a contour shape -- those are in
+# contours_generated.h as measured curves. What is left of it is these five.
+# Length is the median duration of that species' *archetypes*, which is what
+# the engine's table carries -- not the median of all its measured syllables.
+# The two differ where only some of a species' syllables passed the contour
+# quality gate. contours.py prints these.
+SPECIES = {
+    "Whistler": (4748, 89, 1, -34),
+    "Sparrow": (3147, 60, 1, -29),
+    "Warbler": (1128, 107, 2, -27),
+    "Budgie": (1351, 37, 3, -28),
+    "Woodpecker": (3312, 99, 2, -25),
+    "Crane": (982, 48, 4, -26),
+    "Goose": (566, 90, 4, -32),
+    "Crow": (806, 114, 5, -21),
+    "Raven": (1171, 197, 6, -30),
+    "Screech": (1800, 95, 6, -16),
+}
 
 
 def render(out, preset="garden_sparrows", extra=(), seconds=2.0, rate=48000):
@@ -107,11 +101,12 @@ def rel(got, want):
 
 def do_species(tmp):
     print("Every Species, rendered as one isolated syllable and measured back.")
+    print("Sweep and contour shape are not here: they are measured curves now,")
+    print("and contours.py is what checks them.")
     print()
-    print("%-11s %15s %6s %14s %6s %14s %6s %10s %12s" %
-          ("species", "pitch Hz", "", "sweep oct", "", "length ms", "", "harmonics",
-           "roughness dB"))
-    for name, (f0, sw, ln, nh, ro) in SPECIES.items():
+    print("%-11s %15s %6s %14s %6s %10s %12s" %
+          ("species", "pitch Hz", "", "length ms", "", "harmonics", "roughness dB"))
+    for name, (f0, ln, nh, ro) in SPECIES.items():
         out = os.path.join(tmp, "sp_%s.wav" % name)
         if not render(out, extra=ISOLATE + ["--param", "species=%s" % name]):
             print("%-11s render failed" % name)
@@ -120,16 +115,15 @@ def do_species(tmp):
         if not sy:
             print("%-11s nothing voiced in the render" % name)
             continue
-        g = (med(sy, lambda s: s.f0_med), med(sy, lambda s: s.sweep_oct),
-             1000.0 * med(sy, lambda s: s.dur), med(sy, lambda s: s.harmonics),
+        g = (med(sy, lambda s: s.f0_med), 1000.0 * med(sy, lambda s: s.dur),
+             med(sy, lambda s: s.harmonics),
              10.0 * np.log10(med(sy, lambda s: s.flatness)))
-        print("%-11s %7.0f /%6.0f %6s %6.2f /%5.2f %6s %6.0f /%5.0f %6s %4.0f /%3d %6.0f /%4d" %
-              (name, g[0], f0, rel(g[0], f0), g[1], sw, rel(g[1], sw), g[2], ln,
-               rel(g[2], ln), g[3], nh, g[4], ro))
+        print("%-11s %7.0f /%6.0f %6s %6.0f /%5.0f %6s %4.0f /%3d %6.0f /%4d" %
+              (name, g[0], f0, rel(g[0], f0), g[1], ln, rel(g[1], ln), g[2], nh, g[3], ro))
 
 
 def do_voice(tmp):
-    print("Voice against harmonics: the engine's mu = B/sqrt(eps), measured.")
+    print("Voice against harmonics: how much of each cycle the valve is shut.")
     print()
     print("%8s %12s %12s" % ("Voice", "harmonics", "roughness dB"))
     for v in [0, 10, 20, 30, 40, 50, 60, 70, 85, 100]:
@@ -147,54 +141,30 @@ def do_voice(tmp):
                10.0 * np.log10(med(sy, lambda s: s.flatness))))
 
 
-def do_pull(tmp):
-    """The residual pitch error across Voice.
-
-    A van der Pol oscillator driven towards relaxation genuinely goes flat --
-    its period lengthens -- and the engine compensates for that so that `Pitch`
-    keeps meaning the pitch that comes out. This is what is left over after the
-    compensation, and it is the number to look at if the coefficient behind it
-    is ever changed.
-    """
-    print("Pitch error across Voice, at a pitch low enough not to hit the")
-    print("anti-alias clamp on the drive.")
-    print()
-    print("%8s %12s %12s %12s" % ("Voice", "asked Hz", "got Hz", "error"))
-    base = 500.0
-    for v in [0, 20, 40, 55, 70, 80, 90, 100]:
-        out = os.path.join(tmp, "pull%d.wav" % v)
-        if not render(out, extra=ISOLATE + ["--param", "voice=%d" % v,
-                                            "--param", "pitch=%d" % int(base),
-                                            "--param", "sweep=0",
-                                            "--param", "breath=0",
-                                            "--param", "formant=0",
-                                            "--param", "species=Sparrow"],
-                      seconds=2.0):
-            continue
-        sy = measure(out)
-        if not sy:
-            print("%7d %%  (nothing voiced)" % v)
-            continue
-        want = base * 3147.0 / 2580.0
-        got = med(sy, lambda s: s.f0_med)
-        print("%7d %% %12.0f %12.0f %11.1f %%" %
-              (v, want, got, 100.0 * (got - want) / want))
+# Each species' Breath multiplier, from its measured roughness. Printed beside
+# the sweep because the multiplier is what the first version of this calibration
+# forgot: it measured the *parameter* against roughness on a Whistler, whose
+# multiplier is 0.42, and the resulting default was four times too high.
+BREATH_MUL = {"Sparrow": 0.863, "Whistler": 0.415}
 
 
 def do_breath(tmp):
     print("Breath against roughness, which is what calibrates the species table.")
+    print("Measured on a Sparrow, whose species multiplier is 0.863 -- the")
+    print("effective column is what the engine actually applies.")
     print()
-    print("%8s %14s %12s" % ("Breath", "roughness dB", "tonality dB"))
+    print("%8s %12s %14s %12s" % ("Breath", "effective", "roughness dB", "tonality dB"))
     for b in [0, 2, 5, 10, 18, 30, 50, 100]:
         out = os.path.join(tmp, "b%d.wav" % b)
         if not render(out, extra=ISOLATE + ["--param", "breath=%d" % b,
-                                            "--param", "species=Whistler"]):
+                                            "--param", "species=Sparrow"]):
             continue
         sy = measure(out)
         if not sy:
             continue
-        print("%7d %% %14.1f %12.1f" %
-              (b, 10.0 * np.log10(med(sy, lambda s: s.flatness)), med(sy, lambda s: s.hnr)))
+        print("%7d %% %11.1f %% %14.1f %12.1f" %
+              (b, b * BREATH_MUL["Sparrow"],
+               10.0 * np.log10(med(sy, lambda s: s.flatness)), med(sy, lambda s: s.hnr)))
 
 
 def preset_targets():
@@ -259,7 +229,14 @@ def do_presets(tmp):
                 continue
             tol = 0.30 if k in ("pitch", "length") else 0.0
             if k == "rough":
-                if abs(got[k] - w) > 4.0:
+                # 6 dB, not 4, and the reason is a limitation of the statistic
+                # rather than slack. Spectral flatness cannot tell noise from
+                # frequency modulation, and these contours sweep at hundreds of
+                # octaves a second -- a pure sine doing that smears across a
+                # 21 ms analysis window and reads as rough. So the figure
+                # carries the contour's own motion as well as the breath, and
+                # tightening it would mean fitting Breath to an artefact.
+                if abs(got[k] - w) > 6.0:
                     bad.append(k)
             elif k == "harmonics":
                 if abs(got[k] - w) > 2.0:
@@ -286,8 +263,7 @@ def main():
         print("         and %s" % PLUGIN)
         return 1
 
-    want = [a for a in args if a in ("--species", "--presets", "--voice", "--breath",
-                                    "--pull")]
+    want = [a for a in args if a in ("--species", "--presets", "--voice", "--breath")]
     if not want:
         want = ["--species", "--voice", "--breath", "--presets"]
 
@@ -303,8 +279,6 @@ def main():
                 do_voice(tmp)
             elif a == "--breath":
                 do_breath(tmp)
-            elif a == "--pull":
-                do_pull(tmp)
             elif a == "--presets":
                 do_presets(tmp)
     return 0

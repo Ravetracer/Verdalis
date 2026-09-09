@@ -2,24 +2,24 @@
 format = 1
 name = Goose Flight
 author = ChirpParade
-description = Geese going over. The goose recording has the widest sweeps of any group and the only skew above a half -- its syllables peak late, not early -- and it rises rather than falls. Spread over six birds at different distances, which is most of what makes a skein sound like a skein.
+description = Geese going over. Only one goose recording survived the contour gate, so this species has a single archetype and Contour does nothing on it -- the variety has to come from Sweep, Skew and the flock instead. Spread over six birds at different distances, which is most of what makes a skein sound like a skein.
 features = geese, honk, overhead, passing
 
 # Syllable
 pitch = 2560
-sweep = 0.55
-contour = 0.75
-turns = 0.25
+sweep = 120
+contour = 0.5
+detail = 1
 length = 96
-skew = 0.6
+skew = 0.62
 jitter = 0.12
 pulse_rate = 13.2
-pulse_depth = 0.2
+pulse_depth = 0
 
 # Timbre
 species = Goose
-voice = 0.32
-breath = 0.1
+voice = 0.3
+breath = 0.05
 tract = 4.9
 beak = 0.5
 formant = 0.55
@@ -81,5 +81,5 @@ vel_to_level = 0.6
 vel_to_pitch = 0.2
 
 # Output
-gain = 5
+gain = 8.9
 seed = 0

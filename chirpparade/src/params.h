@@ -21,7 +21,7 @@ enum ParamId : uint32_t {
    kParamPitch = 0,
    kParamSweep,
    kParamContour,
-   kParamTurns,
+   kParamDetail,
    kParamLength,
    kParamSkew,
    kParamJitter,

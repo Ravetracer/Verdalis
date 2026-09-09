@@ -26,38 +26,93 @@ is what makes the medians below worth quoting.
 
 `wavio.py` comes from `shared/tools/analysis`.
 
-## The starting point: a bird is an oscillator at its bifurcation
+## The starting point, and the wrong turn before it
 
-Not a sine with a pitch envelope on it. The voice is the Gardner–Laje–Mindlin
-model of a syringeal labium:
+**A bird syllable is its frequency contour.** That is the finding, and it took a
+wrong version of the plugin to reach it.
+
+The first attempt modelled the syrinx from first principles. The
+Gardner–Laje–Mindlin labium
 
 ```
 x' = y
 y' = -ε·x - C·x²·y + B·y
 ```
 
-`x` is how far the labium has moved from where it sits before phonation. `ε` is
-the restitution of the tissue, so it sets the frequency, `f = √ε/2π`. `B` is the
-**net** dissipation — what the airflow puts in through the interlabial pressure,
-less what the tissue loses — so `B > 0` is a Hopf bifurcation and phonation
-begins exactly there. `C` is the nonlinear loss that stops the labia passing
-through each other.
+driven by two gestures — air sac pressure and syringeal tension — with the phase
+between them as the syllable's shape, which is what Gardner et al. show and what
+Zysman et al. recover from recordings. It was fitted to the medians in the table
+below. Every number agreed, and it sounded nothing like a bird.
 
-Two consequences drive the whole design.
+The medians had been measured through a 21 ms analysis window, and a 21 ms
+window cannot see what a syllable does:
 
-**A syllable is two gestures.** Zysman et al. establish that `B` is proportional
-to the air sac pressure and `ε` to the tension of the syringeal muscle, and that
-both can be recovered from a recording — the envelope gives one, the pitch gives
-the other. Gardner et al. show that syllables "of quite diverse acoustic nature"
-follow from nothing but the **phase** between the two. So the engine has no
-shape menu. It has a `Contour` knob, which is that phase.
+| | through a 21 ms window | at 0.33 ms |
+|---|---|---|
+| peak pitch slew | **2.7 oct/s** | **20 … 440 oct/s** |
+| direction changes per syllable | **0.25** | **2 … 40** |
+| octaves travelled | 0.35, which is the span | 0.2 … 6.8, against a span of 0.2 … 1.0 |
 
-**Timbre is one number and it is not a filter.** Written as a van der Pol, the
-equation has a single shape parameter `μ = B/√ε`: the ratio of pressure to
-tension. Small `μ` and the labia move almost sinusoidally — a whistle, one
-harmonic. Large `μ` and the oscillation goes into relaxation and the harmonic
-stack fills in. There is nothing between the two because there is nothing
-between them in the bird.
+A real syllable is a **scribble**: it travels three to seven times further than
+its end-to-end range. One sinusoidal gesture cannot draw one, and no amount of
+correct physics above it helps. Worse, the conclusion *"a trill is not a
+modulation — only 10 of 4268 syllables have FM"* was written up as a finding
+when it was purely an artefact of a detector that needed 27 ms per cycle and
+capped at 30 Hz.
+
+### What replaced it
+
+The procedure van Hunter Adams uses to synthesise a northern cardinal: put a
+spectrogram in front of you, read the frequency trace off it, fit a formula, and
+drive a sine table with it.
+
+```
+f(x) = -260·sin(-πx/5200) + 1740        Hz, x in samples
+```
+
+That is one sine term, read off by hand. The Bitwig Grid patch in `!dev` does
+the same thing with hand-drawn multi-segment curves on a sine's pitch. Both
+work, because the contour is the bird.
+
+`contours.py` does it automatically and over the whole library: pull the pitch
+and level contour of every well-isolated syllable out of the WAV, fit each as a
+cosine series in normalised syllable time, cluster them per species, keep the
+medoids. The number of terms was chosen by measuring the fit error:
+
+| terms | 8 | 16 | 24 | 32 | **40** | 48 | 64 |
+|---|---|---|---|---|---|---|---|
+| median error | 82 ¢ | 58 ¢ | 47 ¢ | 37 ¢ | **~30 ¢** | 27 ¢ | 24 ¢ |
+
+40 is past the knee. **One term — which is what a single gesture is — is the
+82-cent column and then some.** Refitting a real syllable and resynthesising it
+as a bare sine lands within **41 cents of pitch and 0.5 dB of level**.
+
+The table that ships is 67 archetypes, **4288 floats, 17 KB, no audio**. A
+contour is a formula in exactly the sense Adams' is.
+
+### Medoids, not means
+
+The archetypes are medoids of their clusters — one real measured syllable each —
+and never averages. Two contours that zig-zag out of phase average to a smooth
+glide, which is precisely the failure this whole rewrite was about.
+
+### What survived from the physical model
+
+One thing, and it matters. The equation above is **odd-symmetric**: flip the
+displacement and it is unchanged, because the nonlinear loss goes as `u²`. An
+odd-symmetric oscillator has only odd harmonics — energy at f, 3f, 5f and
+nothing between — and no drive will make it a crow. A 234 Hz fundamental came
+out as 234, 656 and 1125 Hz.
+
+The missing physics is that the sound is not the labium moving; it is the **air
+that gets past it**, and air passes only while the labia are apart. Rectifying
+at the point of closure is where every even harmonic comes from, and it is the
+same step that makes a glottal pulse rich rather than sinusoidal. Zysman et al.
+flag the gap in as many words: *"more realistic models for this force lead to
+signals with different harmonic contents"*.
+
+So the engine keeps the valve and throws away the oscillator. `Voice` is the
+fraction of each cycle the valve is shut; the contour supplies the frequency.
 
 ## What was measured, and what it decided
 
@@ -65,15 +120,15 @@ between them in the bird.
 |---|---|---|
 | Syllable duration | 27 … 481 ms, median **96** | `Length` range and default |
 | Fundamental | 292 … 5925 Hz, median **2579** | `Pitch` range and default |
-| Sweep, over the audible part | 0.03 … 1.01 oct, median **0.35** | `Sweep` default |
-| Contour turns | 0.25 … 4.0, median **0.25** | `Turns` default: most syllables are a plain sweep |
+| Sweep, through a 21 ms window | 0.03 … 1.01 oct, median 0.35 | **nothing** — see the wrong turn above |
+| Contour turns, same window | 0.25 … 4.0, median 0.25 | **nothing** — the real figure is 2 … 40 |
 | Sweep rate | 0.3 … 12.4 oct/s, median 2.7 | how fast the gesture may run |
 | Net sweep, start to end | −0.66 … +0.54 oct, median **−0.01** | up and down are equally common |
-| Rise / fall | 24 ms against 41 ms | `Skew` default **0.37**, not 0.5 |
-| Harmonics above −24 dB | 1 … 12, median **1** | `Voice`, via the μ calibration below |
+| Rise / fall | 24 ms against 41 ms | already in the measured level contours; `Skew` warps them |
+| Harmonics above −24 dB | 1 … 12, median **1** | `Voice`, via the closure calibration below |
 | Roughness (spectral flatness) | −35 … −16 dB, median **−28** | `Breath` default, via its calibration |
 | Loudest harmonic, harmonic syllables | the **3rd**, at 1749 Hz; not the 1st in **80 %** | `Tract Length` **4.9 cm**, from c/4L |
-| Within-syllable trill | **10 of 4268 syllables** | there is no trill oscillator; see below |
+| Within-syllable trill | **10 of 4268 syllables** — an artefact | see *A trill is not a modulation* |
 | Amplitude pulsing | 25 % of syllables, 8.5 … 66 Hz, median **13.2**, depth **0.82** | `Pulse Rate`, `Pulse Depth` |
 | Syllables per minute | 87 … 711, median **273** | `Flock Rate` range and default |
 | Syllables joined with no silence | **70 % of all gaps** | `Legato` default |
@@ -119,7 +174,7 @@ falls as `ε` rises — a bird singing high cannot sustain a relaxation
 oscillation. So the engine does not apply a separate 1/f law to `μ`: the
 relation is already in the species table, because the references measured it.
 
-## The one prediction the references can falsify
+## The prediction that was confirmed, and did not save the model
 
 Everything above is a description. This is the one place the model makes a claim
 a recording could contradict.
@@ -161,74 +216,101 @@ bias — the whole-library median is +0.11, because a bird's pitch and level do
 broadly rise together, which is the same model with the gestures broadly in
 phase — and a real syllable is not one clean cycle of anything.
 
-So: the phase control is justified, and the claim that it is *sufficient* is not.
-ChirpParade therefore exposes `Turns` beside `Contour`, which lets a syllable
-span more or less than one turn of the gesture, and `Variation`, which stops a
-phrase being the same gesture repeated. Neither is in the papers.
+So the phase control is justified and the claim that it is *sufficient* is not —
+and this is the part worth keeping in mind. **The prediction passed and the
+model still failed.** A confirmed ordering over 3600 syllables says the two
+gestures are real; it says nothing about whether two *sinusoidal* gestures can
+draw a syllable, and they cannot. A correct prediction about a mechanism is not
+evidence that a particular parameterisation of it is enough.
 
-## The Species table is a measurement
+`Contour` is now the phase between nothing: it selects a measured curve. What the
+measurement above still buys is confidence that the curves are not arbitrary —
+they are two coupled gestures, and that is why forty cosine terms describe one
+to within 30 cents while a hundred random numbers would not.
+
+## The Species table is a measurement, and it is now shorter
 
 The library is named by what is in it, so it can be grouped by species and each
-group measured on its own. `species.py` prints exactly the table that is in
-`src/dsp/chirp_engine.cpp`, along with the grouping it used, so the grouping can
+group measured on its own. `species.py` prints the grouping it used, so it can
 be checked rather than trusted. Nothing is left ungrouped.
 
-| Species | files | syllables | f0 Hz | sweep | length | skew | harm | rough | /min | turns | shape |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Whistler | 3 | 44 | 4748 | 0.21 | 128 ms | 0.35 | 1 | −34 | 288 | 0.25 | down |
-| Sparrow | 25 | 2616 | 3148 | 0.34 | 99 ms | 0.40 | 1 | −29 | 276 | 0.25 | down |
-| Warbler | 2 | 182 | 1128 | 0.37 | 87 ms | 0.43 | 2 | −27 | 369 | 0.25 | down |
-| Budgie | 5 | 473 | 1351 | 0.47 | 99 ms | 0.26 | 3 | −28 | 293 | 0.25 | down |
-| Woodpecker | 2 | 48 | 3312 | 0.31 | 96 ms | 0.35 | 2 | −25 | 301 | 0.50 | arch |
-| Crane | 2 | 24 | 982 | 0.36 | 133 ms | 0.33 | 4 | −26 | 140 | 0.75 | wobble |
-| Goose | 1 | 12 | 566 | 0.51 | 206 ms | 0.60 | 4 | −32 | 239 | 0.50 | up |
-| Crow | 8 | 481 | 806 | 0.45 | 144 ms | 0.41 | 5 | −21 | 132 | 1.50 | wobble |
-| Raven | 1 | 6 | 1171 | 0.38 | 267 ms | 0.42 | 1\* | −30 | 88 | 0.50 | arch |
+Four of its columns were deleted in the rewrite. Sweep, contour shape, turns and
+skew were in the table and they were **the wrong four numbers**: a syllable's
+shape is not summarised by a sweep width and a turn count. What is left is the
+five a median genuinely describes, plus the archetype set.
 
-`Screech` is the tenth entry and has no reference behind it. It is every range
-at once, kept because a plugin for birds should be able to make a noise no bird
-makes.
+| Species | files | syllables | usable contours | archetypes | f0 Hz | length | harm | rough | /min |
+|---|---|---|---|---|---|---|---|---|---|
+| Whistler | 3 | 44 | 38 | 8 | 4748 | 89 ms | 1 | −34 | 288 |
+| Sparrow | 25 | 2616 | 1282 | 8 | 3148 | 60 ms | 1 | −29 | 276 |
+| Warbler | 2 | 182 | 60 | 8 | 1128 | 107 ms | 2 | −27 | 369 |
+| Budgie | 5 | 473 | 126 | 8 | 1351 | 37 ms | 3 | −28 | 293 |
+| Woodpecker | 2 | 48 | 29 | 8 | 3312 | 99 ms | 2 | −25 | 301 |
+| Crane | 2 | 24 | 6 | 6 | 982 | 48 ms | 4 | −26 | 140 |
+| Goose | 1 | 12 | **1** | **1** | 566 | 90 ms | 4 | −32 | 239 |
+| Crow | 8 | 481 | 95 | 8 | 806 | 114 ms | 5 | −21 | 132 |
+| Raven | 1 | 6 | **4** | **4** | 1171 | 197 ms | 1\* | −30 | 88 |
 
-\* **Raven's harmonic count is the one figure the engine overrides**, and the
-reason is recorded rather than quietly applied. The measurement says 1, over the
-six syllables of the single raven recording, and the estimator reported one
-harmonic in one frame and nine in the next for that same file. A raven is
-audibly rougher than a crow, so the table carries 6. Its roughness is left at
-the measured −30 dB, which is the conservative choice and means the engine's
-raven is less noisy than its harmonics would suggest.
+`Screech` is the tenth entry and has no references. It borrows the eight most
+extreme contours in the whole library — the ones whose pitch travels furthest,
+7.5 to 10.3 octaves of path — which is what "every range at once" honestly means
+when there is nothing to measure.
+
+**`length` is the median duration of that species' archetypes**, not of all its
+measured syllables. The two differ where only some of a species' syllables
+passed the quality gate — Crane's usable contours are its short ones — and using
+the wrong one stretches a 48 ms curve to 133 ms, which turns its internal
+amplitude modulation into separate notes.
+
+**Goose has one contour and Raven four**, so `Contour` does nothing on a Goose.
+Those two rows are the weakest numbers here and the reason the override below
+exists.
+
+\* **Raven's harmonic count is the one figure the engine overrides.** The
+measurement says 1, over the six syllables of the single raven recording, and
+the estimator reported one harmonic in one frame and nine in the next for that
+same file. A raven is audibly rougher than a crow, so the table carries 6. Its
+roughness is left at the measured −30 dB.
 
 The engine applies the table as **ratios to the library-wide medians** rather
 than as absolute values, so choosing a species moves the knobs' meaning without
-taking them away. One consequence is worth knowing: `Pitch` at its default
-*is* the library median, so every species at the default sings in its own
-register — Crow at 2600 Hz gives 812 Hz, which is a crow.
+taking them away. One consequence is worth knowing: `Pitch` at its default *is*
+the library median, so every species at the default sings in its own register —
+Crow at 2600 Hz gives 812 Hz, which is a crow.
 
 ## Two calibrations, measured on the plugin's own output
 
-Both were fitted by rendering the engine and measuring the result with the same
+Both fitted by rendering the engine and measuring the result with the same
 estimators that measured the references. `fit.py --voice` and `fit.py --breath`
 reprint them.
 
-**Harmonics against the drive.** `μ` is the model's own parameter; how many
-harmonics it produces is not something the model tells you.
+**Harmonics against the valve.** How much of each cycle the syrinx is shut, at
+900 Hz with no breath:
 
-| μ | 0.15 | 0.58 | 1.43 | 3.52 |
+| closure | 0.00 | 0.13 | 0.26 | 0.39 | 0.52 | 0.65 | 0.78 | 0.91 |
+|---|---|---|---|---|---|---|---|---|
+| harmonics | 1 | 2 | 3 | 3 | 3 | 4 | 5 | 5 |
+
+which fits `harmonics = 1 + 5.5·closure^0.6`. Inverting it turns a species'
+measured harmonic count into a drive setting. It **saturates near five**, and
+the noisiest references measure twelve — see *Where the model is not there yet*.
+
+**Roughness against breath**, on a Sparrow:
+
+| effective Breath | 0 | 4.3 % | 12.9 % | 25.9 % |
 |---|---|---|---|---|
-| harmonics | 1 | 2 | 4 | 9 |
+| roughness | −31.5 | −27.8 | −22.0 | −17.7 dB |
 
-which is `harmonics = 1 + 1.70·μ^1.22`. Inverting it is what turns a species'
-measured harmonic count into a drive setting, and it is the only fit in the
-species path — the table itself stays a measurement.
+13 dB per decade above the floor. The library's median roughness is −28 dB,
+which is where a sparrow lands at **5 %**, and the same curve converts each
+species' measured roughness into a breath multiplier — 0.42 for the cleanest,
+2.8 for the roughest.
 
-**Roughness against breath.**
-
-| Breath | 0 | 2 % | 5 % | 10 % | 18 % | 30 % | 50 % |
-|---|---|---|---|---|---|---|---|
-| roughness | −37.4 | −36.5 | −33.0 | −28.1 | −23.6 | −19.5 | −15.3 dB |
-
-17.7 dB per decade above about 3 %. The library's median roughness is −28 dB,
-which is why `Breath` defaults to 10 %, and the same curve is what converts each
-species' measured roughness into a breath multiplier.
+**"Effective" is doing work in that table.** The first version of this
+calibration swept the *parameter* against roughness on a Whistler, whose species
+multiplier is 0.42, so it was really measuring 0.42× what it thought. The slope
+came out at 17.7 dB/decade instead of 13 and the default landed four times too
+high. It now reports both numbers.
 
 ## Woodpecker rolls accelerate. They are not supposed to.
 
@@ -246,22 +328,34 @@ The check matters because an onset detector that loses quiet late strikes would
 finding survives the obvious objection to it, and `Accelerate` defaults to
 +0.23 rather than to a deceleration.
 
-## A trill is not a modulation
+## A trill is not a modulation — but the evidence for that was rotten
+
+The claim is probably true and the measurement behind it was not.
 
 Only **10 of 4268 syllables** carry a periodic wobble of their own pitch
-contour. What the ear hears as a trill in this library is syllables arriving too
-fast to separate — the syllable rate inside a phrase reaches 22.8 a second — with
-no silence between them.
+contour, so what the ear hears as a trill here is syllables arriving too fast to
+separate — up to 22.8 a second, with no silence between them. The engine has no
+trill oscillator for that reason: a trill is `Syllable Rate` high and `Legato`
+high.
 
-So there is no trill oscillator in the engine. A trill is `Syllable Rate` high
-and `Legato` high, which is what the measurement says it is. Amplitude pulsing
-*within* a syllable is a separate and real thing: a quarter of the library's
-syllables have it, at a median 13 Hz and a depth of 0.82.
+But the detector that produced the figure of 10 needed five analysis frames per
+cycle and capped at 30 Hz, so it **structurally could not see** the modulation a
+bird actually has. The number is a lower bound and nothing more. What the
+0.33 ms tracker shows is that the fine motion is there in abundance — 2 to 40
+direction changes a syllable — it simply is not *periodic*, which is a different
+statement and the one the contours capture directly.
 
-## What the measurements found, and what had survived sounding plausible
+Amplitude pulsing within a syllable is a separate and real thing: a quarter of
+the library's syllables have it, at a median 13 Hz and a depth of 0.82. That is
+now carried by the measured level contours, which is why `Pulse Depth` defaults
+to nothing.
+
+## What the measurements found in the version that was replaced
 
 Every one of these was a bug or a wrong model that the analysis caught after it
-had already been listened to and accepted.
+had already been listened to and accepted. They are kept because the model they
+belonged to is gone but the traps are not: anyone building a syrinx oscillator
+will meet all of them.
 
 **The oscillator could only make odd harmonics.** The equation is
 odd-symmetric — `u → −u, v → −v` leaves it unchanged, because the nonlinear loss
@@ -352,42 +446,64 @@ carries its own pitch offset, so a "nominal" isolated render came out a third of
 an octave off and looked convincingly like an oscillator running sharp. It is in
 `fit.py`'s isolation list now, with a note.
 
+## Two bugs in the measurement code itself
+
+Both produced numbers that were then written into documentation as findings, so
+they get their own heading.
+
+**`smooth()` zero-padded.** numpy's `mode="same"` pads with zeros, and these
+series are log2 of a frequency — around 11.6 — so the first and last samples
+were dragged towards nothing and every contour got an invented three-octave
+excursion at each end. *Everything* measured through it came out with a span of
+about 3 octaves and a peak slew of 8000 oct/s, **including a constant sine**. The
+original diagnosis of the first version was made with a separate, correctly
+padded estimator, so that finding stands — but every figure printed by
+`describe()` before this was fixed was the artefact and not the bird.
+
+**The breath calibration measured the wrong quantity.** It swept the parameter
+against roughness while the species multiplier was silently scaling it. See
+*Two calibrations* above.
+
+The lesson both share with the original failure: a measurement is a piece of
+software and it needs testing against a case whose answer is known. A constant
+sine should measure as a constant, and neither of these was ever asked to.
+
 ## Where the model is not there yet
 
 `fit.py --species` renders each species as one isolated syllable and measures it
-back. Nine of the ten land within ±4 % on pitch and within one or two harmonics.
-What does not fit:
+back. Nine of the ten land within ±7 % on pitch and ±3 % on length. What does
+not fit:
 
-**Roughness and harmonic count are not independent, and for three species the
-references ask for both at once.** A relaxation waveform is spectrally flat
-whether or not any noise has been added, so a voice with four to six harmonics
-cannot also be spectrally peaked. Goose measures −32 dB in the library and −22
-out of the engine; Raven −30 against −21; Budgie −28 against −22. The engine
-carries the measured roughness as *noise*, which is the conservative reading,
-because spectral flatness cannot tell turbulent noise apart from a rich source.
-The chaotic route is `Rasp`, and it is deliberately left as a control the presets
-set by ear rather than something a species applies on the strength of a
-statistic that cannot see it.
+**The valve saturates around five harmonics** and the noisiest references
+measure twelve. Closing it further aliases. The likely answer is a second
+syringeal side — a bird has two, controlled independently — which is also the
+most plausible route to a corvid's density.
 
-**Syllable duration measures 6–33 % longer than `Length`.** The measurement
-includes the onset and offset ramps and the oscillator's own tail; the setting is
-the length of the gesture. Both are defensible and the references were measured
-the same way, so the offset is a property of the comparison rather than an error
-in either — but a preset aiming at a particular measured duration sets `Length`
-below it.
+**Roughness cannot be met for the rich species.** Crow measures −13 dB out of
+the engine against −21 in the library, Raven −13 against −30. A harmonic stack
+is spectrally flat whether or not any noise is present, and spectral flatness
+cannot tell the two apart — so this may be a limit of the *statistic* rather
+than of the engine. Deciding that needs a harmonic-to-noise ratio on a resolved
+partial instead of band flatness.
 
-**`Sweep` is off by more than 10 % for three species.** Woodpecker −33 %, Crow
-+37 %, Raven −53 %. All three have a contour that turns more than once, where
-the audible window and the turning points interact; the six species with a plain
-sweep are within 10 %.
+**Spectral flatness is a poor fit target for these contours at all.** They sweep
+at hundreds of octaves a second, and a pure sine doing that smears across a
+21 ms analysis window and reads as rough. `fit.py`'s tolerance is 6 dB for that
+reason.
 
-**Screech does not fit and cannot.** It asked for eight harmonics at 5.2 kHz,
-which is a fortieth harmonic above Nyquist, and the engine's own anti-alias
-clamp refused. Six at 1.8 kHz is what the band allows and what it now asks for;
-its measured pitch still runs 38 % high because the clamp bites and its contour
-is deliberately wild. It is the one entry with no reference to be wrong about.
+**Screech does not fit and cannot.** No reference of its own, borrowed extreme
+contours, and a measured pitch 54 % low because those contours swing so far that
+the fundamental estimate is meaningless. It is an effect, not a bird.
+
+**The quality gate throws away 61 % of the library** — 4268 syllables segmented,
+1641 usable. Most rejections are the dense multi-bird files where the tracker is
+following two birds at once. A better tracker would widen every species' set.
 
 **The library is not evenly sampled.** 25 of the 58 files are ordinary small
-birds, and Goose and Raven have one file each — 12 and 6 syllables. Those two
-rows of the species table are the weakest numbers in it, and the Raven override
-above is the direct consequence.
+birds; Goose and Raven have one file each.
+
+**And none of this says whether it sounds like a bird.** That was the entire
+failure of the first version: 61 parameters agreeing with 4268 syllables' worth
+of statistics, and it sounded like nothing. `contours.py --wav` writes
+reference/resynthesis pairs and `!dev/listen-v2/` holds the presets. Listen
+first; these numbers only catch what the ear cannot quantify.
