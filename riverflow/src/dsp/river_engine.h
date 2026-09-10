@@ -53,6 +53,7 @@
 
 #include "verdalis/dsp/adsr.h"
 #include "verdalis/dsp/bubble.h"
+#include "verdalis/dsp/pocket.h"
 #include "verdalis/dsp/fastmath.h"
 #include "verdalis/dsp/filters.h"
 #include "verdalis/dsp/reverb.h"
@@ -135,50 +136,11 @@ struct EngineParams {
    int seed = 0;
 };
 
-// One pocket of air in the water: a damped harmonic oscillator, which is what
-// a bubble reduces to once it has been struck, plus the two things that come
-// with the strike. Both event layers spawn into this one pool -- a dabble and a
-// trickle drop differ in size, in what they hit and in how much of each part
-// they carry, not in kind.
-//
-// Four bytes of RNG state rather than a full generator: there can be a
-// thousand of these alive and every one is walked every sample.
-struct Pocket {
-   bool active = false;
-   // A cluster is spread over its spill time, so a pocket can be spawned now
-   // and start later. Counted down before anything else happens to it.
-   int delaySamples = 0;
-
-   // The ringing air.
-   float phase = 0.0f;
-   float inc = 0.0f;
-   float level = 0.0f;
-   float decayCoef = 0.0f;
-   // A pocket rises and shrinks as it goes, and Minnaert ties pitch to radius,
-   // so the tone bends upward over its life. This is the "bloop" of a dripping
-   // tap; without it a pocket is a bare sine. Expressed as the total rise
-   // spread over the life -- applying it as a per-sample factor compounds it
-   // into the megahertz within a millisecond, which is a bug this suite has
-   // already had once.
-   float chirp = 1.0f;
-
-   // The water around it being displaced: a broad band at the pocket's own
-   // pitch. This is what stops a cascade sounding like a music box.
-   Svf bodyBand;
-   float noiseMix = 0.0f;
-
-   // What it struck. One band serves both the impact and the wash that follows
-   // it, because both come off the same surface -- the impact is the fast decay
-   // through it and the splash is the slow one.
-   Svf surfaceBand;
-   float clickLevel = 0.0f;
-   float clickCoef = 0.0f;
-   float splashLevel = 0.0f;
-   float splashCoef = 0.0f;
-
-   float panL = 0.7071f, panR = 0.7071f;
-   RngLite rng;
-};
+// A pocket of air, and the drop that traps one, are the suite's: see
+// verdalis/dsp/pocket.h. RiverFlow's Trickle layer *is* that code, and RainyDay
+// uses the same one so that the two agree.
+using verdalis::Pocket;
+using verdalis::TrickleSpec;
 
 // One held note: its own river. The bed is per-voice rather than global so
 // that a second note is a second stretch of water rather than the same one

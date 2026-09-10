@@ -56,11 +56,10 @@ inline float logNormal(Rng &rng, float sigmaOct) {
    return f / std::exp(0.5f * s * s);
 }
 
-// An exponential decay coefficient reaching -60 dB in `sec`.
-inline float decayCoefFor(float sec, double sampleRate) {
-   const float n = std::max(1.0f, static_cast<float>(sec * sampleRate));
-   return std::exp(-6.907755f / n); // ln(1000)
-}
+// decayCoef, from fastmath, is the suite's -60 dB-in-`seconds` coefficient.
+// This engine used to carry its own copy spelling ln(1000) with three fewer
+// digits; consolidating them moved five of the twenty factory renders by
+// exactly one 16-bit LSB, which is the quantisation floor.
 
 // ------------------------------------------------------------- the bed shapes
 //
@@ -627,7 +626,7 @@ void RiverEngine::spawnDabble(float envLevel, float flow) {
       p.surfaceBand.reset();
       p.surfaceBand.setCutoff(clampf(f * 1.6f, 80.0f, 0.45f * sr), resonanceFor(2.5f), sr);
       p.clickLevel = p.level * 0.15f;
-      p.clickCoef = decayCoefFor(0.004f * mDistanceSmear, mSampleRate);
+      p.clickCoef = decayCoef(0.004f * mDistanceSmear, sr);
       p.splashLevel = 0.0f;
       p.splashCoef = 0.0f;
 
@@ -645,67 +644,28 @@ void RiverEngine::spawnTrickle(float envLevel, float flow) {
    Pocket *slot = allocatePocket();
    if (!slot)
       return;
-   Pocket &p = *slot;
    const float sr = static_cast<float>(mSampleRate);
    const BankTraits &bt = kBankTraits[clampi(mP.bank, 0, kNumBankKinds - 1)];
 
-   p.active = true;
-   p.rng.seed(mRng.next() | 1u);
-   p.delaySamples = 0;
+   // The generator is shared with RainyDay; only the settings are this
+   // plugin's. Note that `logNormal` here and `pocketLogNormal` there are the
+   // same function -- the draw order inside spawnTricklePocket is part of its
+   // contract, because two plugins render identically from one seed only while
+   // it holds.
+   TrickleSpec spec;
+   spec.sizeMm = mP.trickleSizeMm;
+   spec.spreadOct = mP.trickleSpreadOct;
+   spec.decaySec = mP.trickleDecaySec;
+   spec.impact = mP.trickleImpact;
+   spec.stoneToneHz = mP.stoneToneHz * bt.stoneTilt;
+   spec.splash = mP.splash;
+   spec.width = mP.width;
+   spec.levelSigma = kTrickleLevelSigma;
+   spec.smear = mDistanceSmear;
 
-   const float pan = clampf(mRng.white() * clampf(mP.width, 0.0f, 1.0f), -1.0f, 1.0f);
-   p.panL = std::sqrt(0.5f * (1.0f - pan));
-   p.panR = std::sqrt(0.5f * (1.0f + pan));
-
-   const float oct = mRng.gaussian() * clampf(mP.trickleSpreadOct, 0.0f, 3.0f) * 0.5f;
-   const float r = clampf(mP.trickleSizeMm * std::exp2(oct), 0.05f, 12.0f);
-   const float f = clampf(minnaertHz(r), 200.0f, 0.45f * sr);
-
-   // A drop's pocket is asked to last a set time rather than to obey the
-   // physics alone: Trickle Decay is measured directly from the references'
-   // event-triggered envelopes, and Damping is not offered here because a drop
-   // that has just landed is not a free bubble.
-   const float decay = clampf(mP.trickleDecaySec, 0.001f, 0.5f) * mDistanceSmear;
-   p.decayCoef = decayCoefFor(decay * 0.5f, mSampleRate);
-   // The chirp is a total rise over the pocket's life, so it is spread over the
-   // life this pocket is actually given -- which for a drop comes from the
-   // parameter, not from its physical damping. Getting that wrong ran the
-   // phase increment into its Nyquist clamp and held it there for most of the
-   // pocket's life, which is a near-Nyquist tone read out of an interpolated
-   // sine table: broadband hash, not a drop.
-   const float lifeSamples = std::max(4.0f, decay * 0.5f * sr);
-
-   p.phase = 0.0f; // struck at zero; see the note in spawnDabble
-   p.inc = f / sr;
-   const float rise = 1.04f + 0.12f * mRng.uniform();
-   p.chirp = std::pow(rise, 1.0f / lifeSamples);
-
-   const float impact = clampf(mP.trickleImpact, 0.0f, 1.0f);
-   // Narrow, and deliberately much narrower than a dabble's. Spray is uniform
-   // where trapped pockets are not, and the same references that are impulsive
-   // below 800 Hz are smooth above it -- kurtosis 8 to 10 against 35.
-   const float lvl = envLevel * mP.trickleGain * kEventGain * mDistanceLevel * flow *
-                     logNormal(mRng, kTrickleLevelSigma);
-   p.level = lvl * (1.0f - 0.75f * impact);
-
-   p.bodyBand.reset();
-   p.bodyBand.setCutoff(clampf(f * 1.1f, 80.0f, 0.45f * sr), resonanceFor(2.4f), sr);
-   p.noiseMix = 0.35f + 0.4f * mRng.uniform();
-
-   // What it landed on. This is the "stoney surface": a hard wet rock is high
-   // and short, moss and gravel are lower and duller.
-   const float stone = clampf(mP.stoneToneHz * bt.stoneTilt *
-                                 (0.8f + 0.4f * mRng.uniform()),
-                              200.0f, 0.45f * sr);
-   p.surfaceBand.reset();
-   p.surfaceBand.setCutoff(stone, resonanceFor(1.1f), sr);
-   p.clickLevel = lvl * impact * 0.6f;
-   p.clickCoef = decayCoefFor(0.0022f * mDistanceSmear, mSampleRate);
-
-   // The wash that follows, through the same surface: the impact is the fast
-   // decay through that band and the splash is the slow one.
-   p.splashLevel = lvl * clampf(mP.splash, 0.0f, 1.0f) * 0.9f;
-   p.splashCoef = decayCoefFor(decay * 3.0f, mSampleRate);
+   const float levelBase =
+      envLevel * mP.trickleGain * kEventGain * mDistanceLevel * flow;
+   spawnTricklePocket(*slot, spec, mRng, sr, levelBase);
 }
 
 // One held note, per sample: its envelope, its bed, its plunge pool and the two
@@ -889,46 +849,7 @@ void RiverEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numS
 }
 
 void RiverEngine::processPockets(float *outL, float *outR, uint32_t numSamples) {
-   for (auto &p : mPockets) {
-      if (!p.active)
-         continue;
-      for (uint32_t i = 0; i < numSamples; ++i) {
-         if (p.delaySamples > 0) {
-            --p.delaySamples;
-            continue;
-         }
-         p.inc *= p.chirp;
-         // A ceiling well short of Nyquist, whatever the chirp is asked for.
-         // sin2piFast reads an interpolated 4096-entry table, and a phase
-         // increment close to 0.5 walks it in steps large enough for the
-         // interpolation error to become broadband noise rather than a tone.
-         if (p.inc > 0.40f)
-            p.inc = 0.40f;
-         p.phase += p.inc;
-         if (p.phase >= 1.0f)
-            p.phase -= 1.0f;
-
-         // The ringing air, and the water being displaced around it.
-         float s = sin2piFast(p.phase) * p.level;
-         if (p.noiseMix > 1.0e-4f)
-            s += p.bodyBand.bandpassNormalised(p.rng.white()) * p.level * p.noiseMix;
-
-         // What it struck: the impact, then the wash, both through one band.
-         if (p.clickLevel > 1.0e-6f || p.splashLevel > 1.0e-6f) {
-            const float surf = p.surfaceBand.bandpassNormalised(p.rng.white());
-            s += surf * (p.clickLevel + p.splashLevel);
-            p.clickLevel *= p.clickCoef;
-            p.splashLevel *= p.splashCoef;
-         }
-
-         outL[i] += s * p.panL;
-         outR[i] += s * p.panR;
-         p.level *= p.decayCoef;
-      }
-      if (p.delaySamples <= 0 && p.level < 1.0e-5f && p.clickLevel < 1.0e-6f &&
-          p.splashLevel < 1.0e-6f)
-         p.active = false;
-   }
+   processPocketPool(mPockets, kMaxPockets, outL, outR, numSamples);
 }
 
 void RiverEngine::processOutputChain(float *outL, float *outR, uint32_t numSamples) {

@@ -291,16 +291,22 @@ def fit_one(path, spec, corr_tilt=0.0, corr_body=0.5):
     tri_rate = LIB_TRICKLE_RATE * EVENT_RATE_MUL
     try:
         r = EV.measure(path, "low", 12.0)
-        if r:
-            dab_size = float(np.clip(r["radius_mm"], 1.0, 12.0))
+        # Only believe a peak that is actually a resonance. A flatness above
+        # 0.55 means the "event" has no pitch of its own, and its peak
+        # frequency is then wherever the band happened to be loudest.
+        if r and r["flat"] < 0.55:
+            # Clamped to the range the library actually measures, 2.3-5.8 mm,
+            # with a little margin. The old [1.0, 12.0] was wide enough to
+            # admit sizes no recording in the library shows.
+            dab_size = float(np.clip(r["radius_mm"], 2.0, 6.5))
             dab_rate = float(np.clip(r["rate"] / LIB_DABBLE_DETECT * LIB_DABBLE_RATE
                                      * EVENT_RATE_MUL, 0.2, 40.0))
     except Exception:
         pass
     try:
         r = EV.measure(path, "high", 12.0)
-        if r:
-            tri_size = float(np.clip(r["radius_mm"], 0.15, 3.0))
+        if r and r["flat"] < 0.55:
+            tri_size = float(np.clip(r["radius_mm"], 0.35, 2.2))
             tri_rate = float(np.clip(r["rate"] / LIB_TRICKLE_DETECT * LIB_TRICKLE_RATE
                                      * EVENT_RATE_MUL, 0.5, 200.0))
     except Exception:

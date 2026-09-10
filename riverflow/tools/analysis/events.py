@@ -64,7 +64,14 @@ def find_events(m, sr, lo, hi, k=4.0, min_gap_ms=25.0):
 
 
 def measure(path, band, secs):
-    lo, hi = (150.0, 1500.0) if band == "low" else (1800.0, 16000.0)
+    # The low band starts at 400 Hz, not 150. Below that the references carry
+    # wind and handling noise -- lowend.py measures it as uncorrelated with the
+    # water -- and a detector given 150 Hz locks onto it: creek-ambience.wav
+    # returned a "pocket" at 328 Hz with a Q of 1.4 and a spectral flatness of
+    # 0.63, which is not a resonance, and the fitter turned that into a 9.9 mm
+    # bubble. The measured population is 562-1406 Hz, so 400 Hz clears the
+    # contamination with margin to spare.
+    lo, hi = (400.0, 1600.0) if band == "low" else (1800.0, 16000.0)
     x, sr = wavio.read_wav(path)
     n = int(min(secs * sr, x.shape[0]))
     st = (x.shape[0] - n) // 2

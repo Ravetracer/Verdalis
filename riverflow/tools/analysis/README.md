@@ -230,6 +230,28 @@ drop by 10 log10(2) to keep the energy the band variance was fitted to.
 Afterwards `bubbling_creek` measures 35 against 41, `glacier_falls` 57 against
 66 and `hanging_trickle` 73 against 79.
 
+## Dabble Size, fitted from the microphone
+
+`forest_creek` was fitted at a dabble radius of 9.94 mm -- a 328 Hz pocket,
+larger than anything the library measures, and wrong by ear. The cause was two
+compounding faults.
+
+The low-band event detector ran from 150 Hz, and `lowend.py` had already
+established that the references carry wind and handling noise below that,
+uncorrelated with the water in every recording. Given 150 Hz it locked onto it:
+the event it reported for `creek-ambience.wav` had a Q of 1.4 and a spectral
+flatness of 0.63, which is not a resonance. The band now starts at 400 Hz --
+clear of the contamination, and well below the 562 Hz bottom of the measured
+population.
+
+And the fitter believed whatever peak it was handed. It now requires a spectral
+flatness below 0.55 before treating a peak as a pitch, and clamps the radius to
+the 2.0-6.5 mm the library measures rather than the 1.0-12.0 it allowed.
+
+Seventeen of the twenty presets consequently use the library median of 3.30 mm.
+That is the honest outcome: the measurement supports a per-preset size only
+where the event genuinely is a resonance, and in most references it is not.
+
 ## The engine's own calibration
 
 The preset fitter needs to invert the engine, so the engine was swept one

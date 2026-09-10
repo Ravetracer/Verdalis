@@ -94,6 +94,47 @@ the kind of mistake that is easy to make twice:
   is a 30 dB level error with the shape exactly right — which no amount of
   looking at a spectrum will show you.
 
+## The trickle layer is shared with RainyDay
+
+`Pocket`, `TrickleSpec`, `spawnTricklePocket` and `processPocketPool` moved into
+`shared/include/verdalis/dsp/pocket.h`, and RainyDay's Trickle is the same code
+rather than a second implementation of it. Driven identically the two plugins
+render the same event rate, pitch, Q, decay and spectral flatness.
+
+The order in which that function draws its random numbers is part of its
+contract, and the header says so: two plugins render identically from one seed
+only while it holds.
+
+Verified against the whole preset library: nine of twenty renders differ by
+exactly one 16-bit LSB, -90.3 dBFS, and none by more. That is the quantisation
+floor, and it comes from consolidating two spellings of ln(1000) -- the engine
+carried its own `decayCoefFor` with three digits fewer than `fastmath`'s
+`decayCoef`. The duplicate is gone.
+
+## Dabble Size was fitted from the microphone, not the water
+
+The size a preset uses is fitted from the peak of its reference's
+event-triggered spectrum, by Minnaert. For `forest_creek` that returned 9.94 mm
+-- a 328 Hz pocket, which no recording in the library shows and which does not
+sound like water. A listener put it at 3 mm.
+
+Two faults, both real. The event detector's low band started at 150 Hz, and
+`lowend.py` had already established that the references carry wind and handling
+noise below that -- uncorrelated with the water in every file. Given 150 Hz the
+detector locked onto it: the "event" it found had a Q of 1.4 and a spectral
+flatness of 0.63, which is not a resonance at all. The band now starts at
+400 Hz, well clear of the contamination and well below the measured population's
+562 Hz.
+
+And the fitter believed any peak it was handed. It now requires a flatness below
+0.55 before treating one as a pitch, and clamps the radius to the 2.0-6.5 mm the
+library actually measures rather than the 1.0-12.0 it allowed. `forest_creek`
+falls back to the library median of 3.30 mm, which is the listener's 3 mm.
+
+Seventeen of the twenty presets now sit at that median, which is honest: the
+measurement only supports a per-preset size where the event really is a
+resonance.
+
 ## Grain was the noise, twice over
 
 Grain had two faults, and the first fix was necessary but not sufficient.

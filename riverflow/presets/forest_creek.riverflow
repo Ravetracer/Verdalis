@@ -9,16 +9,16 @@ features = creek, tickling, close
 water_type = Creek
 water_blend = 0.75
 flow_level = -24
-flow_tilt = 0.16
-flow_body = 0.50
+flow_tilt = -0.00
+flow_body = 0.72
 turbulence = 0.44
 surge_rate = 0.86
 flow_grain = 0.00
 
 # Stones
-dabble_rate = 7.83
+dabble_rate = 11.00
 dabble_level = -23.5
-dabble_size = 9.94
+dabble_size = 3.30
 dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -7.5
+gain = -5.4
 max_events = 512
 seed = 0
