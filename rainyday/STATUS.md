@@ -1,7 +1,32 @@
 # RainyDay — current status
 
-Written 2026-09-03, brought up to date 2026-09-05. See `README.md` for the
+Written 2026-09-03, brought up to date 2026-09-10 for 1.6.0. See `README.md` for the
 design and parameter reference, and `TODO.md` for what is still open.
+
+
+## The tack (1.6.0)
+
+A drop landing on concrete makes two sounds: the drop, and the concrete. RainyDay
+modelled the first thoroughly and the second only as a tuned damped sine, which
+gives every impact a pitch of its own. *Tack* adds the surface: a short burst of
+noise through a broad resonance, with a fast part that is the strike and a slower
+one that is the film of water on it, both bypassing the droplet's radiation
+rolloff because they have nothing to do with the size of the drop.
+
+Per-surface columns set its level, centre and decays. Water gets none of it,
+concrete and metal all of it.
+
+**Tack at 0 is the plugin as it was, verified byte-identical** on a pinned seed.
+That took a little care: the scatter on the tack's centre frequency has to be
+drawn from the droplet's own generator rather than the shared one, and guarded so
+that at zero the draw does not happen at all -- anything drawn from the shared
+sequence shifts every random number after it, which would mean adding this layer
+changed which drops fall and when.
+
+**What is not settled is whether this is the difference that matters.** Three
+attempts to characterise it statistically all failed against measurement, and
+they are recorded in `TODO.md` because each was plausible and each was wrong.
+The A/B renders in `!dev/tack-ab/` are the honest next step.
 
 ## State: working and playable
 

@@ -116,6 +116,21 @@ const ParamDesc kParams[kNumParams] = {
          "Slides the far-field bed left or right without narrowing it."),
    LOG(kParamHighpass, "highpass", "Highpass", "Filter", 0.0, 20.0, 2000.0, "Hz",
        "Rolls off the bottom at 12 dB/oct. Off at the far left."),
+
+   // ------------------------------------------------------------------- tack
+   PCT(kParamTack, "tack", "Tack", "Rain", 0.45,
+       "How much of each impact is a broadband tack off the surface rather than a\n"
+       "       tuned tick. This is measured, and the measurement is what the parameter\n"
+       "       exists for: the event-triggered spectra of real drops on stone have a Q\n"
+       "       of about 6 -- broad enough to have no pitch of their own and to take\n"
+       "       their colour from the surface -- and fall 10 dB in about 7 ms. An impact\n"
+       "       modelled as a damped sine has whatever Q its damping gives it, which\n"
+       "       here measured 18 and rang for 96 ms. That is the difference between a\n"
+       "       plink and a drop landing on concrete."),
+   LOG(kParamTackTone, "tack_tone", "Tack Tone", "Rain", 0.5, 600.0, 12000.0, "Hz",
+       "Where that tack sits: what the surface is made of. Wet rock and glass are high "
+       "and hard, wood and leaves lower and duller. The Surface setting moves this, and "
+       "this trims it."),
 };
 
 #undef LIN

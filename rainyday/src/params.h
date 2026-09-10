@@ -61,6 +61,12 @@ enum ParamId : uint32_t {
    kParamBedWidth,
    kParamBedPan,
    kParamHighpass,
+
+   // The tack: the surface being struck, as a short burst of noise through its
+   // own broad resonance rather than as a tuned tick. Appended, because these
+   // ids are persisted in presets and state.
+   kParamTack,
+   kParamTackTone,
    kNumParams
 };
 

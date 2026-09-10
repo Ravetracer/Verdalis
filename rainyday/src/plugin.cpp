@@ -138,6 +138,8 @@ private:
       p.chirp = static_cast<float>(realValue(kParamChirp));
       p.bubbleChance = static_cast<float>(realValue(kParamBubble));
       p.surface = static_cast<int>(realValue(kParamSurface));
+      p.tack = static_cast<float>(realValue(kParamTack));
+      p.tackToneHz = static_cast<float>(realValue(kParamTackTone));
       p.noteTracking = static_cast<float>(realValue(kParamNoteTracking));
 
       p.bedGain = dbToGain(static_cast<float>(realValue(kParamBedLevel)));

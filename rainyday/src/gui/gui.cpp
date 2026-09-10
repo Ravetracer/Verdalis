@@ -26,19 +26,21 @@ namespace {
 // four-panel one. Rows with fewer panels stretch their last panel to match.
 // Widened by one cell when Slosh joined the RAIN panel, which needs eight
 // columns rather than seven.
-constexpr int kContentW = 1012;
+constexpr int kContentW = 1060;
 constexpr int kWindowH = 740;
 
 // ------------------------------------------------------------------- panels
 
-// Seven per line, which is one row of the panel. Slosh sits next to Splash:
-// it lengthens what Splash starts.
+// Nine per line, which is one row of the panel. Slosh sits next to Splash,
+// because it lengthens what Splash starts, and the two Tack controls sit at the
+// end beside Note Tracking: they are the surface being struck rather than the
+// drop, so they belong after everything the drop itself does.
 constexpr uint32_t kRainParams[] = {
    kParamSurface,  kParamDensity, kParamClumping, kParamDropPitch,   kParamPitchSpread,
    kParamDropDecay, kParamDecaySpread,
    kParamTonality, kParamBubble,  kParamImpact,   kParamSplash,      kParamSlosh,
    kParamLevelSpread, kParamChirp,
-   kParamNoteTracking,
+   kParamNoteTracking, kParamTack, kParamTackTone,
 };
 constexpr uint32_t kSpaceParams[] = {kParamDistance,  kParamAir,       kParamSpaceAmount,
                                  kParamSpaceSize, kParamSpaceDamping};
@@ -56,7 +58,7 @@ constexpr uint32_t kOutParams[] = {kParamGain, kParamMaxDroplets, kParamSeed};
    { title, cols, rows, arr, static_cast<int>(sizeof(arr) / sizeof(arr[0])) }
 
 constexpr PanelSpec kPanelSpecs[] = {
-   PANEL("RAIN", 8, 2, kRainParams),     PANEL("DISTANT", 3, 2, kDistantParams),
+   PANEL("RAIN", 9, 2, kRainParams),     PANEL("DISTANT", 3, 2, kDistantParams),
    PANEL("ENVELOPE", 3, 2, kEnvParams),  PANEL("FILTER", 3, 2, kFilterParams),
    PANEL("SPACE", 3, 2, kSpaceParams),   PANEL("CLOSE", 1, 2, kCloseParams),
    PANEL("OUTPUT", 3, 1, kOutParams),

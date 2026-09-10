@@ -1,5 +1,38 @@
 # RainyDay — open items
 
+
+## The tack, and three explanations that did not survive
+
+*Tack* was added because RiverFlow's *Trickle* layer -- single drops on wet
+stone -- was said to have the sound RainyDay has always missed for larger drops
+on concrete. The layer is real and useful either way: RainyDay modelled the drop
+and not the surface, and now it models both. But the *reason* it sounds
+different is not established, and three explanations were measured and
+discarded:
+
+- [x] ~~RainyDay's impacts are tuned where the reference's are broad (Q 18
+      against 5.9).~~ **The Q estimator was unstable.** The same file measured
+      Q 18 at one analysis window and Q 7.5 at another; the half-power width
+      was being found by walking raw FFT bins whose scatter is as large as the
+      peak. `events.py` now smooths before measuring a width and refuses to
+      report one that is not resolved.
+- [x] ~~RiverFlow's events are broadband where RainyDay's are peaky.~~ Measured
+      by spectral flatness, which *is* stable across analysis windows, it is
+      the other way round: RiverFlow 0.11, real drops on stone 0.34, RainyDay
+      0.41. RiverFlow's trickle is the most tonal of the three.
+- [x] ~~RainyDay's drops are incoherent -- each tuned to its own random pitch,
+      where a real surface gives every drop the same colour.~~ The real
+      recording has the *widest* per-event pitch spread of all: 1.99 octaves
+      against RainyDay's 1.15 and RiverFlow's 0.96.
+
+- [ ] **So: settle it by ear.** A/B renders are in `!dev/tack-ab/`, including
+      the RiverFlow trickle layer isolated. Find the setting that sounds right,
+      then work backwards to what measurement would have predicted it -- that
+      measurement is the one worth adding to the analysis tools.
+- [ ] Until then the factory presets are untouched and carry the default Tack of
+      0.45. Once the right setting is known they should be set per preset, and
+      the concrete and metal presets refitted against their own references.
+
 ## 1. Realism: what two more sources say we are still missing
 
 Added 2026-09-04 from `!dev/RealtimeSoundSimulationOfRain.pdf` (Miklavcic, Zita

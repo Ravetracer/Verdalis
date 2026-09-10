@@ -30,6 +30,25 @@ This README is the developer's view. The user-facing manual is
 Its parameter reference and preset library are generated from the plugin
 itself, so a new parameter documents itself.
 
+### The tack: the surface being struck
+
+*Tack* (1.6.0) is what a drop landing on a hard surface does to the surface,
+rather than what it does to itself. It is a short burst of noise through the
+surface's own broad resonance, and it sits alongside the tuned impact rather
+than replacing it: at 0 the plugin is exactly what it was before, bit for bit,
+and as it comes up the tuned tick gives way to a broadband tack.
+
+Every surface carries its own tack level, centre frequency and two decays — the
+strike itself, and the film of water on the surface that outlasts it. Concrete,
+metal and glass get the most of it; water gets none, because a drop landing in
+water has no surface to tack off.
+
+The idea came from RiverFlow, whose *Trickle* layer models exactly this
+— single drops on wet stone — and from the observation that the two plugins were
+solving the same problem in different places. What RainyDay lacked was the
+surface. Whether it is *the* difference is not settled: see `TODO.md`, which is
+honest about three statistical explanations that did not survive measurement.
+
 ## Build and install
 
 Requires a C++17 compiler, CMake ≥ 3.16 and the CLAP headers.

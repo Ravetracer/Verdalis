@@ -30,6 +30,8 @@ struct EngineParams {
    float chirp = 0.35f;
    float bubbleChance = 1.0f;
    int surface = 0;
+   float tack = 0.45f;
+   float tackToneHz = 2683.0f;
    float noteTracking = 0.5f;
 
    float bedGain = 0.25f; // linear
@@ -110,6 +112,15 @@ struct Droplet {
    // uniformly, damped hard enough that only about two cycles survive.
    float clickPhase = 0.0f, clickPhaseInc = 0.0f;
    float clickAmp = 0.0f, clickDecay = 0.0f;
+   // The tack: the surface being struck. A short burst of noise through a
+   // broad resonance -- Q about 6, which is what the event-triggered spectra of
+   // real drops on stone measure -- with a fast part that is the strike and a
+   // slower one that is the film of water on it. Like the impact and the body
+   // it is the surface sounding rather than the droplet radiating, so it
+   // bypasses the droplet's radiation highpass.
+   Svf tackBp;
+   float tackAmp = 0.0f, tackDecay = 0.0f;
+   float tackWet = 0.0f, tackWetDecay = 0.0f;
    // The struck surface's own low mode: a panel, a leaf or a canopy rings in
    // the low mids where no droplet radiates. Like the impact it is the surface
    // sounding, so it bypasses the droplet's radiation highpass.

@@ -266,6 +266,28 @@ A fat drop is therefore automatically loud, low and long, and a fine one quiet,
 high and short, with no parameter tweaking required for that to hold. The
 relations are Minnaert's, from 1933.
 
+## The tack: the surface being struck
+
+A drop landing on concrete makes two sounds, and until 1.6.0 {{PLUGIN}} modelled
+only one of them properly. The drop itself is here in detail — the bubble it
+traps, its pitch bend, its splash and the secondary droplets thrown sideways.
+The *surface* was only a tuned damped sine at the moment of impact, which gives
+every strike a pitch of its own.
+
+*Tack* is the surface. It is a short burst of noise through the surface's own
+broad resonance, with a fast part that is the strike and a slower one that is
+the film of water lying on it. Like the impact and the body it bypasses the
+droplet's radiation rolloff, because what the concrete does has nothing to do
+with how big the drop was.
+
+Each surface carries its own tack level, centre frequency and decays. Water gets
+none — a drop landing in water has no surface to tack off — while concrete,
+metal and glass get all of it. *Tack Tone* trims where it sits: wet rock and
+glass are high and hard, wood and leaves lower and duller.
+
+**At 0 the plugin is exactly what it was**, bit for bit on a pinned seed, so a
+render made before 1.6.0 still reproduces.
+
 ## The bed
 
 Individually inaudible far-field droplets are not synthesised one by one. They
