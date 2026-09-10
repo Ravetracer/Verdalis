@@ -29,6 +29,15 @@ discarded:
       the RiverFlow trickle layer isolated. Find the setting that sounds right,
       then work backwards to what measurement would have predicted it -- that
       measurement is the one worth adding to the analysis tools.
+- [ ] **Three presets run into the soft clipper**, found while fixing the same
+      fault in RiverFlow, where ten of twenty did: `distant_rain_wall` puts
+      0.010% of its samples past the knee, `storm_front` 0.005% and
+      `concrete_alley` 0.001% at a peak of 0.993. That is twenty times milder
+      than RiverFlow's worst and probably inaudible, but it is the same class of
+      bug and the same fix -- render 20 dB down, see where the peak would land
+      at unity, write the trim into the preset's own gain. Not done here because
+      it would change the level of a released plugin's presets, which is the
+      user's call rather than mine.
 - [ ] Until then the factory presets are untouched and carry the default Tack of
       0.45. Once the right setting is known they should be set per preset, and
       the concrete and metal presets refitted against their own references.
