@@ -1,5 +1,6 @@
 #include "wave_engine.h"
 
+#include "verdalis/dsp/bubble.h"
 #include "verdalis/dsp/fastmath.h"
 
 #include <algorithm>
@@ -14,34 +15,10 @@ namespace {
 inline float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-// A bubble's damping, after Xue et al. (2023) eq. 3-5. Three mechanisms add:
-//
-//   delta_rad = omega0 * r / c   and Minnaert gives r = 3.26 / f0, so this is
-//               2 * pi * 3.26 / c = 0.01368 whatever the size -- radiative loss
-//               is the same fraction for every bubble.
-//   delta_vis = 4 mu / (rho omega0 r^2), below 4e-4 for anything audible, so
-//               it is dropped.
-//   delta_th  = 2 (sqrt(psi - 3) - (3g-1)/(3(g-1))) / (psi - 4) with
-//               psi = 16 Gth / (9 (g-1)^2 f0), which for audible bubbles is
-//               well approximated by 2/sqrt(psi) = 4.743e-4 * sqrt(f0).
-//
-// Q is 1/delta: about 20 for a small high bubble and 46 for a large low one.
-// Predicted ring times run 2-124 ms across 0.5-12 mm, against 5-100 ms measured
-// in the references.
-inline float bubbleDelta(float f) { return 0.01368f + 4.743e-4f * std::sqrt(f); }
-
-// Minnaert's relation, which is the whole reason a bubble has a pitch at all:
-// f0 = (1 / 2 pi r) sqrt(3 gamma p0 / rho) = 3.26 / r for air in water at STP.
-// A 3 mm bubble rings at about a kilohertz.
-inline float minnaertHz(float radiusMm) { return 3260.0f / clampf(radiusMm, 0.05f, 200.0f); }
-
 // Svf::setCutoff takes resonance as 0..1, which it maps to k = 1/Q over 2..0.02.
 // Passing a Q straight in silently clamps to maximum resonance, which turns a
 // noise band into a whistle; convert properly instead.
-inline float resonanceFor(float q) {
-   const float k = 1.0f / std::max(0.5f, q);
-   return clampf((2.0f - k) / 1.98f, 0.0f, 1.0f);
-}
+inline float resonanceFor(float q) { return resonanceForQ(q); }
 
 // An exponential decay coefficient reaching -60 dB in `sec`.
 inline float decayCoefFor(float sec, double sampleRate) {
