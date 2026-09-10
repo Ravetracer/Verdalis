@@ -54,16 +54,17 @@ release = 900
 vel_to_level = 0.5
 vel_to_density = 0.3
 
-# Trickle: drops landing on a hard surface. The same layer, and the
-# same eight controls, as RiverFlow's Trickle.
-trickle_level = -24
+# Trickle: off, deliberately. This preset is water dripping into water,
+# which entrains its own pocket already -- the droplet layer does that --
+# and has no hard surface for a drop to strike.
+trickle_level = -60
 trickle_rate = 1
 trickle_size = 1.70
 trickle_spread = 0.7
 trickle_decay = 30
-trickle_impact = 35
+trickle_impact = 0.35
 stone_tone = 2800
-trickle_splash = 60
+trickle_splash = 0.60
 
 # Output
 gain = 0.309

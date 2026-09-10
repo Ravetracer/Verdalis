@@ -61,9 +61,9 @@ trickle_rate = 8
 trickle_size = 1.50
 trickle_spread = 0.9
 trickle_decay = 22
-trickle_impact = 38
+trickle_impact = 0.38
 stone_tone = 3000
-trickle_splash = 48
+trickle_splash = 0.48
 
 # Output
 gain = 4.01
