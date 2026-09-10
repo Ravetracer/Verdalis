@@ -148,6 +148,31 @@ constexpr Theme kTheme = {
    /* highlight */ {0.949, 0.988, 0.945},
 };
 
+// -------------------------------------------------------------------- mixer
+//
+// The four layers a river is balanced from, in the order they stack: the
+// normalised bed underneath everything, then the two populations of events
+// that sit on it -- the trickle nearest it, measured 2.2-11.7 dB above the
+// bed, and the dabbling further above at 5.5-16.7 dB -- and the plunge pool
+// closest to the listener. Each fader is the level knob that already sits on
+// that layer's panel, so the mixer adds no parameters of its own.
+//
+// Only the bed carries a placement: Flow Width is its own, where Width is the
+// stereo spread of every event population at once and belongs to no single
+// strip. Grain is not a strip either -- it sets how granular the bed is rather
+// than how loud, and it ships at zero because a real river's grain belongs to
+// the layers above it.
+constexpr MixerStrip kMixerStrips[] = {
+   /* label      level               pan       width             master */
+   {"FLOW", kParamFlowLevel, kNoParam, kParamFlowWidth, false},
+   {"TRICKLE", kParamTrickleLevel, kNoParam, kNoParam, false},
+   {"DABBLE", kParamDabbleLevel, kNoParam, kNoParam, false},
+   {"PLUNGE", kParamPlungeLevel, kNoParam, kNoParam, false},
+   {"OUTPUT", kParamGain, kNoParam, kNoParam, true},
+};
+
+constexpr int kNumStrips = static_cast<int>(sizeof(kMixerStrips) / sizeof(kMixerStrips[0]));
+
 // ----------------------------------------------------------------- ornament
 
 // The run across the header: streamlines drifting downstream, with a ring
@@ -279,6 +304,8 @@ const WindowSpec kSpec = {
    /* windowH        */ kWindowH,
    /* params         */ nullptr, // filled in by createGui, paramTable() is a call
    /* paramCount     */ kNumParams,
+   /* mixer          */ kMixerStrips,
+   /* mixerCount     */ kNumStrips,
    /* ornament       */ &gRun,
 };
 

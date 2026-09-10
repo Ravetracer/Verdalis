@@ -13,7 +13,7 @@ using namespace verdalis;
 constexpr char kPluginId[] = "de.ravetracer.chirpparade";
 constexpr char kPluginName[] = "ChirpParade";
 constexpr char kPluginVendor[] = "Ravetracer";
-constexpr char kPluginVersion[] = "0.5.0";
+constexpr char kPluginVersion[] = "0.6.0";
 
 // Nothing else keeps the two version sites in step, and drift here is quiet.
 // The build fails if the version here and the one in CMakeLists.txt disagree.

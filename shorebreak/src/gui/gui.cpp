@@ -198,6 +198,26 @@ private:
 
 SurfLine gSurfLine;
 
+// -------------------------------------------------------------------- mixer
+//
+// The three layers that have a level of their own, in the order the sea stacks
+// them: the swell bed furthest out, the foam a break leaves behind it, and the
+// wash at the listener's feet. The break itself is not a strip -- Wave Size
+// sets how loud a wave is along with its body and its tone, so it is a size
+// control and not a fader.
+//
+// Nor are the bubbles, although they have a panel: their presence is set by
+// Bubble Mix inside the break and Foam Bubbles inside the foam, two crossfades
+// belonging to two different layers rather than one level for one layer.
+constexpr MixerStrip kMixerStrips[] = {
+   {"SWELL", kParamSwellLevel, kNoParam, kParamSwellWidth, false},
+   {"FOAM", kParamFoamLevel, kNoParam, kNoParam, false},
+   {"WASH", kParamWashLevel, kNoParam, kNoParam, false},
+   {"OUTPUT", kParamGain, kNoParam, kNoParam, true},
+};
+
+constexpr int kNumStrips = static_cast<int>(sizeof(kMixerStrips) / sizeof(kMixerStrips[0]));
+
 const WindowSpec kSpec = {
    /* wordmarkFirst  */ "Shore",
    /* wordmarkSecond */ "Break",
@@ -215,6 +235,8 @@ const WindowSpec kSpec = {
    /* windowH        */ kWindowH,
    /* params         */ nullptr, // filled in by createGui, paramTable() is a call
    /* paramCount     */ kNumParams,
+   /* mixer          */ kMixerStrips,
+   /* mixerCount     */ kNumStrips,
    /* ornament       */ &gSurfLine,
 };
 

@@ -13,7 +13,7 @@ using namespace verdalis;
 constexpr char kPluginId[] = "de.ravetracer.rainyday";
 constexpr char kPluginName[] = "RainyDay";
 constexpr char kPluginVendor[] = "Ravetracer";
-constexpr char kPluginVersion[] = "1.7.0";
+constexpr char kPluginVersion[] = "1.8.0";
 
 // Nothing else keeps the two version sites in step, and drift here is quiet:
 // the GUI drew a hardcoded "1.0.0" for the whole of 1.5.0's development because

@@ -90,6 +90,34 @@ constexpr int panelHeight(const PanelSpec &s) {
    return kPanelTitleH + s.rows * kCellH + kPanelPad;
 }
 
+// ------------------------------------------------------------------- mixer
+//
+// The layer mixer. Every plugin in the suite layers several generators -- a
+// far-field bed under close drops, a swell under foam under wash -- and each
+// layer's level sits on whichever panel that layer belongs to. That is right
+// for editing one layer and wrong for balancing them against each other, which
+// is what building a preset from scratch mostly is: pull everything else down,
+// get one layer right, bring the next one back.
+//
+// So a plugin lists its layers here and the shared window draws a mixer for
+// them: one strip per layer, with the layer's level as a fader and its
+// placement beside it. The parameters are the plugin's own -- the mixer is a
+// second view of controls that also live on the panels, not a set of new ones.
+//
+// A plugin with nothing to mix leaves `mixer` null and gets no MIXER button.
+constexpr uint32_t kNoParam = 0xFFFFFFFFu;
+
+struct MixerStrip {
+   const char *label; // the layer's name, e.g. "DISTANT", "TRICKLE"
+   uint32_t level;    // its level parameter; the fader
+   uint32_t pan;      // its pan, or kNoParam when the layer cannot be placed
+   uint32_t width;    // its stereo width, or kNoParam
+   // The whole instrument's output rather than one layer. Drawn after a gap
+   // and given no mute or solo, because soloing the master would only silence
+   // everything else.
+   bool master;
+};
+
 // ---------------------------------------------------------------- ornament
 
 // What the header animates behind the wordmark. RainyDay runs rain streaks
@@ -153,6 +181,10 @@ struct WindowSpec {
    // The plugin's parameter table.
    const ParamDesc *params;
    uint32_t paramCount;
+
+   // The layer mixer, or null when a plugin has no layers worth mixing.
+   const MixerStrip *mixer;
+   int mixerCount;
 
    // Optional; nothing is drawn behind the wordmark when it is null.
    HeaderOrnament *ornament;

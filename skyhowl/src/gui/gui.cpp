@@ -149,6 +149,27 @@ constexpr Theme kTheme = {
    /* highlight */ {1.000, 0.922, 0.863},
 };
 
+// -------------------------------------------------------------------- mixer
+//
+// The three layers a preset is balanced between, in the order the wind reaches
+// the listener: the broadband bed out in the flow, the tone the obstacle sheds
+// off it, and the foliage the whole thing is heard through. Each fader is the
+// level that already sits on that layer's own panel, so the mixer adds no
+// parameters.
+//
+// Buffet and Hiss are not strips. Both have their own level, but both are the
+// bed's low and high ends rather than layers of their own -- they sit on
+// AIRFLOW beside Flow Level because moving them changes what the bed sounds
+// like, not how much of it there is against everything else.
+constexpr MixerStrip kMixerStrips[] = {
+   {"FLOW", kParamFlowLevel, kNoParam, kNoParam, false},
+   {"HOWL", kParamHowlAmount, kNoParam, kNoParam, false},
+   {"RUSTLE", kParamRustleAmount, kNoParam, kNoParam, false},
+   {"OUTPUT", kParamGain, kNoParam, kNoParam, true},
+};
+
+constexpr int kNumStrips = static_cast<int>(sizeof(kMixerStrips) / sizeof(kMixerStrips[0]));
+
 // ----------------------------------------------------------------- ornament
 
 // The flow across the header: streaklines, the way a wind tunnel shows a flow
@@ -249,6 +270,8 @@ const WindowSpec kSpec = {
    /* windowH        */ kWindowH,
    /* params         */ nullptr, // filled in by createGui, paramTable() is a call
    /* paramCount     */ kNumParams,
+   /* mixer          */ kMixerStrips,
+   /* mixerCount     */ kNumStrips,
    /* ornament       */ &gStreaklines,
 };
 

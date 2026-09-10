@@ -158,6 +158,31 @@ constexpr Theme kTheme = {
    /* highlight */ {1.000, 0.976, 0.882},
 };
 
+// -------------------------------------------------------------------- mixer
+//
+// The three layers, and the output. Each level also sits on its own panel,
+// which is where it belongs while that layer is being edited -- but building a
+// preset is mostly balancing the layers against one another, and for that they
+// have to be side by side.
+//
+// In sounding order: the flock is the bed, the woodpecker's rolls sit inside
+// it, and the phrase a note fires plays over both. FLOCK's panel names the
+// one-shot half first because that is the half worth explaining first, which is
+// a different question from which layer is behind which.
+//
+// No layer can be placed on its own. The birds carry their own positions inside
+// the engine, so Width in PLACE spreads the flock as a whole rather than any
+// one layer -- hence kNoParam throughout.
+constexpr MixerStrip kMixerStrips[] = {
+   /* label       level             pan       width     master */
+   {"FLOCK", kParamFlockLevel, kNoParam, kNoParam, false},
+   {"DRUM", kParamDrumLevel, kNoParam, kNoParam, false},
+   {"SHOT", kParamShotLevel, kNoParam, kNoParam, false},
+   {"OUTPUT", kParamGain, kNoParam, kNoParam, true},
+};
+
+constexpr int kNumStrips = static_cast<int>(sizeof(kMixerStrips) / sizeof(kMixerStrips[0]));
+
 // ----------------------------------------------------------------- ornament
 
 // A sonogram, scrolling right to left behind the wordmark.
@@ -348,6 +373,8 @@ const WindowSpec kSpec = {
    /* windowH        */ kWindowH,
    /* params         */ nullptr, // filled in by createGui, paramTable() is a call
    /* paramCount     */ kNumParams,
+   /* mixer          */ kMixerStrips,
+   /* mixerCount     */ kNumStrips,
    /* ornament       */ &gSonogram,
 };
 

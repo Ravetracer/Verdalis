@@ -141,6 +141,25 @@ constexpr Theme kTheme = {
    /* highlight */ {0.980, 0.965, 0.900},
 };
 
+// -------------------------------------------------------------------- mixer
+//
+// The layers a thunder is balanced from. There are fewer than elsewhere in the
+// suite because the shocks themselves have no level of their own: Crack and
+// Weight shape them, Distance and Focus decide how loud they arrive, and
+// nothing scales them as a layer. So the strips are the three layers that do
+// carry a gain -- the echoes off the reflectors, the rumble bed under them and
+// the near channel's blast -- ordered from the furthest away to the closest,
+// with the output last.
+constexpr MixerStrip kMixerStrips[] = {
+   /* label      level             pan        width               master */
+   {"ECHOES", kParamEchoLevel, kNoParam, kNoParam, false},
+   {"RUMBLE", kParamRumble, kNoParam, kParamRumbleWidth, false},
+   {"IMPACT", kParamImpact, kNoParam, kNoParam, false},
+   {"OUTPUT", kParamGain, kNoParam, kNoParam, true},
+};
+
+constexpr int kNumStrips = static_cast<int>(sizeof(kMixerStrips) / sizeof(kMixerStrips[0]));
+
 // ----------------------------------------------------------------- ornament
 
 // A lightning bolt across the header, grown from the flash's own number, so no
@@ -233,6 +252,8 @@ const WindowSpec kSpec = {
    /* windowH        */ kWindowH,
    /* params         */ nullptr, // filled in by createGui, paramTable() is a call
    /* paramCount     */ kNumParams,
+   /* mixer          */ kMixerStrips,
+   /* mixerCount     */ kNumStrips,
    /* ornament       */ &gLightning,
 };
 

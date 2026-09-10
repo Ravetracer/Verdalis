@@ -48,6 +48,11 @@ public:
       : mDelegate(delegate), mSpec(spec),
         mWindowW(spec.contentW + 2 * kMargin) {
       mShown.assign(mSpec.paramCount, -1.0e9);
+      const size_t strips = mSpec.mixer ? static_cast<size_t>(mSpec.mixerCount) : 0;
+      mMuted.assign(strips, 0);
+      mSoloed.assign(strips, 0);
+      mHeld.assign(strips, 0);
+      mHeldLevel.assign(strips, 0.0);
       buildLayout();
    }
 
@@ -375,6 +380,12 @@ private:
       mNameRect = {mPrevRect.x + mPrevRect.w + 4, static_cast<double>(barY), 300, kBarH};
       mNextRect = {mNameRect.x + mNameRect.w + 4, static_cast<double>(barY), 26, kBarH};
       mSaveRect = {mNextRect.x + mNextRect.w + 14, static_cast<double>(barY), 58, kBarH};
+      mMixerRect = {mSaveRect.x + mSaveRect.w + 8, static_cast<double>(barY), 62, kBarH};
+      // Where the window says that a mute or a solo is holding a level down.
+      // Only drawn while one is, and drawn in the accent so it cannot be
+      // mistaken for part of the furniture: a forced-down layer that looks
+      // like a saved one is the whole trap this chip exists to close.
+      mHoldRect = {mMixerRect.x + mMixerRect.w + 10, static_cast<double>(barY), 104, kBarH};
       // The version label, right-aligned in the header at baseline 44. The box
       // is a fixed size anchored to the right edge rather than measured from
       // the text, because the layout runs without a cairo context to measure
@@ -471,6 +482,8 @@ private:
       drawHelpLine(cr);
       if (mBrowserOpen)
          drawBrowser(cr);
+      if (mMixerOpen)
+         drawMixer(cr);
       if (mMenuParam >= 0)
          drawMenu(cr);
       if (mSaveOpen)
@@ -957,6 +970,44 @@ private:
       setColor(cr, saveHot ? mSpec.theme.accent : mSpec.theme.textDim);
       drawText(cr, mSaveRect.x + mSaveRect.w * 0.5, mSaveRect.y + 20, "SAVE", 10, true,
                Align::Center);
+
+      if (!hasMixer())
+         return;
+
+      const bool mixHot = mHoverWidget == Widget::Mixer || mMixerOpen;
+      setColor(cr, mSpec.theme.panelFill);
+      roundedRect(cr, mMixerRect.x, mMixerRect.y, mMixerRect.w, mMixerRect.h, 4);
+      cairo_fill_preserve(cr);
+      setColor(cr, mixHot ? mSpec.theme.accent : mSpec.theme.panelEdge, mixHot ? 0.7 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      setColor(cr, mixHot ? mSpec.theme.accent : mSpec.theme.textDim);
+      drawText(cr, mMixerRect.x + mMixerRect.w * 0.5, mMixerRect.y + 20, "MIXER", 10, true,
+               Align::Center);
+
+      if (!holdsActive())
+         return;
+
+      const bool holdHot = mHoverWidget == Widget::Hold;
+      setColor(cr, mSpec.theme.accent, 0.16);
+      roundedRect(cr, mHoldRect.x, mHoldRect.y, mHoldRect.w, mHoldRect.h, 4);
+      cairo_fill_preserve(cr);
+      setColor(cr, mSpec.theme.accent, holdHot ? 1.0 : 0.75);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      setColor(cr, mSpec.theme.accent);
+      drawText(cr, mHoldRect.x + mHoldRect.w * 0.5 - 7, mHoldRect.y + 20,
+               anySolo() ? "SOLO ON" : "MUTE ON", 10, true, Align::Center);
+      // The dismiss cross is drawn rather than typed, for the same reason the
+      // preset arrows are: a missing glyph here would read as a bug.
+      const double cx = mHoldRect.x + mHoldRect.w - 14;
+      const double cy = mHoldRect.y + mHoldRect.h * 0.5;
+      cairo_set_line_width(cr, 1.6);
+      cairo_move_to(cr, cx - 4, cy - 4);
+      cairo_line_to(cr, cx + 4, cy + 4);
+      cairo_move_to(cr, cx + 4, cy - 4);
+      cairo_line_to(cr, cx - 4, cy + 4);
+      cairo_stroke(cr);
    }
 
    // ------------------------------------------------------------ save dialog
@@ -987,7 +1038,13 @@ private:
 
    void openSaveDialog() {
       mBrowserOpen = false;
+      mMixerOpen = false;
       closeMenu();
+      // A preset is the parameter values, and a muted layer's value is zero
+      // only because the mixer is holding it there. Saving that would bake a
+      // silent layer into the file, so every hold is released first and what
+      // goes out is what the preset really is.
+      clearHolds();
       mSaveOpen = true;
       mSaveName = mDelegate.guiSuggestedPresetName();
       mSaveStatus.clear();
@@ -1176,6 +1233,10 @@ private:
          mDirty = true;
          return;
       }
+      if (mMixerOpen) {
+         closeMixer();
+         return;
+      }
       if (mBrowserOpen) {
          if (cmd == KeyCommand::Up || cmd == KeyCommand::Down) {
             scrollBrowser(cmd == KeyCommand::Up ? -1 : 1);
@@ -1215,8 +1276,11 @@ private:
             msg = list[static_cast<size_t>(cur)].description.c_str();
       }
       if (!msg)
-         msg = "Drag a knob to edit, double-click to reset, shift-drag for fine "
-               "control. Click a menu to pick from the list, its arrows to step. Click a value to type one.";
+         msg = hasMixer()
+                  ? "Drag a knob to edit, double-click to reset, shift-drag for fine "
+                    "control. Click a value to type one. MIXER balances the layers."
+                  : "Drag a knob to edit, double-click to reset, shift-drag for fine "
+                    "control. Click a menu to pick from the list, its arrows to step. Click a value to type one.";
 
       setColor(cr, mSpec.theme.textMute);
       drawText(cr, kMargin, mHelpY + kHelpH - 8, msg, 10, false, Align::Left);
@@ -1427,10 +1491,476 @@ private:
       }
    }
 
+   // ------------------------------------------------------------------ mixer
+   //
+   // One strip per layer: the layer's level as a fader, its pan and its width
+   // as slim sliders under it, and a mute and a solo button. The parameters are
+   // the plugin's own and also live on the panels -- the mixer is a second view
+   // of them, not a second set. What it adds is that they are next to each
+   // other, which is what balancing layers needs and what a panel layout
+   // organised by layer cannot give.
+   //
+   // Mute and solo are not parameters. They cannot be: a preset is a set of
+   // parameter values, and a mute that saved itself would be a layer that
+   // comes back silent. So they work by holding a level down and remembering
+   // what it was -- see applyHolds() -- with the bar chip saying so for as long
+   // as one is active, and openSaveDialog() releasing them all before a preset
+   // is written.
+
+   enum MixerHitKind { HitNone, HitFader, HitPan, HitWidth, HitMute, HitSolo };
+
+   struct MixerHit {
+      int strip = -1;
+      MixerHitKind kind = HitNone;
+   };
+
+   bool hasMixer() const { return mSpec.mixer && mSpec.mixerCount > 0; }
+   int stripCount() const { return hasMixer() ? mSpec.mixerCount : 0; }
+
+   // kNoParam, and anything else that is not an index into the plugin's table.
+   bool hasParam(uint32_t id) const { return id < mSpec.paramCount; }
+
+   // The fader is what a strip is, so a strip whose level is not a real
+   // parameter is not drawn and cannot be hit. Not every layer in the suite
+   // has a level of its own -- RainyDay's close droplets are loudness
+   // compensated and have none -- and a plugin that lists one anyway would
+   // otherwise read past the end of its own parameter table.
+   bool stripValid(int i) const { return hasParam(mSpec.mixer[i].level); }
+
+   // The master strip, drawn after a gap because it is the whole instrument
+   // rather than one of the layers. -1 when the plugin does not list one.
+   int masterStrip() const {
+      for (int i = 0; i < stripCount(); ++i)
+         if (mSpec.mixer[i].master)
+            return i;
+      return -1;
+   }
+
+   // Strips are the same width in every plugin until there are too many of
+   // them for the window, which no plugin has yet but a later one might.
+   double stripW() const {
+      const double avail = mSpec.contentW - 40.0 - 2 * kMixerPad - kMixerGap;
+      return std::min(kStripW, avail / std::max(1, stripCount()));
+   }
+
+   Rect mixerPanel() const {
+      Rect r;
+      r.w = stripCount() * stripW() + 2 * kMixerPad + (masterStrip() > 0 ? kMixerGap : 0.0);
+      r.h = kMixerTitleH + kMixerStripH + kMixerPad;
+      r.x = kMargin + (mSpec.contentW - r.w) * 0.5;
+      // Centred in what is left between the header and the preset bar, so it
+      // sits over the panels rather than over the bar it was opened from.
+      r.y = kHeaderH + std::max(0.0, (mBarY - kHeaderH - r.h) * 0.5);
+      return r;
+   }
+
+   Rect stripRect(int i) const {
+      const Rect p = mixerPanel();
+      const int master = masterStrip();
+      Rect r;
+      r.w = stripW();
+      r.x = p.x + kMixerPad + i * r.w + (master > 0 && i >= master ? kMixerGap : 0.0);
+      r.y = p.y + kMixerTitleH;
+      r.h = kMixerStripH;
+      return r;
+   }
+
+   // The fader's track. The handle travels inside it, which is why the value
+   // maps onto h - kHandleH rather than onto h.
+   Rect faderRect(int i) const {
+      const Rect s = stripRect(i);
+      Rect r;
+      r.w = 12.0;
+      r.x = s.x + (s.w - r.w) * 0.5;
+      r.y = s.y + kLabelH;
+      r.h = kFaderH;
+      return r;
+   }
+
+   // The pan and width rows sit at a fixed offset in every strip, so they line
+   // up across the mixer whether or not a given layer has them.
+   Rect sliderRect(int i, int row) const {
+      const Rect s = stripRect(i);
+      Rect r;
+      r.x = s.x + 16.0;
+      r.w = s.w - 22.0;
+      r.y = s.y + kLabelH + kFaderH + kValueH + row * (kSliderH + 14.0);
+      r.h = kSliderH;
+      return r;
+   }
+
+   Rect mixerButtonRect(int i, bool solo) const {
+      const Rect s = stripRect(i);
+      Rect r;
+      r.w = 26.0;
+      r.h = kButtonH;
+      r.x = s.x + s.w * 0.5 + (solo ? 3.0 : -3.0 - r.w);
+      r.y = s.y + kLabelH + kFaderH + kValueH + 2 * (kSliderH + 14.0) + 2.0;
+      return r;
+   }
+
+   MixerHit mixerHitAt(double x, double y) const {
+      for (int i = 0; i < stripCount(); ++i) {
+         if (!stripValid(i))
+            continue;
+         const MixerStrip &st = mSpec.mixer[i];
+         // The fader is grabbed by its handle as well as its track, and the
+         // handle is wider than the track.
+         Rect grab = faderRect(i);
+         grab.x -= 6.0;
+         grab.w += 12.0;
+         if (grab.contains(x, y))
+            return {i, HitFader};
+         if (hasParam(st.pan) && sliderRect(i, 0).contains(x, y))
+            return {i, HitPan};
+         if (hasParam(st.width) && sliderRect(i, 1).contains(x, y))
+            return {i, HitWidth};
+         if (!st.master) {
+            if (mixerButtonRect(i, false).contains(x, y))
+               return {i, HitMute};
+            if (mixerButtonRect(i, true).contains(x, y))
+               return {i, HitSolo};
+         }
+      }
+      return {};
+   }
+
+   uint32_t hitParam(const MixerHit &h) const {
+      if (h.strip < 0)
+         return kNoParam;
+      const MixerStrip &st = mSpec.mixer[h.strip];
+      if (h.kind == HitFader)
+         return st.level;
+      if (h.kind == HitPan)
+         return st.pan;
+      if (h.kind == HitWidth)
+         return st.width;
+      return kNoParam;
+   }
+
+   void openMixer() {
+      closeEntry();
+      closeMenu();
+      mBrowserOpen = false;
+      mMixerOpen = true;
+      mMixerHit = {};
+      mDirty = true;
+   }
+
+   // Closing the mixer deliberately leaves the holds in place: soloing a layer
+   // and then going to its knobs on the panels is the reason the mixer exists.
+   // The bar chip is what keeps that visible.
+   void closeMixer() {
+      mMixerOpen = false;
+      mDirty = true;
+   }
+
+   // ------------------------------------------------------------ mute / solo
+
+   bool anySolo() const {
+      for (int i = 0; i < stripCount(); ++i)
+         if (mSoloed[static_cast<size_t>(i)])
+            return true;
+      return false;
+   }
+
+   bool holdsActive() const {
+      for (int i = 0; i < stripCount(); ++i)
+         if (mMuted[static_cast<size_t>(i)] || mSoloed[static_cast<size_t>(i)])
+            return true;
+      return false;
+   }
+
+   void setParamNow(uint32_t id, double value) {
+      mDelegate.guiBeginEdit(id);
+      mDelegate.guiSetParam(id, value);
+      mDelegate.guiEndEdit(id);
+   }
+
+   // Brings every layer's level into line with the mute and solo buttons. A
+   // layer that should not be heard has its level driven to the bottom of its
+   // own range and its real value remembered; one that should be heard again
+   // gets that value back. Nothing else touches those levels, so the memory
+   // cannot go stale -- except across a preset load, which is why the loader
+   // releases the holds first.
+   void applyHolds() {
+      const bool solo = anySolo();
+      for (int i = 0; i < stripCount(); ++i) {
+         const size_t k = static_cast<size_t>(i);
+         const MixerStrip &st = mSpec.mixer[i];
+         if (st.master || !stripValid(i))
+            continue;
+         const bool audible = solo ? mSoloed[k] != 0 : mMuted[k] == 0;
+         if (!audible) {
+            if (!mHeld[k]) {
+               mHeldLevel[k] = mDelegate.guiParamValue(st.level);
+               mHeld[k] = 1;
+            }
+            setParamNow(st.level, mSpec.params[st.level].min);
+         } else if (mHeld[k]) {
+            setParamNow(st.level, mHeldLevel[k]);
+            mHeld[k] = 0;
+         }
+      }
+      mDirty = true;
+   }
+
+   // Restores every held level and clears the buttons. Called by the chip, by
+   // the save dialog, by a preset load, and by editing a held fader -- that
+   // last one because a fader that fights the hand on it is worse than one
+   // that simply lets go.
+   void clearHolds() {
+      for (int i = 0; i < stripCount(); ++i) {
+         const size_t k = static_cast<size_t>(i);
+         if (mHeld[k] && stripValid(i)) {
+            setParamNow(mSpec.mixer[i].level, mHeldLevel[k]);
+            mHeld[k] = 0;
+         }
+         mMuted[k] = 0;
+         mSoloed[k] = 0;
+      }
+      mDirty = true;
+   }
+
+   // ------------------------------------------------------------ mixer paint
+
+   void drawFader(cairo_t *cr, const Rect &t, double v, bool hot, bool live) {
+      setColor(cr, mSpec.theme.knobFace);
+      roundedRect(cr, t.x, t.y, t.w, t.h, 4);
+      cairo_fill_preserve(cr);
+      setColor(cr, mSpec.theme.panelEdge);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+
+      const Rgb &fill = live ? mSpec.theme.accent : mSpec.theme.textMute;
+      const double top = t.y + (1.0 - v) * (t.h - kHandleH) + kHandleH * 0.5;
+      setColor(cr, fill, live ? 0.8 : 0.4);
+      roundedRect(cr, t.x + 2.5, top, t.w - 5.0, t.y + t.h - top - 2.5, 2);
+      cairo_fill(cr);
+
+      const Rect h = {t.x - 6.0, top - kHandleH * 0.5, t.w + 12.0, kHandleH};
+      setColor(cr, mSpec.theme.panelFill);
+      roundedRect(cr, h.x, h.y, h.w, h.h, 3);
+      cairo_fill_preserve(cr);
+      setColor(cr, hot ? mSpec.theme.accent : mSpec.theme.panelEdge, hot ? 0.9 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      setColor(cr, fill, live ? 1.0 : 0.6);
+      cairo_set_line_width(cr, 1.6);
+      cairo_move_to(cr, h.x + 4.0, h.y + h.h * 0.5);
+      cairo_line_to(cr, h.x + h.w - 4.0, h.y + h.h * 0.5);
+      cairo_stroke(cr);
+   }
+
+   // Pan and width. Bipolar parameters fill from the centre out, the way the
+   // knobs' arcs do, so a pan of dead centre reads as nothing rather than as
+   // half of something.
+   void drawSlider(cairo_t *cr, const Rect &r, const char *tag, const ParamDesc &d, double raw,
+                   bool hot, bool live) {
+      setColor(cr, live ? mSpec.theme.textDim : mSpec.theme.textMute, live ? 1.0 : 0.6);
+      drawText(cr, r.x - 11.0, r.y + r.h - 1.0, tag, 8.0, true, Align::Left);
+
+      setColor(cr, mSpec.theme.knobFace);
+      roundedRect(cr, r.x, r.y, r.w, r.h, 3);
+      cairo_fill_preserve(cr);
+      setColor(cr, mSpec.theme.panelEdge);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+
+      const double t = normalised(d, raw);
+      const double from = isBipolar(d) ? 0.5 : 0.0;
+      const double x0 = r.x + std::min(from, t) * r.w;
+      const double x1 = r.x + std::max(from, t) * r.w;
+      setColor(cr, live ? mSpec.theme.accent : mSpec.theme.textMute, live ? 0.75 : 0.4);
+      cairo_rectangle(cr, x0, r.y + 2.5, std::max(1.0, x1 - x0), r.h - 5.0);
+      cairo_fill(cr);
+
+      setColor(cr, hot ? mSpec.theme.accent : mSpec.theme.text, hot ? 1.0 : 0.85);
+      cairo_rectangle(cr, r.x + t * r.w - 1.5, r.y - 2.0, 3.0, r.h + 4.0);
+      cairo_fill(cr);
+   }
+
+   void drawMixerButton(cairo_t *cr, const Rect &r, const char *label, bool on, bool hot,
+                        const Rgb &lit) {
+      setColor(cr, on ? lit : mSpec.theme.knobFace, on ? 0.9 : 1.0);
+      roundedRect(cr, r.x, r.y, r.w, r.h, 3);
+      cairo_fill_preserve(cr);
+      setColor(cr, on || hot ? lit : mSpec.theme.panelEdge, hot && !on ? 0.8 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      if (on)
+         setColor(cr, mSpec.theme.bgBottom);
+      else
+         setColor(cr, hot ? lit : mSpec.theme.textMute);
+      drawText(cr, r.x + r.w * 0.5, r.y + r.h - 5.0, label, 9.5, true, Align::Center);
+   }
+
+   void drawMixerStrip(cairo_t *cr, int i) {
+      const MixerStrip &st = mSpec.mixer[i];
+      const size_t k = static_cast<size_t>(i);
+      const Rect s = stripRect(i);
+      const bool held = mHeld[k] != 0;
+      const bool hovered = mMixerHit.strip == i;
+
+      char label[64];
+      upperCase(st.label, label, sizeof(label));
+      setColor(cr, held ? mSpec.theme.textMute
+                        : (hovered ? mSpec.theme.text : mSpec.theme.textDim));
+      drawText(cr, s.x + s.w * 0.5, s.y + 12.0, label, 9.0, true, Align::Center);
+
+      const ParamDesc &level = mSpec.params[st.level];
+      const double raw = mDelegate.guiParamValue(st.level);
+      drawFader(cr, faderRect(i), normalised(level, raw),
+                hovered && mMixerHit.kind == HitFader, !held);
+
+      char text[128];
+      if (!paramValueToText(level, raw, text, sizeof(text)))
+         std::snprintf(text, sizeof(text), "--");
+      setColor(cr, held ? mSpec.theme.textMute : mSpec.theme.text, held ? 1.0 : 0.9);
+      drawText(cr, s.x + s.w * 0.5, s.y + kLabelH + kFaderH + 14.0, text, 9.5, false,
+               Align::Center);
+      // A held layer shows what it will come back to. Without it the fader is
+      // just sitting at the bottom and there is nothing to say the value it
+      // used to have still exists.
+      if (held) {
+         char was[128];
+         if (paramValueToText(level, mHeldLevel[k], was, sizeof(was))) {
+            char line[160];
+            std::snprintf(line, sizeof(line), "was %s", was);
+            setColor(cr, mSpec.theme.accent, 0.75);
+            drawText(cr, s.x + s.w * 0.5, s.y + kLabelH + kFaderH + 25.0, line, 8.0, false,
+                     Align::Center);
+         }
+      }
+
+      if (hasParam(st.pan))
+         drawSlider(cr, sliderRect(i, 0), "P", mSpec.params[st.pan],
+                    mDelegate.guiParamValue(st.pan), hovered && mMixerHit.kind == HitPan, !held);
+      if (hasParam(st.width))
+         drawSlider(cr, sliderRect(i, 1), "W", mSpec.params[st.width],
+                    mDelegate.guiParamValue(st.width), hovered && mMixerHit.kind == HitWidth,
+                    !held);
+
+      if (st.master)
+         return;
+      drawMixerButton(cr, mixerButtonRect(i, false), "M", mMuted[k] != 0,
+                      hovered && mMixerHit.kind == HitMute, kMuteRed);
+      drawMixerButton(cr, mixerButtonRect(i, true), "S", mSoloed[k] != 0,
+                      hovered && mMixerHit.kind == HitSolo, mSpec.theme.accent);
+   }
+
+   void drawMixer(cairo_t *cr) {
+      setColor(cr, mSpec.theme.bgBottom, 0.88);
+      cairo_rectangle(cr, 0, 0, mWindowW, mSpec.windowH);
+      cairo_fill(cr);
+
+      const Rect p = mixerPanel();
+      setColor(cr, mSpec.theme.panelFill);
+      roundedRect(cr, p.x, p.y, p.w, p.h, 6);
+      cairo_fill_preserve(cr);
+      setColor(cr, mSpec.theme.accent, 0.55);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+
+      setColor(cr, mSpec.theme.accent);
+      drawText(cr, p.x + kMixerPad, p.y + 22.0, "MIXER", 11, true, Align::Left);
+
+      // The title row doubles as the readout: hovering a control names it and
+      // prints its value, which is where a strip has no room for either.
+      char right[192];
+      right[0] = 0;
+      const uint32_t id = hitParam(mMixerHit);
+      if (hasParam(id)) {
+         char value[128];
+         if (!paramValueToText(mSpec.params[id], mDelegate.guiParamValue(id), value,
+                               sizeof(value)))
+            std::snprintf(value, sizeof(value), "--");
+         std::snprintf(right, sizeof(right), "%s   %s", mSpec.params[id].name, value);
+      } else if (holdsActive()) {
+         std::snprintf(right, sizeof(right), "%s", "M and S are not saved with the preset");
+      } else {
+         std::snprintf(right, sizeof(right), "%s", "Drag a fader, M to mute, S to solo");
+      }
+      setColor(cr, mSpec.theme.textDim);
+      const double avail = p.w - 2 * kMixerPad - 46.0;
+      if (textWidth(cr, right, 9.0, false) <= avail)
+         drawText(cr, p.x + p.w - kMixerPad, p.y + 22.0, right, 9.0, false, Align::Right);
+
+      for (int i = 0; i < stripCount(); ++i)
+         if (stripValid(i))
+            drawMixerStrip(cr, i);
+   }
+
+   // ----------------------------------------------------------- mixer events
+
+   void onMixerDown(double x, double y, unsigned button, unsigned long timeMs, bool shift) {
+      const MixerHit h = mixerHitAt(x, y);
+      if (h.strip < 0) {
+         if (button == kButtonLeft && !mixerPanel().contains(x, y))
+            closeMixer();
+         return;
+      }
+      const size_t k = static_cast<size_t>(h.strip);
+
+      if (h.kind == HitMute || h.kind == HitSolo) {
+         if (button == kButtonLeft) {
+            auto &flag = h.kind == HitMute ? mMuted[k] : mSoloed[k];
+            flag = flag ? 0 : 1;
+            applyHolds();
+         }
+         return;
+      }
+
+      const uint32_t id = hitParam(h);
+      if (!hasParam(id))
+         return;
+      // Editing a level the mixer is holding down releases the holds first:
+      // the alternative is a fader that moves and then springs back the next
+      // time a button is pressed.
+      const bool releases = h.kind == HitFader && mHeld[k];
+
+      if (button == kWheelUp || button == kWheelDown) {
+         if (releases)
+            clearHolds();
+         nudge(id, button == kWheelUp ? 1 : -1, shift);
+         return;
+      }
+
+      const bool doubleClick = button == kButtonLeft && mLastClickParam == static_cast<int>(id) &&
+                               timeMs - mLastClickTime < 400;
+      mLastClickParam = static_cast<int>(id);
+      mLastClickTime = timeMs;
+      if (releases)
+         clearHolds();
+
+      if (button == kButtonRight || doubleClick) {
+         setParamNow(id, mSpec.params[id].def);
+         mLastClickParam = -1;
+         mDirty = true;
+         return;
+      }
+      if (button != kButtonLeft)
+         return;
+
+      // A fader and a slider are dragged along their own travel rather than at
+      // the knobs' fixed rate, so the handle stays under the pointer.
+      mDrag = static_cast<int>(id);
+      mDragHoriz = h.kind != HitFader;
+      mDragStartX = x;
+      mDragStartY = y;
+      mDragStartValue = mDelegate.guiParamValue(id);
+      const ParamDesc &d = mSpec.params[id];
+      const double travel = mDragHoriz ? sliderRect(h.strip, h.kind == HitPan ? 0 : 1).w
+                                       : kFaderH - kHandleH;
+      mDragUnitsPerPx = (d.max - d.min) / std::max(1.0, travel);
+      mDelegate.guiBeginEdit(id);
+      mDirty = true;
+   }
+
    // ----------------------------------------------------------------- events
 
    // `None` is taken: X11 defines it as a macro.
-   enum class Widget { NoWidget, Prev, Next, Name, Save };
+   enum class Widget { NoWidget, Prev, Next, Name, Save, Mixer, Hold };
 
 #if defined(_WIN32)
    void pumpEvents() {
@@ -1665,10 +2195,16 @@ private:
          if (be.button == kButtonLeft) {
             const int item = browserItemAt(x, y);
             if (item >= 0)
-               mDelegate.guiLoadPreset(item);
+               loadPreset(item);
             if (item >= 0 || !browserPanel().contains(x, y))
                mBrowserOpen = false;
          }
+         mDirty = true;
+         return;
+      }
+
+      if (mMixerOpen) {
+         onMixerDown(x, y, be.button, be.time, shift);
          mDirty = true;
          return;
       }
@@ -1695,6 +2231,14 @@ private:
       }
       if (mNameRect.contains(x, y)) {
          openBrowser();
+         return;
+      }
+      if (be.button == kButtonLeft && hasMixer() && mMixerRect.contains(x, y)) {
+         openMixer();
+         return;
+      }
+      if (be.button == kButtonLeft && holdsActive() && mHoldRect.contains(x, y)) {
+         clearHolds();
          return;
       }
       if (be.button == kButtonLeft && mVersionRect.contains(x, y)) {
@@ -1759,6 +2303,8 @@ private:
       if (mDrag >= 0) {
          mDelegate.guiEndEdit(static_cast<uint32_t>(mDrag));
          mDrag = -1;
+         mDragHoriz = false;
+         mDragUnitsPerPx = 0.0;
          mDirty = true;
       }
    }
@@ -1769,7 +2315,12 @@ private:
          const ParamDesc &d = mSpec.params[id];
          const double span = d.max - d.min;
          const double fine = shift ? 0.2 : 1.0;
-         double v = mDragStartValue + (mDragStartY - y) * (span / 200.0) * fine;
+         // Knobs are dragged vertically at a fixed rate; the mixer's faders and
+         // sliders set their own rate from their own travel, and the sliders
+         // are dragged along themselves.
+         const double delta = mDragHoriz ? x - mDragStartX : mDragStartY - y;
+         const double perPx = mDragUnitsPerPx > 0.0 ? mDragUnitsPerPx : span / 200.0;
+         double v = mDragStartValue + delta * perPx * fine;
          if (isStepped(d))
             v = std::floor(v + 0.5);
          v = std::min(d.max, std::max(d.min, v));
@@ -1799,6 +2350,15 @@ private:
          return;
       }
 
+      if (mMixerOpen) {
+         const MixerHit h = mixerHitAt(x, y);
+         if (h.strip != mMixerHit.strip || h.kind != mMixerHit.kind) {
+            mMixerHit = h;
+            mDirty = true;
+         }
+         return;
+      }
+
       const int id = cellAt(x, y);
       Widget w = Widget::NoWidget;
       if (mPrevRect.contains(x, y))
@@ -1809,6 +2369,10 @@ private:
          w = Widget::Name;
       else if (mSaveRect.contains(x, y))
          w = Widget::Save;
+      else if (hasMixer() && mMixerRect.contains(x, y))
+         w = Widget::Mixer;
+      else if (holdsActive() && mHoldRect.contains(x, y))
+         w = Widget::Hold;
 
       if (id != mHover || w != mHoverWidget) {
          mHover = id;
@@ -1860,7 +2424,17 @@ private:
       int next = (cur + direction) % n;
       if (next < 0)
          next += n;
-      mDelegate.guiLoadPreset(next);
+      loadPreset(next);
+      mDirty = true;
+   }
+
+   // Every preset load goes through here. A preset replaces the levels the
+   // mixer is holding down, which would leave the remembered values pointing at
+   // the preset before it, so the holds are released while they still mean
+   // something and the preset lands on top of the real values.
+   void loadPreset(int index) {
+      clearHolds();
+      mDelegate.guiLoadPreset(index);
       mDirty = true;
    }
 
@@ -1868,6 +2442,24 @@ private:
 
    static constexpr int kHistory = 96;
    static constexpr int kBrowserCols = 3;
+   // Mixer geometry, in the same design pixels as everything else. The strip
+   // height is built from its rows rather than written down, so moving a row
+   // cannot leave the panel the wrong size for what is in it.
+   static constexpr double kStripW = 96.0;
+   static constexpr double kMixerPad = 14.0;
+   static constexpr double kMixerGap = 18.0;
+   static constexpr double kMixerTitleH = 34.0;
+   static constexpr double kLabelH = 18.0;
+   static constexpr double kFaderH = 132.0;
+   static constexpr double kHandleH = 12.0;
+   static constexpr double kValueH = 34.0;
+   static constexpr double kSliderH = 10.0;
+   static constexpr double kButtonH = 18.0;
+   static constexpr double kMixerStripH =
+      kLabelH + kFaderH + kValueH + 2 * (kSliderH + 14.0) + kButtonH + 4.0;
+   // Mute is the one thing in the window that is not in the plugin's palette:
+   // it means stop, and every theme's accent is the colour of go.
+   static constexpr Rgb kMuteRed = {0.85, 0.35, 0.30};
    static constexpr int kBrowserPad = 14;
    static constexpr int kBrowserRowH = 26;
    static constexpr int kBrowserScrollW = 14;
@@ -1897,6 +2489,7 @@ private:
    std::vector<Rect> mCellRects;
    Rect mMeter;
    Rect mPrevRect, mNameRect, mNextRect, mSaveRect, mVersionRect;
+   Rect mMixerRect, mHoldRect;
    int mBarY = 0, mHelpY = 0;
 
    bool mDirty = true;
@@ -1906,6 +2499,9 @@ private:
    double mDragStartY = 0.0, mDragStartValue = 0.0;
    int mLastClickParam = -1;
    unsigned long mLastClickTime = 0; // X11 Time and Win32 GetMessageTime alike
+   bool mDragHoriz = false;          // a mixer slider, dragged along itself
+   double mDragStartX = 0.0;
+   double mDragUnitsPerPx = 0.0;     // 0 means the knobs' fixed rate
 
    bool mBrowserOpen = false;
    int mBrowserHover = -1;
@@ -1921,6 +2517,16 @@ private:
    std::string mSaveStatus;
    int mMenuParam = -1; // enum parameter whose dropdown is open, or -1
    int mMenuHover = -1;
+
+   bool mMixerOpen = false;
+   MixerHit mMixerHit;
+   // One entry per mixer strip. The buttons are the window's own state, not
+   // the plugin's: a mute that reached the parameters would be saved into a
+   // preset as a silent layer.
+   std::vector<char> mMuted;
+   std::vector<char> mSoloed;
+   std::vector<char> mHeld;         // the mixer is holding this level down
+   std::vector<double> mHeldLevel;  // and this is what it was
 
    // One entry per parameter; the count is only known at construction.
    std::vector<double> mShown;

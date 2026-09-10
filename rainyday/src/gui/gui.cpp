@@ -155,6 +155,26 @@ constexpr Theme kTheme = {
    /* highlight */ {0.894, 0.918, 0.941},
 };
 
+// -------------------------------------------------------------------- mixer
+//
+// The layers a preset is actually balanced between, far to near: the
+// far-field wash, then the drops on the surface, then the instrument's
+// output. Each strip's fader is the level knob that already sits on that
+// layer's panel, so the mixer adds no parameters of its own.
+//
+// The close droplets are deliberately not a strip. They have no level: their
+// Density is loudness compensated, so the droplets are the body of the output
+// and the output gain is their fader. Giving them a second one would only
+// duplicate the master.
+constexpr MixerStrip kMixerStrips[] = {
+   /* label      level               pan            width            master */
+   {"DISTANT", kParamBedLevel, kParamBedPan, kParamBedWidth, false},
+   {"TRICKLE", kParamTrickleLevel, kNoParam, kNoParam, false},
+   {"OUTPUT", kParamGain, kNoParam, kNoParam, true},
+};
+
+constexpr int kNumStrips = static_cast<int>(sizeof(kMixerStrips) / sizeof(kMixerStrips[0]));
+
 // ----------------------------------------------------------------- ornament
 
 // Rain falling through the header, as heavy as the engine is busy. Nothing is
@@ -202,6 +222,8 @@ const WindowSpec kSpec = {
    /* windowH        */ kWindowH,
    /* params         */ nullptr, // filled in by createGui, paramTable() is a call
    /* paramCount     */ kNumParams,
+   /* mixer          */ kMixerStrips,
+   /* mixerCount     */ kNumStrips,
    /* ornament       */ &gStreaks,
 };
 

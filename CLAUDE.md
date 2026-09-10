@@ -303,7 +303,8 @@ shared/
 │   └── gui/
 │       ├── gui.h               Gui + GuiDelegate, the plugin/window contract
 │       ├── toolkit.h           Cairo drawing primitives, Rect, Align
-│       └── window.h            Theme, PanelSpec, HeaderOrnament, WindowSpec
+│       └── window.h            Theme, PanelSpec, HeaderOrnament, MixerStrip,
+│                                WindowSpec
 ├── src/{params,preset,preset_provider}.cpp
 ├── src/gui/window.cpp          the window: layout, widgets, browser, entry
 ├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
@@ -378,6 +379,39 @@ with nothing on it reads as a broken graph rather than a quiet one.
 `animating()` decides whether the window repaints, and must not
 change state. A plugin with nothing to animate leaves `ornament` null.
 
+**The layer mixer.** Every plugin layers several generators, and each layer's
+level sits on whichever panel that layer belongs to -- right for editing one
+layer, wrong for balancing them against each other, which is most of what
+building a preset from scratch is. So the shared window has a mixer: a `MIXER`
+button in the preset bar opens an overlay with one strip per layer -- the
+layer's level as a fader, its pan and width as slim sliders under it, and a mute
+and a solo button. A plugin describes its layers with a `MixerStrip` table
+(`label`, `level`, `pan`, `width`, `master`) and gets the mixer for free;
+`kNoParam` stands for a placement the layer does not have, and a plugin with
+nothing to mix leaves `mixer` null and gets no button.
+
+The parameters are the plugin's own and also live on the panels -- the mixer is
+a second view of them, which is why it does not disturb the
+`placedParams() == kNumParams` assertion.
+
+**Mute and solo cannot be parameters**, and that is the one thing to understand
+before touching this. A preset is a set of parameter values, so a mute that
+reached the parameters would be saved as a layer that comes back silent. They
+are window state: the mixer holds a muted layer's level at the bottom of its
+range and remembers what it was. Everything else follows from that --
+`clearHolds()` restores, `SAVE` and every preset load call it first, editing a
+held fader releases rather than fights it, and the preset bar carries a
+`SOLO ON` / `MUTE ON` chip for as long as a hold is active, because a
+forced-down layer that looks like a saved one is the whole trap.
+
+**Not every layer can have a strip.** A strip is its fader, so a layer with no
+level parameter of its own gets none: RainyDay's close droplets are loudness
+compensated, ThunderClap's crack is set by distance and focus, ShoreBreak's
+break by wave size. `stripValid()` skips a strip whose `level` is not a real
+parameter index rather than reading past the end of the table. The consequence
+is worth knowing: in those three plugins solo cannot silence the main layer,
+because nothing in the parameter table can.
+
 **The delegate** (`verdalis/gui/gui.h`) is deliberately generic:
 `guiVoiceCount()` and `guiVoiceLimit()` are whatever the activity meter counts
 -- droplets, shock waves, grains -- and `guiEventCounter()` is an optional
@@ -392,7 +426,8 @@ Genuinely per-plugin, and correctly so:
 - `src/params.cpp` / `params.h` — its ParamId enum and its ParamDesc table
 - `src/preset.cpp`, `src/preset_provider.cpp` — ~35-line bindings that supply
   the plugin's name, extension and table to the shared implementations
-- `src/gui/gui.cpp` — its theme, its panel layout and its header ornament
+- `src/gui/gui.cpp` — its theme, its panel layout, its mixer strips and its
+  header ornament
 - `presets/`, `README.md`, `STATUS.md`, `TODO.md`, `!dev/`
 
 ### Still duplicated

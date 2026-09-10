@@ -293,10 +293,33 @@ the preset name.
 | Click the preset name | Open the preset browser |
 | ◀ or ▶ beside the preset name | Previous or next preset |
 | `SAVE` | Save the current settings as a user preset |
+| `MIXER` | Open the layer mixer |
 
 The line at the bottom of the window shows what the control under the pointer
 does — the same one-line explanation that appears in the *What it does* column of
 the parameter reference.
+
+## The mixer
+
+Every layer's level lives on the panel that layer belongs to, which is right for
+editing one layer and wrong for balancing them against each other. `MIXER` opens
+the same controls arranged the other way round: one strip per layer, its level as
+a fader, its pan and its width as slim sliders under it. They are the plugin's own
+parameters, not a second set — moving a fader moves the knob on the panel, and the
+host sees the same automation it always would.
+
+`M` mutes a layer and `S` solos one, which is how a preset gets built from
+nothing: solo one layer, get it right, bring the next one back. Several layers can
+be soloed at once.
+
+Mute and solo are **not** parameters and are not saved with a preset. They work by
+holding a layer's level at the bottom of its range and remembering what it was, so
+while either is active the preset bar shows a `SOLO ON` or `MUTE ON` chip — click
+it to release every hold at once. `SAVE` releases them first, so a muted layer can
+never be written into a preset as a silent one, and so does loading a preset.
+Touching a held layer's fader also releases the holds rather than fighting the
+hand on it. Closing the mixer does not: soloing a layer and then going to its
+knobs on the panels is what the mixer is for.
 
 # Parameter reference
 
