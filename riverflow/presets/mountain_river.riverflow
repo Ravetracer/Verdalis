@@ -9,8 +9,8 @@ features = mountain-river, grainy, tickling, close
 water_type = Mountain River
 water_blend = 0.45
 flow_level = -24
-flow_tilt = 0.07
-flow_body = 0.58
+flow_tilt = 0.05
+flow_body = 0.55
 turbulence = 0.29
 surge_rate = 0.94
 flow_grain = 0.95
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = -2.7
 max_events = 512
 seed = 0

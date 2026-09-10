@@ -1,5 +1,6 @@
 #include "river_engine.h"
 
+#include "verdalis/dsp/bubble.h"
 #include "verdalis/dsp/fastmath.h"
 
 #include <algorithm>
@@ -14,33 +15,9 @@ namespace {
 inline float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-// A pocket's damping, after Xue et al. (2023) eq. 3-5. Two mechanisms matter:
-//
-//   delta_rad = omega0 * r / c, and Minnaert gives r = 3.26 / f0, so this is
-//               2 * pi * 3.26 / c = 0.01368 whatever the size -- radiative loss
-//               is the same fraction for every bubble.
-//   delta_th  approximated by 2/sqrt(psi) = 4.743e-4 * sqrt(f0) for anything
-//               audible; viscous loss is below 4e-4 and dropped.
-//
-// Q is 1/delta: about 20 for a small high pocket and 46 for a large low one,
-// which puts ring times at 2-124 ms over 0.5-12 mm. The measured event
-// envelopes fall 10 dB in 7-34 ms (dabbles) and 8-86 ms (drops), so the
-// physics and the references agree without anything being fitted.
-inline float bubbleDelta(float f) { return 0.01368f + 4.743e-4f * std::sqrt(f); }
-
-// Minnaert's relation, which is the whole reason a pocket of air has a pitch:
-// f0 = (1 / 2 pi r) sqrt(3 gamma p0 / rho) = 3.26 / r for air in water at STP.
-// The library's dabbles measure a median 984 Hz and a median radius, taken
-// independently from the spectral width, of 3.3 mm. 3260/3.3 = 988.
-inline float minnaertHz(float radiusMm) { return 3260.0f / clampf(radiusMm, 0.05f, 200.0f); }
-
-// Svf::setCutoff takes resonance as 0..1, which it maps to k = 1/Q over 2..0.02.
-// Passing a Q straight in silently clamps to maximum resonance, which turns a
-// noise band into a whistle; convert properly instead.
-inline float resonanceFor(float q) {
-   const float k = 1.0f / std::max(0.5f, q);
-   return clampf((2.0f - k) / 1.98f, 0.0f, 1.0f);
-}
+// Minnaert, the Xue damping terms and the Q-to-resonance conversion are the
+// suite's; see verdalis/dsp/bubble.h for what they are and why they are trusted.
+inline float resonanceFor(float q) { return resonanceForQ(q); }
 
 // Magnitude of Svf::bandpassNormalised at `f` for a band centred at `fc`, as
 // power. The TPT structure evaluates the analog prototype at a warped
@@ -66,7 +43,15 @@ inline float bandpassPower(float f, float fc, float k, float sr) {
 // log-normal. Normalised so that widening the spread does not also turn the
 // layer up.
 inline float logNormal(Rng &rng, float sigmaOct) {
-   const float f = std::exp2(rng.gaussian() * sigmaOct);
+   // Bounded at two sigma. An unbounded Gaussian in the exponent puts the
+   // occasional event twelve times above the median, and those are what drove
+   // the output stage into its soft clipper: ten of the twenty factory presets
+   // peaked at exactly 1.000 and the four worst -- all of them the bubbly ones
+   // -- had a fifth of a per cent of their samples past the knee, which is
+   // audible as crackle on a noise bed. A real distribution is bounded anyway:
+   // a stone can only trap so large a pocket.
+   const float g = clampv(rng.gaussian(), -2.0f, 2.0f);
+   const float f = std::exp2(g * sigmaOct);
    const float s = sigmaOct * 0.6931472f;
    return f / std::exp(0.5f * s * s);
 }
@@ -610,7 +595,7 @@ void RiverEngine::spawnDabble(float envLevel, float flow) {
       const float delta = clampf(bubbleDelta(f) * clampf(mP.dabbleDamping, 0.1f, 8.0f), 0.002f, 0.6f);
       const float beta = 3.14159265f * f * delta;
 
-      p.phase = mRng.uniform();
+      p.phase = 0.0f;
       p.inc = f / sr;
       const float rise = 1.03f + 0.09f * mRng.uniform();
       p.chirp = std::pow(rise, beta / sr);
@@ -668,12 +653,18 @@ void RiverEngine::spawnTrickle(float envLevel, float flow) {
    // that has just landed is not a free bubble.
    const float decay = clampf(mP.trickleDecaySec, 0.001f, 0.5f) * mDistanceSmear;
    p.decayCoef = decayCoefFor(decay * 0.5f, mSampleRate);
-   const float beta = 3.14159265f * f * clampf(bubbleDelta(f), 0.002f, 0.6f);
+   // The chirp is a total rise over the pocket's life, so it is spread over the
+   // life this pocket is actually given -- which for a drop comes from the
+   // parameter, not from its physical damping. Getting that wrong ran the
+   // phase increment into its Nyquist clamp and held it there for most of the
+   // pocket's life, which is a near-Nyquist tone read out of an interpolated
+   // sine table: broadband hash, not a drop.
+   const float lifeSamples = std::max(4.0f, decay * 0.5f * sr);
 
-   p.phase = mRng.uniform();
+   p.phase = 0.0f; // struck at zero; see the note in spawnDabble
    p.inc = f / sr;
    const float rise = 1.04f + 0.12f * mRng.uniform();
-   p.chirp = std::pow(rise, beta / sr);
+   p.chirp = std::pow(rise, 1.0f / lifeSamples);
 
    const float impact = clampf(mP.trickleImpact, 0.0f, 1.0f);
    const float lvl = envLevel * mP.trickleGain * kEventGain * mDistanceLevel * flow *
@@ -885,9 +876,12 @@ void RiverEngine::processPockets(float *outL, float *outR, uint32_t numSamples) 
             continue;
          }
          p.inc *= p.chirp;
-         // Nothing may run past Nyquist, whatever the chirp is asked for.
-         if (p.inc > 0.45f)
-            p.inc = 0.45f;
+         // A ceiling well short of Nyquist, whatever the chirp is asked for.
+         // sin2piFast reads an interpolated 4096-entry table, and a phase
+         // increment close to 0.5 walks it in steps large enough for the
+         // interpolation error to become broadband noise rather than a tone.
+         if (p.inc > 0.40f)
+            p.inc = 0.40f;
          p.phase += p.inc;
          if (p.phase >= 1.0f)
             p.phase -= 1.0f;

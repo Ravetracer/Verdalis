@@ -9,8 +9,8 @@ features = deep-rush, close
 water_type = Deep Rush
 water_blend = 0.95
 flow_level = -24
-flow_tilt = -0.02
-flow_body = 0.73
+flow_tilt = -0.04
+flow_body = 0.69
 turbulence = 0.13
 surge_rate = 4.14
 flow_grain = 0.00
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = 3.0
 max_events = 512
 seed = 0

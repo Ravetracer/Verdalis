@@ -9,7 +9,7 @@ features = trickle, grainy, tickling, close
 water_type = Trickle
 water_blend = 0.20
 flow_level = -24
-flow_tilt = 0.07
+flow_tilt = 0.08
 flow_body = 0.68
 turbulence = 0.87
 surge_rate = 4.22
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = -18.7
 max_events = 512
 seed = 0

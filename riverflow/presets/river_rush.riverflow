@@ -9,8 +9,8 @@ features = creek, close
 water_type = Creek
 water_blend = 0.85
 flow_level = -24
-flow_tilt = -0.00
-flow_body = 0.53
+flow_tilt = 0.01
+flow_body = 0.52
 turbulence = 0.13
 surge_rate = 5.23
 flow_grain = 0.45
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = 3.9
 max_events = 512
 seed = 0

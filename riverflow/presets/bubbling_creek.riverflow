@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = -12.0
 max_events = 512
 seed = 0

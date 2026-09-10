@@ -9,7 +9,7 @@ features = mountain-river, close
 water_type = Mountain River
 water_blend = 0.45
 flow_level = -24
-flow_tilt = -0.00
+flow_tilt = -0.01
 flow_body = 0.50
 turbulence = 0.14
 surge_rate = 0.62
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = 3.0
 max_events = 512
 seed = 0

@@ -94,6 +94,32 @@ the kind of mistake that is easy to make twice:
   is a 30 dB level error with the shape exactly right — which no amount of
   looking at a spectrum will show you.
 
+## The presets shipped clipping, and it was the first thing anyone heard
+
+Ten of the twenty factory presets peaked at exactly 1.000, and the four worst
+had over a tenth of a per cent of their samples past the soft clipper's knee.
+On a noise bed that is audible as crackle, and it read as distorted rain.
+
+It was not subtle once looked for -- `hanging_trickle` would have peaked at
++12.7 dBFS unclipped and `bubbly_falls` at +10.6 -- and nothing in the fitting
+loop was watching for it, because every statistic it did watch is a *relative*
+one that clipping barely moves. `fitpresets.py` now ends with a trim pass that
+renders each preset 20 dB down, measures where its peak would land at unity,
+and writes the trim into the preset's own output gain. The layer levels carry
+the fit and never move.
+
+Two smaller faults were found in the same pass and are worth recording:
+
+- A struck resonator was started at a random phase, which steps the output by
+  the pocket's full amplitude -- a click per pocket, on top of the pinch-off
+  transient that is supposed to be the only one. A damped oscillator's impulse
+  response starts at zero, so it now does.
+- A drop's chirp was spread over the life its *physical damping* implies while
+  its decay came from the parameter. For a small high pocket the two differ by
+  a factor of forty, which ran the phase increment into its Nyquist clamp and
+  held it there -- a near-Nyquist tone read out of an interpolated sine table,
+  which is broadband hash rather than a drop.
+
 ## Two things the crest factor taught
 
 `Grain` was normalised to unit *mean*, and a spiky positive multiplier with unit
@@ -116,9 +142,13 @@ All in `TODO.md` with what is known about them:
    nowhere else, and the five presets `fit.py` flags all have references that
    peak in that octave. An octave-wide bank plus one two-pole skirt cannot put a
    15 dB step between its last two bands.
-2. **The very peaky references are not reached.** `bubbly_falls` measures a crest
-   factor of 32.5 dB against the render's 20.1, and `hanging_trickle` 31.1
-   against 22.2. The library median is matched exactly; its extremes are not.
+2. ~~**The very peaky references are not reached.**~~ **This was the plugin's own
+   soft clipper, not the model.** Ten of the twenty presets were driven past the
+   clipper's knee -- `hanging_trickle` would have peaked at +12.7 dBFS and was
+   being bent by nearly 19 dB -- and clipping is precisely what takes the peaks
+   off a crest factor. Trimmed to a -6 dBFS peak, `bubbly_falls` measures 29.1
+   against its reference's 32.5 and `hanging_trickle` 34.2 against 31.1. The
+   systematic gap is gone; what remains is scatter either side.
 3. **Renders are narrower than the most correlated references.** Where a
    reference measures an L/R correlation of 1.00 the render gives 0.77-0.88,
    because the events decorrelate whatever they are added to even with their pan

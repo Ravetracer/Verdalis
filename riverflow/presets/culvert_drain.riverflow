@@ -10,7 +10,7 @@ water_type = Stream
 water_blend = 0.00
 flow_level = -24
 flow_tilt = 0.14
-flow_body = 0.52
+flow_body = 0.50
 turbulence = 0.58
 surge_rate = 1.09
 flow_grain = 1.00
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = -8.2
 max_events = 512
 seed = 0

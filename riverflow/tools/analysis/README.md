@@ -207,8 +207,24 @@ then to 19.5 against the library's 19.6.
 
 **The last 2 dB of that was the soft clipper, not the model.** At unity output
 gain the default patch peaked at exactly 1.000 and measured a crest factor of
-17.3; the same render 6 dB down measured 19.5. The layer defaults are now set so
-the default patch peaks around −2 dBFS.
+17.3; the same render 6 dB down measured 19.5.
+
+That turned out to be the small version of a much larger fault. **Ten of the
+twenty factory presets shipped saturating**, four of them with over a tenth of a
+per cent of their samples past the knee, which on a noise bed is audible as
+crackle and was the first thing anyone listening to the plugin heard. Measuring
+the peak *below* the clipper — the only way to measure it at all, since a
+saturating render reports 1.000 whatever it would have reached — showed
+`hanging_trickle` heading for +12.7 dBFS and `bubbly_falls` for +10.6.
+
+Nothing in the fitting loop was watching for it, because every statistic the
+loop does watch is a relative one that clipping barely moves. `fitpresets.py`
+now ends with `trim_gains()`, which renders each preset 20 dB down and writes
+the trim into its own output gain; the layer levels that carry the fit never
+move. It also corrected the record: the "peaky references are not reached" item
+in `TODO.md` was the clipper flattening its own peaks, and once trimmed
+`bubbly_falls` measures 29.1 dB against its reference's 32.5 and
+`hanging_trickle` 34.2 against 31.1.
 
 ## The default patch, against the library median
 

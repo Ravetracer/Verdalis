@@ -9,8 +9,8 @@ features = creek, grainy, tickling, close
 water_type = Creek
 water_blend = 0.50
 flow_level = -24
-flow_tilt = 0.00
-flow_body = 0.45
+flow_tilt = 0.01
+flow_body = 0.39
 turbulence = 0.28
 surge_rate = 0.70
 flow_grain = 1.00
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = -6.4
 max_events = 512
 seed = 0

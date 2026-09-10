@@ -52,6 +52,7 @@
 #include "../params.h"
 
 #include "verdalis/dsp/adsr.h"
+#include "verdalis/dsp/bubble.h"
 #include "verdalis/dsp/fastmath.h"
 #include "verdalis/dsp/filters.h"
 #include "verdalis/dsp/reverb.h"

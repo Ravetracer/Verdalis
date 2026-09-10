@@ -10,7 +10,7 @@ water_type = Rapids
 water_blend = 0.00
 flow_level = -24
 flow_tilt = 0.17
-flow_body = 0.55
+flow_body = 0.54
 turbulence = 0.19
 surge_rate = 0.23
 flow_grain = 0.60
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = 1.7
 max_events = 512
 seed = 0

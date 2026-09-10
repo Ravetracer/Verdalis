@@ -9,8 +9,8 @@ features = rapids, close
 water_type = Rapids
 water_blend = 0.00
 flow_level = -24
-flow_tilt = 0.13
-flow_body = 0.67
+flow_tilt = 0.12
+flow_body = 0.65
 turbulence = 0.15
 surge_rate = 3.52
 flow_grain = 0.48
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 0
+gain = 2.7
 max_events = 512
 seed = 0

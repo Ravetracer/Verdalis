@@ -27,14 +27,13 @@
       half-octave pair of bands at the top only; a search over the skirt corner
       rather than the closed form (the model in `updateFilters` is now accurate
       enough to search against, but it would run in the parameter path).
-- [ ] **Raise the crest factor on the peaky presets by 10 dB.** The library
-      median is matched exactly (19.5 against 19.6) but its extremes are not:
-      `bubbly_falls` measures 32.5 dB against 20.1, `hanging_trickle` 31.1
-      against 22.2, `forest_creek` 30.1 against 22.8. Suspects, in order: the
-      log-normal spread on event levels is 0.9 octaves and the references may
-      want more; `Cluster` spreads one event's energy over several pockets and
-      divides its peak by sqrt(n); and the very peaky references may simply be
-      sparser and louder than the fitted rates and levels allow.
+- [x] ~~Raise the crest factor on the peaky presets by 10 dB.~~ It was the
+      plugin's own soft clipper: ten presets shipped saturating, and clipping
+      takes the peaks off a crest factor by definition. Trimmed, `bubbly_falls`
+      measures 29.1 against its reference's 32.5 and `hanging_trickle` 34.2
+      against 31.1. What is left is scatter either side rather than a
+      systematic gap, and `forest_creek` (26.3 against 30.1) and `river_rush`
+      (14.5 against 19.2) are the two worth a second look.
 - [ ] **The most correlated references cannot be reached.** Four measure an L/R
       correlation of 1.00 — one recording of one place — and the renders give
       0.77-0.88 even with the event pan width at zero, because a pooled event

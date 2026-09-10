@@ -380,6 +380,8 @@ def main():
             print()
             print("--- pass %d, after correcting tilt and body from the render" % (it + 1))
         run_pass(a, corr)
+    if a.iterate and a.render and a.clap:
+        trim_gains(a)
     return 0
 
 
@@ -414,6 +416,51 @@ def measure_correction(a, prev):
             new[name] = (float(np.clip(pt - slope / 6.0, -0.35, 0.35)),
                          float(np.clip(pb - float(np.mean(resid[:2])) / 24.0, 0.12, 0.88)))
         return new
+    finally:
+        shutil.rmtree(out, ignore_errors=True)
+
+
+def trim_gains(a):
+    """Set each preset's output gain so that it does not reach the clipper.
+
+    The layer levels carry the fit and must not move, so the trim goes in the
+    one parameter that scales everything equally. The peak has to be measured
+    below the clipper to be a peak at all -- a render that is already
+    saturating reports 1.000 whatever it would have reached -- so each preset
+    is rendered 20 dB down and the measurement scaled back up.
+
+    Ten of the twenty presets shipped saturating without this, four of them
+    with over a tenth of a per cent of their samples past the knee. On a noise
+    bed that is audible as crackle, and it was the first thing anyone listening
+    to the plugin heard.
+    """
+    import subprocess, tempfile, shutil, re as _re
+    out = tempfile.mkdtemp(prefix="riverflow-trim-")
+    try:
+        subprocess.run([a.render, "--plugin", a.clap, "--all", "--outdir", out,
+                        "--seconds", "20", "--tail", "1", "--rate", "48000",
+                        "--param", "randomseed=7", "--param", "outputgain=-20"],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print()
+        print("%-24s %9s %9s" % ("preset", "peak dBFS", "trim dB"))
+        for spec in PRESETS:
+            name = spec[0]
+            gp = os.path.join(out, name.replace("_", " ").title().replace(" ", "_") + ".wav")
+            fp = os.path.join(a.out, name + ".riverflow")
+            if not (os.path.exists(gp) and os.path.exists(fp)):
+                continue
+            x, _ = wavio.read_wav(gp)
+            peak = float(np.max(np.abs(x)))
+            if peak <= 0.0:
+                continue
+            # Where the peak would have landed at unity, and the trim that puts
+            # it at -6 dBFS.
+            unity_db = 20.0 * math.log10(peak) + 20.0
+            trim = float(np.clip(-6.0 - unity_db, -24.0, 6.0))
+            print("%-24s %9.1f %9.1f" % (name, unity_db, trim))
+            txt = open(fp).read()
+            txt = _re.sub(r'(?m)^gain = .*$', 'gain = %.1f' % trim, txt)
+            open(fp, "w").write(txt)
     finally:
         shutil.rmtree(out, ignore_errors=True)
 

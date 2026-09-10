@@ -408,10 +408,14 @@ understood: an octave-wide bandpass leaks 6-8 dB into its neighbour, so a 15 dB
 step between the last two bands is out of reach, and one two-pole skirt at the
 band edge does not close it.
 
-**The peakiest references are not reached.** The library's median crest factor is
-matched exactly — 19.5 dB against 19.6 — but its extremes are not: *Bubbly
-Falls* measures 32.5 dB in its reference against 20.1 in the render, and
-*Hanging Trickle* 31.1 against 22.2.
+**The presets shipped clipping, and now they do not.** Ten of the twenty were
+driven past the output stage's soft clipper — *Hanging Trickle* would have
+peaked at +12.7 dBFS — which on a noise bed is audible as crackle. Every preset
+now carries a trim in its own output gain, computed by rendering it 20 dB down
+and measuring where its peak would land, so all twenty peak at −6 dBFS. The
+layer levels that carry the fit are untouched. Presets that model quiet water
+are quiet: a trickle peaking at −6 dBFS sits 19 dB below a waterfall doing the
+same, which is about the real difference between them.
 
 **The most correlated references cannot be reached.** Four measure an L/R
 correlation of 1.00 — one recording of one place — and the renders give 0.77 to
