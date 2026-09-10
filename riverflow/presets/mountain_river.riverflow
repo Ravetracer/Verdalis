@@ -3,23 +3,23 @@ format = 1
 name = Mountain River
 author = RiverFlow
 description = A mountain river in the open, heard from its bank. Almost no low end at all: the reference measures 48 dB down at 32 Hz.
-features = mountain-river, close
+features = mountain-river, tickling, close
 
 # Flow
 water_type = Mountain River
 water_blend = 0.45
 flow_level = -24
 flow_tilt = 0.06
-flow_body = 0.56
+flow_body = 0.57
 turbulence = 0.29
 surge_rate = 0.94
-flow_grain = 0.69
+flow_grain = 0.00
 
 # Stones
 dabble_rate = 11.00
 dabble_level = -30.9
 dabble_size = 3.30
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1
@@ -27,7 +27,7 @@ dabble_glug = 0.35
 
 # Trickle
 trickle_rate = 6.71
-trickle_level = -22.4
+trickle_level = -19.2
 trickle_size = 1.66
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -1.0
+gain = -1.5
 max_events = 512
 seed = 0

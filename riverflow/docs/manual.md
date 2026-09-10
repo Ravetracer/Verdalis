@@ -211,20 +211,33 @@ from one recording to the next. A river has no rhythm. *Surge Rate* is therefore
 the corner of the noise that drives the walk, and there is no LFO anywhere in
 this plugin.
 
-## Grain: the bubbles too small to count
+## Grain, and why it ships at zero
 
-The bed's own graininess is *Grain*, and it is frequency-weighted from the
-measurements: the library's departure from the Gaussian control grows from 30%
-at 200-800 Hz to 220% at 6-14 kHz. So Grain does far more to the top of the bed
-than to the bottom.
+*Grain* modulates each of the bed's eight bands, weighted so that it does far
+more to the top of the bed than to the bottom. It ships at **zero in every
+factory preset**, and the story of why is the most instructive thing in this
+manual.
 
-What it models is a vast number of sub-millimetre bubbles bursting — at that size
-and rate they overlap several deep and are not separately audible, so they are
-generated as a granular envelope on each band rather than as thousands of
-oscillators. That is the same sum for one multiply a sample.
+It was fitted from the 4 ms variance of the library's top band, where the
+references genuinely do depart from a Gaussian control — 0.29 against 0.09 at
+6-14 kHz. So a modulator was built to produce that variance, and it does.
 
-Zero is the correct value for the smooth third of the library, and it is what
-several presets use.
+But variance does not say whether a departure is a gentle wobble or a population
+of discrete events, and the kurtosis of the very same envelopes says which. The
+references measure an excess kurtosis of 38 in that band. Grain at full produces
+7. It matched the number and got the character backwards, and a continuously
+modulated broadband bed is exactly what *noise* sounds like — which is what a
+listener reported, in about a minute, by turning this control down and then the
+bed's level to zero.
+
+The library's own smoothest third settles the physics: those recordings sit *on*
+the Gaussian control, so a real river's bed really is smooth noise, and whatever
+graininess a creek has belongs to the events above it rather than to the water
+underneath them.
+
+The control stays, because it is the cheapest way to thicken a thin bed and a
+little of it under a sparse preset is useful. It is not a substitute for the
+event layers, and the presets no longer pretend it is.
 
 ## A dabble is a cluster, not a bubble
 

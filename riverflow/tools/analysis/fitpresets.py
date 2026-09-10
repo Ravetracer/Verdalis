@@ -10,13 +10,11 @@ cannot is in PRESETS below with a reason. The measured half:
                  crossfade to the next one for the least squared error.
   tilt, body     The least-squares residual after that, as a slope about 1 kHz
                  and a weight on the lowest two bands.
-  grain          From the 6-14 kHz band's 4 ms envelope variation, the cleanest
-                 indicator of it: the engine's own calibration runs 0.15 at
-                 Grain 0 to 0.29 at 0.85, and the event layers barely touch
-                 that band.
-  dabble level   From the 200-800 Hz band's variation above what Grain alone
-                 produces, through the engine's measured calibration.
-  trickle level  Likewise from the 2-6 kHz band.
+  grain          Zero, always. See the note beside GRAIN_FITTED below: the
+                 parameter matched a variance and got the character backwards.
+  dabble level   From the 200-800 Hz band's 4 ms envelope variation above a
+                 Gaussian control, through the engine's measured calibration.
+  trickle level  From the 2-6 kHz band, likewise.
   sizes          From the event-triggered spectra: a peak frequency is a radius
                  by Minnaert, r = 3.26 / f0.
   rates          From the detected event rates, relative to the library median
@@ -70,9 +68,36 @@ SHAPE_ORDER = list(SHAPES.keys())
 
 # The engine's own calibration, measured by sweeping one parameter at a time and
 # reading the band statistics back off the render. See README.md.
-GRAIN_CV0, GRAIN_CV85 = 0.15, 0.29
 DABBLE_BASE, DABBLE_K = 0.32, 31.7
-TRICKLE_BASE, TRICKLE_K = 0.26, 6.4
+
+# Grain is fitted to zero, and the reasoning is worth stating because the
+# parameter itself is not wrong -- the *attribution* was.
+#
+# Grain models the bed as a continuously modulated noise, and it was fitted
+# from the 6-14 kHz band's 4 ms variance on the argument that the references
+# depart from a Gaussian control there. They do. But variance does not say
+# whether that departure is a gentle wobble or a population of discrete
+# events, and the kurtosis in the very next column of grain.py's output says
+# which: creek-02-loop's 6-14 kHz envelope has an excess kurtosis of 38, and
+# Grain at full produces 7. Grain matched the variance and got the character
+# backwards, and a continuously modulated broadband bed is precisely what
+# "noise" sounds like.
+#
+# The library's own smoothest third settles it: those recordings sit *on* the
+# Gaussian control, so a real river's bed really is smooth noise and its
+# graininess belongs to the events above it. So Grain ships at zero, the
+# trickle layer is fitted from the 6-14 kHz band instead, and the parameter
+# stays available for anyone who wants it.
+GRAIN_FITTED = 0.0
+# The trickle is fitted from the 2-6 kHz band, as it was before Grain was
+# turned off -- only the baseline moves, because with Grain off the bed's own
+# variance in that band is 0.18 rather than 0.26. Fitting it from 6-14 kHz
+# instead was tried and rejected: it drove the layer 7 dB louder and moved
+# every other band away from the reference, because one layer's level cannot
+# be fitted from one band when it contributes to two. A joint least-squares
+# fit of both event levels against all four bands is what this actually wants;
+# see TODO.md.
+TRICKLE_BASE, TRICKLE_K = 0.18, 6.4
 LIB_DABBLE_RATE, LIB_TRICKLE_RATE = 5.5, 16.0
 LIB_DABBLE_DETECT, LIB_TRICKLE_DETECT = 5.5, 15.9
 
@@ -237,8 +262,7 @@ def fit_one(path, spec, corr_tilt=0.0, corr_body=0.5):
     body = float(np.clip(corr_body + float(np.mean(resid2[:2])) / 24.0, 0.0, 1.0))
 
     cvs = band_cvs(m, sr)
-    cv_hi = cvs[3] if np.isfinite(cvs[3]) else 0.2
-    grain = float(np.clip((cv_hi - GRAIN_CV0) / (GRAIN_CV85 - GRAIN_CV0) * 0.85, 0.0, 1.0))
+    grain = GRAIN_FITTED
 
     dabble_db = float(np.clip(10.0 * math.log10(max(cvs[0] - DABBLE_BASE, 1e-4) / DABBLE_K)
                               + EVENT_LEVEL_TRIM, -60.0, -8.0))
@@ -310,7 +334,7 @@ flow_grain = {grain:.2f}
 dabble_rate = {dab_rate:.2f}
 dabble_level = {dabble_db:.1f}
 dabble_size = {dab_size:.2f}
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1

@@ -10,16 +10,16 @@ water_type = Trickle
 water_blend = 0.00
 flow_level = -24
 flow_tilt = -0.02
-flow_body = 0.11
+flow_body = 0.14
 turbulence = 0.30
 surge_rate = 1.33
-flow_grain = 0.79
+flow_grain = 0.00
 
 # Stones
 dabble_rate = 4.00
 dabble_level = -29.4
 dabble_size = 2.17
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1
@@ -27,7 +27,7 @@ dabble_glug = 0.35
 
 # Trickle
 trickle_rate = 9.90
-trickle_level = -26.2
+trickle_level = -20.6
 trickle_size = 1.81
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 4.0
+gain = 1.1
 max_events = 512
 seed = 0

@@ -50,7 +50,7 @@ inline float logNormal(Rng &rng, float sigmaOct) {
    // -- had a fifth of a per cent of their samples past the knee, which is
    // audible as crackle on a noise bed. A real distribution is bounded anyway:
    // a stone can only trap so large a pocket.
-   const float g = clampv(rng.gaussian(), -2.0f, 2.0f);
+   const float g = clampv(rng.gaussian(), -3.0f, 3.0f);
    const float f = std::exp2(g * sigmaOct);
    const float s = sigmaOct * 0.6931472f;
    return f / std::exp(0.5f * s * s);
@@ -112,6 +112,13 @@ constexpr float kGrainWeight[kNumBedBands] = {0.25f, 0.30f, 0.35f, 0.50f,
 // and their drops 2.2-11.7 dB, and without this an event at -12 dB would be
 // 20 dB *below* the bed in RMS and could not move a band's statistics at all.
 constexpr float kEventGain = 4.0f;
+
+// How wide each layer's level distribution is, in octaves. They differ by a
+// lot, and the difference is measured: the references carry their
+// impulsiveness below 800 Hz and are close to smooth above it, so the pockets
+// a stone traps need a long tail and the spray does not.
+constexpr float kDabbleLevelSigma = 1.0f;
+constexpr float kTrickleLevelSigma = 0.4f;
 
 // A cloud of bubbles rings far below any bubble in it. Xue et al.'s Figure 3
 // puts the first three modes of a pour at 386, 589 and 732 Hz -- ratios of
@@ -602,8 +609,13 @@ void RiverEngine::spawnDabble(float envLevel, float flow) {
       const float rise = 1.03f + 0.09f * mRng.uniform();
       p.chirp = std::pow(rise, beta / sr);
       p.decayCoef = std::exp(-beta / sr);
+      // A wide spread, because the references' impulsiveness lives almost
+      // entirely below 800 Hz: the size of pocket a stone traps varies hugely
+      // from one fold of water to the next, and the rare large one is what
+      // gives a creek its character. Measured, creek-02-loop's 200-800 Hz
+      // envelope has an excess kurtosis of 35 against 8 an octave above it.
       p.level = envLevel * mP.dabbleGain * kEventGain * mDistanceLevel * share * flow *
-                logNormal(mRng, 0.9f);
+                logNormal(mRng, kDabbleLevelSigma);
 
       // The water being displaced around it.
       p.bodyBand.reset();
@@ -613,8 +625,8 @@ void RiverEngine::spawnDabble(float envLevel, float flow) {
       // A dabble is water on water: the pinch-off transient, and no impact off
       // a hard surface. The band it goes through sits just above the pocket.
       p.surfaceBand.reset();
-      p.surfaceBand.setCutoff(clampf(f * 2.4f, 80.0f, 0.45f * sr), resonanceFor(0.9f), sr);
-      p.clickLevel = p.level * 0.45f;
+      p.surfaceBand.setCutoff(clampf(f * 1.6f, 80.0f, 0.45f * sr), resonanceFor(2.5f), sr);
+      p.clickLevel = p.level * 0.15f;
       p.clickCoef = decayCoefFor(0.004f * mDistanceSmear, mSampleRate);
       p.splashLevel = 0.0f;
       p.splashCoef = 0.0f;
@@ -669,8 +681,11 @@ void RiverEngine::spawnTrickle(float envLevel, float flow) {
    p.chirp = std::pow(rise, 1.0f / lifeSamples);
 
    const float impact = clampf(mP.trickleImpact, 0.0f, 1.0f);
+   // Narrow, and deliberately much narrower than a dabble's. Spray is uniform
+   // where trapped pockets are not, and the same references that are impulsive
+   // below 800 Hz are smooth above it -- kurtosis 8 to 10 against 35.
    const float lvl = envLevel * mP.trickleGain * kEventGain * mDistanceLevel * flow *
-                     logNormal(mRng, 0.9f);
+                     logNormal(mRng, kTrickleLevelSigma);
    p.level = lvl * (1.0f - 0.75f * impact);
 
    p.bodyBand.reset();
@@ -684,7 +699,7 @@ void RiverEngine::spawnTrickle(float envLevel, float flow) {
                               200.0f, 0.45f * sr);
    p.surfaceBand.reset();
    p.surfaceBand.setCutoff(stone, resonanceFor(1.1f), sr);
-   p.clickLevel = lvl * impact * 2.2f;
+   p.clickLevel = lvl * impact * 0.6f;
    p.clickCoef = decayCoefFor(0.0022f * mDistanceSmear, mSampleRate);
 
    // The wash that follows, through the same surface: the impact is the fast

@@ -10,16 +10,16 @@ water_type = Creek
 water_blend = 0.60
 flow_level = -24
 flow_tilt = -0.15
-flow_body = 0.54
+flow_body = 0.56
 turbulence = 0.17
 surge_rate = 1.02
-flow_grain = 0.09
+flow_grain = 0.00
 
 # Stones
 dabble_rate = 11.00
 dabble_level = -32.0
 dabble_size = 3.30
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1
@@ -27,7 +27,7 @@ dabble_glug = 0.35
 
 # Trickle
 trickle_rate = 3.19
-trickle_level = -51.1
+trickle_level = -25.5
 trickle_size = 0.61
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 3.7
+gain = 3.0
 max_events = 512
 seed = 0

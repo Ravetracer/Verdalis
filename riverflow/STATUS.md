@@ -94,37 +94,39 @@ the kind of mistake that is easy to make twice:
   is a 30 dB level error with the shape exactly right — which no amount of
   looking at a spectrum will show you.
 
-## Grain was stepping its own amplitude, and that was the crackle
+## Grain was the noise, twice over
 
-Two faults produced audible crackle in the first version, and only the second
-one was actually what a listener heard.
+Grain had two faults, and the first fix was necessary but not sufficient.
 
-`Grain` multiplies each of the bed's eight bands by a sample-and-hold, refreshed
-every 4 ms. A sample-and-hold *steps*, and a step in an amplitude is a
-discontinuity: eight bands in two channels stepping 250 times a second is four
-thousand discontinuities a second, which is a continuous fizz over the whole
-bed. It now ramps to each new value across the hold instead, which removes the
-discontinuity by construction and leaves the measured statistics alone -- the
-6-14 kHz band's 4 ms variation still runs 0.15 at Grain 0 to 0.29 at 0.85.
+**It stepped.** A sample-and-hold multiplying a band's amplitude steps it, and a
+step is a discontinuity: eight bands in two channels stepping 250 times a second
+is four thousand discontinuities a second. It now ramps to each new value across
+the hold.
 
-**It hid from three separate measurements**, and that is the part worth
-recording. A search for a line spectrum at the hold rate found nothing, because
-the step sizes are random and the eight bands are out of phase, so the artifact
-is broadband rather than tonal. A peak-to-median ratio above 5 kHz found
-nothing, because the steps are spread evenly and lift the median as much as the
-peaks. And a layer-by-layer elimination pointed at the wrong layer entirely,
-because it was scored with that same ratio.
+**And it was the wrong model.** Ramped, it still sounded like noise, because it
+is a *continuously modulated bed* where the references' graininess is a
+population of *discrete events*. Both satisfy the 4 ms variance it was fitted
+to: 0.29 at 6-14 kHz against a Gaussian control's 0.09. Neither the variance nor
+five other statistics separated them. The kurtosis of the same envelopes does,
+and it was sitting in the next column of `grain.py`'s own output the whole time
+-- the references measure 38 where Grain produces 7.
 
-The measurement that does catch it is the one now in the recipe: **Grain must
-change the bed's envelope and not its spectrum.** A stepped amplitude injects
-broadband energy the band has no business radiating, so the octave-band shape
-moves with Grain. Ramped, it holds to within 0.7 dB from Grain 0 to 1.0.
+The library's smoothest third settles it: those recordings sit *on* the Gaussian
+control, so a river's bed is smooth noise and its grain belongs to the events
+above it. Grain now ships at zero in all twenty presets and the parameter stays
+for anyone who wants it. Bubbling Creek's 6-14 kHz variance drops from 0.51 to
+0.29 and Glacier Falls' from 0.34 to 0.18, while their 200-800 Hz character --
+the bubbles -- is unchanged.
 
-The user found it in about a minute by turning Grain down and then Flow Level to
-zero. That is worth more than the three metrics put together, and it is why
-`TODO.md` puts listening first.
+**Six measurements failed to find this**, and the list is the useful part: a
+line-spectrum search at the hold rate; a peak-to-median ratio above 5 kHz; a
+layer-by-layer elimination scored with that ratio, which blamed the wrong layer
+outright; a spectral-flatness comparison; a per-event pitch-spread comparison;
+and a broadband-coincidence count. Every one of them returned "close to the
+reference". A listener with a spectrogram found it by looking at the picture and
+turning one knob.
 
-## The presets shipped clipping, and it was the first thing anyone heard
+## The presets shipped clipping## The presets shipped clipping, and it was the first thing anyone heard
 
 Ten of the twenty factory presets peaked at exactly 1.000, and the four worst
 had over a tenth of a per cent of their samples past the soft clipper's knee.

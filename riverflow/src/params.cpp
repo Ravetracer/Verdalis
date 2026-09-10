@@ -59,15 +59,24 @@ const ParamDesc kParams[kNumParams] = {
        "       about -1.5 dB per decade over 0.3-10 Hz with no peak that survives from\n"
        "       one recording to the next, so a river has no rhythm. This sets the corner\n"
        "       of the noise that drives it."),
-   PCT(kParamFlowGrain, "flow_grain", "Grain", "Flow", 0.85,
-       "How granular the bed itself is, as against the countable events above it.\n"
-       "       Frequency-weighted from the measurements: the library's 4 ms envelope\n"
-       "       departs from a Gaussian control by 30% at 200-800 Hz and by 220% at\n"
-       "       6-14 kHz, so this does far more to the top of the bed than to the bottom.\n"
-       "       That is a vast number of sub-millimetre bubbles bursting -- too many and\n"
-       "       too short to count, so a granular envelope on a band rather than\n"
-       "       oscillators. Zero is right for the smooth third of the library; the\n"
-       "       default reproduces the library's median."),
+   PCT(kParamFlowGrain, "flow_grain", "Grain", "Flow", 0.0,
+       "How granular the bed itself is, frequency-weighted so that it does far more\n"
+       "       to the top of the bed than the bottom.\n"
+       "\n"
+       "       It ships at zero in every factory preset, and the reason is worth\n"
+       "       knowing before turning it up. It was fitted from the 4 ms variance of\n"
+       "       the library's top band, where the references do depart from a Gaussian\n"
+       "       control -- but variance does not say whether a departure is a gentle\n"
+       "       wobble or a population of discrete events, and the kurtosis of the same\n"
+       "       envelopes says which: the references measure 38 where this measures 7.\n"
+       "       They are grainy because of events; this is a continuously modulated\n"
+       "       bed, which is what noise sounds like. The library's smoothest third\n"
+       "       settles it -- those recordings sit *on* the Gaussian control, so a real\n"
+       "       river's bed is smooth noise and its grain belongs to the layers above.\n"
+       "\n"
+       "       Kept because it is the cheapest way to thicken a bed, and because a\n"
+       "       little of it under a sparse preset is useful. It is not a substitute for\n"
+       "       the event layers."),
 
    // ---------------------------------------------------------------- stones
    LOG(kParamDabbleRate, "dabble_rate", "Dabble Rate", "Stones", 0.626, 0.2, 40.0, "/s",

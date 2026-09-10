@@ -3,23 +3,23 @@ format = 1
 name = Hanging Trickle
 author = RiverFlow
 description = Single drops off an overhang onto wet stone. The far end of the plugin: its 2-6 kHz band varies thirteen times as much as noise would, which is what makes it tick rather than hiss.
-features = trickle, grainy, tickling, close
+features = trickle, tickling, close
 
 # Flow
 water_type = Trickle
 water_blend = 0.20
 flow_level = -24
-flow_tilt = 0.18
-flow_body = 0.70
+flow_tilt = 0.16
+flow_body = 0.63
 turbulence = 0.87
 surge_rate = 4.22
-flow_grain = 1.00
+flow_grain = 0.00
 
 # Stones
 dabble_rate = 2.83
 dabble_level = -30.0
 dabble_size = 12.00
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1
@@ -27,7 +27,7 @@ dabble_glug = 0.35
 
 # Trickle
 trickle_rate = 40.75
-trickle_level = -10.0
+trickle_level = -9.7
 trickle_size = 0.68
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -17.5
+gain = -13.1
 max_events = 512
 seed = 0

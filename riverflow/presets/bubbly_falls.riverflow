@@ -3,23 +3,23 @@ format = 1
 name = Bubbly Falls
 author = RiverFlow
 description = The bubbliest recording in the library. Almost all of this is countable events; the bed is barely there under them.
-features = trickle, grainy, tickling, close
+features = trickle, tickling, close
 
 # Flow
 water_type = Trickle
 water_blend = 0.45
 flow_level = -24
-flow_tilt = 0.25
-flow_body = 0.46
+flow_tilt = 0.18
+flow_body = 0.42
 turbulence = 0.78
 surge_rate = 2.50
-flow_grain = 1.00
+flow_grain = 0.00
 
 # Stones
 dabble_rate = 18.00
 dabble_level = -23.4
 dabble_size = 3.23
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1
@@ -27,7 +27,7 @@ dabble_glug = 0.35
 
 # Trickle
 trickle_rate = 50.99
-trickle_level = -11.7
+trickle_level = -11.3
 trickle_size = 0.77
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -16.2
+gain = -13.6
 max_events = 512
 seed = 0

@@ -3,23 +3,23 @@ format = 1
 name = Winter River
 author = RiverFlow
 description = A river at night in the cold. Cold air absorbs less, so more of the top survives the way over.
-features = creek, grainy, tickling, close
+features = creek, tickling, close
 
 # Flow
 water_type = Creek
 water_blend = 0.35
 flow_level = -24
-flow_tilt = -0.15
-flow_body = 0.15
+flow_tilt = -0.21
+flow_body = 0.21
 turbulence = 0.40
 surge_rate = 2.11
-flow_grain = 1.00
+flow_grain = 0.00
 
 # Stones
 dabble_rate = 3.50
 dabble_level = -24.9
 dabble_size = 4.33
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1
@@ -27,7 +27,7 @@ dabble_glug = 0.35
 
 # Trickle
 trickle_rate = 14.42
-trickle_level = -18.3
+trickle_level = -16.8
 trickle_size = 1.80
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -4.8
+gain = -2.6
 max_events = 512
 seed = 0

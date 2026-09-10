@@ -3,23 +3,23 @@ format = 1
 name = Forest Stream
 author = RiverFlow
 description = A stream under trees. The banks are close but soft, so there is a little space and no ring.
-features = creek, grainy, close
+features = creek, tickling, close
 
 # Flow
 water_type = Creek
 water_blend = 0.50
 flow_level = -24
-flow_tilt = 0.00
-flow_body = 0.40
+flow_tilt = -0.02
+flow_body = 0.43
 turbulence = 0.28
 surge_rate = 0.70
-flow_grain = 1.00
+flow_grain = 0.00
 
 # Stones
 dabble_rate = 4.83
 dabble_level = -26.2
 dabble_size = 2.21
-dabble_spread = 0.9
+dabble_spread = 0.30
 dabble_cluster = 4
 dabble_spill = 25
 dabble_damping = 1
@@ -27,7 +27,7 @@ dabble_glug = 0.35
 
 # Trickle
 trickle_rate = 14.42
-trickle_level = -21.5
+trickle_level = -18.8
 trickle_size = 1.64
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -3.3
+gain = -3.5
 max_events = 512
 seed = 0
