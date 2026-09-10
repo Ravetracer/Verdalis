@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Glacier Falls
+author = RiverFlow
+description = Meltwater discharging from under a glacier. Hard, cold, and bright at the top.
+features = creek, grainy, tickling, close
+
+# Flow
+water_type = Creek
+water_blend = 0.75
+flow_level = -24
+flow_tilt = -0.24
+flow_body = 0.66
+turbulence = 0.33
+surge_rate = 3.20
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 5.50
+dabble_level = -36.5
+dabble_size = 3.30
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 16.44
+trickle_level = -12.7
+trickle_size = 1.45
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -30
+plunge_tone = 100
+plunge_depth = 0.5
+plunge_q = 0.6
+
+# Reach
+bank_type = Gorge
+distance = 0.26
+air = 0.5
+width = 0.11
+flow_width = 0.09
+space_amount = 0.32
+space_size = 0.65
+space_damping = 0.4
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

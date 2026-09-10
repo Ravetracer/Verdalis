@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Mountain River
+author = RiverFlow
+description = A mountain river in the open, heard from its bank. Almost no low end at all: the reference measures 48 dB down at 32 Hz.
+features = mountain-river, grainy, tickling, close
+
+# Flow
+water_type = Mountain River
+water_blend = 0.45
+flow_level = -24
+flow_tilt = 0.07
+flow_body = 0.58
+turbulence = 0.29
+surge_rate = 0.94
+flow_grain = 0.95
+
+# Stones
+dabble_rate = 5.50
+dabble_level = -27.9
+dabble_size = 3.30
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 3.44
+trickle_level = -19.4
+trickle_size = 1.66
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -46
+plunge_tone = 150
+plunge_depth = 0.35
+plunge_q = 0.45
+
+# Reach
+bank_type = Open
+distance = 0.22
+air = 0.5
+width = 0.91
+flow_width = 0.76
+space_amount = 0.14
+space_size = 0.55
+space_damping = 0.55
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

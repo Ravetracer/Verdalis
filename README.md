@@ -31,7 +31,7 @@ hand-drawn plugin window with no toolkit dependency.
 | **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | in progress |
 | **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | in progress |
 | **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | in progress |
-| **RiverFlow** | rivers, streams | planned |
+| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | in progress |
 | **CrackleBlaze** | fire | planned |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
@@ -55,6 +55,15 @@ sound at all, and the sources it drives. Aeolian tones shed at the Strouhal
 frequency, so a howl's pitch swoops with every gust — which the reference
 library confirms. 53 parameters, 23 presets, and rustling foliage as a bonus
 layer.
+
+**RiverFlow** — built on a measurement that reads as a criticism and is not: the
+smoothest third of its reference library is statistically indistinguishable from
+shaped Gaussian noise, so a bed of it is a complete model of those rivers. The
+other end measures thirteen times as grainy, and the band it happens in says
+whether that is a creek dabbling between stones or drops off an overhang. 50
+parameters, 20 presets, six octave-band colours taken as cluster centroids from
+77 recordings, and a bed whose bands each wander on their own because the
+measured correlation between neighbours is 0.07.
 
 **ChirpParade** — a bird syllable *is* its frequency contour, so 72 of them were
 measured off real recordings and ship as coefficients that drive the oscillator

@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Stony Creek
+author = RiverFlow
+description = A creek over bare stone. Grainy in every band at once, and bright with it.
+features = creek, grainy, bubbly, tickling, close
+
+# Flow
+water_type = Creek
+water_blend = 0.75
+flow_level = -24
+flow_tilt = 0.09
+flow_body = 0.91
+turbulence = 1.00
+surge_rate = 1.09
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 5.67
+dabble_level = -17.7
+dabble_size = 5.80
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 16.86
+trickle_level = -9.9
+trickle_size = 1.51
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -50
+plunge_tone = 220
+plunge_depth = 0.35
+plunge_q = 0.6
+
+# Reach
+bank_type = Rock Pool
+distance = 0.08
+air = 0.5
+width = 0.00
+flow_width = 0.00
+space_amount = 0.26
+space_size = 0.35
+space_damping = 0.4
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

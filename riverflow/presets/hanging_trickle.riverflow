@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Hanging Trickle
+author = RiverFlow
+description = Single drops off an overhang onto wet stone. The far end of the plugin: its 2-6 kHz band varies thirteen times as much as noise would, which is what makes it tick rather than hiss.
+features = trickle, grainy, tickling, close
+
+# Flow
+water_type = Trickle
+water_blend = 0.20
+flow_level = -24
+flow_tilt = 0.07
+flow_body = 0.68
+turbulence = 0.87
+surge_rate = 4.22
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 1.42
+dabble_level = -27.0
+dabble_size = 2.32
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 20.55
+trickle_level = -8.0
+trickle_size = 0.42
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -56
+plunge_tone = 240
+plunge_depth = 0.25
+plunge_q = 0.7
+
+# Reach
+bank_type = Cavern
+distance = 0.05
+air = 0.5
+width = 0.20
+flow_width = 0.17
+space_amount = 0.4
+space_size = 0.5
+space_damping = 0.35
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

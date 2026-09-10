@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Gorge Cascade
+author = RiverFlow
+description = A cascade down a gorge wall, heard across the gap. Wide and bright, with the rock ringing.
+features = trickle, grainy, close
+
+# Flow
+water_type = Trickle
+water_blend = 0.00
+flow_level = -24
+flow_tilt = 0.04
+flow_body = 0.16
+turbulence = 0.30
+surge_rate = 1.33
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 2.00
+dabble_level = -26.4
+dabble_size = 4.97
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 4.95
+trickle_level = -23.2
+trickle_size = 1.51
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -32
+plunge_tone = 105
+plunge_depth = 0.5
+plunge_q = 0.6
+
+# Reach
+bank_type = Gorge
+distance = 0.30
+air = 0.5
+width = 1.00
+flow_width = 0.89
+space_amount = 0.38
+space_size = 0.75
+space_damping = 0.4
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

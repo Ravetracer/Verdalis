@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Bubbling Creek
+author = RiverFlow
+description = The grainiest reference in the library below 800 Hz. This is the dabbling the plugin exists for: water folding over stones, one pocket of air at a time.
+features = creek, grainy, bubbly, tickling, close
+
+# Flow
+water_type = Creek
+water_blend = 0.05
+flow_level = -24
+flow_tilt = 0.57
+flow_body = 0.01
+turbulence = 0.54
+surge_rate = 0.31
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 7.82
+dabble_level = -16.6
+dabble_size = 4.35
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 19.17
+trickle_level = -11.3
+trickle_size = 0.72
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -52
+plunge_tone = 200
+plunge_depth = 0.3
+plunge_q = 0.4
+
+# Reach
+bank_type = Forest
+distance = 0.10
+air = 0.5
+width = 0.00
+flow_width = 0.00
+space_amount = 0.2
+space_size = 0.4
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

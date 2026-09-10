@@ -59,7 +59,7 @@ Seven plugins, each modelling one natural sound source:
 | 3 | **ShoreBreak** | `shorebreak/` | WIP | ocean waves |
 | 4 | **SkyHowl** | `skyhowl/` | WIP | winds, storms |
 | 5 | **ChirpParade** | `chirpparade/` | WIP | bird chirps |
-| 6 | **RiverFlow** | `riverflow/` | planned | rivers, streams |
+| 6 | **RiverFlow** | `riverflow/` | WIP | rivers, streams |
 | 7 | **CrackleBlaze** | `crackleblaze/` | planned | fire |
 | 8 | **NightLife** | `nightlife/` | planned | night insects, crickets, howling wolfes, foxes, owls, night birds |
 
@@ -357,6 +357,7 @@ with a coloured knob.
 | ShoreBreak | `#4FD0BA` | sea green, a warmer and greener chassis |
 | SkyHowl | `#F0845C` | dust coral -- greys with a red-brown cast |
 | ChirpParade | `#F2C744` | finch gold, greys with an olive cast |
+| RiverFlow | `#57C77A` | river green -- moss on wet stone, cool green-grey greys |
 
 A new plugin picks its own accent and derives its greys from it. Do not reuse
 another plugin's theme, and do not fall back to the suite brand palette — that

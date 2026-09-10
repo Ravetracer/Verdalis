@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Culvert Drain
+author = RiverFlow
+description = Water down a stone culvert. Boxy and close, and everything comes back off the walls.
+features = stream, grainy, tickling, close
+
+# Flow
+water_type = Stream
+water_blend = 0.00
+flow_level = -24
+flow_tilt = 0.14
+flow_body = 0.52
+turbulence = 0.58
+surge_rate = 1.09
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 3.25
+dabble_level = -20.6
+dabble_size = 3.48
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 9.56
+trickle_level = -14.9
+trickle_size = 1.51
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -38
+plunge_tone = 130
+plunge_depth = 0.4
+plunge_q = 0.75
+
+# Reach
+bank_type = Culvert
+distance = 0.10
+air = 0.5
+width = 0.69
+flow_width = 0.57
+space_amount = 0.5
+space_size = 0.3
+space_damping = 0.3
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

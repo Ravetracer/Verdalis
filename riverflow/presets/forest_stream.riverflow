@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Forest Stream
+author = RiverFlow
+description = A stream under trees. The banks are close but soft, so there is a little space and no ring.
+features = creek, grainy, tickling, close
+
+# Flow
+water_type = Creek
+water_blend = 0.50
+flow_level = -24
+flow_tilt = 0.00
+flow_body = 0.45
+turbulence = 0.28
+surge_rate = 0.70
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 2.42
+dabble_level = -23.2
+dabble_size = 3.48
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 7.30
+trickle_level = -18.5
+trickle_size = 1.29
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -48
+plunge_tone = 170
+plunge_depth = 0.3
+plunge_q = 0.4
+
+# Reach
+bank_type = Forest
+distance = 0.18
+air = 0.5
+width = 1.00
+flow_width = 1.00
+space_amount = 0.22
+space_size = 0.45
+space_damping = 0.62
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0

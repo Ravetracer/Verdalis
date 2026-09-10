@@ -1,0 +1,72 @@
+# RiverFlow preset
+format = 1
+name = Winter River
+author = RiverFlow
+description = A river at night in the cold. Cold air absorbs less, so more of the top survives the way over.
+features = creek, grainy, tickling, close
+
+# Flow
+water_type = Creek
+water_blend = 0.35
+flow_level = -24
+flow_tilt = -0.23
+flow_body = 0.11
+turbulence = 0.40
+surge_rate = 2.11
+flow_grain = 1.00
+
+# Stones
+dabble_rate = 1.75
+dabble_level = -21.9
+dabble_size = 4.73
+dabble_spread = 0.9
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 7.21
+trickle_level = -15.3
+trickle_size = 1.72
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -42
+plunge_tone = 150
+plunge_depth = 0.4
+plunge_q = 0.45
+
+# Reach
+bank_type = Forest
+distance = 0.26
+air = 0.5
+width = 0.05
+flow_width = 0.04
+space_amount = 0.2
+space_size = 0.55
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 0
+max_events = 512
+seed = 0
