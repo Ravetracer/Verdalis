@@ -1,32 +1,61 @@
 # RainyDay — current status
 
-Written 2026-09-03, brought up to date 2026-09-10 for 1.6.0. See `README.md` for the
+Written 2026-09-03, brought up to date 2026-09-10 for 1.7.0. See `README.md` for the
 design and parameter reference, and `TODO.md` for what is still open.
 
 
-## The tack (1.6.0)
+## Trickle (1.7.0)
 
-A drop landing on concrete makes two sounds: the drop, and the concrete. RainyDay
-modelled the first thoroughly and the second only as a tuned damped sine, which
-gives every impact a pitch of its own. *Tack* adds the surface: a short burst of
-noise through a broad resonance, with a fast part that is the strike and a slower
-one that is the film of water on it, both bypassing the droplet's radiation
-rolloff because they have nothing to do with the size of the drop.
+A drop landing on concrete makes two sounds. RainyDay modelled the drop
+thoroughly -- the pocket of air it traps, its pitch bend, its splash, the
+secondary droplets thrown sideways -- and the *surface* only as a tuned damped
+sine at the moment of impact, which gives every strike a pitch of its own.
 
-Per-surface columns set its level, centre and decays. Water gets none of it,
-concrete and metal all of it.
+*Trickle* is the surface, as a layer of its own with eight controls: level,
+rate, size, spread, decay, impact, stone tone and splash. It replaces 1.6.0's
+two-knob *Tack*, which was the same idea with most of its controls missing.
 
-**Tack at 0 is the plugin as it was, verified byte-identical** on a pinned seed.
-That took a little care: the scatter on the tack's centre frequency has to be
-drawn from the droplet's own generator rather than the shared one, and guarded so
-that at zero the draw does not happen at all -- anything drawn from the shared
-sequence shifts every random number after it, which would mean adding this layer
-changed which drops fall and when.
+**It is the same generator RiverFlow uses**, in `verdalis/dsp/pocket.h`, shared
+between the two plugins rather than reimplemented -- including the order its
+random draws are made in, which is part of that file's contract. Driven
+identically, the two plugins render the same event rate (15.2/s), the same event
+pitch (1805 against 1898 Hz), the same Q (2.2 against 2.1), the same decay
+(2.0 ms both) and the same spectral flatness (0.105 against 0.083).
 
-**What is not settled is whether this is the difference that matters.** Three
-attempts to characterise it statistically all failed against measurement, and
-they are recorded in `TODO.md` because each was plausible and each was wrong.
-The A/B renders in `!dev/tack-ab/` are the honest next step.
+Sizes read in millimetres because that is physically what a pocket's pitch is;
+see `verdalis/dsp/bubble.h`.
+
+## The trickle has its own generator, and it has to
+
+Two attempts at trimming the new layer's level both diverged, and the reason was
+worth finding. Both worked by rendering each preset with the trickle silent, to
+see whether the peak was the trickle's or the preset's -- and the answer kept
+coming back "not the trickle's" even as the layer was driven 15 dB down.
+
+The layer was drawing from the engine's shared generator. Anything drawn from it
+shifts every number after it, so turning the trickle off did not produce the
+same rain without a trickle: it produced *a different rain*. The two renders
+were never comparable, and the comparison the trim depended on was meaningless.
+
+It now has its own `Rng`, seeded from the same Seed with a fixed offset.
+Verified: with the layer silent, changing its rate and size leaves the render
+bit-identical, so a fixed Seed promises the same rain whatever the Trickle
+controls are doing.
+
+The same mistake in reverse is why 1.6.0's Tack guarded its own draw.
+
+## Levels, and where the trim went
+
+Adding a layer to presets whose gains were already fitted can only push them up,
+and five of the seventeen reached the soft clipper. The first fix trimmed the
+preset gains, which took 12 dB off `gutter_trickle` -- the wrong knob, because
+that preset's overshoot was mostly the new layer amplified by its own +12 dB
+output gain.
+
+So the trim now asks which layer the overshoot belongs to, which is only
+answerable because the generators are separate: if a preset clips with the
+trickle silent the fault predates 1.7.0 and its gain is trimmed; otherwise the
+trickle level is. Three presets were already clipping before this version.
 
 ## State: working and playable
 

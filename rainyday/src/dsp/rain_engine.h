@@ -6,6 +6,7 @@
 
 #include "../params.h"
 #include "verdalis/dsp/adsr.h"
+#include "verdalis/dsp/pocket.h"
 #include "verdalis/dsp/filters.h"
 #include "verdalis/dsp/reverb.h"
 #include "verdalis/dsp/rng.h"
@@ -30,8 +31,17 @@ struct EngineParams {
    float chirp = 0.35f;
    float bubbleChance = 1.0f;
    int surface = 0;
-   float tack = 0.45f;
-   float tackToneHz = 2683.0f;
+
+   // The trickle layer: drops landing on a hard surface. The same generator
+   // RiverFlow uses, so the same settings give the same sound.
+   float trickleGain = 0.0316f; // linear, -30 dB
+   float trickleRateHz = 16.0f;
+   float trickleSizeMm = 1.24f;
+   float trickleSpreadOct = 1.2f;
+   float trickleDecaySec = 0.013f;
+   float trickleImpact = 0.45f;
+   float stoneToneHz = 3500.0f;
+   float trickleSplash = 0.25f;
    float noteTracking = 0.5f;
 
    float bedGain = 0.25f; // linear
@@ -171,6 +181,7 @@ struct Voice {
    Adsr env;
    double dropTimer = 0.0; // samples until the next droplet (double: low
                            // densities mean waits beyond float's integer range)
+   double trickleTimer = 0.0; // and until the next drop on the surface
 
    Svf bedLpL, bedLpR;
    Hp2 bedHpL, bedHpR;
@@ -202,23 +213,33 @@ public:
 
    static constexpr uint32_t kMaxVoices = 16;
    static constexpr uint32_t kMaxDroplets = 2048;
+   static constexpr uint32_t kMaxPockets = 1024;
    static constexpr uint32_t kModInterval = 64; // control-rate for random walks
 
 private:
    void updateFilters();
    void spawnDroplet(Voice &v, float envLevel, uint32_t offset);
+   void spawnTrickle(float envLevel);
+   verdalis::Pocket *allocatePocket();
    Droplet *allocateDroplet();
    void processVoiceBed(Voice &v, float *outL, float *outR, uint32_t numSamples);
    void processDroplets(float *outL, float *outR, uint32_t numSamples);
+   void processPockets(float *outL, float *outR, uint32_t numSamples);
    void processOutputChain(float *outL, float *outR, uint32_t numSamples);
 
    float mSampleRate = 48000.0f;
    EngineParams mP;
    Rng mRng;
+   // The trickle draws from its own generator, not the shared one. Anything
+   // drawn from mRng shifts every number after it, so a trickle sharing it
+   // would change which droplets fall and when -- and then a fixed Seed would
+   // no longer promise the same rain when only the Trickle controls moved.
+   Rng mTrickleRng;
    int mAppliedSeed = -1;
 
    Voice mVoices[kMaxVoices];
    std::vector<Droplet> mDroplets;
+   verdalis::Pocket mPockets[kMaxPockets];
    uint32_t mDropletLimit = 512;
    uint32_t mDropletCursor = 0;
 

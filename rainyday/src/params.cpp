@@ -117,20 +117,40 @@ const ParamDesc kParams[kNumParams] = {
    LOG(kParamHighpass, "highpass", "Highpass", "Filter", 0.0, 20.0, 2000.0, "Hz",
        "Rolls off the bottom at 12 dB/oct. Off at the far left."),
 
-   // ------------------------------------------------------------------- tack
-   PCT(kParamTack, "tack", "Tack", "Rain", 0.45,
-       "How much of each impact is a broadband tack off the surface rather than a\n"
-       "       tuned tick. This is measured, and the measurement is what the parameter\n"
-       "       exists for: the event-triggered spectra of real drops on stone have a Q\n"
-       "       of about 6 -- broad enough to have no pitch of their own and to take\n"
-       "       their colour from the surface -- and fall 10 dB in about 7 ms. An impact\n"
-       "       modelled as a damped sine has whatever Q its damping gives it, which\n"
-       "       here measured 18 and rang for 96 ms. That is the difference between a\n"
-       "       plink and a drop landing on concrete."),
-   LOG(kParamTackTone, "tack_tone", "Tack Tone", "Rain", 0.5, 600.0, 12000.0, "Hz",
-       "Where that tack sits: what the surface is made of. Wet rock and glass are high "
-       "and hard, wood and leaves lower and duller. The Surface setting moves this, and "
-       "this trims it."),
+   // ---------------------------------------------------------------- trickle
+   //
+   // Drops landing on a hard surface, as a layer of its own, and the same
+   // generator RiverFlow's Trickle uses -- so these eight controls mean exactly
+   // what they mean there and the same settings give the same sound. Every
+   // figure below is measured from RiverFlow's reference library of running
+   // water; see riverflow/tools/analysis/README.md.
+   LIN(kParamTrickleLevel, "trickle_level", "Trickle Level", "Trickle", -60.0, 6.0, -30.0, "dB",
+       "Level of the drops-on-a-surface layer. At minimum it is off and the plugin is "
+       "droplets and bed alone."),
+   LOG(kParamTrickleRate, "trickle_rate", "Trickle Rate", "Trickle", 0.578, 0.5, 200.0, "/s",
+       "Drops a second striking the surface. Measured 5-25 a second across the water "
+       "references, median 16."),
+   LOG(kParamTrickleSize, "trickle_size", "Trickle Size", "Trickle", 0.705, 0.15, 3.0, "mm",
+       "Radius of the pocket of air a drop entrains, which is its pitch: Minnaert gives\n"
+       "       f0 = 3.26/r kHz. Measured 0.42-1.72 mm, median 1.24 -- whose predicted\n"
+       "       2629 Hz matches a measured median of 2625."),
+   LIN(kParamTrickleSpread, "trickle_spread", "Trickle Spread", "Trickle", 0.0, 3.0, 1.2, "oct",
+       "Spread of drop sizes. Measured pitches span about 1.25 octaves around the median."),
+   LOG(kParamTrickleDecay, "trickle_decay", "Trickle Decay", "Trickle", 0.407, 2.0, 200.0, "ms",
+       "How long one drop lasts. Measured 8-86 ms to fall 10 dB, median 13; the long end "
+       "of that is splashing rather than ticking."),
+   PCT(kParamTrickleImpact, "trickle_impact", "Trickle Impact", "Trickle", 0.45,
+       "The strike itself against the pocket that follows it. A drop landing on rock is "
+       "mostly a broadband tick off the rock; a drop landing in water is mostly the "
+       "bubble."),
+   LOG(kParamStoneTone, "stone_tone", "Stone", "Trickle", 0.545, 800.0, 12000.0, "Hz",
+       "What the drops are landing on: the centre of the surface's own resonance. Wet "
+       "rock and glass are high and hard, wood and moss lower and duller."),
+   PCT(kParamTrickleSplash, "trickle_splash", "Trickle Splash", "Trickle", 0.25,
+       "How much of a drop is a short wash of water rather than a clean tick. The "
+       "references' drop decays are bimodal -- 8-13 ms for a tick against 56-86 ms where "
+       "the water is deeper -- and this is that second population."),
+
 };
 
 #undef LIN

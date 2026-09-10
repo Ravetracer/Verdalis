@@ -54,6 +54,17 @@ release = 2000
 vel_to_level = 0.5
 vel_to_density = 0.3
 
+# Trickle: drops landing on a hard surface. The same layer, and the
+# same eight controls, as RiverFlow's Trickle.
+trickle_level = -26
+trickle_rate = 8
+trickle_size = 1.50
+trickle_spread = 0.9
+trickle_decay = 22
+trickle_impact = 38
+stone_tone = 3000
+trickle_splash = 48
+
 # Output
 gain = 4.01
 max_droplets = 512

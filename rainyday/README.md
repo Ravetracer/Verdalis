@@ -30,24 +30,27 @@ This README is the developer's view. The user-facing manual is
 Its parameter reference and preset library are generated from the plugin
 itself, so a new parameter documents itself.
 
-### The tack: the surface being struck
+### Trickle: drops landing on a surface
 
-*Tack* (1.6.0) is what a drop landing on a hard surface does to the surface,
-rather than what it does to itself. It is a short burst of noise through the
-surface's own broad resonance, and it sits alongside the tuned impact rather
-than replacing it: at 0 the plugin is exactly what it was before, bit for bit,
-and as it comes up the tuned tick gives way to a broadband tack.
+A drop landing on concrete makes two sounds, and until 1.7.0 RainyDay modelled
+only one of them properly. The drop itself is here in detail — the pocket of air
+it traps, its pitch bend, its splash, the secondary droplets thrown sideways.
+The *surface* was a tuned damped sine at the moment of impact, which gives every
+strike a pitch of its own and reads as a plink rather than as a tack off stone.
 
-Every surface carries its own tack level, centre frequency and two decays — the
-strike itself, and the film of water on the surface that outlasts it. Concrete,
-metal and glass get the most of it; water gets none, because a drop landing in
-water has no surface to tack off.
+*Trickle* is that surface, as a layer of its own with eight controls: level,
+rate, size, spread, decay, impact, stone tone and splash. It is **the same
+generator RiverFlow's Trickle layer uses** — `verdalis/dsp/pocket.h`, shared
+between the two plugins — so the same settings give the same sound in both.
+Verified: driven identically, the two render the same event rate, the same event
+pitch, the same Q, the same decay and the same spectral flatness.
 
-The idea came from RiverFlow, whose *Trickle* layer models exactly this
-— single drops on wet stone — and from the observation that the two plugins were
-solving the same problem in different places. What RainyDay lacked was the
-surface. Whether it is *the* difference is not settled: see `TODO.md`, which is
-honest about three statistical explanations that did not survive measurement.
+Sizes read in millimetres because that is physically what a pocket's pitch is:
+Minnaert's relation gives f₀ ≈ 3.26/r kHz, and RiverFlow's reference library
+measures drop pockets at 0.42–1.72 mm with a median of 1.24, whose predicted
+2629 Hz matches a measured median of 2625.
+
+At minimum level the layer is off and the plugin is droplets and bed alone.
 
 ## Build and install
 

@@ -27,7 +27,7 @@ namespace {
 // Widened by one cell when Slosh joined the RAIN panel, which needs eight
 // columns rather than seven.
 constexpr int kContentW = 1060;
-constexpr int kWindowH = 740;
+constexpr int kWindowH = 844;
 
 // ------------------------------------------------------------------- panels
 
@@ -40,7 +40,7 @@ constexpr uint32_t kRainParams[] = {
    kParamDropDecay, kParamDecaySpread,
    kParamTonality, kParamBubble,  kParamImpact,   kParamSplash,      kParamSlosh,
    kParamLevelSpread, kParamChirp,
-   kParamNoteTracking, kParamTack, kParamTackTone,
+   kParamNoteTracking,
 };
 constexpr uint32_t kSpaceParams[] = {kParamDistance,  kParamAir,       kParamSpaceAmount,
                                  kParamSpaceSize, kParamSpaceDamping};
@@ -53,14 +53,21 @@ constexpr uint32_t kDistantParams[] = {kParamBedLevel, kParamBedTone,  kParamBed
                                    kParamBedDrift, kParamBedWidth, kParamBedPan};
 constexpr uint32_t kCloseParams[] = {kParamWidth, kParamDropPan};
 constexpr uint32_t kOutParams[] = {kParamGain, kParamMaxDroplets, kParamSeed};
+// Drops landing on a hard surface, as its own layer. Eight controls, and the
+// same eight RiverFlow's Trickle panel carries -- it is the same generator.
+constexpr uint32_t kTrickleParams[] = {
+   kParamTrickleLevel,  kParamTrickleRate,   kParamTrickleSize, kParamTrickleSpread,
+   kParamTrickleDecay,  kParamTrickleImpact, kParamStoneTone,   kParamTrickleSplash,
+};
 
 #define PANEL(title, cols, rows, arr)                                                              \
    { title, cols, rows, arr, static_cast<int>(sizeof(arr) / sizeof(arr[0])) }
 
 constexpr PanelSpec kPanelSpecs[] = {
-   PANEL("RAIN", 9, 2, kRainParams),     PANEL("DISTANT", 3, 2, kDistantParams),
+   PANEL("RAIN", 8, 2, kRainParams),     PANEL("DISTANT", 3, 2, kDistantParams),
    PANEL("ENVELOPE", 3, 2, kEnvParams),  PANEL("FILTER", 3, 2, kFilterParams),
    PANEL("SPACE", 3, 2, kSpaceParams),   PANEL("CLOSE", 1, 2, kCloseParams),
+   PANEL("TRICKLE", 4, 2, kTrickleParams),
    PANEL("OUTPUT", 3, 1, kOutParams),
 };
 #undef PANEL
@@ -71,7 +78,7 @@ constexpr int kNumPanels = static_cast<int>(sizeof(kPanelSpecs) / sizeof(kPanelS
 // edge of their rows so the two layer panels read as a pair. The activity meter
 // fills what is left of the last row.
 constexpr int kRowStart[] = {0, 2, 6};
-constexpr int kRowCount[] = {2, 4, 1};
+constexpr int kRowCount[] = {2, 4, 2};
 constexpr int kNumRows = 3;
 
 // The layout is a table, and a table is easy to break by adding a parameter to

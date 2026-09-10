@@ -266,27 +266,38 @@ A fat drop is therefore automatically loud, low and long, and a fine one quiet,
 high and short, with no parameter tweaking required for that to hold. The
 relations are Minnaert's, from 1933.
 
-## The tack: the surface being struck
+## Trickle: drops landing on a surface
 
-A drop landing on concrete makes two sounds, and until 1.6.0 {{PLUGIN}} modelled
-only one of them properly. The drop itself is here in detail — the bubble it
-traps, its pitch bend, its splash and the secondary droplets thrown sideways.
-The *surface* was only a tuned damped sine at the moment of impact, which gives
-every strike a pitch of its own.
+A drop landing on concrete makes two sounds, and until 1.7.0 {{PLUGIN}}
+modelled only one of them properly. The drop itself is here in detail — the
+pocket of air it traps, its pitch bend, its splash, the secondary droplets
+thrown sideways. The *surface* was only a tuned damped sine at the moment of
+impact, which gives every strike a pitch of its own.
 
-*Tack* is the surface. It is a short burst of noise through the surface's own
-broad resonance, with a fast part that is the strike and a slower one that is
-the film of water lying on it. Like the impact and the body it bypasses the
-droplet's radiation rolloff, because what the concrete does has nothing to do
-with how big the drop was.
+*Trickle* is the surface, as its own layer, and it is **the same generator
+RiverFlow uses** for its Trickle — one file shared between the two plugins — so
+the same settings give the same sound in both. Eight controls, the same eight:
 
-Each surface carries its own tack level, centre frequency and decays. Water gets
-none — a drop landing in water has no surface to tack off — while concrete,
-metal and glass get all of it. *Tack Tone* trims where it sits: wet rock and
-glass are high and hard, wood and leaves lower and duller.
+| Control | What it is |
+|---|---|
+| *Trickle Level* | how much of the layer there is; at minimum it is off |
+| *Trickle Rate* | drops a second striking the surface; measured 5–25, median 16 |
+| *Trickle Size* | the radius of the pocket of air a drop entrains, in millimetres, which *is* its pitch |
+| *Trickle Spread* | the spread of drop sizes, in octaves |
+| *Trickle Decay* | how long one drop lasts; measured 8–86 ms to fall 10 dB |
+| *Trickle Impact* | the strike itself against the pocket that follows it |
+| *Stone* | what they are landing on: the surface's own resonance |
+| *Trickle Splash* | the wash of water where the surface is deeper |
 
-**At 0 the plugin is exactly what it was**, bit for bit on a pinned seed, so a
-render made before 1.6.0 still reproduces.
+Sizes read in millimetres because that is physically what a pocket's pitch is.
+Minnaert's relation gives f₀ ≈ 3.26/r kHz, and the reference library of running
+water measures drop pockets at 0.42–1.72 mm with a median of 1.24 — whose
+predicted 2629 Hz matches a measured median pitch of 2625.
+
+The layer has its own event clock rather than firing with the droplets, which is
+deliberate: it is a population of drops landing on one nearby hard surface, not
+the whole field of rain. Setting its rate independently is what lets a sparse
+patter sit over a busy surface, or the reverse.
 
 ## The bed
 

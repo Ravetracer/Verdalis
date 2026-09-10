@@ -34,12 +34,6 @@ struct SurfaceProfile {
    float sloshDecaySec;  // how long it washes out
    float sloshLevel;     // its weight, relative to the impact click
    float sloshChance;    // fraction of droplets that slap at all
-   // The tack: the surface's own broad resonance, struck. Four columns, and
-   // they are what separates concrete from a bucket of water.
-   float tackLevel;      // weight, relative to the impact click
-   float tackHz;         // where the surface's tack sits
-   float tackDecaySec;   // the strike itself
-   float tackWetSec;     // the film of water on it, which outlasts the strike
 };
 
 // Wet surfaces trap an air bubble, so their tone swells in a few milliseconds
@@ -112,13 +106,13 @@ struct SurfaceProfile {
 // therefore moves those presets away from that reference while moving them
 // towards what concrete sounds like from a few feet away. See TODO section 2.
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
-   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 1.30f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f, 0.00f, 1200.0f, 0.0060f, 0.0080f},
-   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 1.45f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f, 0.30f, 2600.0f, 0.0060f, 0.0160f},
-   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f, 0.30f, 2800.0f, 0.0040f, 0.0080f},
-   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f, 4200.0f, 0.028f, 4.20f, 0.070f, 0.60f, 3800.0f, 0.0050f, 0.0120f},
-   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f, 0.12f, 6000.0f, 0.0035f, 0.0080f},
-   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f, 450.0f, 0.4f, 0.060f, 0.20f, 6500.0f, 0.018f, 3.20f, 0.055f, 0.20f, 7000.0f, 0.0035f, 0.0075f},
-   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f, 400.0f, 0.4f, 0.015f, 0.08f, 5000.0f, 0.030f, 6.50f, 0.095f, 1.00f, 6000.0f, 0.0050f, 0.0120f},
+   /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 1.30f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 1.45f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f, 4200.0f, 0.028f, 4.20f, 0.070f},
+   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f},
+   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f, 450.0f, 0.4f, 0.060f, 0.20f, 6500.0f, 0.018f, 3.20f, 0.055f},
+   /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f, 400.0f, 0.4f, 0.015f, 0.08f, 5000.0f, 0.030f, 6.50f, 0.095f},
    // Fabric: a taut canopy a foot above your head, which is an umbrella or a
    // tent. It is a drumhead, so the impact is the loudest thing about it and
    // carries more weight than on any other surface, but the membrane is lossy
@@ -126,7 +120,7 @@ const SurfaceProfile kSurfaces[kNumSurfaces] = {
    // once and has very little pitch to it. Struck from above and radiating
    // straight down, it is also the one surface heard from a few centimetres
    // away rather than across a street.
-   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f, 240.0f, 0.4f, 0.040f, 0.60f, 0.0f, 0.00f, 0.00f, 0.00f, 0.55f, 2600.0f, 0.0050f, 0.0100f},
+   /* Fabric   */ {0.40f, 0.22f, 1.45f, 0.65f, 0.02f, 0.85f, 0.50f, 0.18f, 0.00f, 0.90f, 240.0f, 0.4f, 0.040f, 0.60f, 0.0f, 0.00f, 0.00f, 0.00f},
 };
 
 // --- The pitch bend of a drop falling into water.
@@ -320,12 +314,17 @@ void RainEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
    // Unique starting point per instance so stacked copies decorrelate.
    static std::atomic<uint32_t> instanceCounter{0};
    const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
-   mRng.reseed(static_cast<uint32_t>(now) ^ (0x9E3779B9u * (instanceCounter.fetch_add(1) + 1)));
+   const uint32_t instanceSeed =
+      static_cast<uint32_t>(now) ^ (0x9E3779B9u * (instanceCounter.fetch_add(1) + 1));
+   mRng.reseed(instanceSeed);
+   mTrickleRng.reseed(instanceSeed ^ 0x5BF03635u);
    mAppliedSeed = 0;
    reset();
 }
 
 void RainEngine::reset() {
+   for (auto &p : mPockets)
+      p.active = false;
    for (auto &v : mVoices) {
       v.active = false;
       v.held = false;
@@ -339,6 +338,7 @@ void RainEngine::reset() {
       v.clumpState = 0.0f;
       v.modCounter = 0;
       v.dropTimer = 0.0;
+      v.trickleTimer = 0.0;
    }
    for (auto &d : mDroplets)
       d.active = false;
@@ -360,6 +360,7 @@ void RainEngine::reset() {
    // what makes it the setting that never repeats.
    if (mP.seed != 0)
       mRng.reseed(rngStateForSeed(mP.seed));
+      mTrickleRng.reseed(rngStateForSeed(mP.seed) ^ 0x5BF03635u);
 }
 
 void RainEngine::setParams(const EngineParams &p) {
@@ -372,6 +373,7 @@ void RainEngine::setParams(const EngineParams &p) {
       // is reproducible and renders identically every time.
       if (mP.seed != 0)
          mRng.reseed(rngStateForSeed(mP.seed));
+         mTrickleRng.reseed(rngStateForSeed(mP.seed) ^ 0x5BF03635u);
    }
 
    const uint32_t newLimit =
@@ -532,6 +534,7 @@ void RainEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t note
    slot->clumpState = 0.0f;
    slot->modCounter = 0;
    slot->dropTimer = 0.0; // first droplet lands immediately
+   slot->trickleTimer = 0.0;
 
    if (key >= 0)
       mLastKey = key;
@@ -741,21 +744,8 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    const float wet = (1.0f - 0.7f * mP.tonality) * (0.35f + 0.9f * mP.splash) * sp.splashMul;
    const float click = mP.impact * sp.clickMul * 0.5f;
 
-   // --- The tack: the surface itself, struck. A short burst of noise through
-   // a broad resonance, which is what a drop landing on stone measures as --
-   // Q about 6 and 10 dB down in some 7 ms. The tuned click stays alongside it
-   // and Tack is the balance, so a surface that really does ring (metal, glass)
-   // keeps its pitch while concrete and wood get the tack instead.
-   const float tackAmt = clampv(mP.tack, 0.0f, 1.0f) * sp.tackLevel;
-
    d.noiseAmp = amp * wet;
-   // The tuned click gives way as the tack comes in, but only partly. A
-   // surface that really does ring -- metal, glass -- is its ring, and an
-   // earlier version took three quarters of it away at full Tack, which is
-   // what made a tin roof stop sounding like one. The surface's own tack level
-   // already says how much it rings, so the displacement follows it and never
-   // takes more than a third.
-   d.clickAmp = amp * click * (1.0f - 0.33f * tackAmt);
+   d.clickAmp = amp * click;
    d.noiseDecay = decayCoef(noiseDecaySec, mSampleRate);
    d.clickDecay = decayCoef(clickDecaySec, mSampleRate);
 
@@ -953,35 +943,10 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
          : 0.0f;
    const float longest =
       std::max(std::max(std::max(ringSec, bodyDecaySec), sloshSec),
-               std::max(std::max(noiseDecaySec + qRing, clickDecaySec),
-                        tackAmt > 0.0f ? sp.tackWetSec : 0.0f));
+               std::max(noiseDecaySec + qRing, clickDecaySec));
    d.lifeMax = static_cast<uint32_t>(clampv(1.6f * longest, 0.001f, 4.0f) * mSampleRate) + 96;
    d.life = 0;
    d.rng.seed(mRng.next());
-
-   // --- The tack, set up here rather than with the other layers because its
-   // scatter is drawn from the droplet's own generator. Anything drawn from the
-   // shared one shifts every random number after it, and that would mean adding
-   // this layer changed which drops fall and when -- so a fixed Seed would stop
-   // promising the same rain to anyone who had already rendered with one.
-   d.tackAmp = 0.0f;
-   d.tackWet = 0.0f;
-   if (tackAmt > 0.0f) {
-      // Guarded, and not merely scaled to zero: the draw itself has to not
-      // happen. Tack at zero has to be the plugin as it was, bit for bit, for
-      // anyone who has already rendered something with a fixed Seed.
-      const float tackHz = clampv(sp.tackHz * (mP.tackToneHz / 2683.0f) * sp.brightness *
-                                     std::exp2(0.35f * d.rng.white()),
-                                  200.0f, 0.45f * mSampleRate);
-      d.tackBp.reset();
-      d.tackBp.setCutoff(tackHz, resonanceForQ(kImpactQ), mSampleRate);
-      // The strike, and the film of water on the surface that outlasts it. The
-      // wet part follows Splash, so a dry surface tacks and a wet one washes.
-      d.tackAmp = amp * tackAmt * 1.6f;
-      d.tackWet = amp * tackAmt * 0.55f * (0.2f + 1.4f * mP.splash);
-      d.tackDecay = decayCoef(sp.tackDecaySec > 0.0f ? sp.tackDecaySec : 0.006f, mSampleRate);
-      d.tackWetDecay = decayCoef(sp.tackWetSec > 0.0f ? sp.tackWetSec : 0.02f, mSampleRate);
-   }
 
    // --- Chirp, the rise: the bubble shrinking. The sweep is spread over the
    // droplet's whole audible life rather than over a fixed window, because
@@ -1062,7 +1027,66 @@ void RainEngine::processVoiceBed(Voice &v, float *outL, float *outR, uint32_t nu
          const float wait = mRng.exponential(rate) * mSampleRate;
          v.dropTimer += wait < 1.0f ? 1.0f : wait;
       }
+
+      // --- The trickle: its own Poisson clock, exactly as in RiverFlow, so
+      // that the two plugins agree. Independent of the droplet rate on purpose:
+      // it is a population of drops landing on one nearby hard surface, not the
+      // whole field of rain.
+      if (mP.trickleGain > 1.0e-5f) {
+         const float dd = clampv(mP.distance, 0.0f, 1.0f);
+         const float trickleRate =
+            clampv(mP.trickleRateHz * (1.0f + 11.0f * dd * dd) * (0.3f + 0.7f * env),
+                   0.005f, 8000.0f);
+         v.trickleTimer -= 1.0;
+         while (v.trickleTimer <= 0.0) {
+            spawnTrickle(env * levelMul);
+            const float w = mTrickleRng.exponential(trickleRate) * mSampleRate;
+            v.trickleTimer += w < 1.0f ? 1.0f : w;
+         }
+      }
    }
+}
+
+verdalis::Pocket *RainEngine::allocatePocket() {
+   for (uint32_t i = 0; i < kMaxPockets; ++i)
+      if (!mPockets[i].active)
+         return &mPockets[i];
+   return nullptr; // a dropped pocket from a full pool is inaudible
+}
+
+// One drop landing on a hard surface. The generator is the suite's -- the same
+// one RiverFlow's Trickle uses, in verdalis/dsp/pocket.h -- so these settings
+// give the same sound in both plugins. Only the distance treatment is this
+// plugin's, and it matches RiverFlow's too: more events, each smaller, with
+// their edges smeared by the air they crossed.
+void RainEngine::spawnTrickle(float envLevel) {
+   verdalis::Pocket *slot = allocatePocket();
+   if (!slot)
+      return;
+
+   const float d = clampv(mP.distance, 0.0f, 1.0f);
+   const float rateMul = 1.0f + 11.0f * d * d;
+
+   verdalis::TrickleSpec spec;
+   spec.sizeMm = mP.trickleSizeMm;
+   spec.spreadOct = mP.trickleSpreadOct;
+   spec.decaySec = mP.trickleDecaySec;
+   spec.impact = mP.trickleImpact;
+   spec.stoneToneHz = mP.stoneToneHz;
+   spec.splash = mP.trickleSplash;
+   spec.width = mP.width;
+   spec.levelSigma = 0.4f; // narrow: spray is uniform where trapped pockets are not
+   spec.smear = 1.0f + 2.5f * d * d;
+
+   // n events at 1/sqrt(n) each, so distance changes the texture and not the
+   // level. kEventGain of 4 is RiverFlow's: an event's peak at 0 dB is four
+   // times the bed's RMS at unity, which is where the measured prominences sit.
+   const float levelBase = envLevel * mP.trickleGain * 4.0f / std::sqrt(rateMul);
+   verdalis::spawnTricklePocket(*slot, spec, mTrickleRng, mSampleRate, levelBase);
+}
+
+void RainEngine::processPockets(float *outL, float *outR, uint32_t numSamples) {
+   verdalis::processPocketPool(mPockets, kMaxPockets, outL, outR, numSamples);
 }
 
 void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) {
@@ -1102,11 +1126,6 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
          s = d.body.tick(s);
          if (d.clickAmp > kSilent)
             s += d.clickAmp * sin2piFast(d.clickPhase);
-         // The tack is the surface sounding, so like the impact it bypasses the
-         // droplet's radiation rolloff -- it has nothing to do with the size of
-         // the drop that struck it.
-         if (d.tackAmp > kSilent || d.tackWet > kSilent)
-            s += d.tackBp.bandpassNormalised(d.rng.white()) * (d.tackAmp + d.tackWet);
          if (d.bodyAmp > kSilent) {
             const float ramp = static_cast<float>(d.life) * d.bodyRiseInv;
             s += d.bodyHp.tick(d.bodyAmp * (ramp < 1.0f ? ramp : 1.0f) * sin2piFast(d.bodyPhase));
@@ -1158,8 +1177,6 @@ void RainEngine::processDroplets(float *outL, float *outR, uint32_t numSamples) 
          d.harmAmp *= d.harmDecay;
          d.noiseAmp *= d.noiseDecay;
          d.clickAmp *= d.clickDecay;
-         d.tackAmp *= d.tackDecay;
-         d.tackWet *= d.tackWetDecay;
          d.bodyAmp *= d.bodyDecay;
          d.sloshAmp *= d.sloshDecay;
          d.sloshRise *= d.sloshRiseDecay;
@@ -1248,6 +1265,7 @@ void RainEngine::process(float *outL, float *outR, uint32_t numSamples) {
          processVoiceBed(v, outL, outR, numSamples);
    }
    processDroplets(outL, outR, numSamples);
+   processPockets(outL, outR, numSamples);
    processOutputChain(outL, outR, numSamples);
 
    if (activeVoiceCount() == 0 && activeDropletCount() == 0) {

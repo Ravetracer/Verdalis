@@ -138,8 +138,14 @@ private:
       p.chirp = static_cast<float>(realValue(kParamChirp));
       p.bubbleChance = static_cast<float>(realValue(kParamBubble));
       p.surface = static_cast<int>(realValue(kParamSurface));
-      p.tack = static_cast<float>(realValue(kParamTack));
-      p.tackToneHz = static_cast<float>(realValue(kParamTackTone));
+      p.trickleGain = dbToGain(static_cast<float>(realValue(kParamTrickleLevel)));
+      p.trickleRateHz = static_cast<float>(realValue(kParamTrickleRate));
+      p.trickleSizeMm = static_cast<float>(realValue(kParamTrickleSize));
+      p.trickleSpreadOct = static_cast<float>(realValue(kParamTrickleSpread));
+      p.trickleDecaySec = static_cast<float>(realValue(kParamTrickleDecay)) * 0.001f;
+      p.trickleImpact = static_cast<float>(realValue(kParamTrickleImpact));
+      p.stoneToneHz = static_cast<float>(realValue(kParamStoneTone));
+      p.trickleSplash = static_cast<float>(realValue(kParamTrickleSplash));
       p.noteTracking = static_cast<float>(realValue(kParamNoteTracking));
 
       p.bedGain = dbToGain(static_cast<float>(realValue(kParamBedLevel)));

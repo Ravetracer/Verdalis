@@ -62,11 +62,18 @@ enum ParamId : uint32_t {
    kParamBedPan,
    kParamHighpass,
 
-   // The tack: the surface being struck, as a short burst of noise through its
-   // own broad resonance rather than as a tuned tick. Appended, because these
-   // ids are persisted in presets and state.
-   kParamTack,
-   kParamTackTone,
+   // The trickle: drops landing on a hard surface, as its own layer. This is
+   // RiverFlow's Trickle, generator and all, so the same settings give the same
+   // sound in both plugins. It replaces the two-knob Tack of 1.6.0, which was
+   // the same idea with most of its controls missing.
+   kParamTrickleLevel,
+   kParamTrickleRate,
+   kParamTrickleSize,
+   kParamTrickleSpread,
+   kParamTrickleDecay,
+   kParamTrickleImpact,
+   kParamStoneTone,
+   kParamTrickleSplash,
    kNumParams
 };
 
