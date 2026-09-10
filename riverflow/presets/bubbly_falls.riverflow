@@ -9,16 +9,16 @@ features = trickle, grainy, tickling, close
 water_type = Trickle
 water_blend = 0.45
 flow_level = -24
-flow_tilt = 0.22
+flow_tilt = 0.25
 flow_body = 0.46
 turbulence = 0.78
 surge_rate = 2.50
 flow_grain = 1.00
 
 # Stones
-dabble_rate = 9.25
-dabble_level = -20.4
-dabble_size = 3.48
+dabble_rate = 18.00
+dabble_level = -23.4
+dabble_size = 3.23
 dabble_spread = 0.9
 dabble_cluster = 4
 dabble_spill = 25
@@ -26,9 +26,9 @@ dabble_damping = 1
 dabble_glug = 0.35
 
 # Trickle
-trickle_rate = 25.66
-trickle_level = -8.7
-trickle_size = 0.68
+trickle_rate = 50.99
+trickle_level = -11.7
+trickle_size = 0.77
 trickle_spread = 1.2
 trickle_decay = 13
 trickle_impact = 0.45
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -16.6
+gain = -16.2
 max_events = 512
 seed = 0

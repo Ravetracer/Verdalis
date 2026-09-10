@@ -2,6 +2,13 @@
 
 ## Listen to it
 
+- [x] ~~Listen for the octave bank ringing, and for Grain reading as a pitch.~~
+      Neither, but Grain *was* audibly wrong: it stepped each band's amplitude
+      every 4 ms and a step is a discontinuity. Fixed by ramping. Three
+      measurements missed it and the user found it by turning the knob down;
+      see STATUS.md for which measurements failed and why, and note that the
+      one that works -- Grain must not move the spectrum -- is now in the
+      recipe.
 - [ ] **Validate by ear, then by measurement.** Nothing here has been listened
       to. The suite has already been burned by this once — ChirpParade 0.1.0 was
       11,000 lines validated entirely against statistics and it was wrong — and
@@ -12,9 +19,14 @@
       are smooth at third-octave resolution and show no comb at octave spacing,
       but eight bandpasses an octave apart is exactly the arrangement that
       would, and a measurement at that resolution could miss a narrow one.
-- [ ] And listen to `Grain` on its own. It is eight sample-and-holds at about
-      4 ms, staggered so they do not switch together; if the stagger is not
-      enough it will read as a pitch rather than as texture.
+- [ ] The other half of the impulsiveness fit is now the opposite problem. The
+      library's median event kurtosis is 30 and the presets' is 1.7: the
+      references have sparse strong events that the 4 ms band statistic cannot
+      see, so the fitter turns the event layers off for them. `winter_river`'s
+      reference measures a kurtosis of 157 against the preset's 2.0. Fitting
+      the event levels from the impulsiveness as well as from the band variance
+      would close it -- `crackle.py` is the measurement, it just is not wired
+      into `fitpresets.py` yet.
 
 ## Fit
 

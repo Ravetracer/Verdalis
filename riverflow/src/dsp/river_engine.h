@@ -218,6 +218,15 @@ struct Voice {
    // a broadband click into the output every few milliseconds.
    float grainHoldL[kNumBedBands]{};
    float grainHoldR[kNumBedBands]{};
+   // Ramped to the next value rather than stepped onto it. A sample-and-hold
+   // multiplying a band's amplitude steps it, and a step is a discontinuity --
+   // eight bands in two channels stepping 250 times a second is four thousand
+   // discontinuities a second, which is a continuous fizz. It hides from a
+   // line-spectrum search, because the step sizes are random and the bands are
+   // out of phase, and from a peak-to-median ratio, because it lifts the median
+   // as much as the peaks.
+   float grainIncL[kNumBedBands]{};
+   float grainIncR[kNumBedBands]{};
    int grainCountL[kNumBedBands]{};
    int grainCountR[kNumBedBands]{};
 

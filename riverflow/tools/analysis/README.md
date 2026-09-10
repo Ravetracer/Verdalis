@@ -172,6 +172,64 @@ two-pole skirt cannot put a 15 dB step between the last two bands. The rendered
 spectra are smooth — no comb ripple at octave spacing, checked at third-octave
 resolution — which was the risk of narrowing the bands to fix it.
 
+## Grain was stepping, and how it hid
+
+`Grain` multiplies each band of the bed by a sample-and-hold refreshed every
+4 ms. A sample-and-hold steps, and a step in an amplitude is a discontinuity:
+eight bands in two channels stepping 250 times a second is four thousand
+discontinuities a second. It is audible as a continuous fizz over the whole bed,
+and it is the crackle the plugin shipped with.
+
+Three measurements were run and all three missed it:
+
+1. **A line-spectrum search at the hold rate.** Nothing: the step sizes are
+   random and the bands are out of phase, so the artifact is broadband, not
+   tonal. The clean bed and the grainy one both showed the same +2.5 to +5 dB of
+   local prominence, which is just periodogram scatter.
+2. **`crackle.py`, a peak-to-median ratio of the 0.5 ms envelope above 5 kHz.**
+   Nothing: the steps are spread evenly through the signal, so they lift the
+   median as much as the peaks and the ratio does not move.
+3. **Layer-by-layer elimination scored with that ratio.** Worse than nothing --
+   it pointed confidently at the trickle layer, because the trickle genuinely
+   does dominate that statistic while having nothing to do with the fault.
+
+The measurement that works is a transparency check, and it is obvious in
+hindsight: **Grain is meant to change the bed's envelope, not its spectrum.** A
+stepped amplitude injects broadband energy the band cannot radiate, so the
+octave-band shape moves as Grain comes up. Ramping each band to its next value
+across the hold rather than stepping onto it holds the shape to within 0.7 dB
+from Grain 0 to 1.0, and leaves the envelope statistics it was fitted to intact.
+
+The fault was found in about a minute by a listener turning Grain down and then
+Flow Level to zero. That is the whole argument for the suite's rule about
+validating by ear first, stated better than the rule states it.
+
+## Event density: the detector's rate is a floor
+
+`fitpresets.py` originally took the event detector's rate literally. It should
+not: the detector thresholds at four MAD above the local median, which is what
+makes it a detector rather than a noise meter, so it counts only the top of the
+population.
+
+Taking it literally gave presets whose events were too few and too loud --
+isolated spikes on a quiet floor rather than a texture. Measured against the
+references with `crackle.py`, `bubbling_creek` had an envelope kurtosis of 80
+against its reference's 41, and `glacier_falls` 133 against 66: *higher*
+kurtosis with a *lower* peak-to-median ratio, which is exactly the signature of
+too few, too large events.
+
+Trading rate against level at constant energy locates the factor:
+
+| multiplier | 1 | 2 | 4 | 8 | reference |
+|---|---|---|---|---|---|
+| envelope kurtosis | 70.2 | 51.1 | 23.3 | 16.0 | 41.4 |
+| 2-6 kHz band cv | 0.81 | 0.70 | 0.62 | 0.58 | 0.74 |
+
+Two matches both statistics best, so the fitted rates are doubled and the levels
+drop by 10 log10(2) to keep the energy the band variance was fitted to.
+Afterwards `bubbling_creek` measures 35 against 41, `glacier_falls` 57 against
+66 and `hanging_trickle` 73 against 79.
+
 ## The engine's own calibration
 
 The preset fitter needs to invert the engine, so the engine was swept one
@@ -179,11 +237,11 @@ parameter at a time and the band statistics read back off the render. These are
 the numbers `fitpresets.py` uses:
 
 `Grain`, 6-14 kHz band cv (the layer barely touches this band, so it is the
-clean indicator):
+clean indicator). Measured after the ramp fix above:
 
 | Grain | 0 | 0.30 | 0.60 | 0.85 | 1.00 |
 |---|---|---|---|---|---|
-| 6-14 kHz cv | 0.13 | 0.17 | 0.24 | 0.25 | 0.25 |
+| 6-14 kHz cv | 0.15 | 0.22 | 0.29 | 0.29 | 0.29 |
 
 `Dabble Level`, 200-800 Hz cv above a baseline of 0.32, and `Trickle Level`,
 2-6 kHz cv above 0.26:
@@ -292,6 +350,12 @@ $B/riverflow-render --plugin $B/RiverFlow.clap --all --outdir /tmp/wav \
     --seconds 20 --tail 1 --rate 48000 --param randomseed=7
 python3 fit.py /tmp/wav
 python3 bedfit.py <dir-of-bed-only-renders>
+python3 crackle.py <renders> <references>   # impulsiveness, against a control
+
+# and the transparency check that catches a stepped modulator: render the bed
+# alone at several Grain settings and compare their octave-band shapes. Grain
+# must move the envelope and not the spectrum; more than about 1 dB of movement
+# means something in it is stepping rather than ramping.
 ```
 
 `--param` matches on a parameter's **display** name with spaces removed, and a

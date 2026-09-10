@@ -13,11 +13,11 @@ flow_tilt = 0.01
 flow_body = 0.52
 turbulence = 0.13
 surge_rate = 5.23
-flow_grain = 0.45
+flow_grain = 0.26
 
 # Stones
-dabble_rate = 5.50
-dabble_level = -55.0
+dabble_rate = 11.00
+dabble_level = -58.0
 dabble_size = 3.30
 dabble_spread = 0.9
 dabble_cluster = 4
@@ -26,9 +26,9 @@ dabble_damping = 1
 dabble_glug = 0.35
 
 # Trickle
-trickle_rate = 1.76
-trickle_level = -48.1
-trickle_size = 0.50
+trickle_rate = 3.52
+trickle_level = -51.1
+trickle_size = 1.68
 trickle_spread = 1.2
 trickle_decay = 13
 trickle_impact = 0.45
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = 3.9
+gain = 5.0
 max_events = 512
 seed = 0

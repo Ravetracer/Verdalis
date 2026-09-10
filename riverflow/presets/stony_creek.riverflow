@@ -3,22 +3,22 @@ format = 1
 name = Stony Creek
 author = RiverFlow
 description = A creek over bare stone. Grainy in every band at once, and bright with it.
-features = creek, grainy, bubbly, tickling, close
+features = creek, grainy, tickling, close
 
 # Flow
 water_type = Creek
 water_blend = 0.75
 flow_level = -24
-flow_tilt = 0.02
-flow_body = 0.79
+flow_tilt = -0.08
+flow_body = 0.83
 turbulence = 1.00
 surge_rate = 1.09
 flow_grain = 1.00
 
 # Stones
-dabble_rate = 5.67
-dabble_level = -17.7
-dabble_size = 5.80
+dabble_rate = 11.33
+dabble_level = -20.7
+dabble_size = 3.39
 dabble_spread = 0.9
 dabble_cluster = 4
 dabble_spill = 25
@@ -26,9 +26,9 @@ dabble_damping = 1
 dabble_glug = 0.35
 
 # Trickle
-trickle_rate = 16.86
-trickle_level = -9.9
-trickle_size = 1.51
+trickle_rate = 33.54
+trickle_level = -12.9
+trickle_size = 1.81
 trickle_spread = 1.2
 trickle_decay = 13
 trickle_impact = 0.45
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -13.7
+gain = -12.5
 max_events = 512
 seed = 0

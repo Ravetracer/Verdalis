@@ -16,8 +16,8 @@ surge_rate = 0.39
 flow_grain = 0.00
 
 # Stones
-dabble_rate = 5.50
-dabble_level = -55.0
+dabble_rate = 11.00
+dabble_level = -58.0
 dabble_size = 3.30
 dabble_spread = 0.9
 dabble_cluster = 4
@@ -26,8 +26,8 @@ dabble_damping = 1
 dabble_glug = 0.35
 
 # Trickle
-trickle_rate = 16.00
-trickle_level = -48.1
+trickle_rate = 32.00
+trickle_level = -51.1
 trickle_size = 1.24
 trickle_spread = 1.2
 trickle_decay = 13

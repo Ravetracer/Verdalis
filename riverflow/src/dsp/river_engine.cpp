@@ -230,6 +230,8 @@ void RiverEngine::reset() {
       for (int b = 0; b < kNumBedBands; ++b) {
          v.grainHoldL[b] = 1.0f;
          v.grainHoldR[b] = 1.0f;
+         v.grainIncL[b] = 0.0f;
+         v.grainIncR[b] = 0.0f;
          // Staggered on purpose: eight sample-and-holds switching on the same
          // sample is a broadband click at a fixed rate, which is audible as a
          // tone rather than as grain.
@@ -728,9 +730,9 @@ void RiverEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numS
       // Var(-0.88 + 2.64 u^2) for u uniform on (0, 1] is 0.6196.
       grainNorm[b] = 1.0f / std::sqrt(1.0f + gw[b] * gw[b] * 0.6196f);
    }
-   // Each band holds for a few milliseconds at a time. The period is one more
-   // than a prime multiple of the band index so the eight of them drift apart
-   // instead of switching together, which would be a click at a fixed rate.
+   // Each band takes a few milliseconds to reach its next value, which is the
+   // scale the graininess was measured at. Reaching it rather than jumping to
+   // it is the whole point: see the note on grainIncL in the header.
    const int grainPeriod = 1 + static_cast<int>(sr * 0.004f);
 
    // The surge: a one-pole lowpass on white noise per band, whose output is
@@ -796,17 +798,22 @@ void RiverEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numS
       // third of the library sits *on* the control row -- and is where most
       // presets sit; it is the grainy ones that need this.
       if (grain > 0.001f) {
+         const float invPeriod = 1.0f / static_cast<float>(grainPeriod);
          for (int b = 0; b < kNumBedBands; ++b) {
             if (--v.grainCountL[b] <= 0) {
                v.grainCountL[b] = grainPeriod;
                const float u = v.rngSurge.uniformPositive();
-               v.grainHoldL[b] = (1.0f + gw[b] * (-0.88f + 2.64f * u * u)) * grainNorm[b];
+               const float target = (1.0f + gw[b] * (-0.88f + 2.64f * u * u)) * grainNorm[b];
+               v.grainIncL[b] = (target - v.grainHoldL[b]) * invPeriod;
             }
+            v.grainHoldL[b] += v.grainIncL[b];
             if (--v.grainCountR[b] <= 0) {
                v.grainCountR[b] = grainPeriod;
                const float u = v.rngSurge.uniformPositive();
-               v.grainHoldR[b] = (1.0f + gw[b] * (-0.88f + 2.64f * u * u)) * grainNorm[b];
+               const float target = (1.0f + gw[b] * (-0.88f + 2.64f * u * u)) * grainNorm[b];
+               v.grainIncR[b] = (target - v.grainHoldR[b]) * invPeriod;
             }
+            v.grainHoldR[b] += v.grainIncR[b];
          }
       }
 

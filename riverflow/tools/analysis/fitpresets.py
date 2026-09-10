@@ -11,8 +11,8 @@ cannot is in PRESETS below with a reason. The measured half:
   tilt, body     The least-squares residual after that, as a slope about 1 kHz
                  and a weight on the lowest two bands.
   grain          From the 6-14 kHz band's 4 ms envelope variation, the cleanest
-                 indicator of it: the engine's own calibration runs 0.13 at
-                 Grain 0 to 0.25 at 0.85, and the event layers barely touch
+                 indicator of it: the engine's own calibration runs 0.15 at
+                 Grain 0 to 0.29 at 0.85, and the event layers barely touch
                  that band.
   dabble level   From the 200-800 Hz band's variation above what Grain alone
                  produces, through the engine's measured calibration.
@@ -70,11 +70,30 @@ SHAPE_ORDER = list(SHAPES.keys())
 
 # The engine's own calibration, measured by sweeping one parameter at a time and
 # reading the band statistics back off the render. See README.md.
-GRAIN_CV0, GRAIN_CV85 = 0.13, 0.25
+GRAIN_CV0, GRAIN_CV85 = 0.15, 0.29
 DABBLE_BASE, DABBLE_K = 0.32, 31.7
 TRICKLE_BASE, TRICKLE_K = 0.26, 6.4
 LIB_DABBLE_RATE, LIB_TRICKLE_RATE = 5.5, 16.0
 LIB_DABBLE_DETECT, LIB_TRICKLE_DETECT = 5.5, 15.9
+
+# The event detector counts only the top of the population -- it thresholds at
+# four MAD above the local median, which is what makes it a detector rather
+# than a noise meter -- so its rate is a floor and not the rate. Taking it
+# literally gave presets whose events were too few and too loud: isolated
+# spikes on a quiet floor rather than a texture, which is audible as crackle.
+#
+# `crackle.py` measures that directly, as how far into its tail the 0.5 ms
+# envelope above 5 kHz sits. Trading rate against level at constant energy
+# across a factor of eight puts the best match at two:
+#
+#   multiplier      1      2      4      8   |  reference
+#   kurtosis     70.2   51.1   23.3   16.0   |      41.4
+#   2-6 kHz cv    0.81   0.70   0.62   0.58  |      0.74
+#
+# So the rate is doubled and the level drops by 10 log10(2) to keep the energy
+# the band statistic was fitted to.
+EVENT_RATE_MUL = 2.0
+EVENT_LEVEL_TRIM = -10.0 * math.log10(EVENT_RATE_MUL)
 
 def air_band_response(f, distance, air=0.5):
     """The engine's distance chain as power at frequency `f`.
@@ -221,10 +240,10 @@ def fit_one(path, spec, corr_tilt=0.0, corr_body=0.5):
     cv_hi = cvs[3] if np.isfinite(cvs[3]) else 0.2
     grain = float(np.clip((cv_hi - GRAIN_CV0) / (GRAIN_CV85 - GRAIN_CV0) * 0.85, 0.0, 1.0))
 
-    dabble_db = float(np.clip(10.0 * math.log10(max(cvs[0] - DABBLE_BASE, 1e-4) / DABBLE_K),
-                              -60.0, -8.0))
-    trickle_db = float(np.clip(10.0 * math.log10(max(cvs[2] - TRICKLE_BASE, 1e-4) / TRICKLE_K),
-                               -60.0, -8.0))
+    dabble_db = float(np.clip(10.0 * math.log10(max(cvs[0] - DABBLE_BASE, 1e-4) / DABBLE_K)
+                              + EVENT_LEVEL_TRIM, -60.0, -8.0))
+    trickle_db = float(np.clip(10.0 * math.log10(max(cvs[2] - TRICKLE_BASE, 1e-4) / TRICKLE_K)
+                               + EVENT_LEVEL_TRIM, -60.0, -8.0))
 
     turb = float(np.clip(mod_depth(m, sr, 1000.0, 2000.0) / 0.50, 0.0, 1.0))
     e50 = R.envelope(m, sr, 50.0)
@@ -244,19 +263,22 @@ def fit_one(path, spec, corr_tilt=0.0, corr_body=0.5):
     width = float(np.clip((1.0 - corr) * 1.2, 0.0, 1.0))
 
     dab_size, tri_size = 3.3, 1.24
-    dab_rate, tri_rate = LIB_DABBLE_RATE, LIB_TRICKLE_RATE
+    dab_rate = LIB_DABBLE_RATE * EVENT_RATE_MUL
+    tri_rate = LIB_TRICKLE_RATE * EVENT_RATE_MUL
     try:
         r = EV.measure(path, "low", 12.0)
         if r:
             dab_size = float(np.clip(r["radius_mm"], 1.0, 12.0))
-            dab_rate = float(np.clip(r["rate"] / LIB_DABBLE_DETECT * LIB_DABBLE_RATE, 0.2, 40.0))
+            dab_rate = float(np.clip(r["rate"] / LIB_DABBLE_DETECT * LIB_DABBLE_RATE
+                                     * EVENT_RATE_MUL, 0.2, 40.0))
     except Exception:
         pass
     try:
         r = EV.measure(path, "high", 12.0)
         if r:
             tri_size = float(np.clip(r["radius_mm"], 0.15, 3.0))
-            tri_rate = float(np.clip(r["rate"] / LIB_TRICKLE_DETECT * LIB_TRICKLE_RATE, 0.5, 200.0))
+            tri_rate = float(np.clip(r["rate"] / LIB_TRICKLE_DETECT * LIB_TRICKLE_RATE
+                                     * EVENT_RATE_MUL, 0.5, 200.0))
     except Exception:
         pass
 

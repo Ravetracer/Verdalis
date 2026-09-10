@@ -114,10 +114,10 @@ struct SurfaceProfile {
 const SurfaceProfile kSurfaces[kNumSurfaces] = {
    /* Water    */ {1.00f, 0.55f, 0.50f, 1.20f, 1.30f, 1.00f, 1.00f, 1.00f, 0.11f, 0.00f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f, 0.00f, 1200.0f, 0.0060f, 0.0080f},
    /* Puddle   */ {1.60f, 0.75f, 0.35f, 1.40f, 1.45f, 0.85f, 1.15f, 1.30f, 0.11f, 0.15f, 0.0f, 0.0f, 0.00f, 0.00f, 0.0f, 0.00f, 0.00f, 0.00f, 0.30f, 2600.0f, 0.0060f, 0.0160f},
-   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f, 0.20f, 2800.0f, 0.0040f, 0.0080f},
-   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f, 4200.0f, 0.028f, 4.20f, 0.070f, 0.75f, 3800.0f, 0.0050f, 0.0120f},
-   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f, 1.00f, 7000.0f, 0.0040f, 0.0100f},
-   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f, 450.0f, 0.4f, 0.060f, 0.20f, 6500.0f, 0.018f, 3.20f, 0.055f, 1.00f, 8000.0f, 0.0040f, 0.0090f},
+   /* Leaves   */ {0.35f, 0.15f, 1.20f, 0.70f, 0.02f, 0.70f, 0.35f, 0.35f, 0.00f, 0.50f, 280.0f, 0.6f, 0.020f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f, 0.30f, 2800.0f, 0.0040f, 0.0080f},
+   /* Wood     */ {0.60f, 0.45f, 1.10f, 0.50f, 0.03f, 0.90f, 0.80f, 0.25f, 0.00f, 0.90f, 300.0f, 0.4f, 0.050f, 0.35f, 4200.0f, 0.028f, 4.20f, 0.070f, 0.60f, 3800.0f, 0.0050f, 0.0120f},
+   /* Metal    */ {3.00f, 0.90f, 1.30f, 0.45f, 0.015f, 1.60f, 1.30f, 0.12f, 0.06f, 1.00f, 320.0f, 0.5f, 0.150f, 0.35f, 0.0f, 0.00f, 0.00f, 0.00f, 0.12f, 6000.0f, 0.0035f, 0.0080f},
+   /* Glass    */ {1.20f, 0.80f, 1.25f, 0.40f, 0.02f, 1.90f, 1.10f, 0.12f, 0.06f, 1.00f, 450.0f, 0.4f, 0.060f, 0.20f, 6500.0f, 0.018f, 3.20f, 0.055f, 0.20f, 7000.0f, 0.0035f, 0.0075f},
    /* Concrete */ {0.30f, 0.20f, 1.15f, 0.60f, 0.015f, 0.80f, 0.40f, 0.25f, 0.00f, 1.00f, 400.0f, 0.4f, 0.015f, 0.08f, 5000.0f, 0.030f, 6.50f, 0.095f, 1.00f, 6000.0f, 0.0050f, 0.0120f},
    // Fabric: a taut canopy a foot above your head, which is an umbrella or a
    // tent. It is a drumhead, so the impact is the loudest thing about it and
@@ -749,9 +749,13 @@ void RainEngine::spawnDroplet(Voice &v, float envLevel, uint32_t offset) {
    const float tackAmt = clampv(mP.tack, 0.0f, 1.0f) * sp.tackLevel;
 
    d.noiseAmp = amp * wet;
-   // The tuned click gives way as the tack comes in: the impact has one
-   // weight, and Tack decides how much of it has a pitch.
-   d.clickAmp = amp * click * (1.0f - 0.75f * tackAmt);
+   // The tuned click gives way as the tack comes in, but only partly. A
+   // surface that really does ring -- metal, glass -- is its ring, and an
+   // earlier version took three quarters of it away at full Tack, which is
+   // what made a tin roof stop sounding like one. The surface's own tack level
+   // already says how much it rings, so the displacement follows it and never
+   // takes more than a third.
+   d.clickAmp = amp * click * (1.0f - 0.33f * tackAmt);
    d.noiseDecay = decayCoef(noiseDecaySec, mSampleRate);
    d.clickDecay = decayCoef(clickDecaySec, mSampleRate);
 

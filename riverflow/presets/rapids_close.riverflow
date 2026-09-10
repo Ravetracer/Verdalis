@@ -3,21 +3,21 @@ format = 1
 name = Rapids Close
 author = RiverFlow
 description = Standing at the rapids. Loud, close, and all mid band.
-features = mountain-river, grainy, tickling, close
+features = mountain-river, grainy, close
 
 # Flow
 water_type = Mountain River
 water_blend = 0.00
 flow_level = -24
-flow_tilt = -0.29
+flow_tilt = -0.27
 flow_body = 0.00
 turbulence = 0.23
 surge_rate = 2.11
 flow_grain = 1.00
 
 # Stones
-dabble_rate = 5.50
-dabble_level = -25.3
+dabble_rate = 11.00
+dabble_level = -28.3
 dabble_size = 3.30
 dabble_spread = 0.9
 dabble_cluster = 4
@@ -26,8 +26,8 @@ dabble_damping = 1
 dabble_glug = 0.35
 
 # Trickle
-trickle_rate = 3.69
-trickle_level = -18.0
+trickle_rate = 7.38
+trickle_level = -21.0
 trickle_size = 1.80
 trickle_spread = 1.2
 trickle_decay = 13
@@ -67,6 +67,6 @@ vel_to_level = 0.4
 vel_to_flow = 0.3
 
 # Output
-gain = -5.5
+gain = -3.2
 max_events = 512
 seed = 0
