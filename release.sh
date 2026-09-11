@@ -4,6 +4,8 @@
 # containing the Linux and Windows binaries plus everything needed to install
 # them.
 #
+# One archive per plugin and one for the suite, each holding both platforms.
+#
 #   ./release.sh 0.1.0                  Linux + Windows (needs cross-built Cairo)
 #   ./release.sh 0.1.0 --linux-only     skip the Windows half
 #   ./release.sh 0.1.0 --tarball        also emit .tar.gz beside the .zip files
@@ -120,6 +122,17 @@ elif [ -z "$win_cairo" ] || [ ! -f "${win_cairo}/lib/libcairo.a" ]; then
    fi
 fi
 
+# Which operating systems this release actually contains. Every archive holds
+# both, so this is what the install notes and the packing loops read.
+targets=(linux)
+[ "$build_windows" = 1 ] && targets+=(windows)
+
+has_target() {
+   local t
+   for t in "${targets[@]}"; do [ "$t" = "$1" ] && return 0; done
+   return 1
+}
+
 rm -rf "$stage"
 mkdir -p "$stage"
 
@@ -201,50 +214,56 @@ fi
 
 # ------------------------------------------------------------- install notes
 #
-# Written per operating system, because someone downloading the Windows build
-# should not have to read past the Linux instructions to find theirs.
+# Every archive carries both operating systems, so the note describes both --
+# but only the ones the archive actually contains, because a --linux-only build
+# must not point at a windows/ folder that is not in it.
 install_note() {
-   local os="$1" what="$2" prefix="$3"
-   if [ "$os" = linux ]; then
+   local what="$1" what_linux="$2" what_windows="$3"
+   echo "$what"
+   printf '=%.0s' $(seq ${#what})
+   echo
+   cat <<'TXT'
+
+CLAP hosts load plugins from a fixed location. Copy the plugin folders out of
+this archive into it, keeping each plugin's folder and its presets together: a
+plugin finds its factory presets by looking for a presets directory next to its
+own binary.
+TXT
+   if has_target linux; then
       cat <<TXT
-${what}
-$(printf '=%.0s' $(seq ${#what}))
 
-CLAP hosts load plugins from ~/.clap on Linux.
+Linux
+-----
 
-Copy ${prefix} into:
+Copy ${what_linux} into:
 
     ~/.clap/
 
-so that you end up with ~/.clap/RainyDay/RainyDay.clap and so on. Keep each
-plugin's folder and its presets/ together: a plugin finds its factory presets by
-looking for a presets directory next to its own binary.
-
-Then rescan plugins in your host. Tested with Bitwig Studio and Reaper.
+so that you end up with ~/.clap/RainyDay/RainyDay.clap and so on.
 
 Needs X11 and Cairo, which any Linux machine that can run a DAW already has.
 TXT
-   else
+   fi
+   if has_target windows; then
       cat <<TXT
-${what}
-$(printf '=%.0s' $(seq ${#what}))
 
-CLAP hosts load plugins from the common CLAP folder on Windows.
+Windows
+-------
 
-Copy ${prefix} into:
+Copy ${what_windows} into:
 
     C:\\Program Files\\Common Files\\CLAP\\
 
-so that you end up with ...\\CLAP\\RainyDay\\RainyDay.clap and so on. Keep each
-plugin's folder and its presets\\ together: a plugin finds its factory presets by
-looking for a presets directory next to its own binary.
-
-Then rescan plugins in your host.
+so that you end up with ...\\CLAP\\RainyDay\\RainyDay.clap and so on.
 
 Nothing else is needed: the plugin window and its Cairo are linked in, so there
 are no DLLs to install beside it.
 TXT
    fi
+   cat <<'TXT'
+
+Then rescan plugins in your host. Tested with Bitwig Studio and Reaper.
+TXT
 }
 
 build_info() {
@@ -296,25 +315,8 @@ copy_extra_licenses() {
 cp "${here}/README.md" "${here}/LICENSE" "$stage/"
 copy_extra_licenses "$stage"
 
-cat > "${stage}/INSTALL.txt" <<'TXT'
-Verdalis Plugin Suite
-=====================
-
-CLAP hosts load plugins from a fixed location. Copy the plugin folders from
-this archive into it, keeping each plugin's folder and its presets/ together.
-
-Linux
-  Copy the contents of linux/ into:
-      ~/.clap/
-  so that you end up with ~/.clap/RainyDay/RainyDay.clap and so on.
-
-Windows
-  Copy the contents of windows/ into:
-      C:\Program Files\Common Files\CLAP\
-  so that you end up with ...\CLAP\RainyDay\RainyDay.clap and so on.
-
-Then rescan plugins in your host. Tested with Bitwig Studio and Reaper.
-TXT
+install_note "Verdalis Plugin Suite ${version}" \
+   "the contents of linux/" "the contents of windows/" > "${stage}/INSTALL.txt"
 
 for plugin in "${plugins[@]}"; do
    manual="$(manual_for "$plugin")"
@@ -327,9 +329,10 @@ build_info > "${stage}/BUILD-INFO.txt"
 
 # ----------------------------------------------------------------------- pack
 #
-# One archive per plugin per operating system, so a site can offer a plain
-# "Windows download" beside a "Linux download", plus the whole suite the same
-# way and a single archive with everything in it.
+# One archive per plugin, plus one for the whole suite. Each carries the Linux
+# and the Windows build together: one download per plugin is what a site wants
+# to offer, and splitting it by operating system only made two links where one
+# would do.
 #
 # Everything is a .zip, including the Linux builds. That is not the Unix habit,
 # but a release nobody can publish is worse than one in the wrong format, and
@@ -354,51 +357,37 @@ pack() {
    rm -rf "$dir"
 }
 
-targets=(linux)
-[ "$build_windows" = 1 ] && targets+=(windows)
-
-# --- one per plugin, per operating system
+# --- one per plugin, both operating systems in the one archive
 for plugin in "${plugins[@]}"; do
    name="$(project_name "$plugin")"
    pver="$(project_version "$plugin")"
+   d="${name}-${pver}"
+   rm -rf "$d"; mkdir -p "$d"
+   have=0
    for os in "${targets[@]}"; do
       [ -d "${stage}/${os}/${name}" ] || continue
-      d="${name}-${pver}-${os}-x86_64"
-      rm -rf "$d"; mkdir -p "$d"
-      cp -r "${stage}/${os}/${name}" "${d}/"
-      own="$(plugin_license "$plugin")"
-      cp "${own:-${here}/LICENSE}" "${d}/LICENSE"
-      [ -f "${here}/${plugin}/README.md" ] && cp "${here}/${plugin}/README.md" "${d}/"
-      manual="$(manual_for "$plugin")"
-      [ -f "$manual" ] && cp "$manual" "${d}/"
-      install_note "$os" "${name} ${pver}" "the ${name} folder" > "${d}/INSTALL.txt"
-      build_info > "${d}/BUILD-INFO.txt"
-      pack "$d"
+      mkdir -p "${d}/${os}"
+      cp -r "${stage}/${os}/${name}" "${d}/${os}/"
+      have=1
    done
-done
-
-# --- the whole suite, per operating system
-for os in "${targets[@]}"; do
-   [ -d "${stage}/${os}" ] || continue
-   d="verdalis-suite-${version}-${os}-x86_64"
-   rm -rf "$d"; mkdir -p "$d"
-   cp -r "${stage}/${os}/"* "${d}/"
-   cp "${here}/README.md" "${here}/LICENSE" "${d}/"
-   copy_extra_licenses "$d"
-   for plugin in "${plugins[@]}"; do
-      manual="$(manual_for "$plugin")"
-      [ -f "$manual" ] || continue
-      mkdir -p "${d}/manuals"
-      cp "$manual" "${d}/manuals/"
-   done
-   install_note "$os" "Verdalis Plugin Suite ${version}" "every plugin folder in this archive" \
-      > "${d}/INSTALL.txt"
+   if [ "$have" = 0 ]; then
+      rm -rf "$d"
+      continue
+   fi
+   own="$(plugin_license "$plugin")"
+   cp "${own:-${here}/LICENSE}" "${d}/LICENSE"
+   [ -f "${here}/${plugin}/README.md" ] && cp "${here}/${plugin}/README.md" "${d}/"
+   manual="$(manual_for "$plugin")"
+   [ -f "$manual" ] && cp "$manual" "${d}/"
+   install_note "${name} ${pver}" \
+      "linux/${name}" "windows\\${name}" > "${d}/INSTALL.txt"
    build_info > "${d}/BUILD-INFO.txt"
    pack "$d"
 done
 
-# --- and everything at once, both platforms. Kept out of pack() because the
-# staging tree it names is also where BUILD-INFO.txt is read from below.
+# --- the whole suite, every plugin for both platforms. Kept out of pack()
+# because the staging tree it names is also where BUILD-INFO.txt is read from
+# below.
 base="verdalis-suite-${version}"
 if command -v zip >/dev/null 2>&1; then
    rm -f "${base}.zip"; zip -qr "${base}.zip" "$base"; made+=("${base}.zip")

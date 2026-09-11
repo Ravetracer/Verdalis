@@ -213,19 +213,15 @@ is no list to update. It reads each plugin's display name and version from its
 `project()` line, builds Release for Linux and Windows, installs into a staging
 tree, and writes `BUILD-INFO.txt` recording what went in.
 
-It produces ten archives, so a site can offer a plain "Windows download" beside
-a "Linux download" for each plugin as well as for the suite:
+It produces one archive per plugin plus one for the suite — **each holding both
+platforms**, so a site offers a single download per plugin rather than making
+the visitor pick an operating system first:
 
 ```
-RainyDay-1.5.1-linux-x86_64.zip             one plugin, one platform
-RainyDay-1.5.1-windows-x86_64.zip
-ThunderClap-1.0.0-linux-x86_64.zip
-ThunderClap-1.0.0-windows-x86_64.zip
-ShoreBreak-0.1.0-linux-x86_64.zip
-ShoreBreak-0.1.0-windows-x86_64.zip
-verdalis-suite-0.2.0-linux-x86_64.zip       every plugin, one platform
-verdalis-suite-0.2.0-windows-x86_64.zip
-verdalis-suite-0.2.0.zip                    everything, both platforms
+RainyDay-1.5.1.zip              one plugin, Linux + Windows
+ThunderClap-1.0.0.zip
+ShoreBreak-0.1.0.zip
+verdalis-suite-0.2.0.zip        every plugin, Linux + Windows
 ```
 
 **Everything is a `.zip`, the Linux builds included.** That is not the Unix
@@ -238,24 +234,30 @@ alongside for anywhere that prefers it.
 The per-plugin archives carry that plugin's **own** version from its `project()`
 line, not the suite's, because they are downloaded and updated separately.
 
-Every archive is self-contained: the plugin folder with its presets, the
-plugin's README, the LICENSE, a BUILD-INFO.txt, and an INSTALL.txt written for
-that operating system alone -- somebody downloading the Windows build should not
-have to read past the Linux instructions to find theirs.
+Every archive is self-contained: a `linux/` and a `windows/` folder with the
+plugin and its presets in each, the plugin's README, its manual, the LICENSE, a
+BUILD-INFO.txt, and an INSTALL.txt with a section per platform — written from
+the `targets` the build actually produced, so a `--linux-only` release does not
+describe a `windows/` folder that is not in it.
 
 ```
-RainyDay-1.5.1-windows-x86_64/
-├── RainyDay/
-│   ├── RainyDay.clap
-│   └── presets/            (17 files)
+RainyDay-1.5.1/
+├── linux/
+│   └── RainyDay/
+│       ├── RainyDay.clap
+│       └── presets/        (17 files)
+├── windows/
+│   └── RainyDay/
+│       ├── RainyDay.clap
+│       └── presets/
 ├── README.md
 ├── RainyDay-1.5.1-Manual.pdf
 ├── LICENSE
-├── INSTALL.txt             Windows only
+├── INSTALL.txt             both platforms
 └── BUILD-INFO.txt
 ```
 
-The suite archives carry every plugin's manual in a `manuals/` folder instead.
+The suite archive carries every plugin's manual in a `manuals/` folder instead.
 
 Options: `--tarball` adds `.tar.gz` beside every `.zip`; `--linux-only` skips
 the Windows half; `--windows-no-gui` allows a
