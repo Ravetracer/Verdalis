@@ -32,7 +32,7 @@ hand-drawn plugin window with no toolkit dependency.
 | **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | in progress |
 | **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | in progress |
 | **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | in progress |
-| **CrackleBlaze** | fire | planned |
+| **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | in progress |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
@@ -64,6 +64,16 @@ whether that is a creek dabbling between stones or drops off an overhang. 50
 parameters, 20 presets, six octave-band colours taken as cluster centroids from
 77 recordings, and a bed whose bands each wander on their own because the
 measured correlation between neighbours is 0.07.
+
+**CrackleBlaze** — a fire is the opposite of a river: a median crest factor of
+31.7 dB against a river's 19.6, which is a quiet bed with very loud, very short
+things on top of it. Its crackles arrive on three timescales that disagree —
+exactly Poisson at 50 ms, twice Poisson below 10 ms, and four to twenty times
+Poisson at one second — so the spawner is a wandering rate, a Poisson process at
+it, and a one-to-three pulse train per arrival. A crackle is measurably a click
+and not a ring, so no resonator is fitted. 47 parameters, 18 presets, five
+octave-band colours taken from the beds of 17 recordings with their crackles
+gated out first.
 
 **ChirpParade** — a bird syllable *is* its frequency contour, so 72 of them were
 measured off real recordings and ship as coefficients that drive the oscillator

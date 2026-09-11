@@ -60,7 +60,7 @@ Seven plugins, each modelling one natural sound source:
 | 4 | **SkyHowl** | `skyhowl/` | WIP | winds, storms |
 | 5 | **ChirpParade** | `chirpparade/` | WIP | bird chirps |
 | 6 | **RiverFlow** | `riverflow/` | WIP | rivers, streams |
-| 7 | **CrackleBlaze** | `crackleblaze/` | planned | fire |
+| 7 | **CrackleBlaze** | `crackleblaze/` | WIP | fire |
 | 8 | **NightLife** | `nightlife/` | planned | night insects, crickets, howling wolfes, foxes, owls, night birds |
 
 Naming follows a consistent pattern: a two-word CamelCase compound naming the
@@ -83,8 +83,27 @@ retrofitting:
   radius-to-pitch relation in it, is the obvious next extraction.
 - SkyHowl and ThunderClap both need **large-scale air movement** and distance
   modelling; ThunderClap's `Lp2` air-absorption filter generalises directly.
-- CrackleBlaze and RainyDay share **stochastic impulse spawning** — the Poisson
-  process in `rng.h` already covers both.
+- CrackleBlaze and RainyDay share **stochastic impulse spawning**, and
+  CrackleBlaze has now shown that a plain Poisson process is not the whole story.
+  Its references measure a Fano factor of 3.90 at one second against a Poisson
+  process's 1.0, exactly Poisson at 50 ms, and twice Poisson below 10 ms -- so
+  the spawner is three levels: a slowly wandering rate, a Poisson process at
+  that instantaneous rate, and a short pulse train per arrival. RainyDay and
+  ShoreBreak are both plain Poisson today, and the Fano factor is the one
+  statistic that would say whether they should not be. Worth extracting with the
+  measurement that motivates it.
+- CrackleBlaze's **shaped noise burst** -- a click with a tone, a body and a
+  decay, and deliberately *no* resonator, because the measured spectral flatness
+  of a crackle is 0.67 -- is the cheapest event generator in the suite and
+  nothing else has one. ShoreBreak's foam and RainyDay's impacts are both close
+  to it.
+- The **measured-bed filterbank with a solved gain vector** now exists in four
+  copies (ShoreBreak, SkyHowl, RiverFlow, CrackleBlaze). CrackleBlaze also had
+  to raise its bandpass Q from the octave-wide 1.4 to 2.2 to reach the contrast
+  its measured shapes ask for, which is the same problem RiverFlow's 16 kHz
+  octave has. A shelving-filter tilt carrying the curve's average slope, with
+  the bank solving only the residual, would fix it for both -- and belongs in
+  `shared/`.
 - ChirpParade was the outlier, and it turned out that way: it needs pitched,
   formant-shaped voices rather than noise, and it reuses only the parameter
   model, the preset format, the window, `Svf`/`Lp2`/`OnePoleHp`, `Space` and
@@ -361,6 +380,7 @@ with a coloured knob.
 | SkyHowl | `#F0845C` | dust coral -- greys with a red-brown cast |
 | ChirpParade | `#F2C744` | finch gold, greys with an olive cast |
 | RiverFlow | `#57C77A` | river green -- moss on wet stone, cool green-grey greys |
+| CrackleBlaze | `#FF5A2C` | ember orange, the darkest chassis in the suite -- a deep red-brown cast, deliberately hotter and redder than SkyHowl's dusty coral |
 
 A new plugin picks its own accent and derives its greys from it. Do not reuse
 another plugin's theme, and do not fall back to the suite brand palette — that
