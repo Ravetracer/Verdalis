@@ -250,8 +250,18 @@ fluctuation into the first second of a close strike that the recordings show.
 ### 4. The shock wave
 
 Each arrival is played as an **N-wave**: a pressure jump, a straight fall
-through zero to the mirror value, and a jump back. Both fronts are eased over a
-rise time `Crack` sets, so a soft setting is a thud and a hard one a snap. A
+through zero to the mirror value, and a jump back.
+
+Both fronts are eased over a rise time, and that rise time has its own law. A
+shock front does not stay a discontinuity: molecular relaxation of nitrogen and
+oxygen thickens it as it travels, and a thunder front measured a few hundred
+metres out is tens of microseconds wide where one measured several kilometres
+out is a millisecond and more. That is far faster growth than the wave itself
+lengthens, which goes only as the cube-tenth root of the range, so tying the
+front to a fraction of the wave — as it was tied before 1.3.0 — made a strike at
+300 m and one at 3 km almost equally sharp. `Crack` now sets how sharp the front
+is allowed to be at all, and the range decides how much of that survives: at 0 %
+the front is a dozen times slower and the shock is a thud. A
 clean N-wave's spectrum falls at 6 dB/oct above its peak, and measured against
 the close recordings that is short above 2 kHz. So every front also carries a
 burst standing for the fine roughness of the channel — inside one coherent
@@ -377,6 +387,7 @@ compressor makes the level a non-linear function of the gain.
 | Parameter | Range | What it does |
 |---|---|---|
 | Impact | 0 – 100 % | How hard the near field lands: the blast, and the bend in the crests |
+| Bloom | 0 – 100 % | How long the clap takes to assemble: thin and bright first, the bottom behind it |
 
 Impact is the one control for everything about a strike that is *not* linear
 acoustics, and there are two such things. Both belong to the near field, which
@@ -417,6 +428,36 @@ spray — goes from 5–60 % to 30–75 % against the recordings' 14–62 %.
 Impact changes the level a preset reaches, so every factory preset's Output
 Gain was set again by `tools/analysis/loudness.py` after it was dialled in.
 Turning Impact up on a preset of your own will want the same treatment.
+
+**Bloom** is the other thing a close strike does that the model was missing. A
+clap is a stretch of channel arriving at once, and the arrivals do not switch
+on — they assemble. While only a few elements of the stretch have arrived, what
+is heard is the sharp edge of each of them, added incoherently; as the stretch
+fills in, the long parts of the waves start to add coherently, with amplitude
+going as the number of them, while the fronts keep adding as its square root.
+So the bottom gains on the top as the clap builds.
+
+It is not subtle in the recordings. Measured over 40 ms windows hopped by 10,
+the 30 to 120 Hz band comes up 15 to 32 dB over the first 20 to 40 ms while the
+total level rises 11 to 16, and the spectral centroid falls from 225 to 430 Hz
+at the onset to 76 to 100 once the clap has landed. The engine had none of it —
+every render started at its final centroid, around 100 Hz, with nothing left to
+arrive — and what that costs is the bright leading edge, without which a strike
+reads as soft however loud it is.
+
+Two things follow from one cause, and Bloom does both. The body radiating while
+the clap gathers is smaller, so what it radiates is shorter and higher: each
+arrival's N-wave and each blast pulse's Friedlander time constant are scaled by
+how much had gathered when they landed, and a shorter wave also carries less
+energy, which is the level ramp. And the sum of the arrivals has not yet enough
+of them to add coherently at long wavelengths, which is a highpass on the shock
+sum that opens as they gather. At the default the corner starts near 300 Hz and
+is down at 20 within about fifty milliseconds. **The clock restarts on every
+return stroke**, because a return stroke is a new clap and gets its own edge.
+
+Every factory preset sets it from its own Distance, and the far ones set it to
+zero: a thunder from ten kilometres has its arrivals smeared over seconds and
+no clap that assembles in milliseconds.
 
 ### Stereo
 

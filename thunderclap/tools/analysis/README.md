@@ -29,6 +29,12 @@ python3 tools/analysis/measure.py onset /tmp/close.wav
 # figures that separate a hard clap from a crackle.
 python3 tools/analysis/measure.py clap   '!dev/reference_new'
 python3 tools/analysis/measure.py impact /tmp/close.wav
+
+# How the onset's spectrum moves: five bands and a centroid, 40 ms window
+# hopped by 10, which is what Bloom was set against. A render whose bloom
+# resolves inside 20 ms needs a shorter window to show it.
+python3 tools/analysis/measure.py onsetbands '!dev/reference_new'
+python3 tools/analysis/measure.py onsetbands /tmp/close.wav 20 5
 ```
 
 `bands` and `time` average over the whole file, which for a thunder means the
@@ -95,6 +101,14 @@ down at 320 Hz, 14 to 18 at 640, 18 to 28 at 1.3 kHz, 26 to 44 at 2.6 kHz and
 those by 15 to 25 dB however the level is set, because white noise is flat to
 Nyquist; a train of steps at the channel's roughness scale falls at 6 dB/oct
 above its corner and lands on the curve.
+
+**The bottom is not there when the clap starts.** With `onsetbands`, the close
+recordings come in with the 30 to 120 Hz band 15 to 32 dB below where it ends
+up and bring it there over the first 20 to 40 ms, while the total level rises
+11 to 16 dB and the spectral centroid falls from 225-430 Hz to 76-100. That is
+coherence: long wavelengths need many arrivals to add up and a clap has few at
+its first millisecond. It is what `Bloom` models, and without it a strike has
+no bright leading edge and reads as soft however loud it is.
 
 **The hardest recordings hold their level.** `clean-hard-thunder-clap` is
 within 3 dB of its peak for a hundred milliseconds without a gap: 78 % density,

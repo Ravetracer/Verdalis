@@ -83,6 +83,9 @@ enum ParamId : uint32_t {
    // Appended: the near channel's blast pulse.
    kParamImpact,
 
+   // Appended: how long the clap takes to assemble.
+   kParamBloom,
+
    kNumParams
 };
 

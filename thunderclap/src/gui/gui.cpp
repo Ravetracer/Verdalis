@@ -43,7 +43,7 @@ constexpr uint32_t kEchoParams[] = {kParamEchoLevel, kParamEchoCount, kParamEcho
 constexpr uint32_t kSpaceParams[] = {kParamSpaceAmount, kParamSpaceSize, kParamSpaceDamping};
 constexpr uint32_t kOutParams[] = {kParamGain, kParamMaxShocks, kParamSeed};
 constexpr uint32_t kDynParams[] = {kParamCompress, kParamCompAttack, kParamCompRelease};
-constexpr uint32_t kImpactParams[] = {kParamImpact};
+constexpr uint32_t kImpactParams[] = {kParamImpact, kParamBloom};
 
 #define PANEL(title, cols, rows, arr)                                                              \
    { title, cols, rows, arr, static_cast<int>(sizeof(arr) / sizeof(arr[0])) }
@@ -53,7 +53,7 @@ constexpr PanelSpec kPanelSpecs[] = {
    PANEL("STEREO", 2, 2, kStereoParams),  PANEL("ENVELOPE", 3, 2, kEnvParams),
    PANEL("FILTER", 3, 2, kFilterParams),  PANEL("ECHOES", 2, 2, kEchoParams),
    PANEL("SPACE", 2, 2, kSpaceParams),    PANEL("OUTPUT", 3, 1, kOutParams),
-   PANEL("DYNAMICS", 3, 1, kDynParams),   PANEL("IMPACT", 1, 1, kImpactParams),
+   PANEL("DYNAMICS", 3, 1, kDynParams),   PANEL("IMPACT", 2, 1, kImpactParams),
 };
 #undef PANEL
 

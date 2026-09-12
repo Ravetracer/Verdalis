@@ -225,8 +225,17 @@ fluctuation into the first second of a close strike that the recordings show.
 ## The shock wave
 
 Each arrival is played as an **N-wave**: a pressure jump, a straight fall through
-zero to the mirror value, and a jump back. Both fronts are eased over a rise time
-*Crack* sets, so a soft setting is a thud and a hard one a snap.
+zero to the mirror value, and a jump back.
+
+Both fronts are eased over a rise time, and that rise time has its own law. A
+shock front does not stay a discontinuity: molecular relaxation of nitrogen and
+oxygen thickens it as it travels, and a thunder front measured a few hundred
+metres out is tens of microseconds wide where one measured several kilometres out
+is a millisecond and more. That is far faster growth than the wave itself
+lengthens, so a strike at 300 m is markedly brighter than one at 3 km rather than
+almost as sharp. *Crack* sets how sharp the front is allowed to be at all — at
+0 % it is a dozen times slower and the shock is a thud — and the range decides how
+much of that survives.
 
 A clean N-wave's spectrum falls at 6 dB/oct above its peak, and measured against
 the close recordings that is short above 2 kHz. So every front also carries a
@@ -275,6 +284,35 @@ because the rumble is the far field.
 
 Turning *Impact* up changes the level a preset reaches, so raise it and set the
 *Output Gain* again.
+
+## Bloom, and why a clap arrives thin
+
+A clap is a stretch of channel arriving at once, and the arrivals do not switch
+on — they assemble. While only a few elements of the stretch have arrived, what is
+heard is the sharp edge of each of them, added incoherently. As the stretch fills
+in, the long parts of the waves start to add coherently, with amplitude going as
+the number of them, while the fronts keep adding as its square root. The bottom
+therefore gains on the top as the clap builds.
+
+It is not a subtle effect in the recordings. Measured over 40 ms windows hopped by
+10, the 30 to 120 Hz band comes up 15 to 32 dB over the first 20 to 40 ms while
+the total level rises 11 to 16, and the spectral centroid falls from 225 to 430 Hz
+at the onset to 76 to 100 once the clap has landed. A strike that starts at its
+final centroid has no bright leading edge, and without one it reads as soft
+however loud it is.
+
+*Bloom* is that, and it does two things because one cause has two consequences.
+The body radiating while the clap gathers is smaller, so what it radiates is
+shorter and higher: each arrival's N-wave and each blast pulse's time constant
+are scaled by how much had gathered when they landed, and a shorter wave carries
+less energy, which is the level ramp. And the sum of the arrivals does not yet
+have enough of them to add coherently at long wavelengths, which is a highpass on
+the shock sum that opens as they gather.
+
+The clock restarts on every return stroke, because a return stroke is a new clap
+and gets its own edge. Set it from the distance: a thunder from ten kilometres has
+its arrivals smeared over seconds and no clap that assembles in milliseconds, and
+all the far factory presets leave *Bloom* at zero.
 
 ## The rumble
 

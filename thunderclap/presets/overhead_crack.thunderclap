@@ -25,6 +25,7 @@ air = 0.3
 scatter = 0.6
 focus = 0.8
 impact = 0.85
+bloom = 0.7
 
 # Stereo
 width = 0.85
@@ -59,7 +60,7 @@ vel_to_level = 0.5
 vel_to_distance = 0.5
 
 # Output
-gain = -7
+gain = -6.7
 max_shocks = 2048
 seed = 0
 

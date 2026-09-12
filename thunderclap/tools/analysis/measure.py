@@ -6,6 +6,7 @@
     python3 tools/analysis/measure.py onset  <wav>
     python3 tools/analysis/measure.py clap   <wav or directory>...
     python3 tools/analysis/measure.py impact <wav or directory>...
+    python3 tools/analysis/measure.py onsetbands <wav or dir>... [window ms] [hop ms]
 
 `bands` prints, per file, the peak and RMS level, where the envelope peaks and
 how long it stays within 20 and 30 dB of that, and the energy in ten octave
@@ -24,6 +25,12 @@ its own 2 ms, how dense the first 200 and 500 ms are (the share of 5 ms frames
 within 6 dB of the peak), and the RMS of the 200 ms after the onset against the
 peak sample. A hard clap is dense and low-crest; a crackle is sparse and
 high-crest.
+
+`onsetbands` prints how the onset's spectrum moves -- five bands and a spectral
+centroid over a 40 ms window hopped by 10, from the onset -- which is where the
+bottom arriving late shows, and is what `Bloom` was set against. Pass a window
+and hop in milliseconds to change them; a bloom that resolves inside 20 ms is
+smeared by the default window and wants 20 and 5.
 
 Only numpy is needed. Any sample rate, 16/24/32-bit PCM or 32-bit float.
 """
@@ -208,6 +215,53 @@ def cmd_impact(args):
                spike, dens200, dens500, body))
 
 
+ONSET_EDGES = [30, 120, 500, 2000, 8000, 20000]
+ONSET_MIDS = [60, 250, 1000, 4000, 12000]
+
+
+def cmd_onsetbands(args):
+    # Trailing numbers are the window and hop in milliseconds. The default 40
+    # and 10 are what the reference figures in tools/analysis/README.md were
+    # taken with; a bloom that resolves inside 20 ms needs 20 and 5 to show.
+    window_ms, hop_ms = 40.0, 10.0
+    nums = []
+    while args and args[-1].replace('.', '', 1).isdigit():
+        nums.insert(0, float(args.pop()))
+    if len(nums) >= 1:
+        window_ms = nums[0]
+    if len(nums) >= 2:
+        hop_ms = nums[1]
+    names = ['30-120', '.12-.5k', '.5-2k', '2-8k', '8-20k']
+    for path in files_in(args):
+        x, sr = read_wav(path)
+        x = to_mono(x)
+        _, onset = clap_window(x, sr, 0.2)
+        window, hop = int(sr * window_ms / 1000), int(sr * hop_ms / 1000)
+        start = int(onset * sr)
+        rows, levels = [], []
+        for k in range(int(200.0 / hop_ms)):
+            frame = x[start + k * hop:start + k * hop + window]
+            if len(frame) < window:
+                break
+            spectrum = np.abs(np.fft.rfft(frame * np.hanning(window))) ** 2
+            freqs = np.fft.rfftfreq(window, 1 / sr)
+            rows.append([spectrum[(freqs >= lo) & (freqs < hi)].mean()
+                         for lo, hi in zip(ONSET_EDGES[:-1], ONSET_EDGES[1:])])
+            levels.append(20 * np.log10(max(np.sqrt(np.mean(frame ** 2)), 1e-12)))
+        if not rows:
+            continue
+        bands = 10 * np.log10(np.array(rows) + 1e-20)
+        bands -= bands.max()
+        levels = np.array(levels) - max(levels)
+        print("== %s" % os.path.basename(path))
+        print("   ms   level  " + "  ".join("%7s" % n for n in names) + "  centroid")
+        for k, (row, level) in enumerate(zip(bands, levels)):
+            lin = 10 ** (row / 10)
+            centroid = (lin * np.array(ONSET_MIDS)).sum() / max(lin.sum(), 1e-30)
+            print("%5d  %6.1f  " % (k * hop_ms, level) +
+                  "  ".join("%7.1f" % v for v in row) + "  %6.0f" % centroid)
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
@@ -223,6 +277,8 @@ def main():
         cmd_clap(args)
     elif cmd == 'impact':
         cmd_impact(args)
+    elif cmd == 'onsetbands':
+        cmd_onsetbands(args)
     else:
         print(__doc__)
         return 2

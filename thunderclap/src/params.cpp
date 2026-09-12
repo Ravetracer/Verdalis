@@ -118,6 +118,10 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamImpact, "impact", "Impact", "Impact", 0.45,
        "How hard the near field lands. Adds the blast the channel throws off and bends the crests "
        "of the shocks the way a wave that loud really does: a slam instead of a spray."),
+
+   PCT(kParamBloom, "bloom", "Bloom", "Impact", 0.45,
+       "How long the clap takes to assemble. The strike arrives thin and bright and the bottom "
+       "floods in behind it; at zero it all lands at once."),
 };
 
 #undef LIN

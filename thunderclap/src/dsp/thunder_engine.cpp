@@ -108,6 +108,23 @@ constexpr float kCrackleMinFrac = 0.15f;
 constexpr float kCrackleFracPerCrack = 0.35f;
 constexpr float kCrackleLevel = 3.2f;
 
+// The shock front does not stay a discontinuity. Molecular relaxation of
+// nitrogen and oxygen thickens it as it travels, and a thunder front measured
+// a few hundred metres out is tens of microseconds wide where one measured
+// several kilometres out is a millisecond and more -- far faster growth than
+// the wave itself lengthens, which goes only as the cube-tenth root of the
+// range. Tying the front to the wave's length, as it was tied before, made a
+// strike at 300 m and one at 3 km almost equally sharp, and a close strike
+// ought to be the brightest thing the plugin does.
+//
+// So the rise time gets its own law. Crack sets how sharp the front is allowed
+// to be at all; at 0 % it is a dozen times slower and the shock is a thud.
+constexpr float kRiseAt1kmSec = 0.00018f;
+constexpr float kRiseRangeExp = 0.9f;
+constexpr float kRiseSoftness = 14.0f; // extra width at Crack 0 %
+constexpr float kRiseMinSec = 0.00002f;
+constexpr float kRiseMaxSec = 0.02f;
+
 // How the element budget is spread along the channel. Elements are dealt out
 // in proportion to length over distance, so the near channel -- the part that
 // is heard as separate shocks -- is cut finely, and the far channel, which is
@@ -202,7 +219,13 @@ constexpr float kBlastGain = 12.0f;
 // seconds later. The window is cut into as many slices as there are pulses,
 // and the loudest arrival in each slice gets one, which spreads the energy
 // over the onset instead of piling it on a single sample.
+//
+// The slices are geometric and not equal, because the structure of a clap is
+// all in its first fifty milliseconds and none of it in the last hundred: from
+// 4 ms out to the window, eight slices land at roughly 4, 7, 12, 20, 35, 61,
+// 105 and 182 ms, so five of the eight pulses fall inside the onset.
 constexpr float kBlastWindowSec = 0.35f;
+constexpr float kBlastFirstSec = 0.004f;
 // A slice whose loudest arrival is quieter than this much of the best one in
 // the window does not get a pulse; without it the tail slices fire on
 // whatever noise floor the channel left there.
@@ -212,6 +235,59 @@ constexpr float kBlastTailTaus = 12.0f;
 // The blast drives the rumble like any other shock, so the slam is followed by
 // the swell rather than standing on its own.
 constexpr float kBlastRumbleExcite = 0.5f;
+
+// Bloom: how long the clap takes to assemble, and what that does to it.
+//
+// A clap is a stretch of channel arriving at once, and the arrivals do not
+// switch on -- they assemble. While only a few elements of the stretch have
+// arrived, what is heard is the sharp edge of each of them, added
+// incoherently. As the stretch fills in, the long parts of the waves start to
+// add coherently, with amplitude going as the number of them, while the fronts
+// keep adding as its square root. So the bottom gains on the top as the clap
+// builds, and it does so by a lot: measured on the close recordings over 40 ms
+// windows hopped by 10, the 30 to 120 Hz band comes up 15 to 32 dB over the
+// first 20 to 40 ms while the level rises 11 to 16, and the spectral centroid
+// falls from 225 to 430 Hz at the onset to 76 to 100 Hz once it has landed.
+//
+// The engine had none of it: every render started at its final centroid,
+// around 100 Hz, with nothing left to arrive. What that costs is the bright
+// leading edge, and without it a strike reads as soft however loud it is.
+//
+// The model is the same one the rest of the engine uses -- a bigger radiating
+// body makes a longer wave -- applied to the body as it assembles. An
+// arrival's N-wave and a blast pulse's Friedlander time constant are both
+// scaled by how much of the clap has gathered by the time they land, so the
+// first thing heard is short and bright and what follows is progressively
+// longer and deeper. A shorter wave also carries less energy, which is the
+// level ramp of the measured onset, so no separate envelope is needed.
+// How long the gathering takes barely moves between recordings -- they all
+// resolve inside 20 to 40 ms -- so Bloom mostly sets how deep it goes and only
+// mildly how long, and the clock restarts on every return stroke, because a
+// return stroke is a new clap and gets its own bright edge.
+constexpr float kBloomSecMin = 0.006f;
+constexpr float kBloomSecMax = 0.024f;
+// Where the bus's highpass starts and where it ends up. One pole: at 520 Hz it
+// takes about 17 dB off the 30 to 120 Hz band, inside the 15 to 32 dB the
+// recordings show, and two poles would take twice that. The curve is bent so
+// that half a turn already reaches most of the way.
+constexpr float kBloomHpHz = 520.0f;
+constexpr float kBloomHpMinHz = 18.0f;
+constexpr float kBloomHpCurve = 0.6f;
+// How short the wave of the first arrival is allowed to get, at full Bloom.
+constexpr float kBloomLenFloor = 0.3f;
+// And the same for the blast, which is held down harder because it is the one
+// thing in the model that is the coherent body rather than a piece of it: the
+// elements are radiating from the first millisecond, the body they add up to
+// is not there yet. It holds both the pulse's length and its height.
+constexpr float kBloomBlastFloor = 0.12f;
+
+// A steepening wave puts what it loses from the crest into the front, and
+// feeding the bent-away crest back through a highpass models that directly.
+// It was tried and dropped: against the close recordings it bought under a
+// decibel from 640 Hz to 5 kHz and cost 1.2 dB of crest factor and 1.3 of
+// single-sample spike for every 0.3 of its gain, which is the wrong way round
+// -- the bend's own curve already generates the harmonics, and the peak
+// reduction is the half of steepening that is actually heard.
 
 // Internal reference level, applied with Output Gain so a matched preset lands
 // in the middle of the gain range.
@@ -308,6 +384,9 @@ void ThunderEngine::reset() {
    mRumbleHpR.reset();
    mDriftState = 0.0f;
    mModCounter = 0;
+   mBloomAge = 1.0e9f;
+   mBloomHpL = 0.0f;
+   mBloomHpR = 0.0f;
    mEchoLine.clear();
    for (auto &lp : mEchoLp)
       lp.reset();
@@ -586,7 +665,7 @@ Shock *ThunderEngine::allocateShock() {
 
 void ThunderEngine::addElements(Flash &f, Vec3 a, Vec3 b, int count, float tortuosity,
                                 float branchScale, bool branch, float weightScale,
-                                float shadowElev, float shadowWidth, float heightM) {
+                                float shadowElev, float shadowWidth, float heightM, float crack) {
    const Vec3 seg = {b.x - a.x, b.y - a.y, b.z - a.z};
    const float segLen = std::sqrt(seg.x * seg.x + seg.y * seg.y + seg.z * seg.z);
    if (segLen < 1.0f || count < 1)
@@ -667,8 +746,15 @@ void ThunderEngine::addElements(Flash &f, Vec3 a, Vec3 b, int count, float tortu
       const float azimuth = std::atan2(mid.y, mid.x);
       const float pan = clampv(std::sin(azimuth) * mP.width * 1.2f + mP.pan, -1.0f, 1.0f);
 
+      // The front's own width: its range law, softened by Crack.
+      const float riseSec =
+         clampv(kRiseAt1kmSec * std::pow(rKm, kRiseRangeExp) *
+                   (1.0f + kRiseSoftness * (1.0f - crack) * (1.0f - crack)),
+                kRiseMinSec, kRiseMaxSec);
+
       Arrival &ar = f.arrivals[f.count++];
       ar.time = r / kSpeedOfSoundMs;
+      ar.riseSec = riseSec;
       ar.amp = amp;
       ar.lenSec = lenSec;
       ar.airHz = airHz;
@@ -680,7 +766,7 @@ void ThunderEngine::addElements(Flash &f, Vec3 a, Vec3 b, int count, float tortu
 
 void ThunderEngine::growChannel(Flash &f, float distanceM, float azimuth, float heightM,
                                 float cloudM, float tortuosity, float branching,
-                                float weightScale, float /*crack*/) {
+                                float weightScale, float crack) {
    f.count = 0;
    const int budget = clampv(mP.maxShocks, 128, static_cast<int>(kMaxShocks));
 
@@ -774,7 +860,7 @@ void ThunderEngine::growChannel(Flash &f, float distanceM, float azimuth, float 
    for (int i = 0; i + 1 < n; ++i) {
       const int count = std::max(1, static_cast<int>(mainBudget * weight[i] / totalWeight + 0.5f));
       addElements(f, pts[i], pts[i + 1], count, tortuosity, 1.0f, false, weightScale,
-                  shadowElev, shadowWidth, heightM);
+                  shadowElev, shadowWidth, heightM, crack);
    }
 
    if (branches > 0) {
@@ -818,7 +904,7 @@ void ThunderEngine::growChannel(Flash &f, float distanceM, float azimuth, float 
             if (inCloud && q2.z < heightM * 0.6f)
                q2.z = heightM * 0.6f;
             addElements(f, q, q2, perStep, tortuosity, inCloud ? kCloudBranchGain : kBranchGain,
-                        true, weightScale, shadowElev, shadowWidth, heightM);
+                        true, weightScale, shadowElev, shadowWidth, heightM, crack);
             q = q2;
          }
       }
@@ -919,7 +1005,7 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
    // a flash whose cloud swell is the loudest thing in it, the swell is not
    // what slams.
    {
-      const float sliceSec = kBlastWindowSec / Flash::kMaxBlasts;
+      const float sliceSpan = std::log(kBlastWindowSec / kBlastFirstSec);
       int bestIdx[Flash::kMaxBlasts];
       float bestAmp[Flash::kMaxBlasts];
       for (int b = 0; b < Flash::kMaxBlasts; ++b) {
@@ -927,8 +1013,10 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
          bestAmp[b] = 0.0f;
       }
       for (uint32_t i = 0; i < f.count && f.arrivals[i].time < kBlastWindowSec; ++i) {
-         const int b = clampv(static_cast<int>(f.arrivals[i].time / sliceSec), 0,
-                              Flash::kMaxBlasts - 1);
+         const float t = std::max(f.arrivals[i].time, kBlastFirstSec);
+         const int b = clampv(static_cast<int>(Flash::kMaxBlasts *
+                                               std::log(t / kBlastFirstSec) / sliceSpan),
+                              0, Flash::kMaxBlasts - 1);
          if (f.arrivals[i].amp > bestAmp[b]) {
             bestAmp[b] = f.arrivals[i].amp;
             bestIdx[b] = static_cast<int>(i);
@@ -938,23 +1026,45 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
       for (int b = 0; b < Flash::kMaxBlasts; ++b)
          peak = std::max(peak, bestAmp[b]);
       const float floor = peak * kBlastSliceFloor;
+      // distanceKm, the local: f.distanceKm is not assigned until below, and
+      // reading it here took the range of whatever flash last used this slot.
+      const float tauFull =
+         clampv(kBlastTauSec * std::pow(std::max(distanceKm, 0.05f), kBlastTauExp),
+                kBlastTauMin, kBlastTauMax);
       f.blastCount = 0;
       for (int b = 0; b < Flash::kMaxBlasts; ++b) {
          if (bestIdx[b] < 0 || bestAmp[b] < floor)
             continue;
          const Arrival &a = f.arrivals[bestIdx[b]];
          const int n = f.blastCount++;
+         const float coh = bloomCoherence(a.time);
          f.blastTime[n] = a.time;
-         f.blastAmp[n] = a.amp * kBlastGain;
+         f.blastAmp[n] =
+            a.amp * kBlastGain * (kBloomBlastFloor + (1.0f - kBloomBlastFloor) * coh);
          f.blastAirHz[n] = a.airHz;
+         f.blastRise[n] = a.riseSec;
          f.blastPan[n] = a.pan;
+         f.blastTau[n] = clampv(tauFull * (kBloomBlastFloor + (1.0f - kBloomBlastFloor) * coh),
+                                kBlastTauMin, kBlastTauMax);
       }
-      // distanceKm, the local: f.distanceKm is not assigned until below, and
-      // reading it here took the range of whatever flash last used this slot.
-      f.blastTauSec = clampv(kBlastTauSec * std::pow(std::max(distanceKm, 0.05f), kBlastTauExp),
-                             kBlastTauMin, kBlastTauMax);
       for (int k = 0; k < Flash::kMaxStrokes; ++k)
          f.blastNext[k] = 0;
+   }
+
+   // --- Bloom. The stretch of channel that makes the clap assembles over a
+   // few tens of milliseconds, and until it has, only its small coherent
+   // patches are radiating: short waves, which are bright and carry little
+   // energy. So every arrival inside the window has its wave shortened by how
+   // much of the clap had gathered when it landed. After the normalisation,
+   // deliberately -- the onset is supposed to come in under the body, and
+   // normalising afterwards would put back exactly what this takes away.
+   if (mP.bloom > 0.001f) {
+      for (uint32_t i = 0; i < f.count && f.arrivals[i].time < kBlastWindowSec; ++i) {
+         const float coh = bloomCoherence(f.arrivals[i].time);
+         f.arrivals[i].lenSec =
+            clampv(f.arrivals[i].lenSec * (kBloomLenFloor + (1.0f - kBloomLenFloor) * coh),
+                   kNwaveMinSec, kNwaveMaxSec);
+      }
    }
 
    // --- Return strokes: the same channel lit again, each a little later than
@@ -983,6 +1093,15 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
    return true;
 }
 
+// How much of the clap has assembled by this time into it: 1 with Bloom off,
+// and rising from a floor to 1 over the bloom time with it up. See kBloomSecMin.
+float ThunderEngine::bloomCoherence(float timeSec) const {
+   if (mP.bloom <= 0.001f)
+      return 1.0f;
+   const float tau = kBloomSecMin + mP.bloom * (kBloomSecMax - kBloomSecMin);
+   return 1.0f - mP.bloom * std::exp(-std::max(timeSec, 0.0f) / tau);
+}
+
 void ThunderEngine::spawnShock(const Arrival &a, float gain, float crack, uint32_t offset) {
    const float amp = a.amp * gain;
    if (amp < 1.0e-6f)
@@ -994,11 +1113,11 @@ void ThunderEngine::spawnShock(const Arrival &a, float gain, float crack, uint32
 
    s.blast = false;
    const float len = std::max(4.0f, a.lenSec * mSampleRate);
-   // The shock fronts. Crack at 100 % leaves them a hundredth of the wave long,
-   // which at a 10 ms wave is 0.1 ms and puts energy out to several kilohertz;
-   // at 0 % they take a third of the wave and the shock is a soft thud.
-   const float edgeFrac = 0.012f + 0.3f * (1.0f - crack) * (1.0f - crack);
-   const float edge = std::max(1.5f, len * edgeFrac);
+   // The shock fronts, at the width the air has left them: see kRiseAt1kmSec.
+   // Never more than a third of the wave, or the two fronts meet in the middle
+   // and the N-wave stops being one.
+   const float edge =
+      clampv(a.riseSec * mSampleRate, 1.5f, std::max(1.5f, len * (1.0f / 3.0f)));
    s.lenSamples = static_cast<uint32_t>(len);
    s.invLen = 1.0f / len;
    s.edgeInv = 1.0f / edge;
@@ -1040,8 +1159,7 @@ void ThunderEngine::spawnShock(const Arrival &a, float gain, float crack, uint32
    mRumbleAirHz += (a.airHz - mRumbleAirHz) * 0.02f;
 }
 
-void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, float crack,
-                               uint32_t offset) {
+void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, uint32_t offset) {
    const float amp = f.blastAmp[index] * gain * mP.impact;
    if (amp < 1.0e-6f)
       return;
@@ -1050,17 +1168,17 @@ void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, float crac
       return;
    Shock &s = *sp;
 
-   const float tau = std::max(4.0f, f.blastTauSec * mSampleRate);
+   const float tau = std::max(4.0f, f.blastTau[index] * mSampleRate);
    s.blast = true;
    s.blastDecay = 1.0f / tau;
    s.blastEnv = 1.0f;
    s.blastEnvCoef = std::exp(-s.blastDecay);
    s.lenSamples = static_cast<uint32_t>(tau);
    s.invLen = s.blastDecay;
-   // The jump at the front. A blast front is a discontinuity; Crack decides
-   // how much of one survives here, exactly as it does for the N-wave, so a
-   // soft setting gives a thump and a hard one gives a slam with an edge.
-   const float edge = std::max(1.5f, tau * (0.01f + 0.25f * (1.0f - crack) * (1.0f - crack)));
+   // The jump at the front, thickened by the same relaxation as the N-wave's
+   // and never more than a quarter of the pulse, so a slam stays a slam.
+   const float edge = clampv(f.blastRise[index] * mSampleRate, 1.5f,
+                             std::max(1.5f, 0.25f * tau));
    s.edgeInv = 1.0f / edge;
    s.amp = amp;
    // No crackle: the tearing belongs to the individual elements' fronts, and
@@ -1084,7 +1202,7 @@ void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, float crac
 
    // And it shakes the rumble like anything else that arrives, so the slam is
    // answered by the swell instead of standing on its own.
-   mRumbleEnergy += amp * amp * f.blastTauSec * kRumbleExcite * kBlastRumbleExcite;
+   mRumbleEnergy += amp * amp * f.blastTau[index] * kRumbleExcite * kBlastRumbleExcite;
 }
 
 // ------------------------------------------------------------------ process
@@ -1152,7 +1270,7 @@ void ThunderEngine::processControl(float *outL, float *outR, uint32_t numSamples
             const float off = f.strokeOffset[k];
             while (f.blastNext[k] < f.blastCount &&
                    f.blastTime[f.blastNext[k]] * mSampleRate + off <= f.clock) {
-               spawnBlast(f, f.blastNext[k], f.level * f.strokeGain[k] * env, mP.crack, i);
+               spawnBlast(f, f.blastNext[k], f.level * f.strokeGain[k] * env, i);
                ++f.blastNext[k];
             }
             while (f.cursor[k] < f.count) {
@@ -1163,6 +1281,8 @@ void ThunderEngine::processControl(float *outL, float *outR, uint32_t numSamples
                }
                if (a.time * mSampleRate + off > f.clock)
                   break;
+               if (f.cursor[k] == 0)
+                  mBloomAge = 0.0f; // this stroke's clap starts here
                spawnShock(a, f.level * f.strokeGain[k] * env * strokeJitter(f.cursor[k], k),
                           mP.crack, i);
                ++f.cursor[k];
@@ -1250,9 +1370,34 @@ void ThunderEngine::processShocks(float *outL, float *outR, uint32_t numSamples)
    }
 }
 
-// The crest of a finite-amplitude wave, eaten away as it travels. See
-// kSteepenThreshold.
-void ThunderEngine::steepenShocks(float *busL, float *busR, uint32_t numSamples) {
+// Two things happen to the sum of the shocks and to nothing else: the clap
+// gathers (see kBloomSecMax) and the crests of a finite-amplitude wave are
+// eaten away (see kSteepenThreshold). Both belong to the near field, and the
+// rumble -- which is the far field -- goes round both of them.
+void ThunderEngine::shapeShockBus(float *busL, float *busR, uint32_t numSamples) {
+   // --- Bloom. Long wavelengths need many arrivals to add coherently, and at
+   // the instant a clap starts there are not many, so the bottom of the sum is
+   // not there yet. The corner walks down as the arrivals gather.
+   if (mP.bloom > 0.001f) {
+      const float tau = kBloomSecMin + mP.bloom * (kBloomSecMax - kBloomSecMin);
+      const float start = kBloomHpMinHz + std::pow(mP.bloom, kBloomHpCurve) *
+                                             (kBloomHpHz - kBloomHpMinHz);
+      const float step = 1.0f / mSampleRate;
+      for (uint32_t i = 0; i < numSamples; ++i) {
+         if ((i & (kModInterval - 1)) == 0) {
+            const float hz = kBloomHpMinHz + (start - kBloomHpMinHz) * std::exp(-mBloomAge / tau);
+            mBloomHpCoef = 1.0f - std::exp(-6.283185307f * hz / mSampleRate);
+         }
+         mBloomAge += step;
+         mBloomHpL += mBloomHpCoef * (busL[i] - mBloomHpL);
+         mBloomHpR += mBloomHpCoef * (busR[i] - mBloomHpR);
+         busL[i] -= mBloomHpL;
+         busR[i] -= mBloomHpR;
+      }
+   } else {
+      mBloomAge += numSamples / mSampleRate;
+   }
+
    const float amount = mP.impact;
    if (amount < 0.001f)
       return;
@@ -1347,7 +1492,7 @@ void ThunderEngine::process(float *outL, float *outR, uint32_t numSamples) {
       std::fill(mBusL.begin(), mBusL.begin() + n, 0.0f);
       std::fill(mBusR.begin(), mBusR.begin() + n, 0.0f);
       processShocks(mBusL.data(), mBusR.data(), n);
-      steepenShocks(mBusL.data(), mBusR.data(), n);
+      shapeShockBus(mBusL.data(), mBusR.data(), n);
       for (uint32_t i = 0; i < n; ++i) {
          l[i] += mBusL[i];
          r[i] += mBusR[i];

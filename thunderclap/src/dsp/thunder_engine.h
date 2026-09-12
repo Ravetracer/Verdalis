@@ -35,6 +35,7 @@ struct EngineParams {
    float scatter = 0.5f;
    float focus = 0.7f;
    float impact = 0.45f;
+   float bloom = 0.45f;
 
    float width = 0.8f;
    float pan = 0.0f;
@@ -79,6 +80,7 @@ struct Arrival {
    float lenSec;  // duration of the N-wave
    float airHz;   // where the air has taken 6 dB off; see Shock::air
    float pan;     // -1..1
+   float riseSec; // how long the shock front takes to arrive; see kRiseAt1kmSec
    float crackle; // how much of the front's noise burst this element keeps, 0..1
    bool branch;   // a side branch: lit by the first stroke only
 };
@@ -147,8 +149,9 @@ struct Flash {
    float blastTime[kMaxBlasts] = {}; // seconds, same clock as Arrival::time
    float blastAmp[kMaxBlasts] = {};
    float blastAirHz[kMaxBlasts] = {};
+   float blastRise[kMaxBlasts] = {};
    float blastPan[kMaxBlasts] = {};
-   float blastTauSec = 0.003f;
+   float blastTau[kMaxBlasts] = {}; // seconds; each pulse has its own, see Bloom
    uint8_t blastNext[kMaxStrokes] = {}; // next pulse this stroke owes
 
    bool exhausted() const {
@@ -219,12 +222,13 @@ private:
                     float tortuosity, float branching, float weightScale, float crack);
    void addElements(Flash &f, Vec3 a, Vec3 b, int count, float tortuosity, float branchScale,
                     bool branch, float weightScale, float shadowElev, float shadowWidth,
-                    float heightM);
+                    float heightM, float crack);
+   float bloomCoherence(float timeSec) const;
    void spawnShock(const Arrival &a, float gain, float crack, uint32_t offset);
-   void spawnBlast(const Flash &f, int index, float gain, float crack, uint32_t offset);
+   void spawnBlast(const Flash &f, int index, float gain, uint32_t offset);
    void processControl(float *outL, float *outR, uint32_t numSamples);
    void processShocks(float *outL, float *outR, uint32_t numSamples);
-   void steepenShocks(float *busL, float *busR, uint32_t numSamples);
+   void shapeShockBus(float *busL, float *busR, uint32_t numSamples);
    void processOutputChain(float *outL, float *outR, uint32_t numSamples);
 
    float mSampleRate = 48000.0f;
@@ -233,6 +237,11 @@ private:
    // output, because the near field's nonlinearity acts on their sum and not
    // on the rumble underneath it; see steepenShocks().
    std::vector<float> mBusL, mBusR;
+   // Bloom: how long ago the last stroke's first arrival landed, and the
+   // highpass on the bus that opens as the clap gathers behind it.
+   float mBloomAge = 1.0e9f; // seconds
+   float mBloomHpCoef = 1.0f;
+   float mBloomHpL = 0.0f, mBloomHpR = 0.0f;
    // Two generators. mRng draws everything that is an event -- channel
    // geometry, scatter, storm timing -- and mNoiseRng runs continuously for the
    // rumble noise and the drift. Kept apart so that a fixed Seed gives the same

@@ -53,7 +53,7 @@ and the same Cairo-backed window.
 
 **Plugin side** (`src/plugin.cpp`):
 
-- 44 parameters, grouped, with real-unit display and text entry both ways
+- 45 parameters, grouped, with real-unit display and text entry both ways
   (`800 m` and `2 km` both parse for a kilometre field).
 - Extensions: `params`, `audio-ports`, `note-ports`, `state`, `tail`,
   `voice-info`, `preset-load`, `gui`, `timer-support`.
@@ -78,6 +78,38 @@ late low swell, though about 10 dB under the recording's; a 5 km render shows th
 structure Kappus and Vernon describe; the distant renders sit in the bottom two
 octaves as the far recordings do, and swell in over seconds. Details and the
 method are in `tools/analysis/README.md`.
+
+## The clap, 1.3.0
+
+A user's experiment found the rest of it: City Thunder with the distance pulled
+in, the output filter set to Notch, and a DAW envelope decaying fast on the
+`Highpass` knob -- a strike that arrives thin and bright with the bottom
+flooding in behind it. That envelope turns out to be in the recordings.
+Measured over 40 ms windows hopped by 10, the close references come in with the
+30 to 120 Hz band 15 to 32 dB down and bring it up over the first 20 to 40 ms,
+while the spectral centroid falls from 225 to 430 Hz to 76 to 100. Every render
+started at its final centroid, near 100 Hz, with nothing left to arrive.
+
+`Bloom`, the 45th parameter, is that. The cause is coherence: long wavelengths
+need many arrivals to add up and a clap does not have many at its first
+millisecond. Two consequences, both modelled -- the body radiating while the
+clap gathers is smaller, so each arrival's N-wave and each blast pulse's time
+constant are scaled by how much had gathered when they landed; and the sum
+itself is highpassed by a corner that walks down as they gather. The clock
+restarts on every return stroke. Measured on Dry Crack, the centroid now runs
+306 Hz down to 117 over 20 ms with the 50 to 150 Hz band coming up 12.8 dB.
+
+The shock front also got its own range law. It was a fixed fraction of the
+wave's length, and since the wave lengthens only as the cube-tenth root of the
+range, a strike at 300 m and one at 3 km came out almost equally sharp.
+Molecular relaxation thickens a front far faster than that, so the rise time is
+now `0.18 ms x (r/1 km)^0.9`, softened by Crack. Close strikes are now markedly
+the brightest thing the plugin does.
+
+One thing was tried and dropped, and the reason is in the source: feeding the
+crest the steepening eats back through a highpass, which is what a steepening
+wave does with it. Against the recordings it bought under a decibel from 640 Hz
+to 5 kHz and cost 1.2 dB of crest factor for every 0.3 of its gain.
 
 ## The clap, 1.2.0
 

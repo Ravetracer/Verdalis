@@ -11,10 +11,17 @@ In rough order of what would matter most to somebody using it.
   steepening threshold (`kSteepenThreshold`), the N-wave base length
   (`kNwaveBaseSec`), the echo loop gain, and the balance of rumble against
   shocks.
-- [ ] **`Impact` is now on in every preset**, set from the preset's Distance.
+- [ ] **`Impact` and `Bloom` are now on in every preset**, set from the preset's
+  Distance.
   The mapping is a judgement, not a fit: a real one would come from the crest
   factor and the 200 ms density of a recording at a known range, which
   `measure.py impact` computes but which no recording here carries a range for.
+- [ ] **The rumble does not bloom.** It is fed by the arriving shock energy with
+  an instant rise, so it puts its band in at full level from the first
+  millisecond while the shock sum is still highpassed. The coherence argument
+  applies to it too -- it is the incoherent sum, which also has to assemble --
+  and it is the main thing still filling the bottom during a clap's first
+  20 ms.
 - [ ] Check the close presets for soft-clipper colouration. Overhead Crack
   and Storm Front peak within a decibel of full scale on some seeds and the
   clipper above 0.8 is doing real work there; if it sounds squashed, take
@@ -49,12 +56,14 @@ In rough order of what would matter most to somebody using it.
   after the 1.2.0 work density is the measure the engine is still furthest
   from at the sparse end. Cost: either half the element budget or a bigger
   pool, since the arrival count doubles.
-- [ ] **The onset does not build.** The two hardest reference recordings ramp
-  over 10 to 20 ms and reach their peak 40 to 50 ms after the onset; every
-  render peaks in its first 5 ms. Some of that is the recorder's gain riding,
-  but not all -- a caustic takes time to assemble, and the nearest element
-  being the loudest is an artefact of the 1/r weighting meeting a channel that
-  starts at the listener's feet.
+- [ ] **The onset's level still does not build, only its spectrum does.**
+  `Bloom` (1.3.0) gets the spectral half right -- the centroid falls from about
+  300 Hz to 120 over 20 ms, against the recordings' 225-430 down to 76-100 --
+  but the recordings also ramp their total level by 11 to 16 dB over the same
+  window and the renders ramp 2 to 5. Some of that is the recorder's gain
+  riding, but not all: a caustic takes time to assemble, and the nearest
+  element being the loudest is an artefact of the 1/r weighting meeting a
+  channel that starts at the listener's feet.
 - [ ] **Wind and temperature gradient** bend the rays and shift the shadow; the
   shadow is a fixed function of distance and Swell. A wind parameter would move
   it and skew the stereo image.
