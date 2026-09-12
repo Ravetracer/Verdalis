@@ -767,6 +767,14 @@ int main(int argc, char **argv) {
 
    std::vector<PresetEntry> todo;
    if (doAll) {
+      // --outdir is written into once per preset; create it here so a missing
+      // directory is one error before any work rather than seventeen after it.
+      std::error_code ec;
+      std::filesystem::create_directories(outDir, ec);
+      if (!std::filesystem::is_directory(outDir, ec)) {
+         std::fprintf(stderr, "could not create the output directory %s\n", outDir.c_str());
+         return 1;
+      }
       todo = presets;
    } else if (!presetSel.empty()) {
       const std::string want = matchKey(presetSel);
@@ -820,7 +828,10 @@ int main(int argc, char **argv) {
       const std::string file =
          doAll ? outDir + "/" + sanitise(preset.name.empty() ? "default" : preset.name) + ".wav"
                : outPath;
-      writeWav(file, res.interleaved, 2, static_cast<uint32_t>(sampleRate));
+      if (!writeWav(file, res.interleaved, 2, static_cast<uint32_t>(sampleRate))) {
+         std::fprintf(stderr, "could not write %s\n", file.c_str());
+         return 1;
+      }
 
       std::printf("%-24s peak %6.3f (%+6.1f dBFS)  rms %7.5f (%+6.1f dBFS)%s -> %s\n",
                   preset.name.empty() ? "(defaults)" : preset.name.c_str(), res.peak,
