@@ -24,6 +24,7 @@ rumble_tone = 0.5
 air = 0.5
 scatter = 0.5
 focus = 0.7
+impact = 0.4
 
 # Stereo
 width = 0.85
@@ -58,7 +59,7 @@ vel_to_level = 0.5
 vel_to_distance = 0.5
 
 # Output
-gain = -2.3
+gain = -4.5
 max_shocks = 2048
 seed = 0
 

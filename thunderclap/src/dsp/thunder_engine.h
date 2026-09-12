@@ -34,7 +34,7 @@ struct EngineParams {
    float air = 0.5f;
    float scatter = 0.5f;
    float focus = 0.7f;
-   float impact = 0.0f;
+   float impact = 0.45f;
 
    float width = 0.8f;
    float pan = 0.0f;
@@ -106,11 +106,15 @@ struct Shock {
    float invLen = 1.0f;
    float edgeInv = 1.0f; // 1 / rise samples of each front
    float amp = 0.0f;
-   // The tearing at the front: a burst of noise the length of a few rise times,
-   // standing for the fine roughness of the channel, which radiates a spray of
-   // tiny shocks the smooth N-wave cannot carry.
+   // The tearing at the front: the fine roughness of the channel, which
+   // radiates a spray of tiny shocks the smooth N-wave cannot carry. Held for
+   // crackleStep samples at a time, because a wrinkle of the channel radiates
+   // a step and not a hiss -- see kRoughnessM.
    uint32_t crackleSamples = 0;
    float crackleAmp = 0.0f;
+   uint32_t crackleStep = 1;  // samples one wrinkle takes to pass
+   uint32_t cracklePhase = 0; // countdown to the next one
+   float crackleHold = 0.0f;  // the wrinkle being heard
    float airCoef[3] = {1.0f, 1.0f, 1.0f};
    float airState[3] = {0.0f, 0.0f, 0.0f};
    float gainL = 0.0f, gainR = 0.0f;
@@ -206,6 +210,7 @@ private:
 
    void updateFilters();
    void updateEchoes();
+   void drawEchoPlaces();
    Flash *allocateFlash();
    Shock *allocateShock();
    bool lightFlash(Voice &v, int voiceIndex);
@@ -219,10 +224,15 @@ private:
    void spawnBlast(const Flash &f, int index, float gain, float crack, uint32_t offset);
    void processControl(float *outL, float *outR, uint32_t numSamples);
    void processShocks(float *outL, float *outR, uint32_t numSamples);
+   void steepenShocks(float *busL, float *busR, uint32_t numSamples);
    void processOutputChain(float *outL, float *outR, uint32_t numSamples);
 
    float mSampleRate = 48000.0f;
    EngineParams mP;
+   // The shock bus. The shocks are summed here rather than straight into the
+   // output, because the near field's nonlinearity acts on their sum and not
+   // on the rumble underneath it; see steepenShocks().
+   std::vector<float> mBusL, mBusR;
    // Two generators. mRng draws everything that is an event -- channel
    // geometry, scatter, storm timing -- and mNoiseRng runs continuously for the
    // rumble noise and the drift. Kept apart so that a fixed Seed gives the same

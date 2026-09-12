@@ -26,14 +26,21 @@ and the same Cairo-backed window.
   the energy of its loudest tenth of a second.
 - Return strokes replay the channel with per-element jitter; only the first
   stroke lights the branches.
-- Each arrival is played as an N-wave with Crack-controlled fronts and a noise
-  burst at the front for the fine roughness of the channel, through its own
-  absorption filter.
+- Each arrival is played as an N-wave with Crack-controlled fronts, through its
+  own absorption filter, with a burst at the front for the fine roughness of
+  the channel -- a train of steps sampled and held at the time one wrinkle
+  takes to pass, not noise, so its spectrum falls at 6 dB/oct above its corner
+  the way the front's does. Crack moves the roughness from 55 cm to 12 cm.
 - A rumble noise layer follows the arriving shock energy, as a band whose
   lowpass tracks Rumble Tone or the air, with width and slow drift.
 - In-cloud elements radiate waves twice as long, with fading crackle and half
   again the energy (Kappus and Vernon: intracloud thunder peaks near 10 Hz
   against 50 for the ground stroke), which is the deep late swell.
+- Impact carries the two things about a close strike that are not linear
+  acoustics: the blast the near channel throws off (Friedlander's waveform, a
+  cluster of pulses across the onset) and the bend a finite-amplitude wave puts
+  in its own crests, applied to the shock sum and not to the rumble. Every
+  preset sets it from its own Distance.
 - Up to eight landscape echoes with a fixed loop gain so the tail decays the
   same at any echo level; RainyDay's room model after them, its loop highpass
   moved down to 16 Hz; then a soft-knee compressor with automatic make-up
@@ -54,7 +61,7 @@ and the same Cairo-backed window.
   each sub-block so a note in the same block as a preset load sees the preset.
 - Versioned, per-parameter-id state.
 
-**Presets**: 16, embedded in the binary and installed beside it, gains set by
+**Presets**: 17, embedded in the binary and installed beside it, gains set by
 `tools/analysis/loudness.py` over three seeds each.
 
 **Window** (`src/gui/gui.cpp`): RainyDay's window in a storm palette, nine
@@ -71,6 +78,34 @@ late low swell, though about 10 dB under the recording's; a 5 km render shows th
 structure Kappus and Vernon describe; the distant renders sit in the bottom two
 octaves as the far recordings do, and swell in over seconds. Details and the
 method are in `tools/analysis/README.md`.
+
+## The clap, 1.2.0
+
+The crack was measured against six clean close-strike recordings
+(`!dev/reference_new`) with the new `measure.py clap` and `measure.py impact`,
+and two things were wrong with it.
+
+The crackle at each shock front was white noise, which is flat to Nyquist. The
+recordings are 15 to 25 dB quieter than that in the 1.25 to 5 kHz band, and the
+excess was heard as a crackle laid over the thunder instead of the thunder's
+own edge. It is now a train of steps at the scale the channel is rough on, so
+it falls at 6 dB/oct above its corner exactly as the front does; the close
+presets now sit within about 4 dB of the recordings in every octave to 5 kHz.
+
+The strike was also a spray of separate spikes where the recordings are a wall:
+11 to 16 dB of crest factor over the 50 ms around the peak against their 5 to
+13, and 5 to 60 % of the first 200 ms within 6 dB of the peak against their 14
+to 62. Finite-amplitude propagation is what flattens a real one, and that is
+now in `Impact` alongside the blast. The close presets now measure 6 to 13 dB
+of crest and 30 to 75 % density.
+
+Two bugs turned up on the way, both in the blast and both live in 1.1.0:
+`f.blastTauSec` was computed from `f.distanceKm` twenty lines before it was
+assigned, so the blast took its length from whatever flash last used that pool
+slot; and `reset()` redrew the landscape's reflectors from the running
+generator when Seed was 0, so a render was only reproducible from the second
+take onward. Both are fixed, and the self-test's fixed-Seed check now covers
+them because Impact is no longer zero by default.
 
 ## Not done
 

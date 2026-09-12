@@ -83,16 +83,30 @@ constexpr float kAbsorbExp = 1.3f;
 constexpr float kAbsorbCornerDb = 6.0f;
 constexpr float kAbsorbPoleRatio[3] = {1.0f, 2.0f, 4.0f}; // dB at each pole, over the corner
 
-// The crackle at a shock front: how much of the wave the noise burst covers,
-// and how loud it is against the wave, both at Crack 100 %. It goes through
-// the same air as the wave, so it is what a close strike has and a distant one
-// has lost. Measured against the close recordings, the tearing of a strike a
-// few hundred metres off carries as much energy above a kilohertz as the wave
-// carries below it, and a clean N-wave, whose spectrum falls at 6 dB/oct, is
-// 20 dB short of that.
-constexpr float kCrackleMinFrac = 0.2f;
-constexpr float kCrackleFracPerCrack = 0.6f;
-constexpr float kCrackleLevel = 5.0f;
+// The crackle at a shock front, and the scale it is drawn on.
+//
+// Inside one coherent element the channel still wanders, on a scale of
+// centimetres to a metre, and every wrinkle of it radiates its own small front.
+// What reaches the listener is therefore not hiss but a burst of micro-shocks
+// arriving at the rate the roughness passes: a train of steps, whose spectrum
+// is flat up to c / roughness and falls at 6 dB/oct above it, exactly as the
+// main front's does. White noise is flat to Nyquist instead, and that is the
+// difference between a strike that tears and one that sizzles -- against the
+// close recordings a white-noise burst puts 15 to 25 dB too much into the 1.25
+// to 5 kHz band, which is heard as a crackle laid over the thunder rather than
+// as the thunder's own edge.
+//
+// So the burst is sampled and held for the time one wrinkle takes to pass.
+// Crack chooses the scale: a hard strike tears on a finer scale and is
+// brighter for it.
+constexpr float kRoughnessM = 0.55f;    // at Crack 0 %:   1.6 ms, corner 310 Hz
+constexpr float kRoughnessMinM = 0.12f; // at Crack 100 %: 0.35 ms, corner 1.4 kHz
+// How much of the wave the burst covers and how loud it is against the wave,
+// both at Crack 100 %. It goes through the same air as the wave, so it is what
+// a close strike has and a distant one has lost.
+constexpr float kCrackleMinFrac = 0.15f;
+constexpr float kCrackleFracPerCrack = 0.35f;
+constexpr float kCrackleLevel = 3.2f;
 
 // How the element budget is spread along the channel. Elements are dealt out
 // in proportion to length over distance, so the near channel -- the part that
@@ -133,6 +147,30 @@ constexpr float kRumbleTauSec = 0.2f;
 constexpr float kRumbleExcite = 1.0f / (3.0f * kRumbleTauSec);
 constexpr float kRumbleGain = 1.6f;
 constexpr float kRumbleHighpassMinHz = 20.0f;
+
+// Finite-amplitude propagation, which Impact fades in alongside the blast.
+//
+// A thunder's shock is not a small-signal acoustic wave. At a few hundred
+// metres it is a hundred pascals and more, and a wave that strong carries its
+// own crest faster than its tail: the crest is eaten away as it travels and
+// the energy it loses goes into the body of the wave. What arrives is
+// therefore far flatter than the linear sum of the elements is. The close
+// recordings show it plainly -- a hard clap reaches its level in a few tens of
+// milliseconds and then holds within two or three decibels of it for a
+// hundred more, where the linear sum is a spray of separate spikes with ten
+// decibels of air between them. Measured over 50 ms around the peak, the
+// recordings sit at 5 to 13 dB of crest factor and the linear engine at 11
+// to 16.
+//
+// Modelled as an instantaneous odd compression of the shock sum: nothing below
+// the threshold, and above it the curve bends towards a ceiling. The rumble
+// does not go through it, because the rumble is the far field and the far
+// field is linear. The threshold is absolute rather than relative because the
+// flash normalisation already puts every flash at the same power and the
+// per-kilometre loss then stands a distant one further back -- so a strike at
+// 400 m is bent and one at 10 km is not, which is the physics.
+constexpr float kSteepenThreshold = 0.25f;
+constexpr float kSteepenCeil = 1.0f; // asymptote = threshold * (1 + this)
 
 // The blast pulse, which Impact fades in. Every element of the channel
 // radiates its own N-wave, but the near section of a return stroke also
@@ -216,13 +254,15 @@ static uint32_t rngStateForSeed(int seed) {
    return 0x9E3779B9u * static_cast<uint32_t>(seed) + 17u;
 }
 
-void ThunderEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
+void ThunderEngine::prepare(double sampleRate, uint32_t maxBlockSize) {
    mSampleRate = static_cast<float>(sampleRate);
    mShocks.assign(kMaxShocks, Shock());
    for (auto &f : mFlashes) {
       f.arrivals.assign(kMaxShocks, Arrival{});
       f.active = false;
    }
+   mBusL.assign(std::max<size_t>(maxBlockSize, 1024u), 0.0f);
+   mBusR.assign(mBusL.size(), 0.0f);
    mEchoLine.allocate(static_cast<size_t>(kMaxEchoSec * mSampleRate) + 8);
    // Thunder lives an octave below rain, so the tank's loop highpass has to sit
    // lower than the shared default or it takes the bottom off the tail.
@@ -236,7 +276,11 @@ void ThunderEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
    mRng.reseed(static_cast<uint32_t>(now) ^ (0x9E3779B9u * instance));
    mNoiseRng.reseed(static_cast<uint32_t>(now >> 7) ^ (0x85EBCA6Bu * instance));
    mAppliedSeed = 0;
+   // The landscape belongs to the instance, so it is drawn here once. reset()
+   // only redraws it when a Seed says where it should stand.
+   drawEchoPlaces();
    reset();
+   updateEchoes();
 }
 
 void ThunderEngine::reset() {
@@ -284,15 +328,27 @@ void ThunderEngine::reset() {
    }
 
    // Where the reflectors stand is part of the place, not of any one flash, so
-   // it is drawn once here from its own generator: the same for every flash of
-   // an instance, and the same for every instance with the same Seed.
+   // a non-zero Seed puts them back where that seed says they stand. At Seed 0
+   // they are left alone: they were drawn for this instance in prepare(), they
+   // are not a property of the note, and redrawing them here would make a
+   // reset silently move the landscape -- which, when the Seed is set in the
+   // same block as the note that follows the reset, is the difference between
+   // a reproducible render and one that is reproducible only the second time.
+   if (mP.seed != 0) {
+      drawEchoPlaces();
+      updateEchoes();
+   }
+}
+
+// The landscape: eight reflectors at their own distances and directions,
+// drawn from the Seed alone so that the same Seed is the same place.
+void ThunderEngine::drawEchoPlaces() {
    Rng placeRng(mP.seed != 0 ? rngStateForSeed(mP.seed) ^ 0x5bd1e995u : mRng.next());
    for (int k = 0; k < kMaxEchoes; ++k) {
       mEchoFrac[k] = 0.15f + 0.85f * placeRng.uniform();
       mEchoAngle[k] = placeRng.white();
    }
    std::sort(mEchoFrac, mEchoFrac + kMaxEchoes);
-   updateEchoes();
 }
 
 void ThunderEngine::setParams(const EngineParams &p) {
@@ -308,12 +364,7 @@ void ThunderEngine::setParams(const EngineParams &p) {
          mRng.reseed(rngStateForSeed(mP.seed));
          mNoiseRng.reseed(rngStateForSeed(mP.seed) ^ 0x7F4A7C15u);
       }
-      Rng placeRng(mP.seed != 0 ? rngStateForSeed(mP.seed) ^ 0x5bd1e995u : mRng.next());
-      for (int k = 0; k < kMaxEchoes; ++k) {
-         mEchoFrac[k] = 0.15f + 0.85f * placeRng.uniform();
-         mEchoAngle[k] = placeRng.white();
-      }
-      std::sort(mEchoFrac, mEchoFrac + kMaxEchoes);
+      drawEchoPlaces();
    }
 
    // Below about 25 Hz the highpass is doing nothing audible, so it steps aside
@@ -898,7 +949,9 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
          f.blastAirHz[n] = a.airHz;
          f.blastPan[n] = a.pan;
       }
-      f.blastTauSec = clampv(kBlastTauSec * std::pow(std::max(f.distanceKm, 0.05f), kBlastTauExp),
+      // distanceKm, the local: f.distanceKm is not assigned until below, and
+      // reading it here took the range of whatever flash last used this slot.
+      f.blastTauSec = clampv(kBlastTauSec * std::pow(std::max(distanceKm, 0.05f), kBlastTauExp),
                              kBlastTauMin, kBlastTauMax);
       for (int k = 0; k < Flash::kMaxStrokes; ++k)
          f.blastNext[k] = 0;
@@ -953,6 +1006,14 @@ void ThunderEngine::spawnShock(const Arrival &a, float gain, float crack, uint32
    s.crackleSamples =
       static_cast<uint32_t>(len * (kCrackleMinFrac + kCrackleFracPerCrack * crack));
    s.crackleAmp = amp * kCrackleLevel * crack * std::sqrt(crack) * a.crackle;
+   // One wrinkle of the channel, in samples. The far channel's roughness is
+   // washed out by the air long before it is washed out by distance, so the
+   // scale itself does not change with range -- only Crack moves it.
+   const float roughM = kRoughnessM + (kRoughnessMinM - kRoughnessM) * crack;
+   s.crackleStep =
+      static_cast<uint32_t>(std::max(1.0f, roughM / kSpeedOfSoundMs * mSampleRate));
+   s.cracklePhase = 0;
+   s.crackleHold = 0.0f;
    // The three absorption poles, each where the air's loss reaches its figure:
    // the loss goes as f^1.6, so the pole for k times the decibels sits at
    // k^(1/1.6) times the frequency.
@@ -1165,9 +1226,15 @@ void ThunderEngine::processShocks(float *outL, float *outR, uint32_t numSamples)
                e = 1.0f;
             e = e * e * (3.0f - 2.0f * e);
             x = (1.0f - 2.0f * lifeF * s.invLen) * e * s.amp;
-            if (s.life < s.crackleSamples)
-               x += s.crackleAmp * mNoiseRng.white() *
+            if (s.life < s.crackleSamples) {
+               if (s.cracklePhase == 0) {
+                  s.crackleHold = mNoiseRng.white();
+                  s.cracklePhase = s.crackleStep;
+               }
+               --s.cracklePhase;
+               x += s.crackleAmp * s.crackleHold *
                     (1.0f - lifeF / static_cast<float>(s.crackleSamples));
+            }
          }
          s.airState[0] += s.airCoef[0] * (x - s.airState[0]);
          s.airState[1] += s.airCoef[1] * (s.airState[0] - s.airState[1]);
@@ -1180,6 +1247,30 @@ void ThunderEngine::processShocks(float *outL, float *outR, uint32_t numSamples)
             break;
          }
       }
+   }
+}
+
+// The crest of a finite-amplitude wave, eaten away as it travels. See
+// kSteepenThreshold.
+void ThunderEngine::steepenShocks(float *busL, float *busR, uint32_t numSamples) {
+   const float amount = mP.impact;
+   if (amount < 0.001f)
+      return;
+   const float thr = kSteepenThreshold;
+   const float span = thr * kSteepenCeil;
+   const float invSpan = 1.0f / span;
+   auto bend = [&](float x) {
+      const float a = std::fabs(x);
+      if (a <= thr)
+         return x;
+      const float over = a - thr;
+      const float y = thr + over / (1.0f + over * invSpan);
+      const float bent = x < 0.0f ? -y : y;
+      return x + amount * (bent - x);
+   };
+   for (uint32_t i = 0; i < numSamples; ++i) {
+      busL[i] = bend(busL[i]);
+      busR[i] = bend(busR[i]);
    }
 }
 
@@ -1243,9 +1334,27 @@ void ThunderEngine::process(float *outL, float *outR, uint32_t numSamples) {
    if (numSamples == 0)
       return;
 
-   processControl(outL, outR, numSamples);
-   processShocks(outL, outR, numSamples);
-   processOutputChain(outL, outR, numSamples);
+   // In chunks no larger than the bus, so a host that hands over a block
+   // bigger than the one it announced is served correctly rather than
+   // allocating on the audio thread. The split is exact: everything below
+   // steps a sample at a time.
+   const uint32_t chunk = static_cast<uint32_t>(mBusL.size());
+   for (uint32_t done = 0; done < numSamples;) {
+      const uint32_t n = std::min(chunk, numSamples - done);
+      float *l = outL + done;
+      float *r = outR + done;
+      processControl(l, r, n);
+      std::fill(mBusL.begin(), mBusL.begin() + n, 0.0f);
+      std::fill(mBusR.begin(), mBusR.begin() + n, 0.0f);
+      processShocks(mBusL.data(), mBusR.data(), n);
+      steepenShocks(mBusL.data(), mBusR.data(), n);
+      for (uint32_t i = 0; i < n; ++i) {
+         l[i] += mBusL[i];
+         r[i] += mBusR[i];
+      }
+      processOutputChain(l, r, n);
+      done += n;
+   }
 
    if (activeVoiceCount() == 0 && activeFlashCount() == 0 && activeShockCount() == 0) {
       // Saturate rather than wrap: this counter is only compared against the

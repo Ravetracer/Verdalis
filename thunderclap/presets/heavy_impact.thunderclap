@@ -59,7 +59,7 @@ vel_to_level = 0.5
 vel_to_distance = 0.5
 
 # Output
-gain = -25
+gain = -10.4
 max_shocks = 2048
 seed = 0
 

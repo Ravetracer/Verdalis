@@ -253,12 +253,21 @@ Each arrival is played as an **N-wave**: a pressure jump, a straight fall
 through zero to the mirror value, and a jump back. Both fronts are eased over a
 rise time `Crack` sets, so a soft setting is a thud and a hard one a snap. A
 clean N-wave's spectrum falls at 6 dB/oct above its peak, and measured against
-the close recordings that is 20 dB short above 2 kHz: the tearing of a strike a
-few hundred metres off carries as much energy above a kilohertz as the wave
-carries below it. So every front also carries a burst of noise, standing for
-the fine roughness of the channel radiating a spray of tiny shocks. It goes
-through the same air as the wave, which is why a close strike has it and a
-distant one has lost it.
+the close recordings that is short above 2 kHz. So every front also carries a
+burst standing for the fine roughness of the channel — inside one coherent
+element it still wanders, on a scale of centimetres to a metre, and every
+wrinkle radiates its own small front.
+
+What that burst is made of decides whether a strike tears or sizzles. It is
+**not** noise: a train of steps, sampled and held for the time one wrinkle
+takes to pass, whose spectrum is flat up to c / roughness and falls at 6 dB/oct
+above it — exactly as the main front's does. `Crack` chooses the scale, from
+55 cm down to 12 cm, so a hard strike tears finely and is brighter for it.
+White noise is flat to Nyquist instead, and against these recordings it puts 15
+to 25 dB too much into the 1.25 to 5 kHz band: heard as a crackle laid over the
+thunder rather than as the thunder's own edge. The burst goes through the same
+air as the wave, which is why a close strike has it and a distant one has lost
+it.
 
 ### 5. The rumble
 
@@ -367,27 +376,47 @@ compressor makes the level a non-linear function of the gain.
 
 | Parameter | Range | What it does |
 |---|---|---|
-| Impact | 0 – 100 % | The near channel's blast: a low, hard slam under the crack |
+| Impact | 0 – 100 % | How hard the near field lands: the blast, and the bend in the crests |
 
-Every element of the channel radiates its own N-wave, but the near section of
-a return stroke also expands as one body, and what that sends out is a blast
-rather than an N-wave: a near-instant jump to peak overpressure, a decay back
-through zero, and a longer, shallower negative phase — Friedlander's waveform,
-whose spectrum peaks at 1/(2πT). It is not one pulse but a short cluster of
-them, taken from the loudest arrival in each slice of the first 350 ms, so the
-energy lands across the onset instead of on a single sample; one pulse alone
-buys a tall peak and almost nothing in the band that is supposed to hit.
+Impact is the one control for everything about a strike that is *not* linear
+acoustics, and there are two such things. Both belong to the near field, which
+is why one knob carries them and why every preset sets it from its own
+Distance — a strike at 400 m is in this regime and one at 10 km is not.
 
-This is the part of a close thunder that arrives as a slam rather than a tear,
-and it fills the 40 to 150 Hz that the reference recordings put at the top of
-the spectrum through the first 300 ms — a band the elements' own N-waves, each
-one short and each arriving at its own time, cannot fill between them however
-many there are. It defaults to 0, which is the model without it.
+**The blast.** Every element of the channel radiates its own N-wave, but the
+near section of a return stroke also expands as one body, and what that sends
+out is a blast rather than an N-wave: a near-instant jump to peak overpressure,
+a decay back through zero, and a longer, shallower negative phase —
+Friedlander's waveform, whose spectrum peaks at 1/(2πT). It is not one pulse
+but a short cluster of them, taken from the loudest arrival in each slice of
+the first 350 ms, so the energy lands across the onset instead of on a single
+sample; one pulse alone buys a tall peak and almost nothing in the band that is
+supposed to hit. It fills the 40 to 150 Hz that the reference recordings put at
+the top of the spectrum through the first 300 ms — a band the elements' own
+N-waves, each one short and each arriving at its own time, cannot fill between
+them however many there are.
 
-Two presets use it. Impact carries a lot of level, so both give back output
-gain to keep a hard flash off the clipper: the loudest of twelve seeds peaks
-at -0.5 dBFS on City Thunder and -0.4 dBFS on Heavy Impact. Turning Impact up
-on a preset that was matched without it will want the same treatment.
+**The bend in the crests.** A thunder's shock at a few hundred metres is a
+hundred pascals and more, and a wave that strong carries its own crest faster
+than its tail. The crest is eaten away as it travels and the energy it loses
+goes into the body of the wave, so what arrives is far flatter than the linear
+sum of the elements. The close recordings show it plainly: a hard clap reaches
+its level in a few tens of milliseconds and then holds within two or three
+decibels of it for a hundred more, where a linear sum is a spray of separate
+spikes with ten decibels of air between them. Impact bends the crests of the
+summed shocks towards a ceiling by that much. The rumble does not go through
+it — the rumble is the far field, and the far field is linear.
+
+Measured over the 50 ms around the peak, the reference recordings sit at 5 to
+13 dB of crest factor; without this the engine sat at 11 to 16, and a clap that
+measures as a spike is heard as a crackle rather than as a blow. With it the
+close presets sit at 6 to 13, and the share of the first 200 ms that stands
+within 6 dB of the peak — the plain measure of whether a clap is a wall or a
+spray — goes from 5–60 % to 30–75 % against the recordings' 14–62 %.
+
+Impact changes the level a preset reaches, so every factory preset's Output
+Gain was set again by `tools/analysis/loudness.py` after it was dialled in.
+Turning Impact up on a preset of your own will want the same treatment.
 
 ### Stereo
 
