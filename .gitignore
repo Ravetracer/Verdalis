@@ -35,3 +35,7 @@ __pycache__/
 # Website copy. Marketing text for the site, not part of the released suite and
 # deliberately not published here -- it lives on this machine only.
 _designs/website-copy.md
+
+# Demo tracks. Music rendered with or referenced by the suite, kept locally for
+# listening tests. Large, and not ours to redistribute.
+/DemoTracks/
