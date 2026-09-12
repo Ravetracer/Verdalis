@@ -53,7 +53,7 @@ and the same Cairo-backed window.
 
 **Plugin side** (`src/plugin.cpp`):
 
-- 45 parameters, grouped, with real-unit display and text entry both ways
+- 46 parameters, grouped, with real-unit display and text entry both ways
   (`800 m` and `2 km` both parse for a kilometre field).
 - Extensions: `params`, `audio-ports`, `note-ports`, `state`, `tail`,
   `voice-info`, `preset-load`, `gui`, `timer-support`.
@@ -61,7 +61,7 @@ and the same Cairo-backed window.
   each sub-block so a note in the same block as a preset load sees the preset.
 - Versioned, per-parameter-id state.
 
-**Presets**: 17, embedded in the binary and installed beside it, gains set by
+**Presets**: 18, embedded in the binary and installed beside it, gains set by
 `tools/analysis/loudness.py` over three seeds each.
 
 **Window** (`src/gui/gui.cpp`): RainyDay's window in a storm palette, nine
@@ -78,6 +78,31 @@ late low swell, though about 10 dB under the recording's; a 5 km render shows th
 structure Kappus and Vernon describe; the distant renders sit in the bottom two
 octaves as the far recordings do, and swell in over seconds. Details and the
 method are in `tools/analysis/README.md`.
+
+## The ground, 1.4.0
+
+The same user said the notch trick still beat the plugin, and the reason it
+does is that a static notch at a few hundred hertz with the bottom and the top
+left alone is the shape of a ground reflection, which the engine did not have.
+The listener stood in free air. A listener stands on ground, so every shock
+arrives twice, and for a strike a few hundred metres off with the ear 1.6 m up
+the first cancellation runs from 60 Hz for the channel high in the cloud to
+1.6 kHz for the part near the ground, clustered through 100 to 800.
+
+`Ground`, the 46th parameter, is that, and it is the cheapest density there is
+because every arrival becomes two. On Dry Crack, 0 to 100 % takes the crest
+factor over the 50 ms around the peak from 11.1 dB to 8.1 and the share of the
+first 200 ms within 6 dB of the peak from 67 % to 86 %, with the body 2.5 dB
+closer to the peak. The shock pool is now twice the element ceiling to hold
+it, which also settles the old note about three overlapping flashes dropping
+shocks. Render cost for the whole library went from 1.22 s to 1.55 s.
+
+**It does not reproduce the deep notch, and it was never going to.** Every
+element has its own delay, so the comb smears into a broad 2 to 4 dB tilt
+rather than a 17 dB hole. The hole is a sound-design choice and not something
+any of the recordings measure, so it ships as a preset instead: **Hollow
+Strike**, a close strike through a wide notch at 400 Hz, and the one preset in
+the library that is honestly a sound rather than a thunder.
 
 ## The clap, 1.3.0
 

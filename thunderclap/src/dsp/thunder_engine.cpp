@@ -43,6 +43,31 @@ constexpr float kSpaceLoopHighpassHz = 16.0f;
 // depend on how finely the channel was cut up.
 constexpr float kCoherenceM = 10.0f;
 
+// The ground, and the second arrival it sends.
+//
+// A listener stands on ground, not in free air, so every shock reaches the ear
+// twice: once direct and once off the ground a few milliseconds later. The two
+// add in phase below the first cancellation -- the pressure doubling that makes
+// a thunder land in the chest -- cancel at c / 2 dr, and comb above it. For a
+// strike a few hundred metres off the first notch runs from about 60 Hz for
+// the part of the channel high in the cloud to 1.6 kHz for the part near the
+// ground, clustered through 100 to 800 Hz, which is the band it hollows out.
+//
+// That shape -- bottom lifted, low mid hollowed, top untouched -- is what a
+// notch filter over a close strike sounds like, and a user reaching for one by
+// hand is what said this was missing. It is also the cheapest density there
+// is: every arrival becomes two.
+//
+// Ground scales the reflection. At 0 the listener is in free air, which is
+// what the model did before; at 100 % the surface is hard and flat. Real
+// ground is neither perfectly reflecting nor flat, and what it scatters it
+// takes off the top first, so the bounce is also dulled.
+constexpr float kListenerHeightM = 1.6f;
+constexpr float kGroundReflect = 0.85f; // at Ground 100 %
+constexpr float kGroundAirScale = 0.55f; // the bounce's air corner, against the direct
+constexpr float kGroundCrackle = 0.5f;   // rough ground scatters the tearing
+constexpr float kGroundMaxSec = 0.05f;   // beyond this the bounce is a separate event
+
 // No element is ever closer than this. A strike under 100 m is a lightning
 // strike on the listener, and the 1/r law has nothing sensible to say there.
 constexpr float kMinRangeM = 60.0f;
@@ -334,7 +359,7 @@ void ThunderEngine::prepare(double sampleRate, uint32_t maxBlockSize) {
    mSampleRate = static_cast<float>(sampleRate);
    mShocks.assign(kMaxShocks, Shock());
    for (auto &f : mFlashes) {
-      f.arrivals.assign(kMaxShocks, Arrival{});
+      f.arrivals.assign(kMaxElements, Arrival{});
       f.active = false;
    }
    mBusL.assign(std::max<size_t>(maxBlockSize, 1024u), 0.0f);
@@ -678,7 +703,7 @@ void ThunderEngine::addElements(Flash &f, Vec3 a, Vec3 b, int count, float tortu
    const float bendSigma = tortuosity * 0.9f;
 
    for (int j = 0; j < count; ++j) {
-      if (f.count >= kMaxShocks)
+      if (f.count >= kMaxElements)
          return;
       const float t = (j + 0.5f) / static_cast<float>(count);
       // Where this element is, and which way it points. The meso-tortuosity is
@@ -699,7 +724,15 @@ void ThunderEngine::addElements(Flash &f, Vec3 a, Vec3 b, int count, float tortu
          edir = dir;
       }
 
-      float r = std::sqrt(mid.x * mid.x + mid.y * mid.y + mid.z * mid.z);
+      // Direct and reflected path, with the listener kListenerHeightM off the
+      // ground: the image source is the element mirrored in the surface, which
+      // is the same as mirroring the listener.
+      const float flat = mid.x * mid.x + mid.y * mid.y;
+      const float dz = mid.z - kListenerHeightM, uz = mid.z + kListenerHeightM;
+      float r = std::sqrt(flat + dz * dz);
+      const float rGround = std::sqrt(flat + uz * uz);
+      const float groundSec =
+         clampv((rGround - r) / kSpeedOfSoundMs, 0.0f, kGroundMaxSec);
       if (r < kMinRangeM)
          r = kMinRangeM;
       const Vec3 u = {-mid.x / r, -mid.y / r, -mid.z / r};
@@ -755,6 +788,7 @@ void ThunderEngine::addElements(Flash &f, Vec3 a, Vec3 b, int count, float tortu
       Arrival &ar = f.arrivals[f.count++];
       ar.time = r / kSpeedOfSoundMs;
       ar.riseSec = riseSec;
+      ar.groundSec = groundSec;
       ar.amp = amp;
       ar.lenSec = lenSec;
       ar.airHz = airHz;
@@ -768,7 +802,7 @@ void ThunderEngine::growChannel(Flash &f, float distanceM, float azimuth, float 
                                 float cloudM, float tortuosity, float branching,
                                 float weightScale, float crack) {
    f.count = 0;
-   const int budget = clampv(mP.maxShocks, 128, static_cast<int>(kMaxShocks));
+   const int budget = clampv(mP.maxShocks, 128, static_cast<int>(kMaxElements));
 
    // --- The main channel as a polyline: up from the strike point to the cloud
    // base, then along inside the cloud. Steps keep a memory of their direction
@@ -1043,6 +1077,7 @@ bool ThunderEngine::lightFlash(Voice &v, int voiceIndex) {
             a.amp * kBlastGain * (kBloomBlastFloor + (1.0f - kBloomBlastFloor) * coh);
          f.blastAirHz[n] = a.airHz;
          f.blastRise[n] = a.riseSec;
+         f.blastGround[n] = a.groundSec;
          f.blastPan[n] = a.pan;
          f.blastTau[n] = clampv(tauFull * (kBloomBlastFloor + (1.0f - kBloomBlastFloor) * coh),
                                 kBlastTauMin, kBlastTauMax);
@@ -1159,8 +1194,11 @@ void ThunderEngine::spawnShock(const Arrival &a, float gain, float crack, uint32
    mRumbleAirHz += (a.airHz - mRumbleAirHz) * 0.02f;
 }
 
-void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, uint32_t offset) {
-   const float amp = f.blastAmp[index] * gain * mP.impact;
+void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, uint32_t offset,
+                               bool ground) {
+   float amp = f.blastAmp[index] * gain * mP.impact;
+   if (ground)
+      amp *= mP.ground * kGroundReflect;
    if (amp < 1.0e-6f)
       return;
    Shock *sp = allocateShock();
@@ -1186,7 +1224,8 @@ void ThunderEngine::spawnBlast(const Flash &f, int index, float gain, uint32_t o
    s.crackleSamples = 0;
    s.crackleAmp = 0.0f;
    for (int k = 0; k < 3; ++k) {
-      const float hz = clampv(f.blastAirHz[index] * std::pow(kAbsorbPoleRatio[k], 1.0f / kAbsorbExp),
+      const float hz = clampv(f.blastAirHz[index] * (ground ? kGroundAirScale : 1.0f) *
+                                 std::pow(kAbsorbPoleRatio[k], 1.0f / kAbsorbExp),
                               30.0f, 0.45f * mSampleRate);
       s.airCoef[k] = 1.0f - std::exp(-6.283185307f * hz / mSampleRate);
       s.airState[k] = 0.0f;
@@ -1270,7 +1309,13 @@ void ThunderEngine::processControl(float *outL, float *outR, uint32_t numSamples
             const float off = f.strokeOffset[k];
             while (f.blastNext[k] < f.blastCount &&
                    f.blastTime[f.blastNext[k]] * mSampleRate + off <= f.clock) {
-               spawnBlast(f, f.blastNext[k], f.level * f.strokeGain[k] * env, i);
+               const float blastGain = f.level * f.strokeGain[k] * env;
+               spawnBlast(f, f.blastNext[k], blastGain, i, false);
+               if (mP.ground > 0.001f && f.blastGround[f.blastNext[k]] > 1.0e-5f)
+                  spawnBlast(f, f.blastNext[k], blastGain,
+                             i + static_cast<uint32_t>(f.blastGround[f.blastNext[k]] *
+                                                       mSampleRate),
+                             true);
                ++f.blastNext[k];
             }
             while (f.cursor[k] < f.count) {
@@ -1283,8 +1328,18 @@ void ThunderEngine::processControl(float *outL, float *outR, uint32_t numSamples
                   break;
                if (f.cursor[k] == 0)
                   mBloomAge = 0.0f; // this stroke's clap starts here
-               spawnShock(a, f.level * f.strokeGain[k] * env * strokeJitter(f.cursor[k], k),
-                          mP.crack, i);
+               const float shockGain =
+                  f.level * f.strokeGain[k] * env * strokeJitter(f.cursor[k], k);
+               spawnShock(a, shockGain, mP.crack, i);
+               // And again off the ground, later, quieter and duller.
+               if (mP.ground > 0.001f && a.groundSec > 1.0e-5f) {
+                  Arrival g = a;
+                  g.amp *= mP.ground * kGroundReflect;
+                  g.airHz *= kGroundAirScale;
+                  g.crackle *= kGroundCrackle;
+                  spawnShock(g, shockGain, mP.crack,
+                             i + static_cast<uint32_t>(a.groundSec * mSampleRate));
+               }
                ++f.cursor[k];
             }
          }

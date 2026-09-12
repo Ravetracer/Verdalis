@@ -40,7 +40,8 @@ constexpr uint32_t kFilterParams[] = {kParamFilterType, kParamHighpass,   kParam
                                       kParamFilterReso, kParamFilterKeyTrack};
 constexpr uint32_t kEchoParams[] = {kParamEchoLevel, kParamEchoCount, kParamEchoSpread,
                                     kParamEchoDamping};
-constexpr uint32_t kSpaceParams[] = {kParamSpaceAmount, kParamSpaceSize, kParamSpaceDamping};
+constexpr uint32_t kSpaceParams[] = {kParamSpaceAmount, kParamSpaceSize, kParamSpaceDamping,
+                                     kParamGround};
 constexpr uint32_t kOutParams[] = {kParamGain, kParamMaxShocks, kParamSeed};
 constexpr uint32_t kDynParams[] = {kParamCompress, kParamCompAttack, kParamCompRelease};
 constexpr uint32_t kImpactParams[] = {kParamImpact, kParamBloom};

@@ -43,6 +43,7 @@ echo_damping = 0.4
 space_amount = 0.08
 space_size = 0.5
 space_damping = 0.5
+ground = 0.8
 
 # Filter
 filter_type = Lowpass
@@ -60,7 +61,7 @@ vel_to_level = 0.5
 vel_to_distance = 0.5
 
 # Output
-gain = -6.7
+gain = -4.8
 max_shocks = 2048
 seed = 0
 

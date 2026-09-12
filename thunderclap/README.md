@@ -479,6 +479,31 @@ no clap that assembles in milliseconds.
 | Space Amount | 0 – 100 % | Mix of the room you hear it from |
 | Space Size | 0 – 100 % | Room dimension, 3 m to 90 m |
 | Space Damping | 0 – 100 % | Absorption of its surfaces |
+| Ground | 0 – 100 % | How hard the surface underfoot is: the second arrival off it |
+
+**Ground** is the nearest reflection there is, and until 1.4.0 the listener
+stood in free air. A listener stands on ground, so every shock reaches the ear
+twice — once direct and once off the surface a few milliseconds later. The two
+add in phase below the first cancellation, which is the pressure doubling that
+makes a thunder land in the chest; they cancel at *c*/2Δ*r* and comb above it.
+For a strike a few hundred metres off, with the ear 1.6 m up, the first notch
+runs from about 60 Hz for the part of the channel high in the cloud to 1.6 kHz
+for the part near the ground, clustered through 100 to 800 Hz. That shape —
+bottom lifted, low mid hollowed, top untouched — is what a notch filter over a
+close strike does, and someone reaching for one by hand is what said this was
+missing.
+
+It is also the cheapest density in the model, because every arrival becomes
+two. Measured on Dry Crack, turning it from 0 to 100 % takes the crest factor
+over the 50 ms around the peak from 11.1 dB to 8.1 and the share of the first
+200 ms standing within 6 dB of the peak from 67 % to 86 %, with the body 2.5 dB
+closer to the peak. That is the direction `Impact` moves things, by a different
+and entirely linear mechanism. The shock pool is twice the element count to
+hold it.
+
+Real ground is neither perfectly reflecting nor flat, and what it scatters it
+takes off the top first, so the bounce comes back at 85 % at most, dulled, and
+with half the tearing. At 0 you are back in free air.
 
 ### Filter
 
@@ -518,6 +543,7 @@ not every mix wants it.
 | Overhead Crack | A strike two hundred metres away: a short, violent tear |
 | Close Strike | A few hundred metres off: crack, then a long rolling decay |
 | Heavy Impact | Close enough to arrive as one blow: the blast lands first, dark, and it is over in seconds |
+| Hollow Strike | The cinematic impact: the low mid scooped out, so the bottom and the crack land either side of a hole |
 | Dry Crack | One stroke, small channel, hardly any rumble or echo |
 | Single Bolt | One clean bolt a kilometre off, one clap, an honest decay |
 | City Thunder | A phone's thunder: the blast hits, claps wander the roofs, a deep late swell |

@@ -36,6 +36,7 @@ struct EngineParams {
    float focus = 0.7f;
    float impact = 0.45f;
    float bloom = 0.45f;
+   float ground = 0.55f;
 
    float width = 0.8f;
    float pan = 0.0f;
@@ -81,6 +82,7 @@ struct Arrival {
    float airHz;   // where the air has taken 6 dB off; see Shock::air
    float pan;     // -1..1
    float riseSec; // how long the shock front takes to arrive; see kRiseAt1kmSec
+   float groundSec; // how much later this element's ground bounce lands
    float crackle; // how much of the front's noise burst this element keeps, 0..1
    bool branch;   // a side branch: lit by the first stroke only
 };
@@ -150,6 +152,7 @@ struct Flash {
    float blastAmp[kMaxBlasts] = {};
    float blastAirHz[kMaxBlasts] = {};
    float blastRise[kMaxBlasts] = {};
+   float blastGround[kMaxBlasts] = {};
    float blastPan[kMaxBlasts] = {};
    float blastTau[kMaxBlasts] = {}; // seconds; each pulse has its own, see Bloom
    uint8_t blastNext[kMaxStrokes] = {}; // next pulse this stroke owes
@@ -203,7 +206,11 @@ public:
 
    static constexpr uint32_t kMaxVoices = 8;
    static constexpr uint32_t kMaxFlashes = 12;
-   static constexpr uint32_t kMaxShocks = 4096; // pool, and the ceiling on elements per flash
+   // Elements per flash, and the pool of shocks in flight. The pool is twice
+   // the elements because Ground gives every arrival a second one: the same
+   // shock again, off the ground, a few milliseconds later.
+   static constexpr uint32_t kMaxElements = 4096;
+   static constexpr uint32_t kMaxShocks = 2 * kMaxElements;
    static constexpr uint32_t kModInterval = 64; // control rate for the random walks
 
 private:
@@ -225,7 +232,7 @@ private:
                     float heightM, float crack);
    float bloomCoherence(float timeSec) const;
    void spawnShock(const Arrival &a, float gain, float crack, uint32_t offset);
-   void spawnBlast(const Flash &f, int index, float gain, uint32_t offset);
+   void spawnBlast(const Flash &f, int index, float gain, uint32_t offset, bool ground);
    void processControl(float *outL, float *outR, uint32_t numSamples);
    void processShocks(float *outL, float *outR, uint32_t numSamples);
    void shapeShockBus(float *busL, float *busR, uint32_t numSamples);

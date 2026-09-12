@@ -285,6 +285,25 @@ because the rumble is the far field.
 Turning *Impact* up changes the level a preset reaches, so raise it and set the
 *Output Gain* again.
 
+## The ground under you
+
+The nearest reflection there is, and the model stood in free air without it. A
+listener stands on ground, so every shock reaches the ear twice: once direct and
+once off the surface a few milliseconds later. The two add in phase below the
+first cancellation — the pressure doubling that makes a thunder land in the chest
+— cancel at *c*/2Δ*r*, and comb above it. For a strike a few hundred metres off,
+with the ear 1.6 m up, the first notch runs from about 60 Hz for the part of the
+channel high in the cloud to 1.6 kHz for the part near the ground, clustered
+through 100 to 800 Hz. Bottom lifted, low mid hollowed, top untouched — which is
+what a notch filter over a close strike sounds like.
+
+*Ground* scales it, and it is also the cheapest density in the engine, because
+every arrival becomes two. On Dry Crack, 0 to 100 % takes the crest factor over
+the 50 ms around the peak from 11.1 dB to 8.1 and the share of the first 200 ms
+within 6 dB of the peak from 67 % to 86 %. Real ground is neither perfectly
+reflecting nor flat, and what it scatters it takes off the top first, so the
+bounce comes back dulled and with half the tearing; at 0 you are in free air.
+
 ## Bloom, and why a clap arrives thin
 
 A clap is a stretch of channel arriving at once, and the arrivals do not switch

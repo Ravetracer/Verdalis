@@ -49,13 +49,13 @@ In rough order of what would matter most to somebody using it.
 - [ ] The compressor is a peak follower with a fixed 6 dB knee. An RMS
   detector option and a sidechain highpass would stop the sub-20 Hz of the
   cloud waves driving the gain.
-- [ ] **Ground reflection.** Each shock arrives twice, direct and off the
-  ground, a few milliseconds apart for elevated elements. It is a comb filter
-  on the near channel and is not modelled. It is also the cheapest remaining
-  way to make the onset denser -- it doubles the arrival count outright -- and
-  after the 1.2.0 work density is the measure the engine is still furthest
-  from at the sparse end. Cost: either half the element budget or a bigger
-  pool, since the arrival count doubles.
+- [x] **Ground reflection.** Done in 1.4.0 as `Ground`; see `STATUS.md`.
+- [ ] **The ground is flat, hard and infinite.** Its reflection coefficient is
+  one number rather than a frequency-dependent impedance, and it does not fall
+  with grazing angle. Real porous ground over-reflects at the bottom and
+  scatters the top incoherently, which is roughly what the constant plus a
+  lowpass gives, but the ground effect's dip is measurably shallower and sits
+  a little higher than a rigid plane predicts.
 - [ ] **The onset's level still does not build, only its spectrum does.**
   `Bloom` (1.3.0) gets the spectral half right -- the centroid falls from about
   300 Hz to 120 over 20 ms, against the recordings' 225-430 down to 76-100 --
@@ -70,9 +70,10 @@ In rough order of what would matter most to somebody using it.
 - [ ] Parameters are read at the moment a flash fires. Automating Distance
   during a long rumble does nothing to it. Per-flash is physically right, but a
   live Rumble Tone or Crack would be fun.
-- [ ] `Max Shocks` is per flash and the pool is a fixed 4096: three overlapping
-  4096-element flashes in Storm mode can drop shocks. Inaudible so far; a
-  larger pool costs 64 bytes a shock.
+- [ ] `Max Shocks` is per flash and the pool is now twice the element ceiling
+  (8192) because `Ground` doubles the arrivals. Three overlapping
+  4096-element flashes in Storm mode can still drop shocks; a larger pool
+  costs 64 bytes a shock.
 
 ## Window
 

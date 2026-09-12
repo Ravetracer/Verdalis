@@ -122,6 +122,10 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamBloom, "bloom", "Bloom", "Impact", 0.45,
        "How long the clap takes to assemble. The strike arrives thin and bright and the bottom "
        "floods in behind it; at zero it all lands at once."),
+
+   PCT(kParamGround, "ground", "Ground", "Space", 0.55,
+       "How hard the surface you are standing on is. Every shock arrives twice, direct and off "
+       "the ground: that lifts the bottom and hollows the low mid. At zero you are in free air."),
 };
 
 #undef LIN

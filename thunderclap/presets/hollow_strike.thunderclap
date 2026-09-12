@@ -1,0 +1,71 @@
+# ThunderClap preset
+format = 1
+name = Hollow Strike
+author = ThunderClap
+description = The cinematic impact: a close strike with the low mid scooped out, so the bottom and the crack land on either side of a hole. Not what a recording measures, and the one preset in the library that is a sound rather than a thunder.
+features = sfx, loud, impact, short
+
+# Strike
+distance = 0.35
+height = 4
+cloud_spread = 2
+tortuosity = 0.6
+branching = 0.35
+strokes = 2
+stroke_gap = 45
+variation = 0.35
+
+# Sound
+crack = 0.95
+weight = 0.55
+swell = 0.05
+rumble = 0.45
+rumble_tone = 0.45
+air = 0.35
+scatter = 0.5
+focus = 0.8
+impact = 0.95
+bloom = 0.7
+
+# Stereo
+width = 0.8
+pan = 0
+rumble_width = 0.9
+drift = 0.25
+
+# Echoes
+echo_level = -18
+echo_count = 3
+echo_spread = 1
+echo_damping = 0.6
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+ground = 0.8
+
+# Filter
+filter_type = Notch
+highpass = 20
+filter_cutoff = 400
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
+storm_rate = 6
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# Output
+gain = -7.2
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.5
+comp_attack = 5
+comp_release = 300

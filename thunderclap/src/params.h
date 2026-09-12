@@ -86,6 +86,9 @@ enum ParamId : uint32_t {
    // Appended: how long the clap takes to assemble.
    kParamBloom,
 
+   // Appended: the second arrival off the ground.
+   kParamGround,
+
    kNumParams
 };
 
