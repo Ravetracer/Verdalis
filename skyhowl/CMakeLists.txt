@@ -12,6 +12,7 @@ endif()
 
 option(SKYHOWL_BUILD_TOOLS "Build the offline render/verification host" ON)
 option(SKYHOWL_BUILD_GUI "Build the plugin window (needs X11 and Cairo)" ON)
+option(SKYHOWL_BUILD_VST3 "Also build a VST3 via the clap-wrapper" OFF)
 
 # CLAP plugins live in ~/.clap on Linux, so default there rather than /usr/local.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -128,8 +129,12 @@ endif()
 
 add_subdirectory("${VERDALIS_SHARED_DIR}" verdalis-shared)
 
-# ------------------------------------------------------------------- the plugin
-add_library(SkyHowl MODULE
+# --------------------------------------------------------- the implementation
+#
+# The plugin itself is a static library rather than the module directly, so that
+# more than one plugin format can be built from one copy of it. The .clap below
+# and the .vst3 further down each add only their own entry point and link this.
+add_library(SkyHowl-impl STATIC
    src/plugin.cpp
    src/preset_provider.cpp
    src/preset.cpp
@@ -138,17 +143,17 @@ add_library(SkyHowl MODULE
    ${SKYHOWL_GUI_SOURCES}
    "${SKYHOWL_GENERATED_HEADER}"
 )
-add_dependencies(SkyHowl skyhowl_presets)
+add_dependencies(SkyHowl-impl skyhowl_presets)
 
-target_link_libraries(SkyHowl PRIVATE verdalis::shared)
+target_link_libraries(SkyHowl-impl PUBLIC verdalis::shared)
 
-target_include_directories(SkyHowl PRIVATE
+target_include_directories(SkyHowl-impl PUBLIC
    "${CLAP_INCLUDE_DIR}"
    "${CMAKE_CURRENT_SOURCE_DIR}/src"
    "${CMAKE_CURRENT_BINARY_DIR}/generated"
 )
 
-target_compile_options(SkyHowl PRIVATE
+target_compile_options(SkyHowl-impl PRIVATE
    -Wall -Wextra
    -fvisibility=hidden
    # Deliberately NOT -ffast-math: on x86 GCC that links crtfastmath.o, which
@@ -157,23 +162,29 @@ target_compile_options(SkyHowl PRIVATE
    -fno-math-errno
 )
 
-target_link_libraries(SkyHowl PRIVATE ${CMAKE_DL_LIBS})
+target_link_libraries(SkyHowl-impl PUBLIC ${CMAKE_DL_LIBS})
 
 # The version lives in two places that have to agree: project() above and
 # kPluginVersion in src/skyhowl.h. Handing the project version to the compiler
 # lets skyhowl.h static_assert that they match, so a bump that only lands in
 # one of them fails the build instead of shipping.
-target_compile_definitions(SkyHowl PRIVATE
+target_compile_definitions(SkyHowl-impl PRIVATE
    SKYHOWL_CMAKE_VERSION="${PROJECT_VERSION}")
 
 if(SKYHOWL_BUILD_GUI)
-   target_compile_definitions(SkyHowl PRIVATE SKYHOWL_WITH_GUI ${SKYHOWL_GUI_DEFINES})
-   target_include_directories(SkyHowl PRIVATE ${SKYHOWL_GUI_DEPS_INCLUDE_DIRS})
-   target_link_libraries(SkyHowl PRIVATE ${SKYHOWL_GUI_DEPS_LIBRARIES})
-   target_link_directories(SkyHowl PRIVATE ${SKYHOWL_GUI_DEPS_LIBRARY_DIRS})
+   target_compile_definitions(SkyHowl-impl PRIVATE SKYHOWL_WITH_GUI ${SKYHOWL_GUI_DEFINES})
+   target_include_directories(SkyHowl-impl PUBLIC ${SKYHOWL_GUI_DEPS_INCLUDE_DIRS})
+   target_link_libraries(SkyHowl-impl PUBLIC ${SKYHOWL_GUI_DEPS_LIBRARIES})
+   target_link_directories(SkyHowl-impl PUBLIC ${SKYHOWL_GUI_DEPS_LIBRARY_DIRS})
    find_package(Threads REQUIRED)
-   target_link_libraries(SkyHowl PRIVATE Threads::Threads)
+   target_link_libraries(SkyHowl-impl PUBLIC Threads::Threads)
 endif()
+
+
+# --------------------------------------------------------------- the CLAP module
+add_library(SkyHowl MODULE src/entry.cpp)
+target_link_libraries(SkyHowl PRIVATE SkyHowl-impl)
+target_compile_options(SkyHowl PRIVATE -Wall -Wextra -fvisibility=hidden)
 
 # Only clap_entry is exported; everything else stays internal to the DSO.
 if(WIN32)
@@ -253,6 +264,98 @@ if(SKYHOWL_BUILD_TOOLS)
    target_compile_options(skyhowl-fithost PRIVATE -Wall -Wextra)
    target_link_libraries(skyhowl-fithost PRIVATE ${CMAKE_DL_LIBS})
    endif()
+endif()
+
+# ------------------------------------------------------------------------ VST3
+#
+# The VST3 is the same plugin, not a port: the clap-wrapper implements a CLAP
+# host against the VST3 API and loads SkyHowl-impl through it, so there is one
+# engine, one parameter table and one window behind both formats.
+#
+# It is off by default because it needs two more checkouts beside CLAP/clap --
+# CLAP/clap-wrapper and CLAP/vst3sdk (VST 3.8 or newer, which is MIT licensed).
+if(SKYHOWL_BUILD_VST3)
+   get_filename_component(SKYHOWL_CLAP_DIR "${CLAP_INCLUDE_DIR}/../.." ABSOLUTE)
+   set(SKYHOWL_WRAPPER_DIR "${SKYHOWL_CLAP_DIR}/clap-wrapper"
+      CACHE PATH "Directory containing a clap-wrapper checkout")
+   set(SKYHOWL_VST3_SDK_DIR "${SKYHOWL_CLAP_DIR}/vst3sdk"
+      CACHE PATH "Directory containing a VST3 SDK checkout")
+
+   if(NOT EXISTS "${SKYHOWL_WRAPPER_DIR}/cmake/wrap_vst3.cmake")
+      message(FATAL_ERROR "SkyHowl: no clap-wrapper at ${SKYHOWL_WRAPPER_DIR}")
+   endif()
+   if(NOT EXISTS "${SKYHOWL_VST3_SDK_DIR}/public.sdk/source/main/pluginfactory.cpp")
+      message(FATAL_ERROR "SkyHowl: no VST3 SDK at ${SKYHOWL_VST3_SDK_DIR}")
+   endif()
+
+   # The wrapper resolves both SDKs itself; hand it the checkouts beside this
+   # plugin rather than letting it download its own.
+   set(CLAP_SDK_ROOT "${SKYHOWL_CLAP_DIR}/clap" CACHE PATH "" FORCE)
+   set(VST3_SDK_ROOT "${SKYHOWL_VST3_SDK_DIR}" CACHE PATH "" FORCE)
+   set(CLAP_WRAPPER_DOWNLOAD_DEPENDENCIES FALSE CACHE BOOL "" FORCE)
+   set(CLAP_WRAPPER_OUTPUT_NAME "SkyHowl" CACHE STRING "" FORCE)
+   set(CLAP_WRAPPER_BUILD_TESTS FALSE CACHE BOOL "" FORCE)
+
+   add_subdirectory("${SKYHOWL_WRAPPER_DIR}" clap-wrapper EXCLUDE_FROM_ALL)
+
+   # The bundle is assembled in place, so point it somewhere predictable rather
+   # than at whatever the generator picks per configuration.
+   set(SKYHOWL_VST3_ASSET_DIR "${CMAKE_BINARY_DIR}/vst3")
+
+   add_library(SkyHowl-vst3 MODULE src/entry.cpp)
+   target_link_libraries(SkyHowl-vst3 PRIVATE SkyHowl-impl)
+   target_compile_options(SkyHowl-vst3 PRIVATE -Wall -Wextra)
+
+   target_add_vst3_wrapper(
+      TARGET SkyHowl-vst3
+      OUTPUT_NAME "SkyHowl"
+      BUNDLE_IDENTIFIER "de.ravetracer.skyhowl.vst3"
+      BUNDLE_VERSION "${PROJECT_VERSION}"
+      ASSET_OUTPUT_DIRECTORY "${SKYHOWL_VST3_ASSET_DIR}"
+   )
+
+   # Two things the wrapper leaves to the plugin on a mingw cross build.
+   if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      # CMake gives a MODULE library a "lib" prefix with the GNU toolchain, and
+      # the wrapper only clears it on the single-file path. A VST3 bundle's
+      # binary has to be named exactly like the bundle.
+      set_target_properties(SkyHowl-vst3 PROPERTIES PREFIX "")
+      # Same reasoning as the .clap: the runtime is linked in so the plugin
+      # needs no MinGW DLLs beside it. GetPluginFactory carries dllexport from
+      # SMTG_EXPORT_SYMBOL, so unlike the .clap there is no version script and
+      # no --exclude-all-symbols here.
+      target_link_options(SkyHowl-vst3 PRIVATE
+         "-Wl,--no-undefined"
+         "-static-libgcc" "-static-libstdc++"
+         "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic"
+      )
+   endif()
+
+   # factoryPresetDir() checks ../Resources/presets, which is where a VST3
+   # bundle keeps its data.
+   add_custom_command(TARGET SkyHowl-vst3 POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E make_directory
+         "${SKYHOWL_VST3_ASSET_DIR}/SkyHowl.vst3/Contents/Resources/presets"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${SKYHOWL_PRESET_FILES}
+         "${SKYHOWL_VST3_ASSET_DIR}/SkyHowl.vst3/Contents/Resources/presets"
+      COMMENT "Staging presets into the VST3 bundle"
+      VERBATIM
+   )
+
+   # VST3s do not live in ~/.clap, so this one is installed on its own rather
+   # than through CMAKE_INSTALL_PREFIX.
+   set(SKYHOWL_VST3_INSTALL_DIR "$ENV{HOME}/.vst3"
+      CACHE PATH "Where 'cmake --build . --target SkyHowl-vst3-install' puts the bundle")
+   add_custom_target(SkyHowl-vst3-install
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${SKYHOWL_VST3_INSTALL_DIR}"
+      COMMAND "${CMAKE_COMMAND}" -E rm -rf "${SKYHOWL_VST3_INSTALL_DIR}/SkyHowl.vst3"
+      COMMAND "${CMAKE_COMMAND}" -E copy_directory
+         "${SKYHOWL_VST3_ASSET_DIR}/SkyHowl.vst3"
+         "${SKYHOWL_VST3_INSTALL_DIR}/SkyHowl.vst3"
+      DEPENDS SkyHowl-vst3
+      COMMENT "Installing SkyHowl.vst3 into ${SKYHOWL_VST3_INSTALL_DIR}"
+      VERBATIM
+   )
 endif()
 
 # ---------------------------------------------------------------------- install

@@ -3,7 +3,8 @@
 > Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather.
 > Built and released from the suite root.
 
-A native **CLAP** instrument that generates birds — by synthesis. Every syllable
+A native **CLAP** and **VST3** instrument that generates birds — by synthesis.
+Every syllable
 is computed at run time from a measured frequency contour driving an oscillator.
 No samples, and no two calls alike.
 

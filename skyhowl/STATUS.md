@@ -3,6 +3,28 @@
 Version 0.1.0. First working version: the engine, the parameter set, the window
 and a first fitted preset library.
 
+## A VST3 as well (2026-09-12)
+
+SkyHowl ships as a VST3 alongside the CLAP, for Linux and Windows, in every
+release archive. It is not a port: the clap-wrapper hosts the same
+`SkyHowl-impl` static library the `.clap` is built from, so the engine, the
+parameter table, the presets and the window are one copy behind both formats.
+
+It passes Steinberg's validator 47/47 on Linux; the Windows build is checked by
+loading it under wine and instantiating it, because the validator does not
+cross-build. The window needed no change at all -- it was already an embedded
+X11 window driven from `clap_host_timer_support`, which is what VST3's
+`IRunLoop` embedding wants.
+
+The factory presets are embedded in the binary, so the plugin's own browser is
+fully stocked in a VST3 with no files on disk. What a VST3 host will *not* do is
+list them in its own browser: the CLAP preset-discovery factory has no
+equivalent in the wrapper release in use.
+
+`./install.sh --vst3` builds and installs both. See *The VST3 builds* in the
+suite `CLAUDE.md`.
+
+
 ## What works
 
 - **The flow field**, and the fact that it is silent. Mean speed, turbulence

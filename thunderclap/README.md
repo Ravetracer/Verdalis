@@ -3,7 +3,7 @@
 > Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather,
 > no samples. Built and released from the suite root.
 
-A native Linux **CLAP** instrument that generates thunder — entirely by
+A native **CLAP** and **VST3** instrument that generates thunder — entirely by
 synthesis. There are no samples anywhere in this project: every flash grows its
 own lightning channel, and every shock wave you hear is computed from that
 channel's geometry at run time. No two thunders are ever alike.

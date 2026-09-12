@@ -3,7 +3,8 @@
 > Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather.
 > Built and released from the suite root.
 
-A native **CLAP** instrument that generates wind — by synthesis. Every gust,
+A native **CLAP** and **VST3** instrument that generates wind — by synthesis.
+Every gust,
 every aeolian tone and every rustling leaf is computed from noise, oscillators
 and filters at run time, not played back. No two winds are ever alike.
 

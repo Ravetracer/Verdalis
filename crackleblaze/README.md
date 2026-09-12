@@ -1,6 +1,6 @@
 # CrackleBlaze
 
-**Synthesised fire — a CLAP instrument for Linux and Windows.**
+**Synthesised fire — a CLAP and VST3 instrument for Linux and Windows.**
 
 CrackleBlaze generates fire: campfires, hearths, wood stoves and large open
 blazes. It contains no samples. The combustion roar, every crackle, every hiss of

@@ -3,7 +3,7 @@
 > Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather,
 > no samples. Built and released from the suite root.
 
-A native Linux **CLAP** instrument that generates ocean surf — entirely by
+A native **CLAP** and **VST3** instrument that generates ocean surf — entirely by
 synthesis. There are no samples anywhere in this project: every break, every
 sheet of foam, every bubble and the swell underneath are computed from noise,
 oscillators and filters at run time. No two shores are ever alike.

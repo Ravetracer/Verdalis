@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/rain_engine.h"
+#include "entry.h"
 #include "factories.h"
 #include "params.h"
 #include "presets_generated.h"
@@ -1113,13 +1114,17 @@ const clap_plugin_factory_t gPluginFactory = {factoryCount, factoryGetDescriptor
 } // namespace rainyday
 
 // --------------------------------------------------------------------- entry
+//
+// The clap_entry structure itself is not here: it is assembled per plugin
+// format from the three functions below, so that the .clap and the .vst3 can be
+// built from one copy of the plugin. See entry.h.
 
 extern "C" {
 
-static bool entryInit(const char *) { return true; }
-static void entryDeinit() {}
+bool rainydayEntryInit(const char *) { return true; }
+void rainydayEntryDeinit() {}
 
-static const void *entryGetFactory(const char *factoryId) {
+const void *rainydayEntryGetFactory(const char *factoryId) {
    if (!factoryId)
       return nullptr;
    if (std::strcmp(factoryId, CLAP_PLUGIN_FACTORY_ID) == 0)
@@ -1129,10 +1134,4 @@ static const void *entryGetFactory(const char *factoryId) {
       return rainyday::presetDiscoveryFactory();
    return nullptr;
 }
-
-// clap/entry.h already declares this with CLAP_EXPORT, so the definition must
-// not repeat the visibility attribute. The linker version script pins the
-// export as well, making clap_entry the only symbol this DSO exposes.
-const clap_plugin_entry_t clap_entry = {CLAP_VERSION_INIT, entryInit, entryDeinit,
-                                        entryGetFactory};
 }

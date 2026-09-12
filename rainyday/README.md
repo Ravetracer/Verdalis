@@ -3,7 +3,8 @@
 > Part of the **[Verdalis Plugin Suite](../README.md)** — synthesised weather,
 > no samples. Built and released from the suite root.
 
-A native Linux **CLAP** instrument that generates rain — entirely by synthesis.
+A native **CLAP** and **VST3** instrument that generates rain — entirely by
+synthesis.
 There are no samples anywhere in this project: every droplet, every splash and
 the whole background wash are computed from noise, oscillators and filters at
 run time. Two instances never produce the same rain.

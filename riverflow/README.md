@@ -1,6 +1,6 @@
 # RiverFlow
 
-**Synthesised running water — a CLAP instrument for Linux and Windows.**
+**Synthesised running water — a CLAP and VST3 instrument for Linux and Windows.**
 
 RiverFlow generates rivers, creeks and waterfalls. It contains no samples: the
 bed of noise, every pocket of air trapped between the stones and every drop that

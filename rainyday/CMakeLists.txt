@@ -12,6 +12,7 @@ endif()
 
 option(RAINYDAY_BUILD_TOOLS "Build the offline render/verification host" ON)
 option(RAINYDAY_BUILD_GUI "Build the plugin window (needs X11 and Cairo)" ON)
+option(RAINYDAY_BUILD_VST3 "Also build a VST3 via the clap-wrapper" OFF)
 
 # CLAP plugins live in ~/.clap on Linux, so default there rather than /usr/local.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -128,8 +129,12 @@ endif()
 
 add_subdirectory("${VERDALIS_SHARED_DIR}" verdalis-shared)
 
-# ------------------------------------------------------------------- the plugin
-add_library(RainyDay MODULE
+# --------------------------------------------------------- the implementation
+#
+# The plugin itself is a static library rather than the module directly, so that
+# more than one plugin format can be built from one copy of it. The .clap below
+# and the .vst3 further down each add only their own entry point and link this.
+add_library(RainyDay-impl STATIC
    src/plugin.cpp
    src/preset_provider.cpp
    src/preset.cpp
@@ -138,17 +143,17 @@ add_library(RainyDay MODULE
    ${RAINYDAY_GUI_SOURCES}
    "${RAINYDAY_GENERATED_HEADER}"
 )
-add_dependencies(RainyDay rainyday_presets)
+add_dependencies(RainyDay-impl rainyday_presets)
 
-target_link_libraries(RainyDay PRIVATE verdalis::shared)
+target_link_libraries(RainyDay-impl PUBLIC verdalis::shared)
 
-target_include_directories(RainyDay PRIVATE
+target_include_directories(RainyDay-impl PUBLIC
    "${CLAP_INCLUDE_DIR}"
    "${CMAKE_CURRENT_SOURCE_DIR}/src"
    "${CMAKE_CURRENT_BINARY_DIR}/generated"
 )
 
-target_compile_options(RainyDay PRIVATE
+target_compile_options(RainyDay-impl PRIVATE
    -Wall -Wextra
    -fvisibility=hidden
    # Deliberately NOT -ffast-math: on x86 GCC that links crtfastmath.o, which
@@ -157,23 +162,28 @@ target_compile_options(RainyDay PRIVATE
    -fno-math-errno
 )
 
-target_link_libraries(RainyDay PRIVATE ${CMAKE_DL_LIBS})
+target_link_libraries(RainyDay-impl PUBLIC ${CMAKE_DL_LIBS})
 
 # The version lives in two places that have to agree: project() above and
 # kPluginVersion in src/rainyday.h. Handing the project version to the compiler
 # lets rainyday.h static_assert that they match, so a bump that only lands in
 # one of them fails the build instead of shipping.
-target_compile_definitions(RainyDay PRIVATE
+target_compile_definitions(RainyDay-impl PRIVATE
    RAINYDAY_CMAKE_VERSION="${PROJECT_VERSION}")
 
 if(RAINYDAY_BUILD_GUI)
-   target_compile_definitions(RainyDay PRIVATE RAINYDAY_WITH_GUI ${RAINYDAY_GUI_DEFINES})
-   target_include_directories(RainyDay PRIVATE ${RAINYDAY_GUI_DEPS_INCLUDE_DIRS})
-   target_link_libraries(RainyDay PRIVATE ${RAINYDAY_GUI_DEPS_LIBRARIES})
-   target_link_directories(RainyDay PRIVATE ${RAINYDAY_GUI_DEPS_LIBRARY_DIRS})
+   target_compile_definitions(RainyDay-impl PRIVATE RAINYDAY_WITH_GUI ${RAINYDAY_GUI_DEFINES})
+   target_include_directories(RainyDay-impl PUBLIC ${RAINYDAY_GUI_DEPS_INCLUDE_DIRS})
+   target_link_libraries(RainyDay-impl PUBLIC ${RAINYDAY_GUI_DEPS_LIBRARIES})
+   target_link_directories(RainyDay-impl PUBLIC ${RAINYDAY_GUI_DEPS_LIBRARY_DIRS})
    find_package(Threads REQUIRED)
-   target_link_libraries(RainyDay PRIVATE Threads::Threads)
+   target_link_libraries(RainyDay-impl PUBLIC Threads::Threads)
 endif()
+
+# --------------------------------------------------------------- the CLAP module
+add_library(RainyDay MODULE src/entry.cpp)
+target_link_libraries(RainyDay PRIVATE RainyDay-impl)
+target_compile_options(RainyDay PRIVATE -Wall -Wextra -fvisibility=hidden)
 
 # Only clap_entry is exported; everything else stays internal to the DSO.
 if(WIN32)
@@ -253,6 +263,98 @@ if(RAINYDAY_BUILD_TOOLS)
    target_compile_options(rainyday-fithost PRIVATE -Wall -Wextra)
    target_link_libraries(rainyday-fithost PRIVATE ${CMAKE_DL_LIBS})
    endif()
+endif()
+
+# ------------------------------------------------------------------------ VST3
+#
+# The VST3 is the same plugin, not a port: the clap-wrapper implements a CLAP
+# host against the VST3 API and loads RainyDay-impl through it, so there is one
+# engine, one parameter table and one window behind both formats.
+#
+# It is off by default because it needs two more checkouts beside CLAP/clap --
+# CLAP/clap-wrapper and CLAP/vst3sdk (VST 3.8 or newer, which is MIT licensed).
+if(RAINYDAY_BUILD_VST3)
+   get_filename_component(RAINYDAY_CLAP_DIR "${CLAP_INCLUDE_DIR}/../.." ABSOLUTE)
+   set(RAINYDAY_WRAPPER_DIR "${RAINYDAY_CLAP_DIR}/clap-wrapper"
+      CACHE PATH "Directory containing a clap-wrapper checkout")
+   set(RAINYDAY_VST3_SDK_DIR "${RAINYDAY_CLAP_DIR}/vst3sdk"
+      CACHE PATH "Directory containing a VST3 SDK checkout")
+
+   if(NOT EXISTS "${RAINYDAY_WRAPPER_DIR}/cmake/wrap_vst3.cmake")
+      message(FATAL_ERROR "RainyDay: no clap-wrapper at ${RAINYDAY_WRAPPER_DIR}")
+   endif()
+   if(NOT EXISTS "${RAINYDAY_VST3_SDK_DIR}/public.sdk/source/main/pluginfactory.cpp")
+      message(FATAL_ERROR "RainyDay: no VST3 SDK at ${RAINYDAY_VST3_SDK_DIR}")
+   endif()
+
+   # The wrapper resolves both SDKs itself; hand it the checkouts beside this
+   # plugin rather than letting it download its own.
+   set(CLAP_SDK_ROOT "${RAINYDAY_CLAP_DIR}/clap" CACHE PATH "" FORCE)
+   set(VST3_SDK_ROOT "${RAINYDAY_VST3_SDK_DIR}" CACHE PATH "" FORCE)
+   set(CLAP_WRAPPER_DOWNLOAD_DEPENDENCIES FALSE CACHE BOOL "" FORCE)
+   set(CLAP_WRAPPER_OUTPUT_NAME "RainyDay" CACHE STRING "" FORCE)
+   set(CLAP_WRAPPER_BUILD_TESTS FALSE CACHE BOOL "" FORCE)
+
+   add_subdirectory("${RAINYDAY_WRAPPER_DIR}" clap-wrapper EXCLUDE_FROM_ALL)
+
+   # The bundle is assembled in place, so point it somewhere predictable rather
+   # than at whatever the generator picks per configuration.
+   set(RAINYDAY_VST3_ASSET_DIR "${CMAKE_BINARY_DIR}/vst3")
+
+   add_library(RainyDay-vst3 MODULE src/entry.cpp)
+   target_link_libraries(RainyDay-vst3 PRIVATE RainyDay-impl)
+   target_compile_options(RainyDay-vst3 PRIVATE -Wall -Wextra)
+
+   target_add_vst3_wrapper(
+      TARGET RainyDay-vst3
+      OUTPUT_NAME "RainyDay"
+      BUNDLE_IDENTIFIER "de.ravetracer.rainyday.vst3"
+      BUNDLE_VERSION "${PROJECT_VERSION}"
+      ASSET_OUTPUT_DIRECTORY "${RAINYDAY_VST3_ASSET_DIR}"
+   )
+
+   # Two things the wrapper leaves to the plugin on a mingw cross build.
+   if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      # CMake gives a MODULE library a "lib" prefix with the GNU toolchain, and
+      # the wrapper only clears it on the single-file path. A VST3 bundle's
+      # binary has to be named exactly like the bundle.
+      set_target_properties(RainyDay-vst3 PROPERTIES PREFIX "")
+      # Same reasoning as the .clap: the runtime is linked in so the plugin
+      # needs no MinGW DLLs beside it. GetPluginFactory carries dllexport from
+      # SMTG_EXPORT_SYMBOL, so unlike the .clap there is no version script and
+      # no --exclude-all-symbols here.
+      target_link_options(RainyDay-vst3 PRIVATE
+         "-Wl,--no-undefined"
+         "-static-libgcc" "-static-libstdc++"
+         "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic"
+      )
+   endif()
+
+   # factoryPresetDir() checks ../Resources/presets, which is where a VST3
+   # bundle keeps its data.
+   add_custom_command(TARGET RainyDay-vst3 POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E make_directory
+         "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3/Contents/Resources/presets"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${RAINYDAY_PRESET_FILES}
+         "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3/Contents/Resources/presets"
+      COMMENT "Staging presets into the VST3 bundle"
+      VERBATIM
+   )
+
+   # VST3s do not live in ~/.clap, so this one is installed on its own rather
+   # than through CMAKE_INSTALL_PREFIX.
+   set(RAINYDAY_VST3_INSTALL_DIR "$ENV{HOME}/.vst3"
+      CACHE PATH "Where 'cmake --build . --target RainyDay-vst3-install' puts the bundle")
+   add_custom_target(RainyDay-vst3-install
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${RAINYDAY_VST3_INSTALL_DIR}"
+      COMMAND "${CMAKE_COMMAND}" -E rm -rf "${RAINYDAY_VST3_INSTALL_DIR}/RainyDay.vst3"
+      COMMAND "${CMAKE_COMMAND}" -E copy_directory
+         "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3"
+         "${RAINYDAY_VST3_INSTALL_DIR}/RainyDay.vst3"
+      DEPENDS RainyDay-vst3
+      COMMENT "Installing RainyDay.vst3 into ${RAINYDAY_VST3_INSTALL_DIR}"
+      VERBATIM
+   )
 endif()
 
 # ---------------------------------------------------------------------- install

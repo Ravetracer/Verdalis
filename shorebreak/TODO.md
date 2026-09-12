@@ -1,5 +1,23 @@
 # ShoreBreak TODO
 
+## The VST3
+
+ShoreBreak builds and ships a VST3 for both platforms. What is left is suite-wide
+rather than this plugin's:
+
+- [ ] **Pin the VST3 class id.** The wrapper hashes the TUID from the CLAP id.
+      It is stable, but it is now released, so it can never change -- set it
+      explicitly with `CLAP_VST3_TUID_STRING` before anything touches plugin ids.
+- [ ] **Factory presets do not reach a VST3 host's own browser.** The plugin's
+      browser lists them all; the host's does not. clap-wrapper's `next` branch
+      has *preset discovery: let wrapped formats browse a CLAP's presets*.
+      Revisit when that releases.
+- [ ] **The VST3 3.8 build break is not reported upstream.** clap-wrapper 0.16.0
+      does not compile against VST 3.8, which renamed the `DEFINE_INTERFACES`
+      macro parameter to `_iid` while adding `FObject::iid`. Six lines, carried
+      in `shared/patches/clap-wrapper-vst3-sdk-3.8.patch`.
+
+
 ## Fit
 
 - [ ] **Raise the crest factor by 3–9 dB.** The references are peakier than the

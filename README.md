@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>A suite of native CLAP instruments that synthesise the weather.</strong><br>
+  <strong>A suite of native CLAP and VST3 instruments that synthesise the weather.</strong><br>
   Every sound the instruments make is computed at run time.
 </p>
 
@@ -18,9 +18,12 @@ sampled.** Every sound is generated from noise, oscillators, filters and the
 physical statistics of the phenomenon being modelled. No two instances ever
 produce the same output.
 
-Each plugin is a self-contained CLAP instrument with its own synthesis engine,
-its own factory presets — fitted against real reference recordings — and a
-hand-drawn plugin window with no toolkit dependency.
+Each plugin is a self-contained instrument with its own synthesis engine, its
+own factory presets — fitted against real reference recordings — and a
+hand-drawn plugin window with no toolkit dependency. Every one ships as both a
+**CLAP** and a **VST3**, for Linux and Windows; the two are the same plugin,
+built from one implementation, so they share an engine, a parameter set, a
+preset library and a window.
 
 ## The plugins
 
@@ -127,30 +130,63 @@ The parameter reference and the preset library are generated from the plugin
 itself rather than written by hand, so they cannot drift from the build they
 describe.
 
-### CLAP SDK
+### SDKs
 
-The CLAP SDK is **not** included in this repository — it is third-party code
-from [free-audio](https://github.com/free-audio) and not ours to redistribute.
-Check it out yourself into `CLAP/` beside the plugins, where the build finds it
-automatically:
+No SDK is included in this repository — they are third-party code and not ours
+to redistribute. Check them out yourself into `CLAP/` beside the plugins, where
+the build finds them automatically:
 
 ```sh
 mkdir -p CLAP && cd CLAP
+
+# required for a CLAP build
 git clone https://github.com/free-audio/clap.git
+
+# additionally required for a VST3 build
+git clone https://github.com/free-audio/clap-wrapper.git
+git clone --branch v3.8.1_build_84 https://github.com/steinbergmedia/vst3sdk.git
+cd vst3sdk && git submodule update --init base pluginterfaces public.sdk && cd ..
 ```
 
-That one repository is all that is required to build. `CLAP/` is gitignored.
-If you keep the SDK elsewhere, point CMake at it with
+The first repository is all that is required to build a CLAP. `CLAP/` is
+gitignored. If you keep the CLAP SDK elsewhere, point CMake at it with
 `-DCLAP_INCLUDE_DIR=/path/to/clap/include`.
+
+The VST3 is produced by the [clap-wrapper](https://github.com/free-audio/clap-wrapper),
+which hosts the same plugin behind the VST3 API — there is no separate VST3
+codebase. It needs **VST 3.8 or newer**, the first MIT-licensed release of the
+SDK; earlier ones are GPLv3 or a proprietary Steinberg agreement. The wrapper
+needs one small patch to compile against 3.8, kept in `shared/patches/`.
+
+VST is a trademark of Steinberg Media Technologies GmbH.
 
 ## Installing
 
 CLAP plugins are loaded from `~/.clap` on Linux and
-`%COMMONPROGRAMFILES%\CLAP` on Windows. Each plugin's `install.sh` installs to
-the right place by default; release archives ship with the same layout, so
-copying the folder in by hand works too.
+`%COMMONPROGRAMFILES%\CLAP` on Windows; VST3 bundles from `~/.vst3` and
+`%COMMONPROGRAMFILES%\VST3`. Each plugin's `install.sh` installs the CLAP to the
+right place by default, and `./install.sh --vst3` installs both. Release
+archives ship with the same layout, so copying the folders in by hand works too.
 
 Tested with Bitwig Studio and Reaper.
+
+## How this was built
+
+**These plugins were vibe coded.** The code was written with AI — Claude — doing
+most of the typing, working from direction, reference recordings and listening
+notes. That is worth saying plainly on the front page rather than leaving anyone
+to work it out from the commit history.
+
+It is not a claim that nothing was checked. Each model is fitted against real
+reference recordings and the fit is measured: each plugin's `STATUS.md` records
+what it was fitted to, which explanations were tested and discarded, and where
+the model still falls short. Every build runs a self-test, every VST3 passes
+Steinberg's validator, and nothing is accepted until it has been listened to
+against the reference it imitates — a number agreeing with a number proves
+nothing about how something sounds.
+
+It is also free software given away as-is, tested by one person on Linux and
+Windows in Bitwig Studio and Reaper. Reports from other hosts are welcome.
 
 ## License
 

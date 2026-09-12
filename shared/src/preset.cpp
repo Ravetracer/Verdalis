@@ -75,8 +75,11 @@ std::string factoryPresetDir(const PresetContext &ctx) {
       return {};
 
    // Installed layout is <dir>/<Name>.clap + <dir>/presets, but a bundle-like
-   // layout is also checked so a build tree works too.
-   const std::string candidates[] = {dir + "/presets", dir + "/../presets",
+   // layout is also checked so a build tree works too. A VST3 bundle puts the
+   // binary in Contents/<arch>-<os>/ and its data in Contents/Resources/, which
+   // is the third candidate.
+   const std::string candidates[] = {dir + "/presets", dir + "/../Resources/presets",
+                                     dir + "/../presets",
                                      dir + "/" + ctx.pluginName + ".clap/presets"};
    for (const auto &c : candidates) {
       if (isDirectory(c))

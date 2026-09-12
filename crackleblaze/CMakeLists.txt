@@ -12,6 +12,7 @@ endif()
 
 option(CRACKLEBLAZE_BUILD_TOOLS "Build the offline render/verification host" ON)
 option(CRACKLEBLAZE_BUILD_GUI "Build the plugin window (needs X11 and Cairo)" ON)
+option(CRACKLEBLAZE_BUILD_VST3 "Also build a VST3 via the clap-wrapper" OFF)
 
 # CLAP plugins live in ~/.clap on Linux, so default there rather than /usr/local.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -128,8 +129,12 @@ endif()
 
 add_subdirectory("${VERDALIS_SHARED_DIR}" verdalis-shared)
 
-# ------------------------------------------------------------------- the plugin
-add_library(CrackleBlaze MODULE
+# --------------------------------------------------------- the implementation
+#
+# The plugin itself is a static library rather than the module directly, so that
+# more than one plugin format can be built from one copy of it. The .clap below
+# and the .vst3 further down each add only their own entry point and link this.
+add_library(CrackleBlaze-impl STATIC
    src/plugin.cpp
    src/preset_provider.cpp
    src/preset.cpp
@@ -138,17 +143,17 @@ add_library(CrackleBlaze MODULE
    ${CRACKLEBLAZE_GUI_SOURCES}
    "${CRACKLEBLAZE_GENERATED_HEADER}"
 )
-add_dependencies(CrackleBlaze crackleblaze_presets)
+add_dependencies(CrackleBlaze-impl crackleblaze_presets)
 
-target_link_libraries(CrackleBlaze PRIVATE verdalis::shared)
+target_link_libraries(CrackleBlaze-impl PUBLIC verdalis::shared)
 
-target_include_directories(CrackleBlaze PRIVATE
+target_include_directories(CrackleBlaze-impl PUBLIC
    "${CLAP_INCLUDE_DIR}"
    "${CMAKE_CURRENT_SOURCE_DIR}/src"
    "${CMAKE_CURRENT_BINARY_DIR}/generated"
 )
 
-target_compile_options(CrackleBlaze PRIVATE
+target_compile_options(CrackleBlaze-impl PRIVATE
    -Wall -Wextra
    -fvisibility=hidden
    # Deliberately NOT -ffast-math: on x86 GCC that links crtfastmath.o, which
@@ -157,23 +162,29 @@ target_compile_options(CrackleBlaze PRIVATE
    -fno-math-errno
 )
 
-target_link_libraries(CrackleBlaze PRIVATE ${CMAKE_DL_LIBS})
+target_link_libraries(CrackleBlaze-impl PUBLIC ${CMAKE_DL_LIBS})
 
 # The version lives in two places that have to agree: project() above and
 # kPluginVersion in src/crackleblaze.h. Handing the project version to the compiler
 # lets crackleblaze.h static_assert that they match, so a bump that only lands in
 # one of them fails the build instead of shipping.
-target_compile_definitions(CrackleBlaze PRIVATE
+target_compile_definitions(CrackleBlaze-impl PRIVATE
    CRACKLEBLAZE_CMAKE_VERSION="${PROJECT_VERSION}")
 
 if(CRACKLEBLAZE_BUILD_GUI)
-   target_compile_definitions(CrackleBlaze PRIVATE CRACKLEBLAZE_WITH_GUI ${CRACKLEBLAZE_GUI_DEFINES})
-   target_include_directories(CrackleBlaze PRIVATE ${CRACKLEBLAZE_GUI_DEPS_INCLUDE_DIRS})
-   target_link_libraries(CrackleBlaze PRIVATE ${CRACKLEBLAZE_GUI_DEPS_LIBRARIES})
-   target_link_directories(CrackleBlaze PRIVATE ${CRACKLEBLAZE_GUI_DEPS_LIBRARY_DIRS})
+   target_compile_definitions(CrackleBlaze-impl PRIVATE CRACKLEBLAZE_WITH_GUI ${CRACKLEBLAZE_GUI_DEFINES})
+   target_include_directories(CrackleBlaze-impl PUBLIC ${CRACKLEBLAZE_GUI_DEPS_INCLUDE_DIRS})
+   target_link_libraries(CrackleBlaze-impl PUBLIC ${CRACKLEBLAZE_GUI_DEPS_LIBRARIES})
+   target_link_directories(CrackleBlaze-impl PUBLIC ${CRACKLEBLAZE_GUI_DEPS_LIBRARY_DIRS})
    find_package(Threads REQUIRED)
-   target_link_libraries(CrackleBlaze PRIVATE Threads::Threads)
+   target_link_libraries(CrackleBlaze-impl PUBLIC Threads::Threads)
 endif()
+
+
+# --------------------------------------------------------------- the CLAP module
+add_library(CrackleBlaze MODULE src/entry.cpp)
+target_link_libraries(CrackleBlaze PRIVATE CrackleBlaze-impl)
+target_compile_options(CrackleBlaze PRIVATE -Wall -Wextra -fvisibility=hidden)
 
 # Only clap_entry is exported; everything else stays internal to the DSO.
 if(WIN32)
@@ -253,6 +264,98 @@ if(CRACKLEBLAZE_BUILD_TOOLS)
    target_compile_options(crackleblaze-fithost PRIVATE -Wall -Wextra)
    target_link_libraries(crackleblaze-fithost PRIVATE ${CMAKE_DL_LIBS})
    endif()
+endif()
+
+# ------------------------------------------------------------------------ VST3
+#
+# The VST3 is the same plugin, not a port: the clap-wrapper implements a CLAP
+# host against the VST3 API and loads CrackleBlaze-impl through it, so there is one
+# engine, one parameter table and one window behind both formats.
+#
+# It is off by default because it needs two more checkouts beside CLAP/clap --
+# CLAP/clap-wrapper and CLAP/vst3sdk (VST 3.8 or newer, which is MIT licensed).
+if(CRACKLEBLAZE_BUILD_VST3)
+   get_filename_component(CRACKLEBLAZE_CLAP_DIR "${CLAP_INCLUDE_DIR}/../.." ABSOLUTE)
+   set(CRACKLEBLAZE_WRAPPER_DIR "${CRACKLEBLAZE_CLAP_DIR}/clap-wrapper"
+      CACHE PATH "Directory containing a clap-wrapper checkout")
+   set(CRACKLEBLAZE_VST3_SDK_DIR "${CRACKLEBLAZE_CLAP_DIR}/vst3sdk"
+      CACHE PATH "Directory containing a VST3 SDK checkout")
+
+   if(NOT EXISTS "${CRACKLEBLAZE_WRAPPER_DIR}/cmake/wrap_vst3.cmake")
+      message(FATAL_ERROR "CrackleBlaze: no clap-wrapper at ${CRACKLEBLAZE_WRAPPER_DIR}")
+   endif()
+   if(NOT EXISTS "${CRACKLEBLAZE_VST3_SDK_DIR}/public.sdk/source/main/pluginfactory.cpp")
+      message(FATAL_ERROR "CrackleBlaze: no VST3 SDK at ${CRACKLEBLAZE_VST3_SDK_DIR}")
+   endif()
+
+   # The wrapper resolves both SDKs itself; hand it the checkouts beside this
+   # plugin rather than letting it download its own.
+   set(CLAP_SDK_ROOT "${CRACKLEBLAZE_CLAP_DIR}/clap" CACHE PATH "" FORCE)
+   set(VST3_SDK_ROOT "${CRACKLEBLAZE_VST3_SDK_DIR}" CACHE PATH "" FORCE)
+   set(CLAP_WRAPPER_DOWNLOAD_DEPENDENCIES FALSE CACHE BOOL "" FORCE)
+   set(CLAP_WRAPPER_OUTPUT_NAME "CrackleBlaze" CACHE STRING "" FORCE)
+   set(CLAP_WRAPPER_BUILD_TESTS FALSE CACHE BOOL "" FORCE)
+
+   add_subdirectory("${CRACKLEBLAZE_WRAPPER_DIR}" clap-wrapper EXCLUDE_FROM_ALL)
+
+   # The bundle is assembled in place, so point it somewhere predictable rather
+   # than at whatever the generator picks per configuration.
+   set(CRACKLEBLAZE_VST3_ASSET_DIR "${CMAKE_BINARY_DIR}/vst3")
+
+   add_library(CrackleBlaze-vst3 MODULE src/entry.cpp)
+   target_link_libraries(CrackleBlaze-vst3 PRIVATE CrackleBlaze-impl)
+   target_compile_options(CrackleBlaze-vst3 PRIVATE -Wall -Wextra)
+
+   target_add_vst3_wrapper(
+      TARGET CrackleBlaze-vst3
+      OUTPUT_NAME "CrackleBlaze"
+      BUNDLE_IDENTIFIER "de.ravetracer.crackleblaze.vst3"
+      BUNDLE_VERSION "${PROJECT_VERSION}"
+      ASSET_OUTPUT_DIRECTORY "${CRACKLEBLAZE_VST3_ASSET_DIR}"
+   )
+
+   # Two things the wrapper leaves to the plugin on a mingw cross build.
+   if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      # CMake gives a MODULE library a "lib" prefix with the GNU toolchain, and
+      # the wrapper only clears it on the single-file path. A VST3 bundle's
+      # binary has to be named exactly like the bundle.
+      set_target_properties(CrackleBlaze-vst3 PROPERTIES PREFIX "")
+      # Same reasoning as the .clap: the runtime is linked in so the plugin
+      # needs no MinGW DLLs beside it. GetPluginFactory carries dllexport from
+      # SMTG_EXPORT_SYMBOL, so unlike the .clap there is no version script and
+      # no --exclude-all-symbols here.
+      target_link_options(CrackleBlaze-vst3 PRIVATE
+         "-Wl,--no-undefined"
+         "-static-libgcc" "-static-libstdc++"
+         "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic"
+      )
+   endif()
+
+   # factoryPresetDir() checks ../Resources/presets, which is where a VST3
+   # bundle keeps its data.
+   add_custom_command(TARGET CrackleBlaze-vst3 POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E make_directory
+         "${CRACKLEBLAZE_VST3_ASSET_DIR}/CrackleBlaze.vst3/Contents/Resources/presets"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${CRACKLEBLAZE_PRESET_FILES}
+         "${CRACKLEBLAZE_VST3_ASSET_DIR}/CrackleBlaze.vst3/Contents/Resources/presets"
+      COMMENT "Staging presets into the VST3 bundle"
+      VERBATIM
+   )
+
+   # VST3s do not live in ~/.clap, so this one is installed on its own rather
+   # than through CMAKE_INSTALL_PREFIX.
+   set(CRACKLEBLAZE_VST3_INSTALL_DIR "$ENV{HOME}/.vst3"
+      CACHE PATH "Where 'cmake --build . --target CrackleBlaze-vst3-install' puts the bundle")
+   add_custom_target(CrackleBlaze-vst3-install
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${CRACKLEBLAZE_VST3_INSTALL_DIR}"
+      COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CRACKLEBLAZE_VST3_INSTALL_DIR}/CrackleBlaze.vst3"
+      COMMAND "${CMAKE_COMMAND}" -E copy_directory
+         "${CRACKLEBLAZE_VST3_ASSET_DIR}/CrackleBlaze.vst3"
+         "${CRACKLEBLAZE_VST3_INSTALL_DIR}/CrackleBlaze.vst3"
+      DEPENDS CrackleBlaze-vst3
+      COMMENT "Installing CrackleBlaze.vst3 into ${CRACKLEBLAZE_VST3_INSTALL_DIR}"
+      VERBATIM
+   )
 endif()
 
 # ---------------------------------------------------------------------- install

@@ -137,7 +137,9 @@ drawing primitives all come from `shared/`; see *Shared components* below.
 ├── presets/                 factory presets, one file per preset, .<plugin>
 ├── src/
 │   ├── <plugin>.h           identity constants + the preset bindings
-│   ├── plugin.cpp           CLAP entry point, host glue, audio callback
+│   ├── entry.{h,cpp}        the CLAP entry point, split so the .clap and the
+│   │                        .vst3 can be built from one implementation
+│   ├── plugin.cpp           CLAP host glue and the audio callback
 │   ├── params.{h,cpp}       this plugin's ParamId enum and ParamDesc table
 │   ├── preset.cpp           binds the shared preset format to this plugin
 │   ├── preset_provider.cpp  binds the shared discovery provider
@@ -205,10 +207,19 @@ git clone https://github.com/free-audio/clap-plugins.git
 git clone https://github.com/free-audio/clap-juce-extensions.git
 git clone https://github.com/free-audio/clap-imgui-support.git
 git clone https://github.com/free-audio/clap-saw-demo-imgui.git
+
+# Only for the VST3 build; see "The VST3 builds" below. vstgui4 is deliberately
+# not checked out: the wrapper does not use it, and it is the one part of the
+# SDK that is not MIT.
+git clone --branch v3.8.1_build_84 https://github.com/steinbergmedia/vst3sdk.git
+cd vst3sdk && git submodule update --init base pluginterfaces public.sdk && cd ..
 ```
 
 Reference versions currently in use: `clap` 1.2.10, `clap-wrapper` v0.16.0,
-`clap-validator` 0.4.1, `clap-info` v1.2.2.
+`clap-validator` 0.4.1, `clap-info` v1.2.2, `vst3sdk` 3.8.1.
+
+`clap-wrapper` needs one patch to build against VST3 3.8; it is kept in
+`shared/patches/` because `CLAP/` is gitignored and a fresh clone would lose it.
 
 If the checkout lives anywhere else, point CMake at it explicitly with
 `-DCLAP_INCLUDE_DIR=/path/to/clap/include`.
@@ -253,26 +264,30 @@ alongside for anywhere that prefers it.
 The per-plugin archives carry that plugin's **own** version from its `project()`
 line, not the suite's, because they are downloaded and updated separately.
 
-Every archive is self-contained: a `linux/` and a `windows/` folder with the
-plugin and its presets in each, the plugin's README, its manual, the LICENSE, a
-BUILD-INFO.txt, and an INSTALL.txt with a section per platform — written from
-the `targets` the build actually produced, so a `--linux-only` release does not
-describe a `windows/` folder that is not in it.
+Every archive is self-contained: a `linux/` and a `windows/` folder holding
+**both formats** — the plugin's CLAP folder with its presets, and its `.vst3`
+bundle beside it — plus the plugin's README, its manual, the LICENSE, a
+BUILD-INFO.txt, and an INSTALL.txt with a section per platform and per format —
+written from the `targets` and formats the build actually produced, so a
+`--linux-only` release does not describe a `windows/` folder that is not in it,
+and a `--no-vst3` one does not describe a VST3.
 
 ```
-RainyDay-1.5.1/
+RainyDay-1.8.0/
 ├── linux/
-│   └── RainyDay/
-│       ├── RainyDay.clap
-│       └── presets/        (17 files)
+│   ├── RainyDay/
+│   │   ├── RainyDay.clap
+│   │   └── presets/        (17 files)
+│   └── RainyDay.vst3/      bundle: Contents/x86_64-linux + Contents/Resources
 ├── windows/
-│   └── RainyDay/
-│       ├── RainyDay.clap
-│       └── presets/
+│   ├── RainyDay/
+│   │   ├── RainyDay.clap
+│   │   └── presets/
+│   └── RainyDay.vst3/      bundle: Contents/x86_64-win + Contents/Resources
 ├── README.md
-├── RainyDay-1.5.1-Manual.pdf
+├── RainyDay-1.8.0-Manual.pdf
 ├── LICENSE
-├── INSTALL.txt             both platforms
+├── INSTALL.txt             both platforms, both formats
 └── BUILD-INFO.txt
 ```
 
@@ -280,7 +295,9 @@ The suite archive carries every plugin's manual in a `manuals/` folder instead.
 
 Options: `--tarball` adds `.tar.gz` beside every `.zip`; `--linux-only` skips
 the Windows half; `--windows-no-gui` allows a
-Windows build with no plugin window; `--no-manuals` skips the PDF manuals.
+Windows build with no plugin window; `--no-manuals` skips the PDF manuals;
+`--no-vst3` ships CLAP only. A missing `CLAP/clap-wrapper` or `CLAP/vst3sdk`
+downgrades to CLAP-only with a warning rather than failing the release.
 Offline tools are switched off for release builds
 (`-D<PLUGIN>_BUILD_TOOLS=OFF`).
 
@@ -307,6 +324,150 @@ Windows plugin builds **with no window at all**. `release.sh` therefore refuses
 to build Windows without it rather than shipping a window-less plugin by
 accident. The Windows binaries are ~5 MB because Cairo is linked statically.
 
+## The VST3 builds
+
+The suite is CLAP first and stays that way. A VST3 is produced from the same
+plugin by the **clap-wrapper** (`CLAP/clap-wrapper`), which implements a CLAP
+host against the VST3 API: there is no VST3 port, no second engine and no second
+parameter table. What the plugin gains is a second entry point.
+
+This is possible at all because **VST 3.8 is MIT licensed** (3.8.0, October
+2025; the suite builds against 3.8.1). Every earlier SDK was GPLv3 or a
+proprietary Steinberg agreement, neither of which suits an MIT suite. The
+trademark is still Steinberg's, so using the VST name or logo follows their
+trademark rules — that is a packaging question, not a code one.
+
+**Every plugin builds a VST3, for Linux and Windows, and every release archive
+ships one.** It is off by default in a plugin's own CMake (`<PLUGIN>_BUILD_VST3`)
+because it needs two extra checkouts; `release.sh` turns it on.
+
+```sh
+cd rainyday && ./install.sh --vst3      # -> ~/.clap/RainyDay + ~/.vst3/RainyDay.vst3
+./release.sh 0.12.0                     # both formats, both platforms
+./release.sh 0.12.0 --no-vst3           # CLAP only
+```
+
+### How a plugin is wired for it
+
+- **The plugin is a static library.** `<Name>-impl` holds everything; the
+  `.clap` and the `.vst3` are each a module that adds one small entry file and
+  links it. `src/entry.h` declares `<plugin>EntryInit`/`Deinit`/`GetFactory`,
+  `src/entry.cpp` builds `clap_entry` from them for the CLAP, and the wrapper's
+  own shim does the same for the VST3. `plugin.cpp` no longer defines
+  `clap_entry`. All seven are identical here -- copy any of them.
+- Anything the module must inherit from the impl library is `PUBLIC`
+  (`target_link_libraries`, `target_include_directories`,
+  `target_link_directories`); compile options and definitions stay `PRIVATE`.
+- **The window needed nothing.** VST3 embeds through `IPlugFrame`/`IRunLoop`,
+  and `plugin.cpp` already drove the GUI off `clap_host_timer_support` with an
+  embedded (not floating) X11 window, which is exactly what that wants.
+- **Two things the wrapper leaves to the plugin on a mingw cross build**, both
+  in the `<PLUGIN>_BUILD_VST3` block: CMake gives a MODULE library a `lib`
+  prefix with the GNU toolchain and the wrapper only clears it on its
+  single-file path, so `PREFIX ""` is set explicitly; and the mingw runtime has
+  to be linked in exactly as the `.clap` does it. Unlike the `.clap` there is no
+  version script and no `--exclude-all-symbols` -- `GetPluginFactory` carries
+  dllexport from `SMTG_EXPORT_SYMBOL` and must stay visible.
+
+### Presets in a VST3, and what actually carries them
+
+**The factory library is embedded in the binary**, by `embed_presets.cmake`, and
+the window's browser reads it from there. So a VST3 shows all of its presets
+with no files on disk at all -- verified by finding the preset text in the
+shipped `.so` and `.vst3` binaries, identical to the `.clap`.
+
+Two things follow, and they are easy to get backwards:
+
+- `factoryPresetDir()` in `shared/src/preset.cpp` is **not** what makes presets
+  work in the window. Its only caller is the CLAP preset-discovery provider.
+  It learned `../Resources/presets` so that it is correct for a bundle layout,
+  after `<dir>/presets`, leaving every other layout as it was.
+- **The CLAP preset-discovery factory does not cross over.** A VST3 host will
+  not list the factory presets in *its own* browser. The plugin's own browser
+  lists all of them. Upstream has work on this on its `next` branch
+  (`preset discovery: let wrapped formats browse a CLAP's presets`), so revisit
+  when the wrapper next releases.
+
+The `Contents/Resources/presets` folder staged into each bundle is therefore a
+readable on-disk copy for the user -- and what that upstream bridge would read
+-- not something the plugin needs to run.
+
+### Archive layout
+
+Both formats sit side by side in each platform folder:
+
+```
+RainyDay-1.8.0/
+├── linux/
+│   ├── RainyDay/           RainyDay.clap + presets/
+│   └── RainyDay.vst3/      Contents/x86_64-linux/ + Contents/Resources/presets/
+├── windows/
+│   ├── RainyDay/
+│   └── RainyDay.vst3/      Contents/x86_64-win/ + Contents/Resources/presets/
+├── README.md, LICENSE, the manual, INSTALL.txt, BUILD-INFO.txt
+```
+
+`INSTALL.txt` names `~/.clap` and `~/.vst3` on Linux, and the two
+`Common Files` folders on Windows. `BUILD-INFO.txt` records the clap-wrapper and
+VST3 SDK versions the binaries came from, because the wrapper needs a local
+patch to build at all and "which checkout" is not rhetorical.
+
+**The per-plugin pack loop copies two things per platform**, the `<Name>/`
+folder and the `<Name>.vst3` bundle. Copying only the first is a silent failure
+-- the archive still builds, it is just missing a format, and the file sizes are
+the only tell. It shipped that way once. `release.sh` now hard-fails if a
+staged VST3 is missing, so it cannot happen quietly again.
+
+### Verifying one
+
+Steinberg's own validator is the bar on Linux, and it builds out of the SDK
+checkout:
+
+```sh
+cmake -S CLAP/vst3sdk -B /tmp/vst3sdk-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+   -DSMTG_ENABLE_VSTGUI_SUPPORT=OFF -DSMTG_CREATE_PLUGIN_LINK=OFF \
+   -DSMTG_ENABLE_VST3_PLUGIN_EXAMPLES=OFF -DSMTG_ENABLE_VST3_HOSTING_EXAMPLES=OFF
+cmake --build /tmp/vst3sdk-build --target validator
+/tmp/vst3sdk-build/bin/Release/validator ~/.vst3/RainyDay.vst3        # 47 tests
+/tmp/vst3sdk-build/bin/Release/validator -e ~/.vst3/RainyDay.vst3     # 537 tests
+```
+
+Hosting examples must be off: `editorhost` wants gtkmm, which is not installed
+and is not needed. All seven plugins pass 47/47.
+
+`-e` reports a few `getParamValueByString` notes -- three on RainyDay (Density,
+Trickle Rate, Trickle Decay). They are not failures. The displayed text is
+rounded ("107 drops/s"), so parsing it back lands a fraction off the value it
+came from; that is display precision, and the CLAP self-test's own round-trip
+check covers the same ground and passes. The ~2000 further notes are on
+parameter ids at `0xB00000` and above, which are the wrapper's synthesised MIDI
+CC parameters, not the plugin's.
+
+**The validator does not cross-build**, so the Windows side is checked
+differently. Its CMake decides the platform before the toolchain file is read,
+so it compiles `module_linux.cpp` into a Windows target; forcing `SMTG_WIN` past
+that then hits a `WinMain` link failure. Not worth fighting for a test tool. The
+Windows binaries are instead loaded under wine by a small probe that does
+`LoadLibrary` -> `InitDll` -> `GetPluginFactory` -> `getClassInfo` ->
+`createInstance` -> release, which is the part actually in doubt on a mingw
+cross build. All seven load and instantiate. Also worth checking per build:
+
+```sh
+x86_64-w64-mingw32-objdump -p <the .vst3> | grep "DLL Name"
+```
+
+Only system DLLs may appear. `libgcc`, `libstdc++` or `libwinpthread` in that
+list means the runtime is not linked in and the plugin will not load on a
+machine without a compiler.
+
+### Still open
+
+- The VST3 class id (TUID) is hashed from the CLAP id by the wrapper. That is
+  stable and deterministic, so the shipped ids are consistent -- but they are
+  now *released*, so they can never change. Pin them explicitly with
+  `CLAP_VST3_TUID_STRING` before anything reorganises the plugin ids.
+- The 3.8 build break has not been reported upstream.
+
 ## Shared components
 
 `shared/` holds the code the whole suite is built on, compiled as the static
@@ -330,6 +491,7 @@ shared/
 ├── src/gui/window.cpp          the window: layout, widgets, browser, entry
 ├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
 │                               clap_entry.version
+├── patches/                    fixes for the gitignored CLAP/ checkouts
 └── tools/                      install-plugin.sh, fithost.cpp, analysis/wavio.py,
                                 and the manual toolchain: make-manual.sh,
                                 docgen.cpp, manual.py, manual.css
@@ -445,6 +607,8 @@ comes from the spec's `voiceNoun` and `eventNoun`.
 Genuinely per-plugin, and correctly so:
 
 - `src/dsp/<name>_engine.{h,cpp}` — the synthesis itself
+- `src/entry.{h,cpp}` — the entry-point split; identical in all seven bar the
+  plugin's own prefix
 - `src/params.cpp` / `params.h` — its ParamId enum and its ParamDesc table
 - `src/preset.cpp`, `src/preset_provider.cpp` — ~35-line bindings that supply
   the plugin's name, extension and table to the shared implementations
@@ -480,7 +644,11 @@ against all of them — see the verification recipe under *Working notes*.
    - `kPluginUrl` = `https://github.com/Ravetracer/Verdalis`
 6. Presets are fitted against real reference recordings where possible, and the
    references live in `!dev/`, uncommitted.
-7. Keep the visual language: the window comes from `shared/`, so the layout
+7. Copy `src/entry.{h,cpp}` and the `<PLUGIN>_BUILD_VST3` block from an
+   existing plugin, and keep `plugin.cpp` free of a `clap_entry` definition.
+   Both formats come out of that split; nothing else in the plugin knows about
+   VST3. See *The VST3 builds*.
+8. Keep the visual language: the window comes from `shared/`, so the layout
    engine and geometry are automatic. What the plugin writes is its own `Theme`
    (a new accent, with the greys tinted towards it), its panel table, and a
    `HeaderOrnament` if it has something to animate. See *The window, and its
