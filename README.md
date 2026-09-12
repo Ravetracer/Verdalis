@@ -24,15 +24,15 @@ hand-drawn plugin window with no toolkit dependency.
 
 ## The plugins
 
-| Plugin | Simulates | Status |
-|--------|-----------|--------|
-| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | in progress |
-| **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | in progress |
-| **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | in progress |
-| **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | in progress |
-| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | in progress |
-| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | in progress |
-| **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | in progress |
+| Plugin | Simulates | Version |
+|--------|-----------|---------|
+| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | 1.8.0 |
+| **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | 1.4.0 |
+| **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | 0.2.0 |
+| **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | 0.2.0 |
+| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.6.0 |
+| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.2.0 |
+| **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.1.0 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
