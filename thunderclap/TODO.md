@@ -72,6 +72,20 @@ rather than this plugin's:
   absorption is too steep at the far end; the measurement cannot separate the
   two, and it is an ear question which is wrong. The full table is in
   `tools/analysis/README.md`, *What the contours say*.
+- [ ] **The close presets fire four to seven times too many discrete arrivals.**
+  `contours.py density` counts 66 in the first 8 s of `close_strike` and 116 in
+  `overhead_crack`, against 16 in real close thunder, at median gaps of 62 and
+  46 ms against 273. `Max Shocks` 2048 -> 4096 with `Focus` 0.7 -> 0.2 lands
+  `close_strike` on 18 at 264 ms with its band tilt unchanged; `overhead_crack`
+  also needs its tortuosity down, which changes what the preset is. A/B renders
+  are in `!dev/audition-density/`. **Not applied: it is an ear decision**, and
+  Max Shocks at 4096 doubles the per-flash element count, so the CPU cost wants
+  checking before it goes into a factory preset.
+- [x] **Thunder arrivals are Poisson, and the plugin need not care.** Fano
+  factor 1.0 within the scatter at every window from 0.25 to 2 s, against
+  CrackleBlaze's 3.90 at 1 s. No clustered spawner is wanted here; the engine's
+  arrival times come out of channel geometry, which is more specific than a
+  process, and the measurement says nothing is missing.
 - [x] **Measured contours instead of parametric shapes -- tried, and it does not
   transfer.** The suite `CLAUDE.md` lists ThunderClap's N-wave shapes as
   parametric where a measured curve would be truer, on the strength of what

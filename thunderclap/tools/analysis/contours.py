@@ -274,6 +274,122 @@ def fit_exponent(t, c):
     return -float(p[0])
 
 
+# Transient detection. The onset function is the rise of a short-window energy
+# envelope above its own recent past, which finds a crack arriving on top of a
+# rumble -- a plain level threshold cannot, because the rumble is louder than
+# the crack that sits on it by the time the flash is a second old.
+TRANSIENT_HP_HZ = 300.0     # below this is the rumble's own swell, not a crack
+TRANSIENT_FRAME_MS = 2.0
+TRANSIENT_MIN_GAP_MS = 20.0
+# Calibrated rather than chosen: at 4 dB the detector fires 134 times in 8 s on
+# a brown noise with no arrivals in it at all, which is what a rumble is, and
+# the references then measure an indistinguishable 20 a second. At 10 dB both
+# noise controls -- brown, and brown with a white floor -- give zero in 8 s,
+# while the references still give 2 to 13. Anything below 8 dB is measuring the
+# rumble's own wandering.
+TRANSIENT_RISE_DB = 10.0    # over the trailing median, to count as an arrival
+
+
+def highpass(x, sr, fc):
+    X = np.fft.rfft(x)
+    f = np.fft.rfftfreq(len(x), 1.0 / sr)
+    X[f < fc] = 0.0
+    return np.fft.irfft(X, len(x))
+
+
+def transients(x, sr, onset, seconds):
+    """Times, in seconds from the onset, of the transient arrivals in the
+    flash. Returns (times, flux, frame_seconds)."""
+    seg = x[onset:onset + int(sr * seconds)]
+    if len(seg) < int(sr * 0.05):
+        return np.array([]), np.array([]), 0.0
+    seg = highpass(seg, sr, TRANSIENT_HP_HZ)
+    n = max(1, int(sr * TRANSIENT_FRAME_MS / 1000.0))
+    frames = len(seg) // n
+    if frames < 8:
+        return np.array([]), np.array([]), 0.0
+    env = np.sqrt((seg[:frames * n].reshape(frames, n) ** 2).mean(axis=1) + 1e-20)
+    logenv = 20 * np.log10(env)
+    # Trailing median over 50 ms: what the envelope has been doing lately.
+    back = max(3, int(50.0 / TRANSIENT_FRAME_MS))
+    pad = np.concatenate([np.full(back, logenv[0]), logenv])
+    trail = np.array([np.median(pad[i:i + back]) for i in range(frames)])
+    flux = logenv - trail
+    gap = max(1, int(TRANSIENT_MIN_GAP_MS / TRANSIENT_FRAME_MS))
+    picks = []
+    i = 1
+    while i < frames - 1:
+        if flux[i] >= TRANSIENT_RISE_DB and flux[i] >= flux[i - 1] and flux[i] > flux[i + 1]:
+            picks.append(i)
+            i += gap
+        else:
+            i += 1
+    return (np.array(picks) * n / float(sr), flux, n / float(sr))
+
+
+def fano(times, window, span):
+    """Variance over mean of the count per window: 1.0 is a Poisson process,
+    higher is clustered, lower is more regular than chance."""
+    if span <= window or len(times) < 4:
+        return float('nan')
+    edges = np.arange(0.0, span, window)
+    counts, _ = np.histogram(times, bins=np.append(edges, span))
+    m = counts.mean()
+    if m <= 0:
+        return float('nan')
+    return float(counts.var() / m)
+
+
+def cmd_density(args):
+    """Transient arrivals through the flash: how many, how spaced, how clustered."""
+    span = 8.0
+    print("%-38s %5s %6s %6s %6s %6s  %s" %
+          ("file", "tilt", "count", "IOI", "IOI", "Fano", "arrivals per second"))
+    print("%-38s %5s %6s %6s %6s %6s  %s" %
+          ("", "dB", "in 8s", "med ms", "p90 ms", "@1s",
+           " ".join("%4.0f" % t for t in range(8))))
+    rows = []
+    for path in files_in(args):
+        x, sr = read_wav(path)
+        x = to_mono(x)
+        onset = find_onset(x, sr)
+        t, flux, dt = transients(x, sr, onset, span)
+        if len(t) < 2:
+            continue
+        ioi = np.diff(t) * 1000.0
+        per_sec, _ = np.histogram(t, bins=np.arange(0.0, span + 1.0, 1.0))
+        tilt = clap_tilt_db(x, sr, onset)
+        f1 = fano(t, 1.0, span)
+        rows.append((os.path.basename(path), t, ioi, per_sec, tilt, f1))
+        print("%-38s %5.0f %6d %6.0f %6.0f %6.2f  %s" %
+              (os.path.basename(path)[:38], tilt, len(t), np.median(ioi),
+               np.percentile(ioi, 90), f1,
+               " ".join("%4d" % c for c in per_sec)))
+
+    for label, sel in (("close", [r for r in rows if r[4] > -25]),
+                       ("distant", [r for r in rows if r[4] <= -25])):
+        if len(sel) < 2:
+            continue
+        per_sec = np.array([r[3] for r in sel])
+        print("\n%s -- %d files" % (label, len(sel)))
+        print("   median arrivals per second   %s" %
+              " ".join("%4.0f" % v for v in np.median(per_sec, axis=0)))
+        print("   count in 8 s   median %.0f   (10th-90th %.0f to %.0f)" %
+              (np.median([len(r[1]) for r in sel]),
+               np.percentile([len(r[1]) for r in sel], 10),
+               np.percentile([len(r[1]) for r in sel], 90)))
+        allioi = np.concatenate([r[2] for r in sel])
+        print("   inter-arrival ms   median %.0f   p10 %.0f   p90 %.0f" %
+              (np.median(allioi), np.percentile(allioi, 10),
+               np.percentile(allioi, 90)))
+        for w in (0.25, 1.0, 2.0):
+            vals = [fano(r[1], w, 8.0) for r in sel]
+            vals = [v for v in vals if not np.isnan(v)]
+            if vals:
+                print("   Fano factor at %4.2f s   median %.2f   (Poisson is 1.00)"
+                      % (w, np.median(vals)))
+
+
 def cmd_front(args):
     """Two things: the attack envelope, which is a contour, and the shock front
     waveform, which turns out not to be one."""
@@ -440,6 +556,8 @@ def main():
         cmd_front(paths)
     elif cmd == 'decay':
         cmd_decay(args)
+    elif cmd == 'density':
+        cmd_density(args)
     elif cmd == 'fit':
         cmd_fit(args)
     else:

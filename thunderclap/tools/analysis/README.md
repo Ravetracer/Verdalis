@@ -48,6 +48,9 @@ python3 tools/analysis/contours.py front '!dev/reference'
 # The spectral centroid of the flash over time, bed subtracted and SNR gated.
 python3 tools/analysis/contours.py decay '!dev/reference'
 
+# Transient arrivals through the flash: how many, how spaced, how clustered.
+python3 tools/analysis/contours.py density '!dev/reference'
+
 # The same, over a library, as C++ array initialisers.
 python3 tools/analysis/contours.py fit   '!dev/reference'
 ```
@@ -221,6 +224,57 @@ upward. The bed sits 12 to 48 dB under the flash and is subtracted, and in the
 files where the flash and the bed measure the same centroid -- `rain_thunder_03`
 and `thunder_02` -- the row is weak evidence. The gap to the presets is a
 factor of two to four, which is larger than that objection.
+
+### Transient density
+
+`density` counts the discrete arrivals in the first 8 seconds: the rise of a
+2 ms energy envelope above 300 Hz over its own trailing 50 ms median, peak
+picked with a 20 ms minimum gap.
+
+**The threshold is calibrated, not chosen, and the calibration is the point.**
+At a 4 dB rise the detector finds 134 arrivals in 8 seconds of *brown noise*,
+which has none in it at all -- and the references then measure an
+indistinguishable 20 a second with a Fano factor of 0.3, which looks like a
+finding and is an artefact of the detector. At 10 dB both noise controls give
+zero and the references give 2 to 13. Anything under 8 dB is measuring the
+rumble's own wandering. The same control should be run again if the detector
+is ever retuned.
+
+At 10 dB:
+
+| | arrivals in 8 s | median gap | p10 | p90 | Fano at 0.25/1/2 s |
+|---|---|---|---|---|---|
+| close, 8 files | 16 (5 to 20) | 273 ms | 34 ms | 1006 ms | 0.94 / 1.19 / 1.06 |
+| distant, 13 files | 11 (3 to 13) | 449 ms | 59 ms | 2376 ms | 1.10 / 1.00 / 1.06 |
+
+**Thunder arrivals are Poisson.** The Fano factor is 1.0 within the scatter at
+every counting window from a quarter second to two seconds. That is worth
+having as a number, because CrackleBlaze measures 3.90 at one second and had to
+grow a three-level spawner to reproduce it; thunder needs nothing of the sort,
+and the engine's arrival times come from channel geometry rather than a
+process anyway. They are also front-loaded: twice the rate in the first second
+as in the seventh.
+
+**The close presets arrive four to seven times too often.** Held against the
+same measurement, with the seed pinned:
+
+| | arrivals in 8 s | median gap |
+|---|---|---|
+| real close | 16 | 273 ms |
+| `close_strike` | 66 | 62 ms |
+| `overhead_crack` | 116 | 46 ms |
+
+A real close strike is a few discrete claps in a continuum; these are a spray of
+separately audible cracks. Two parameters move it, and they move it a long way:
+`Max Shocks` 2048 to 4096 and `Focus` 0.7 to 0.2 take `close_strike` to 18
+arrivals at a 264 ms median gap with its band tilt unchanged at -23 dB. More
+elements overlap into the caustic instead of standing apart; less directivity
+stops a handful of them standing proud of the rest. `overhead_crack` needs its
+tortuosity down as well to get under 30, which is a change to what the preset
+is rather than a correction to it.
+
+Whether that is *better* is not something the count can say -- A/B renders are
+in `!dev/audition-density/` with a note listing what each pair changes.
 
 ## References
 
