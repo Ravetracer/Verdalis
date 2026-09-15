@@ -57,10 +57,33 @@ rather than this plugin's:
   RainyDay's `tools/analysis/fit.py` could be adapted from. The features that
   matter for thunder: band energies, envelope shape (time to peak, decay rate),
   clap count and spacing, 20 ms fluctuation depth.
-- [ ] The far family of reference recordings (distant-04 to 09) sits 5 to 10
-  dB brighter at 320 Hz than the engine's 10 km default. Either their storms
-  were nearer than ten kilometres or the absorption exponent is a touch high
-  at low frequencies. Unresolved; the Air knob covers it.
+- [ ] The far family of the *old* reference recordings (distant-04 to 09) sat 5
+  to 10 dB brighter at 320 Hz than the engine's 10 km default. Either their
+  storms were nearer than ten kilometres or the absorption exponent is a touch
+  high at low frequencies. Unresolved; the Air knob covers it. The new library
+  says the same thing more loudly -- see the next item.
+- [ ] **`distant_rumble` and `far_horizon` are darker than any real recording
+  in the library.** Measured with `contours.py decay`: no reference, at any
+  distance, puts its 1-2 kHz octave further than 42 dB under its loudest one or
+  holds a spectral centroid under 128 Hz. Both presets do both -- tilt -57 and
+  -58 dB, centroid 44 to 87 Hz against a measured 170 to 215. `close_strike` is
+  the same error smaller: 300 Hz over its first 40 ms against 649 measured.
+  Either their `Distance` is set beyond anything in the library or the
+  absorption is too steep at the far end; the measurement cannot separate the
+  two, and it is an ear question which is wrong. The full table is in
+  `tools/analysis/README.md`, *What the contours say*.
+- [x] **Measured contours instead of parametric shapes -- tried, and it does not
+  transfer.** The suite `CLAUDE.md` lists ThunderClap's N-wave shapes as
+  parametric where a measured curve would be truer, on the strength of what
+  measured pitch contours did for ChirpParade. `contours.py` was written to get
+  those curves and they are not there to get: the shock front averages to a
+  coherence of 0.44 across the library and the attack envelope has a 10 to 30 dB
+  spread at every step, because a clap is the caustic of thousands of arrivals
+  rather than one repeatable gesture. What the exercise did produce is the
+  centroid measurement above, which says the engine's *structure* -- per-arrival
+  absorption rather than one swept filter -- is right, and that its far presets
+  are not. Worth knowing before anyone builds a DDSP fitting rig: it would be
+  fitting the sum, not the mechanism.
 
 ## Engine
 

@@ -37,6 +37,26 @@ python3 tools/analysis/measure.py onsetbands '!dev/reference_new'
 python3 tools/analysis/measure.py onsetbands /tmp/close.wav 20 5
 ```
 
+`contours.py` asks a different question: not how much energy sits where, but
+what the curves look like, so that a measured contour could replace a
+parametric one.
+
+```sh
+# The attack envelope and the shock front waveform.
+python3 tools/analysis/contours.py front '!dev/reference'
+
+# The spectral centroid of the flash over time, bed subtracted and SNR gated.
+python3 tools/analysis/contours.py decay '!dev/reference'
+
+# The same, over a library, as C++ array initialisers.
+python3 tools/analysis/contours.py fit   '!dev/reference'
+```
+
+It splits every summary into *close* and *distant* by how far the 1-2 kHz
+octave sits under the loudest one over the 400 ms from the onset, because
+absorption takes the top off first and a median over both distances describes
+neither. See *What the contours say* below.
+
 `bands` and `time` average over the whole file, which for a thunder means the
 rumble and the tail decide the answer and the strike is averaged away. `clap`
 and `impact` look at the strike alone and are what the hardness of the crack
@@ -55,7 +75,16 @@ python3 tools/analysis/loudness.py --plugin build/ThunderClap.clap --presets pre
 ## What the measurements say
 
 Everything below is measured with `bands` and `time` on the thirty-eight
-recordings in `!dev/reference`, and all of it is built into the engine.
+recordings that were in `!dev/reference` when the engine was fitted, and all of
+it is built into the engine.
+
+**That library no longer exists.** It was deleted in September 2026 and
+replaced by the twenty-four recordings now in `!dev/reference`, some of which
+are like the old ones and five of which (`432101`-`432105`, `ravetracer`) are
+the author's own, recorded in a city. The figures in this section were not
+re-measured against the new set; *What the contours say* below was measured
+against it and says so. Anything re-fitted from here on should be checked
+against what is actually on disk.
 
 **Close thunder peaks at 80 to 160 Hz and keeps its top end.** Measured
 against their own loudest band, the recordings of strikes a few hundred metres
@@ -116,6 +145,82 @@ within 3 dB of its peak for a hundred milliseconds without a gap: 78 % density,
 limiting on the strike, and it is also what a listener's ear does at 130 dB
 SPL, so it is the right target for what a close thunder should sound like even
 where it is not strictly what the air delivered.
+
+## What the contours say
+
+Measured with `contours.py` on the 24 recordings in `!dev/reference`,
+2026-09-15. This was a check on whether ThunderClap's parametric shapes should
+be replaced by measured curves, the way ChirpParade replaced fitted statistics
+with measured pitch contours. **The answer is that two of the three shapes are
+not measurable from far-field recordings at all, and the third says the engine's
+structure is right and two of its presets are not.**
+
+**The shock front is not recoverable from a recording.** Aligning all 24
+recordings on their steepest pressure rise, orienting each so the rise is
+upward, and averaging gives a coherence of 0.44 -- and the alignment itself
+guarantees a step at the centre, so almost nothing survives either side of it.
+The individual figures scatter accordingly: the rise from the onset to the first
+peak runs from 3.5 to 40 ms across the library with no cluster in it.
+
+This is not a defect in the recordings. A clap is the caustic of thousands of
+N-waves arriving from a tortuous channel at slightly different times (Few 1969),
+so a microphone at 300 m never sees one front on its own. The engine's per-
+element arrival model is that superposition, and there is no single measured
+front for it to be built out of. A DDSP fit against a recording would be fitting
+the sum, not the front.
+
+**The attack envelope is not a reproducible shape either.** From the onset,
+1 ms resolution, 60 ms, relative to the first 200 ms: the 10th-to-90th
+percentile spread is 10 to 30 dB at every step, and stays that wide when the
+library is split into close and distant. Every flash has its own channel
+geometry, which is the thing the engine draws per flash, so a single baked
+attack contour would be *less* true than the geometry that produces it.
+
+**The spectral centroid does not sweep down.** This is the measurable one, and
+it is the finding. Windows growing with the log of time from the onset, the
+pre-onset bed subtracted, and any window that failed to stand 6 dB over that bed
+dropped as rain rather than thunder:
+
+| | 0.01 s | 0.04 | 0.08 | 0.15 | 0.30 | 0.60 | 1.2 | 2.4 | 4.8 | 9.6 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| close, 4 files | 895 | 649 | 941 | 542 | 543 | 469 | 347 | 345 | 290 | — |
+| distant, 10 files | 362 | 172 | 247 | 163 | 170 | 180 | 211 | 205 | 215 | 214 |
+
+Fitted as `centroid ~ t^-a` past 50 ms, the exponent is **0.04** for the close
+recordings (10th-90th percentile 0.00 to 0.24) and **-0.07** for the distant
+ones. A swept lowpass following `1/sqrt(t)` would need a = 0.5. Nothing in this
+library does that.
+
+The reason is the same superposition: the late energy is not the early energy
+lowpassed, it is other parts of the channel arriving from other distances, each
+with its own absorption. A source-and-sweeping-filter model gets this wrong by
+construction. ThunderClap's absorption is per arrival and per distance, so it
+reproduces the flatness: its renders fit at a = 0.04 to 0.15.
+
+**But the distant presets are too dark.** Held against the same measurement:
+
+| | tilt at 1-2 kHz | 0.04 s | 1.2 s | 4.8 s |
+|---|---|---|---|---|
+| real, close | -9 to -25 dB | 649 Hz | 347 | 290 |
+| `overhead_crack` | -16 dB | 727 Hz | 456 | 315 |
+| `close_strike` | -23 dB | 300 Hz | 284 | 232 |
+| real, distant | -26 to -42 dB | 172 Hz | 211 | 215 |
+| `distant_rumble` | -57 dB | 79 Hz | 87 | 52 |
+| `far_horizon` | -58 dB | 54 Hz | 44 | 57 |
+
+No recording in the library, at any distance, puts 1-2 kHz further than 42 dB
+under its loudest octave or holds a centroid under 128 Hz. Both distant presets
+do both, by a wide margin. Two readings are possible and the measurement cannot
+separate them: their `Distance` is set beyond anything in the library, or the
+absorption is too steep at the far end. `close_strike` is the milder version of
+the same thing -- 300 Hz in its first 40 ms against 649 measured.
+
+Worth stating where this is soft: the distant recordings mostly have rain in
+them, and rain is broadband, so a residue would bias the measured centroid
+upward. The bed sits 12 to 48 dB under the flash and is subtracted, and in the
+files where the flash and the bed measure the same centroid -- `rain_thunder_03`
+and `thunder_02` -- the row is weak evidence. The gap to the presets is a
+factor of two to four, which is larger than that objection.
 
 ## References
 
