@@ -2,11 +2,11 @@
 format = 1
 name = Distant Rumble
 author = ThunderClap
-description = A storm ten kilometres off: no crack at all, a slow deep roll that swells in from the cloud.
+description = A storm a kilometre off: no crack at all, a slow deep roll that swells in from the cloud.
 features = ambient, soft, evolving
 
 # Strike
-distance = 10
+distance = 1
 height = 6
 cloud_spread = 8
 tortuosity = 0.5
@@ -23,7 +23,7 @@ rumble = 0.6
 rumble_tone = 0.45
 air = 0.5
 scatter = 0.5
-focus = 0.7
+focus = 0.2
 impact = 0.15
 bloom = 0
 
@@ -61,8 +61,8 @@ vel_to_level = 0.5
 vel_to_distance = 0.5
 
 # Output
-gain = 6.6
-max_shocks = 2048
+gain = -2
+max_shocks = 4096
 seed = 0
 
 # Dynamics

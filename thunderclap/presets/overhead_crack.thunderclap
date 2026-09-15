@@ -9,7 +9,7 @@ features = sfx, loud, impact, short
 distance = 0.2
 height = 4
 cloud_spread = 1.5
-tortuosity = 0.7
+tortuosity = 0.25
 branching = 0.3
 strokes = 2
 stroke_gap = 30
@@ -23,7 +23,7 @@ rumble = 0.3
 rumble_tone = 0.7
 air = 0.3
 scatter = 0.6
-focus = 0.8
+focus = 0.05
 impact = 0.85
 bloom = 0.7
 
@@ -62,7 +62,7 @@ vel_to_distance = 0.5
 
 # Output
 gain = -4.8
-max_shocks = 2048
+max_shocks = 4096
 seed = 0
 
 # Dynamics

@@ -552,7 +552,7 @@ not every mix wants it.
 | Cloud Crawler | Intracloud lightning; nothing reaches the ground, the sky rolls |
 | Deep Sub | Long shocks, heavy rumble, nothing above 400 Hz |
 | Gated Rumble | Gated: the thunder lasts as long as the key does |
-| Distant Rumble | Ten kilometres off: no crack, a slow deep roll |
+| Distant Rumble | A kilometre off: no crack, a slow deep roll |
 | Far Horizon | Twenty kilometres: very deep, very slow, more felt than heard |
 | Summer Storm | Storm mode: flashes every ten seconds or so, none alike |
 | Storm Front | Storm mode: every few seconds, close and violent |

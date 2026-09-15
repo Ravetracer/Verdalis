@@ -101,6 +101,41 @@ structure Kappus and Vernon describe; the distant renders sit in the bottom two
 octaves as the far recordings do, and swell in over seconds. Details and the
 method are in `tools/analysis/README.md`.
 
+## The presets against the new references, 1.4.1
+
+The reference library was replaced in September 2026: the 38 recordings the
+engine was fitted to are gone, and 24 new ones are in `!dev/reference`, five of
+them the author's own from a city. `tools/analysis/contours.py` measured those
+and the factory presets the same way, and three presets were outside their
+measured family. The A/B renders that decided it are in `!dev/audition-density/`.
+
+| preset | was | now | measured target |
+|---|---|---|---|
+| Close Strike | 66 arrivals in 8 s, 62 ms apart | 18, 264 ms | 16, 273 ms |
+| Overhead Crack | 116 arrivals, 46 ms apart | 23, 138 ms | 16, 273 ms |
+| Distant Rumble | centroid 76 Hz, tilt -57 dB | 173 Hz, -43 dB | 172 Hz, -26 to -42 dB |
+
+Close Strike and Overhead Crack were spraying four to seven times as many
+separately audible arrivals as real close thunder. More channel elements
+(`Max Shocks` 4096) let them overlap into the caustic, and less `Focus` stops a
+handful of them standing proud of the rest. Overhead Crack also needed its
+tortuosity down from 0.7 to 0.25, which is a change to what the preset is rather
+than a correction to it.
+
+Distant Rumble was darker than any recording in the library at any distance. It
+is now a kilometre off rather than ten, which is the reading the measurement
+supports but not the only one available -- the other is that the absorption is
+too steep at the far end, and that stays open in `TODO.md`. Its gain came down
+from +6.6 to -2 dB, because at 1 km it clipped on two seeds out of four.
+
+Far Horizon was left as it is: at 1 km with the air absorption backed off it
+still measures -49 dB, so its own crack, weight and swell are what make it dark.
+
+The engine is unchanged. What the same measurements said about the engine --
+that its per-arrival absorption reproduces a flat centroid where a swept filter
+could not, and that thunder arrivals are Poisson -- is in
+`tools/analysis/README.md`, *What the contours say*.
+
 ## The ground, 1.4.0
 
 The same user said the notch trick still beat the plugin, and the reason it
