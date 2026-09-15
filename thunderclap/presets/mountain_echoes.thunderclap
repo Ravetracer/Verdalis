@@ -6,7 +6,7 @@ description = A strike in a valley: every wall throws it back, and the echoes ou
 features = sfx, ambient, evolving
 
 # Strike
-distance = 3
+distance = 1
 height = 5
 cloud_spread = 5
 tortuosity = 0.55
@@ -23,7 +23,7 @@ rumble = 0.5
 rumble_tone = 0.5
 air = 0.5
 scatter = 0.5
-focus = 0.7
+focus = 0.2
 impact = 0.4
 bloom = 0.3
 
@@ -61,8 +61,8 @@ vel_to_level = 0.5
 vel_to_distance = 0.5
 
 # Output
-gain = -1
-max_shocks = 2048
+gain = -5.8
+max_shocks = 4096
 seed = 0
 
 # Dynamics

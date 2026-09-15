@@ -101,6 +101,51 @@ structure Kappus and Vernon describe; the distant renders sit in the bottom two
 octaves as the far recordings do, and swell in over seconds. Details and the
 method are in `tools/analysis/README.md`.
 
+## The whole library against the new references, 1.5.0
+
+1.4.1 corrected three presets. The same two measurements were then run over all
+eighteen, and ten more were outside their measured family. The A/B renders are
+in `!dev/audition-library/`, with a note listing every change.
+
+**Six presets fired too many separately audible arrivals**, the same fault
+1.4.1 found in Close Strike and Overhead Crack, and the same correction: more
+channel elements so that arrivals overlap into the caustic, less `Focus` so that
+a handful of them do not stand proud of the rest. The band tilt is unchanged in
+all six.
+
+| preset | arrivals in 8 s | gap |
+|---|---|---|
+| Hollow Strike | 134 -> 40 | 42 -> 105 ms |
+| Dry Crack | 96 -> 12 | 53 -> 456 ms |
+| City Thunder | 63 -> 22 | 79 -> 253 ms |
+| Heavy Impact | 57 -> 13 | 103 -> 517 ms |
+| Single Bolt | 56 -> 26 | 107 -> 179 ms |
+| Cloud Crawler | 42 -> 20 | 112 -> 235 ms |
+
+City Thunder is the exception that says what `Max Shocks` actually does to the
+spectrum: at 4096 its 1-2 kHz tilt fell from -29 to -37 dB, a distant thunder's
+spectrum on a preset meant to be 1.2 km away. 3072 with `Focus` at 0.5 fixes the
+density and holds the tilt at -27. Hollow Strike is still over target at 40;
+getting it lower needs its tortuosity down, which changes what it is.
+
+**Four more were darker than any recording in the library**, at -49 to -51 dB
+against a measured worst of -42, and were brought nearer: Rolling Thunder 3 km
+to 1.5, Mountain Echoes 3 to 1, Gated Rumble 4 to 1.2, Summer Storm 4 to 1.2.
+Their arrival counts rose with the distance -- a nearer flash is less smeared --
+so they took the density correction as well.
+
+**Their gains had to move with them.** The distance compensation does not cover
+a factor of three: all four clipped at 0 dBFS on every seed until Gated Rumble
+came down from +1.7 to -7.5 dB, Mountain Echoes from -1 to -5.8, Summer Storm
+from 0 to -5.6 and Rolling Thunder from -5 to -7.5. Every preset in the library
+now peaks between -1.8 and -19.8 dBFS over three seeds with nothing clipping,
+and the four corrected ones sit at -4.5.
+
+Six presets were left alone deliberately, and the reasons are in the audition
+note: Deep Sub and Far Horizon are named for their darkness, Cloud Crawler is
+intracloud, Heat Lightning is 20 km off, Under The Rain is built to sit under
+RainyDay, and Storm Front was already inside its family.
+
 ## The presets against the new references, 1.4.1
 
 The reference library was replaced in September 2026: the 38 recordings the

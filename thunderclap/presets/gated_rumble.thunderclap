@@ -6,7 +6,7 @@ description = Gated: the thunder lasts as long as the key does. Short notes for 
 features = sfx, rhythmic, evolving
 
 # Strike
-distance = 4
+distance = 1.2
 height = 6
 cloud_spread = 8
 tortuosity = 0.6
@@ -61,7 +61,7 @@ vel_to_level = 0.5
 vel_to_distance = 0.5
 
 # Output
-gain = 1.7
+gain = -7.5
 max_shocks = 2048
 seed = 0
 

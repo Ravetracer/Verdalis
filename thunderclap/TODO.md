@@ -72,7 +72,15 @@ rather than this plugin's:
   absorption is too steep at the far end; the measurement cannot separate the
   two, and it is an ear question which is wrong. The full table is in
   `tools/analysis/README.md`, *What the contours say*.
-- [ ] **The close presets fire four to seven times too many discrete arrivals.**
+- [x] **The whole library was held against the new references in 1.5.0.** Ten
+  presets beyond the three in 1.4.1 were outside their measured family: six
+  firing too many arrivals, four darker than any recording at any distance. See
+  `STATUS.md` and `!dev/audition-library/`. What is left over from that pass:
+  Hollow Strike is still at 40 arrivals against a target of 16 and needs its
+  tortuosity down to go lower, which changes what the preset is; and Overhead
+  Crack varies from 23 to 77 between seeds, so its median is not a stable
+  figure.
+- [x] **The close presets fire four to seven times too many discrete arrivals.**
   `contours.py density` counts 66 in the first 8 s of `close_strike` and 116 in
   `overhead_crack`, against 16 in real close thunder, at median gaps of 62 and
   46 ms against 273. `Max Shocks` 2048 -> 4096 with `Focus` 0.7 -> 0.2 lands

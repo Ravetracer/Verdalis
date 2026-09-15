@@ -23,7 +23,7 @@ rumble = 0.5
 rumble_tone = 0.55
 air = 0.35
 scatter = 0.5
-focus = 0.85
+focus = 0.5
 impact = 0.9
 bloom = 0.6
 
@@ -62,7 +62,7 @@ vel_to_distance = 0.5
 
 # Output
 gain = -9
-max_shocks = 2048
+max_shocks = 3072
 seed = 0
 
 # Dynamics

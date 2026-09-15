@@ -276,6 +276,11 @@ is rather than a correction to it.
 Whether that is *better* is not something the count can say -- A/B renders are
 in `!dev/audition-density/` with a note listing what each pair changes.
 
+Both corrections were applied across the library in 1.5.0: thirteen of the
+eighteen presets changed, six for density, four for being darker than anything
+measured, and three in 1.4.1. `STATUS.md` has the table and
+`!dev/audition-library/` the renders.
+
 ## References
 
 - Few, A. A., *Power spectrum of thunder*, J. Geophys. Res. 74, 1969. The

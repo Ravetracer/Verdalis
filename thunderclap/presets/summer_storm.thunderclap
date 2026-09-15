@@ -6,7 +6,7 @@ description = Hold a note and a storm passes: flashes every ten seconds or so, n
 features = ambient, evolving, storm
 
 # Strike
-distance = 4
+distance = 1.2
 height = 6
 cloud_spread = 6
 tortuosity = 0.55
@@ -23,7 +23,7 @@ rumble = 0.55
 rumble_tone = 0.5
 air = 0.5
 scatter = 0.5
-focus = 0.7
+focus = 0.2
 impact = 0.3
 bloom = 0.25
 
@@ -61,8 +61,8 @@ vel_to_level = 0.5
 vel_to_distance = 0.3
 
 # Output
-gain = 0
-max_shocks = 2048
+gain = -5.6
+max_shocks = 4096
 seed = 0
 
 # Dynamics
