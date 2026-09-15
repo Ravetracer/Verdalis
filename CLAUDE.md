@@ -25,7 +25,8 @@ Verdalis/
 ├── winbuild/          meson venv + Windows Cairo — GITIGNORED, see below
 ├── dist/              release archives         — GITIGNORED
 ├── rainyday/          RainyDay — synthesised rain
-└── thunderclap/       ThunderClap — synthesised thunder
+├── thunderclap/       ThunderClap — synthesised thunder
+└── ...                one folder per plugin; see the roadmap below
 ```
 
 **The suite is one git repository**, the whole of `Verdalis/`:
@@ -62,6 +63,19 @@ Seven plugins, each modelling one natural sound source:
 | 6 | **RiverFlow** | `riverflow/` | WIP | rivers, streams |
 | 7 | **CrackleBlaze** | `crackleblaze/` | WIP | fire |
 | 8 | **NightLife** | `nightlife/` | planned | night insects, crickets, howling wolfes, foxes, owls, night birds |
+
+Plus one plugin that is deliberately **not** on that list:
+
+| # | Plugin | Folder | Status | Simulates |
+|---|--------|--------|--------|-----------|
+| — | **WhooshPact** | `whooshpact/` | WIP | transitions, impacts — production sounds, not a natural source |
+
+WhooshPact is the suite's first non-nature plugin and the first whose reference
+library is *finished production sounds* rather than recordings of the world.
+There is no physics under them to fit, so its measurement describes the target
+rather than a mechanism -- see its `tools/analysis/README.md`, which says so at
+the top. Everything else about it is the suite's: no samples, the shared window,
+the shared parameter model, the same skeleton.
 
 Naming follows a consistent pattern: a two-word CamelCase compound naming the
 phenomenon, lowercase and joined for the folder, the CLAP id
@@ -481,7 +495,7 @@ shared/
 │   ├── param_macros.h          table-building shorthand (params.cpp only)
 │   ├── preset.h                PresetContext, PresetData, the text format
 │   ├── preset_provider.h       PresetProviderSpec, the discovery factory
-│   ├── dsp/{adsr,denormals,fastmath,filters,reverb,rng}.h
+│   ├── dsp/{adsr,biquad,denormals,fastmath,filters,reverb,rng}.h
 │   └── gui/
 │       ├── gui.h               Gui + GuiDelegate, the plugin/window contract
 │       ├── toolkit.h           Cairo drawing primitives, Rect, Align
@@ -543,6 +557,7 @@ with a coloured knob.
 | ChirpParade | `#F2C744` | finch gold, greys with an olive cast |
 | RiverFlow | `#57C77A` | river green -- moss on wet stone, cool green-grey greys |
 | CrackleBlaze | `#FF5A2C` | ember orange, the darkest chassis in the suite -- a deep red-brown cast, deliberately hotter and redder than SkyHowl's dusty coral |
+| WhooshPact | `#FF3C97` | impact magenta at hue 330, with a cool blue-violet chassis -- the one plugin that models nothing natural, and the one accent that reads as obviously synthetic |
 
 A new plugin picks its own accent and derives its greys from it. Do not reuse
 another plugin's theme, and do not fall back to the suite brand palette — that
@@ -622,7 +637,7 @@ One file remains substantially shared but is **not** extracted:
 
 | File | Size | Differing lines | What blocks extraction |
 |------|------|-----------------|------------------------|
-| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface. With five copies of it now, the question of which parts are really common is answered: everything except the engine type and `syncEngineParams`. |
+| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface. With eight copies of it now, the question of which parts are really common is answered: everything except the engine type and `syncEngineParams`. |
 
 ### Rule for a shared change
 

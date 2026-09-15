@@ -36,6 +36,7 @@ preset library and a window.
 | **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.6.0 |
 | **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.2.0 |
 | **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.1.0 |
+| **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts | 0.2.0 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
@@ -77,6 +78,17 @@ it, and a one-to-three pulse train per arrival. A crackle is measurably a click
 and not a ring, so no resonator is fitted. 47 parameters, 18 presets, five
 octave-band colours taken from the beds of 17 recordings with their crackles
 gated out first.
+
+**WhooshPact** — the one plugin here that models no natural source. Its
+reference library is 211 finished production sounds rather than recordings of
+the world, so the measurement describes the target rather than a mechanism. One
+number carries the design: where the peak sits. A boom peaks 2.4 % into itself
+and a whoosh a third of the way in, so the gesture is five parameters and there
+are no modes. Four layers — noise through a swept filter, a band-limited
+oscillator stack, a struck sub and a struck transient — and a *Variation* knob
+that makes every trigger its own sound, which is the reason it exists at all.
+64 parameters, 31 presets, six families. Flutter is off by default because the
+measurement says five of the six families do not have any.
 
 **ChirpParade** — a bird syllable *is* its frequency contour, so 72 of them were
 measured off real recordings and ship as coefficients that drive the oscillator
