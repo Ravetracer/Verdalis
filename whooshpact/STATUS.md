@@ -1,6 +1,6 @@
 # WhooshPact status
 
-Version 0.2.0. The engine, the 64-parameter control surface, the window and a
+Version 0.2.1. The engine, the 64-parameter control surface, the window and a
 fitted preset library of thirty-one, with the Sub layer opted into rather than
 always on.
 
@@ -52,6 +52,18 @@ computed at run time.
   own span, peak, cutoff, sweep, pitch, level, pan, flutter rate, hit tone and
   decay from a two-sigma-clipped gaussian around the settings on screen. At zero
   the plugin is bit-exactly reproducible, which the self-test checks.
+
+  Every one of those draws is a **ratio**, and the Peak draw was the exception
+  until 0.2.1. As an additive offset it moved the strike by a fixed number of
+  span-fractions whatever Peak was set to, which is proportionate for a
+  transition at 0.33 and several times the whole value for the hit families at
+  0.012 to 0.03. Worse, the clamp at zero rectified the draw, so setting Peak to
+  0 did not remove the jitter -- half the notes landed on the beat and half
+  straggled out behind it. Played from a sequencer it read as erratic latency.
+  Measured on the sub layer over 24 seeds, Gate Closed at Peak 0 spread 0.1 to
+  152.7 ms and now sits at 0.1 ms on every note; War Drum went from sd 53.3 ms
+  to 5.0 ms. The coefficient is set so that a transition keeps the spread it was
+  fitted with: Simple Whoosh measures sd 90.1 ms before and 89.8 ms after.
 - **A three-band EQ plus both ends**, on a new shared `Biquad`/`Tilt` — the
   first shelving and peaking filters in the suite, which had only corners
   before.
@@ -84,6 +96,11 @@ amplitude modulation, and saying so is the finding.
 
 - `render --selftest` passes, including the round trip of every parameter
   through the preset writer and the reproducibility of a pinned `Random Seed`.
+- The 0.2.1 Peak-variation change renders **byte-identical** to 0.2.0 at
+  Variation 0, which bounds it to the variation draw. Across the library at
+  Variation 0.35 it tightened the onset spread of sixteen presets -- Shattered
+  Earth from 123 to 29 ms, Bottomless from 101 to 14, Analog Fall from 96 to 31
+  -- and loosened none.
 - The preset library renders and measures inside its families on every quantity
   bar the deliberate exceptions named in `tools/analysis/README.md`, and every
   preset renders between -7.7 and -8.8 dBFS peak bar the two named quiet ones.

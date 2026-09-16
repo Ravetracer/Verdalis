@@ -250,7 +250,7 @@ Voice *GestureEngine::allocateVoice() {
 void GestureEngine::drawVariation(Voice &v) {
    const float amount = clampv(mP.variation, 0.0f, 1.0f);
    if (amount <= 0.0f) {
-      v.vPeak = 0.0f;
+      v.vPeak = 1.0f;
       v.vCutoff = 1.0f;
       v.vSweep = 0.0f;
       v.vPitch = 1.0f;
@@ -267,7 +267,13 @@ void GestureEngine::drawVariation(Voice &v) {
    // so that no single note can land somewhere absurd.
    auto draw = [this]() { return clampv(mRng.gaussian(), -2.0f, 2.0f); };
 
-   v.vPeak = amount * 0.06f * draw();
+   // Multiplicative, like every other draw here. An additive offset would be a
+   // fixed number of span-fractions whatever Peak is set to, which swamps the
+   // hit families -- they sit at a Peak of 0.012 to 0.03, so an offset sized for
+   // a transition's 0.33 moved their strike by several times its own value and
+   // clamping at zero rectified the draw: half the notes on the beat and half
+   // straggling. A ratio keeps the spread proportional to the setting.
+   v.vPeak = std::exp2(amount * 0.25f * draw());
    v.vCutoff = std::exp2(amount * 0.55f * draw());
    v.vSweep = amount * 0.35f * draw();
    v.vPitch = std::exp2(amount * (2.5f / 12.0f) * draw());
@@ -474,7 +480,7 @@ void GestureEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t nu
    const float velTone = std::exp2(clampv(mP.velToTone, 0.0f, 1.0f) * (v.velocity - 0.7f) * 2.0f);
    const float voiceLevel = velLevel * v.vLevel;
 
-   const float peak = clampv(mP.peak + v.vPeak, 0.0f, 0.95f);
+   const float peak = clampv(mP.peak * v.vPeak, 0.0f, 0.95f);
    const float subDecay = clampv(mP.subDecaySec * v.vDecay, 0.005f, 20.0f);
    const float hitDecay = clampv(mP.hitDecaySec * v.vDecay, 0.002f, 10.0f);
    // The parameters read in -20 dB times because that is what the references

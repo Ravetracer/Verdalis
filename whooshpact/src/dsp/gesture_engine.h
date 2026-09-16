@@ -221,7 +221,7 @@ struct Voice {
    // parameter on screen multiplied or offset by a gaussian scaled by
    // Variation, so at Variation 0 they are all neutral and the plugin repeats
    // exactly.
-   float vPeak = 0.0f;       // added to Peak
+   float vPeak = 1.0f;       // multiplies Peak
    float vCutoff = 1.0f;     // multiplies the Air cutoff
    float vSweep = 0.0f;      // added to Air Sweep, octaves
    float vPitch = 1.0f;      // multiplies the Tone and Sub pitch
