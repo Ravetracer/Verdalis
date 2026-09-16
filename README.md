@@ -48,7 +48,7 @@ preset library and a window.
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
 
-**RainyDay** — 42 parameters covering droplet statistics, impact surface, stereo
+**RainyDay** — 50 parameters covering droplet statistics, impact surface, stereo
 field, distance, space, filter and a full ADSR. 17 factory presets, each fitted
 against a real recording of the thing it imitates.
 
@@ -58,7 +58,7 @@ directly overhead, and a window that flashes with the bolt.
 
 **ShoreBreak** — a breaking wave in four overlapping layers: the crest
 collapsing into its bubble cloud, the foam it leaves, the wash back down the
-shore and the individual bubbles popping in it. 49 parameters, 17 presets, and
+shore and the individual bubbles popping in it. 52 parameters, 17 presets, and
 Galvin's four breaker types, which measurably differ in the slope above 1.5 kHz.
 
 **SkyHowl** — built on the fact that wind is silent: a flow field that makes no
