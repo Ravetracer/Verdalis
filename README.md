@@ -7,7 +7,8 @@
 </p>
 
 <p align="center">
-  <strong>A suite of native CLAP and VST3 instruments that synthesise the weather.</strong><br>
+  <strong>A suite of native CLAP and VST3 instruments that synthesise the weather —<br>
+  and one that synthesises the effects you cut it with.</strong><br>
   Every sound the instruments make is computed at run time.
 </p>
 
@@ -17,6 +18,12 @@ Verdalis is a family of audio plugins built around a single rule: **nothing is
 sampled.** Every sound is generated from noise, oscillators, filters and the
 physical statistics of the phenomenon being modelled. No two instances ever
 produce the same output.
+
+Most of them model a natural sound source. **WhooshPact does not, and is not
+meant to** — it is a production-effects instrument for transitions, impacts and
+stings, built to the same synthesis-only rule and sharing the same foundation.
+Treat it as an addition to the suite rather than as part of its nature
+collection.
 
 Each plugin is a self-contained instrument with its own synthesis engine, its
 own factory presets — fitted against real reference recordings — and a
@@ -36,7 +43,7 @@ preset library and a window.
 | **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.6.0 |
 | **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.2.0 |
 | **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.1.0 |
-| **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts | 0.2.0 |
+| **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.2.1 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
@@ -46,7 +53,7 @@ field, distance, space, filter and a full ADSR. 17 factory presets, each fitted
 against a real recording of the thing it imitates.
 
 **ThunderClap** — shock-wave modelling from the bolt channel outwards, with
-distance-dependent air absorption. 17 presets from a distant rumble to a strike
+distance-dependent air absorption. 18 presets from a distant rumble to a strike
 directly overhead, and a window that flashes with the bolt.
 
 **ShoreBreak** — a breaking wave in four overlapping layers: the crest
