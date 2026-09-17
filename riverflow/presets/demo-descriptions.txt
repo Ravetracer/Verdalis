@@ -1,0 +1,28 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Big Falls = A big fall into a plunge pool, with all the weight coming from the churn underneath rather than the water itself.
+Bubbling Creek = Water folding over stones, one pocket of air at a time. The grainiest thing here, and the sound the plugin was built for.
+Bubbly Falls = Almost nothing but bubbles. You can very nearly count them.
+Culvert Drain = Water down a stone culvert. Boxy and close, with everything coming back off the walls.
+Distant River = The same water from further off. Nothing is countable any more -- the drips and pops have smeared into the roar.
+Forest Creek = A small creek in woodland, close enough to pick out individual pockets of air.
+Forest Stream = A stream under trees. The banks are close but soft, so there is a little space and no ring to it.
+Glacier Falls = Meltwater coming out from under a glacier. Hard, cold and bright.
+Gorge Cascade = A cascade down a gorge wall, heard from across the gap, with the rock ringing.
+Hanging Trickle = Single drops off an overhang onto wet stone. The quiet end of the plugin, and it ticks rather than hisses.
+Mountain River = A mountain river in the open, heard from the bank. Almost no weight underneath it.
+Mountain River Large = The same river with a lot more water in it. Wider, heavier, and the detail thinning into the roar.
+Rapids Close = Standing at the rapids. Loud, close, and right in the middle.
+River Rush = Water rushing over a shallow bed. Broad and even, with the detail well down in it.
+Small Falls = A small fall over a step of rock into a shallow bowl.
+Stony Creek = A creek over bare stone, grainy all the way up and bright with it.
+Upper Rapids = Rapids in a cut, with the rock close enough on both sides to send it back.
+Wild River = A river running hard through woodland. One of the smoothest things measured -- and it really is that smooth.
+Winter River = A river at night in the cold. Cold air holds on to the top end, so more of it survives the trip over.
+Wispy Creek = Barely any water at all. Thin, high and quiet.

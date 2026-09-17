@@ -1,0 +1,25 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Cave Drips = Single drops falling somewhere deep underground, each one hanging in the dark for a long time afterwards.
+Concrete Alley = Rain in a narrow city alley, slapping off wet brick and flagstones.
+Distant Rain Wall = A downpour you can see coming but cannot feel yet. All of the weight, none of the detail.
+Downpour = Heavy, saturated rain. So many drops at once that they stop being drops and become a wall of water.
+Dripping Faucet = A tap that will not stop. Close, bright, and almost but not quite regular.
+First Drops = The first few drops on dry pavement, before the real rain arrives.
+Gutter Trickle = A thin stream running off a downspout, narrow and gurgling.
+Inside The Car = Rain heard from inside a parked car: muffled, boxy, and very safe.
+Light Drizzle = Fine drizzle you barely notice until your coat is wet. Mostly a soft bright ticking.
+Puddle Plinks = Fat drops landing in standing water, each with that little upward plink of a trapped bubble.
+Rain On Leaves = Rain in a wood. Soft and dull under the canopy, with almost no pitch to any of it.
+Steady Rain = Ordinary, well-behaved rain. The one to start from.
+Storm Front = A squall moving through, surging and easing as the wind takes it.
+Tin Roof = Rain on corrugated metal, every drop ringing.
+Tropical Monsoon = Absurd amounts of warm water falling straight down, dark and relentless.
+Under an Umbrella = Rain drumming on a taut canopy a foot above your head. Close and blunt.
+Window Pane = Rain against glass, right in front of you. Hard, bright, glassy.

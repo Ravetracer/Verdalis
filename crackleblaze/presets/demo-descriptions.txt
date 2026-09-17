@@ -1,0 +1,26 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Big Blaze = A large open fire a few metres back. Plenty of weight, a dull top, and only the loudest crackles making it across.
+Bonfire = A bonfire at ten paces, wide in front of you and going well.
+Burning Roof = A building alight, heard from across the street. Mostly roar, crackling hard, and something giving way every few seconds.
+Camp Fire = A camp fire in the open at arm's length. The one everything else was built from.
+Cottage Hearth = A small fire in a cottage fireplace. Warm underneath, with the crackles coming back on top.
+Crackle Close = The microphone right on top of the fire. Nothing smeared, every crackle standing well clear of the roar.
+Distant Fire = The same fire across a field. Far enough that the ticks stop being countable and turn into texture.
+Dry Kindling = Dry sticks catching. All ticks and nothing behind them.
+Dying Embers = Almost out. The roar has gone and the sharp ticks with it, leaving the occasional hiss out of a hot log.
+Forest Campfire = A camp fire among trees at night. A little more space than open ground, nothing like a room.
+Furnace Roar = Almost all roar. A furnace in a vaulted space, where the individual crackles are swamped.
+Hearth Glow = A settled fire in a stone hearth, heard from a chair across the room. Quiet, slow and low.
+Log Collapse = A fire that keeps giving way. The thump of a log going is usually rare; here you cannot miss it.
+Open Fireplace = The microphone inside the opening of a fireplace, so the room is as much of it as the fire.
+Sauna Stove = A sauna stove: a closed firebox with a deep body and a hard, bright edge off the metal and the stones.
+Slow Burn = A fire barely being fed. Everything slow, and the hisses hanging on.
+Wet Wood = Wood that has not dried. More than half of it is steam leaving rather than wood cracking.
+Wood Stove = The lid open on a wood stove, with the draught pulling through it doing most of the work.

@@ -745,11 +745,21 @@ which renders 16 seconds plus a 3 second tail at 48 kHz from the plugin's own
 offline renderer, applies a single linear gain towards -16 LUFS backed off to
 keep the true peak under -1 dBTP, and encodes at 256 kbps. There is no
 compression and no limiting, so the relative loudness the presets were fitted to
-survives and a sparse preset stays quiet. The script reads each demo's
-description straight out of the preset file and what the plugin simulates out of
-the root README's plugin table, so nothing about it is per-plugin; it then
-updates `dist/demos/demos.json` and `dist/demos/README.md` in place, touching
-only that plugin's section.
+survives and a sparse preset stays quiet. Nothing about the script is
+per-plugin; it then updates `dist/demos/demos.json` and `dist/demos/README.md`
+in place, touching only that plugin's section. `--text-only` refreshes that
+metadata without re-rendering, which is what a wording change needs.
+
+**A demo's blurb and a preset's description are two different texts, and a new
+plugin needs both.** The preset's `description` is documentation: it says what
+was measured and why, and it is what the manual's preset library prints. The
+website wants a sentence a musician can read. So each plugin carries
+`presets/demo-descriptions.txt` — one `Preset Name = text` line per preset — and
+the script prefers it, falling back to the preset's own description for anything
+with no line. It warns about every preset it had to fall back on, so a missing
+one is visible rather than silently technical. The plugin's own documentation
+never has to be dumbed down to make the site readable, which is the whole point
+of keeping them apart.
 
 `DemoTracks/` is the other, smaller thing: curated demos that are not one plain
 render per preset. WhooshPact has its own `tools/make-demos.sh` there because its

@@ -1,0 +1,24 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Beehive Interior = Inside the box. The same dense swarm in a small hard space, with the walls close enough to hear.
+Bumblebee Garden = Four bumblebees working a garden. Heavier than a honeybee rather than just lower, and slow between the flowers.
+Cicada Noon = Sixteen cicadas in the heat. Not wings at all -- a tymbal buckling hundreds of times a second into a resonant body.
+Cricket Field = Twelve crickets after dark. The same trick as a cicada, but slower, higher and quiet more often than not.
+Distant Swarm = A swarm across a field. Far enough that the top of every wingbeat has gone.
+Dragonfly Pond = Four dragonflies. Barely a tone at all: a clatter of wings, which is genuinely what a dragonfly measures as.
+Hive Wall = Forty-eight bees at the entrance of a hive. So many at once that the individual wingbeats stop resolving and the whole thing turns into noise.
+Honeybee Field = Twelve honeybees working a flower bed. The ordinary one, and the middle of everything that was measured.
+Hornet Close = Two hornets at arm's length. The lowest, heaviest wingbeat here, and it manoeuvres like something with mass.
+Housefly Window = Three flies against glass. A papery buzz rather than a round one, changing its mind about where it is several times a second.
+Mosquito In The Ear = One mosquito, as close as it ever gets. A whine where a bee is a buzz, circling your head rather than sitting still.
+Mosquito Night = A few of them in a dark room, passing at irregular intervals. The passes are what make it unbearable.
+Single Bee = One honeybee, close. It closes on the microphone and backs off again over a couple of seconds, which is most of what makes it sound alive.
+Summer Meadow = Everything at once and nothing in front: bees in the flowers, cicadas in the trees behind them, and a little of the field itself.
+Swarm Rising = A disturbed swarm, played hard. Play softly for a calm one and hard for every insect in the air.
+Wasp Picnic = Half a dozen wasps circling, with one passing close every few seconds.

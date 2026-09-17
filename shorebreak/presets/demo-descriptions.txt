@@ -1,0 +1,25 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Big Waves Crashing = Big waves on an open beach, throwing forward and slamming down. No two arrive quite the same.
+Crashing Tides = A tide running in hard, breaking every few seconds.
+Crystal Bubbles = Right down in the foam, close enough to hear bubbles popping one at a time.
+Distant Roar = Open coast heard from a long way inland. The detail has gone and only the roar made it.
+Fast Swells = Short swell, one wave arriving before the last has finished. Busy and loud.
+Gentle Waves = Small waves on a calm day, close enough to hear each one arrive.
+Harbour Lapping = Water slapping the side of a pier. Low, boxy and close.
+Hollow Shore = A shore that rings: water working into a hollow under the rock, where the space is more of the sound than the wave is.
+Open Sea Murmur = Water that never quite stops breaking. Almost no shape to it, just a steady murmur.
+Receding Sand = The drain. Water running back down the beach through the sand it just covered.
+Rhythmic Tide = Surf that arrives almost on a metronome. About as regular as the sea ever gets.
+Rolling Tide = Waves that roll in rather than slam, each leaving a long bright wash behind it.
+Sand and Foam = Foam running out over flat sand. Almost all of it is the sheet of bubbles after the break.
+Shallow Clear Water = Sparse laps in shallow water, with real silence in between.
+Tidal Swells = Long swells that surge up the shore and run back without properly breaking.
+Turmoil Fjord = Confined water in turmoil, with the walls giving all of it back.
+Uproar Waves = A shore in uproar. Everything breaking at once, nothing waiting its turn.

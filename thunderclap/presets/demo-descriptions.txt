@@ -1,0 +1,26 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+City Thunder = Thunder between buildings, the way a phone catches it. The blast lands first, the claps wander over the rooftops, then the street shakes.
+Close Strike = A strike a few hundred metres off: a tearing crack, then a long roll with the hills answering it.
+Cloud Crawler = Lightning crawling along the underside of the cloud. Nothing reaches the ground, and the whole sky rolls for half a minute.
+Deep Sub = The cinematic one. Long, heavy and felt in the floor rather than heard.
+Distant Rumble = A storm ten kilometres away. No crack at all, just a slow deep roll swelling in.
+Dry Crack = Short and sharp. One stroke, no roll, no echo.
+Far Horizon = Lightning on the horizon, twenty kilometres out. More felt than heard, and it takes its time arriving.
+Gated Rumble = The thunder lasts exactly as long as you hold the key. Short notes for stabs, long ones for the whole roll.
+Heat Lightning = A storm too far off to see properly. The odd flash every quarter minute, barely a murmur with it.
+Heavy Impact = Close enough that it arrives as one blow. Dark, sudden, and over in a few seconds.
+Hollow Strike = A trailer strike: the bottom and the crack land on either side of a hole in the middle. Not what a recording measures, and that is the point.
+Mountain Echoes = A strike in a valley, thrown back off every wall until the echoes outlast the thunder.
+Overhead Crack = Right on top of you. A short violent tear with almost nothing behind it.
+Rolling Thunder = A crooked bolt a few kilometres off, its branches arriving one after another for twenty seconds.
+Single Bolt = One clean bolt a kilometre away. A single stroke, a single clap, and an honest decay.
+Storm Front = The squall is overhead. Flashes every few seconds, close and violent, nothing held back.
+Summer Storm = Hold a note and a storm passes over: near and far flashes every ten seconds or so, none of them alike.
+Under The Rain = Built to sit underneath rain. A storm seven kilometres off that never steps on anything.

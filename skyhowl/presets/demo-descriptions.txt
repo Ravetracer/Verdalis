@@ -1,0 +1,31 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Arctic Cold = Dry cold air moving over snow. Nothing bright survives out there, and the stereo image is as wide as it gets.
+Autumn Leaves = A lighter wind through dry leaves, gathered into the middle rather than spread out.
+Bare Trees = Winter trees in a town with nothing left on them. Sparse woody knocking, and gusts that take a long time coming.
+Beach Grass = Marram grass on a dune. The steadiest wind here, over a fine continuous hiss of hundreds of blades.
+Between Houses = Wind funnelled down a gap between buildings. It gusts constantly and never settles, which is what a street does to a wind.
+Cave Mouth = Wind across the mouth of a cave. The pitch belongs to the cave rather than the wind, so it barely moves however hard it blows.
+Conifer Sough = The sough of wind in pines. Millions of needles instead of separate leaves, so it comes out as one continuous hiss over a heavy bottom end.
+Desert Dune = Wind over open sand. Nothing underneath it at all, just a broad bright rush.
+Far Away = A gale heard from a long way off. The most distant thing here, and almost mono, the way distance always ends up.
+Gentle Gusts = An unremarkable breezy afternoon. No real tone, just a broad bed that comes and goes and never sits still.
+Howling Storm = Named for how it sounds rather than what it is. A fast, broad, restless storm with no steady note anywhere in it.
+Howling Wind = The archetype. The howl swoops up in pitch as the gust arrives and falls away with it, which is what a real one does.
+Meadow Breeze = A light wind over long grass, sitting entirely in the middle where the blades are.
+Mountain Ridge = Wind across a bare ridge. Slow, heavy, and almost without gusts -- it changes over minutes, not seconds.
+Open Plain = Wind over flat open ground with a wire fence somewhere in it. One wire singing, not a hedge.
+River Reeds = Wind through reeds at the water's edge. Hollow stems knock rather than brush, over a very low bed.
+Rustling Leaves = The rustle on its own: dry leaves close by, with hardly any wind behind them. The brightest thing here.
+Snow Storm = A blizzard. Long slow swells with very little detail in them.
+Soft Breath = Barely moving air, close to your ear. Almost all of it is hiss.
+Spooky Wind = A wind with something in it. The note wanders instead of holding, which is the whole effect.
+Underground = Air moving in a tunnel. A low drone in a hard, close space, with nothing bright left.
+Wind In Birches = Summer leaves on thin trunks. The rustle carries most of it.
+Winter Gale = A hard cold gale, the gustiest of the set. Almost all weight, with one thin note left whistling in it.

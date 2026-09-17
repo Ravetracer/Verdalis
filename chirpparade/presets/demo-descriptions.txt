@@ -1,0 +1,26 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Alarm Flock = Short, high and fast, which is what an alarm call is for: hard to place and impossible to ignore. Seven birds, all of them agitated.
+Blackbird Song = A phrase that actually goes somewhere: five notes, a pause about four times as long as the gaps inside it, then round again.
+Budgie Chatter = Four budgies talking over each other. The busiest and chattiest thing in the set.
+Crane Bugle = A bugle carrying across water. Far enough away that only the middle of the call arrives.
+Dawn Chorus = Twelve birds over two octaves answering each other. Nothing plays on the note -- hold one and you get a morning.
+Far Treeline = Birds a field away. Quieter, duller, and the fine detail smoothed off, which is what really makes them sound far rather than just soft.
+Forest Morning = A wood in spring with a woodpecker somewhere in it, drumming every quarter minute or so.
+Garden Sparrows = Ordinary garden birds, and the middle of everything that was measured. The place to start.
+Goose Flight = Geese going over, spread out at different distances, which is most of what makes a skein sound like a skein.
+Green Woodpecker = The yaffle: a falling laugh at ten notes a second, slowing as it goes.
+Jungle Screech = The one with no real bird behind it. The most extreme shapes in the whole library, pushed further. No bird makes this noise, and it is here on purpose.
+Melody Bird = For playing tunes with. One note per key, hardly any wandering, and playing harder sends the pitch up the way a bird calling harder does.
+Nightingale Song = A nightingale never repeats itself, and neither does this. Short phrases running together, real silence between them, and no two the same.
+Parakeet Flock = The same voice driven hard and made ragged. Ten of them at once is a street full of parakeets, not a cage.
+Robin Whistle = The purest voice in the set: almost a plain whistle. Four notes with a slight fall between them.
+Single Chirp = One bird, one note, no flock. The plugin reduced to what a single key does, and dry on purpose.
+Tui Bell = A bell-like call that comes from the shape of the throat and beak rather than the voice. A short neck and a wide beak, put to work.
+Woodpecker Drum = Drumming only, one roll per key. Fourteen strikes that speed up across the roll -- which is what real ones do, whatever you have read.

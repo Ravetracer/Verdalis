@@ -15,13 +15,25 @@
 # this plugin's section is touched; the other plugins' entries and the README's
 # hand-written closing notes are left exactly as they are.
 #
+# Each demo's blurb comes from <plugin>/presets/demo-descriptions.txt if that
+# file has a line for the preset, and from the preset file's own description if
+# it does not. The two are written for different readers: a preset description
+# is documentation and says what was measured and why, and the website wants a
+# sentence a musician can read. Keeping them apart is why the override exists --
+# the plugin's own documentation does not have to be dumbed down to make the
+# site readable. The format is one "Preset Name = text" per line, blank lines
+# and # comments ignored.
+#
 # Every new plugin gets a run of this and a section in _designs/website-copy.md.
 # See "The website material" in the suite CLAUDE.md.
 #
 # Needs ffmpeg, sox, lame and python3. Run it from anywhere:
 #
 #    shared/tools/make-demos.sh <plugin-folder> [--build DIR] [--seed N]
-#                                               [--simulates TEXT]
+#                                               [--simulates TEXT] [--text-only]
+#
+# --text-only refreshes demos.json and README.md from the preset files and the
+# override without re-rendering anything, which is what a wording change needs.
 #
 set -euo pipefail
 
@@ -32,18 +44,20 @@ plugin=""
 build_dir=""
 seed=7
 simulates=""
+text_only=0
 
 while [ $# -gt 0 ]; do
    case "$1" in
       --build)     build_dir="$2"; shift 2 ;;
       --seed)      seed="$2"; shift 2 ;;
       --simulates) simulates="$2"; shift 2 ;;
+      --text-only) text_only=1; shift ;;
       -*)          echo "unknown option: $1" >&2; exit 2 ;;
       *)           plugin="$1"; shift ;;
    esac
 done
 
-[ -n "$plugin" ] || { echo "usage: make-demos.sh <plugin-folder> [--build DIR] [--seed N] [--simulates TEXT]" >&2; exit 2; }
+[ -n "$plugin" ] || { echo "usage: make-demos.sh <plugin-folder> [--build DIR] [--seed N] [--simulates TEXT] [--text-only]" >&2; exit 2; }
 
 plugin_dir="${suite_dir}/${plugin}"
 [ -d "$plugin_dir" ] || { echo "no such plugin folder: $plugin_dir" >&2; exit 1; }
@@ -56,15 +70,28 @@ name="$(sed -n 's/^project(\([A-Za-z0-9_]*\) .*/\1/p' "${plugin_dir}/CMakeLists.
 
 render="${build_dir}/${plugin}-render"
 clap="${build_dir}/${name}.clap"
-for f in "$render" "$clap"; do
-   [ -f "$f" ] || { echo "missing: $f -- build the plugin first" >&2; exit 1; }
-done
-for t in ffmpeg sox lame python3; do
-   command -v "$t" >/dev/null || { echo "$t is required" >&2; exit 1; }
-done
+if [ "$text_only" -eq 0 ]; then
+   for f in "$render" "$clap"; do
+      [ -f "$f" ] || { echo "missing: $f -- build the plugin first" >&2; exit 1; }
+   done
+   for t in ffmpeg sox lame; do
+      command -v "$t" >/dev/null || { echo "$t is required" >&2; exit 1; }
+   done
+fi
+command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 1; }
 
-# What the plugin simulates, for the section heading. Taken from the suite
-# README's plugin table so the two cannot drift; --simulates overrides it.
+# What the plugin simulates, for the section heading. Whatever demos.json
+# already says wins, because those headings were written by hand and read
+# better than the README table's terse "winds, storms". A plugin with no entry
+# yet falls back to the table, and --simulates overrides both.
+if [ -z "$simulates" ] && [ -f "${suite_dir}/dist/demos/demos.json" ]; then
+   simulates="$(python3 - "${suite_dir}/dist/demos/demos.json" "$name" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+print(data.get(sys.argv[2], {}).get("simulates", ""))
+PY
+)"
+fi
 if [ -z "$simulates" ]; then
    simulates="$(python3 - "$suite_dir/README.md" "$plugin" <<'PY'
 import re, sys
@@ -84,6 +111,10 @@ out="${suite_dir}/dist/demos/${name}"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$out"
+
+if [ "$text_only" -eq 1 ]; then
+   echo "==> ${name}: refreshing the text only, leaving the audio alone"
+else
 
 echo "==> rendering ${name}'s presets"
 "$render" --plugin "$clap" --all --outdir "$work" \
@@ -112,6 +143,8 @@ print(f'{g:.2f}')")"
    printf '    %-34s %+7s dB\n' "${base}.mp3" "$gain"
 done
 
+fi
+
 echo "==> updating dist/demos/demos.json and README.md"
 python3 - "$suite_dir" "$plugin" "$name" "$simulates" <<'PY'
 import json, os, re, sys
@@ -127,6 +160,19 @@ def field(path, key):
                 return line.split(" = ", 1)[1].strip()
     return ""
 
+# The website's own wording, where there is any. One "Preset Name = text" per
+# line; anything without a line here falls back to the preset's description.
+overrides = {}
+opath = os.path.join(presets, "demo-descriptions.txt")
+if os.path.exists(opath):
+    with open(opath, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or " = " not in line:
+                continue
+            k, v = line.split(" = ", 1)
+            overrides[k.strip()] = v.strip()
+
 def safe(s):
     return "".join(c if c.isalnum() else "_" for c in s)
 
@@ -141,7 +187,7 @@ for f in sorted(os.listdir(presets)):
         print(f"    warning: no demo rendered for {title!r}", file=sys.stderr)
         continue
     entries.append({"preset": title, "file": mp3,
-                    "description": field(path, "description")})
+                    "description": overrides.get(title) or field(path, "description")})
 entries.sort(key=lambda e: e["preset"])
 
 # demos.json -- this plugin's entry replaced or appended, the others untouched.
@@ -174,7 +220,11 @@ else:
     else:
         text = text.rstrip("\n") + "\n\n" + block
 open(rpath, "w", encoding="utf-8").write(text)
-print(f"    {len(entries)} demos recorded for {name}")
+missing = [e["preset"] for e in entries if e["preset"] not in overrides]
+if missing and overrides:
+    print(f"    no website wording for: {', '.join(missing)}", file=sys.stderr)
+print(f"    {len(entries)} demos recorded for {name}"
+      f" ({len(entries) - len(missing)} with their own website wording)")
 PY
 
 echo
