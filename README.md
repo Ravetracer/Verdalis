@@ -43,6 +43,7 @@ preset library and a window.
 | **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.6.0 |
 | **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.2.0 |
 | **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.1.0 |
+| **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.2.0 |
 | **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.2.1 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
@@ -85,6 +86,18 @@ it, and a one-to-three pulse train per arrival. A crackle is measurably a click
 and not a ring, so no resonator is fitted. 47 parameters, 18 presets, five
 octave-band colours taken from the beds of 17 recordings with their crackles
 gated out first.
+
+**InsectSwarm** — a honeybee's buzz measures a harmonic-to-noise ratio of 6.6 dB
+and a mosquito's 16.0, so a bee is very nearly as much turbulent air as tone,
+which is why a stack of oscillators never sounds like one. A crowd needs no
+mechanism of its own: a single close insect measures 8 to 13 dB and a hive 0 to
+2, because enough fundamentals scattered widely enough *are* noise. The Doppler
+shift of a pass is a measured 30 cents against 43 to 103 cents of the insect's own
+wander, so a flyby reads as movement through its level and not its pitch. 53
+parameters, 16 presets, seven species fitted to their measured harmonic stacks
+from 67 field recordings, plus a separate stridulation layer for the cicada and
+the cricket, which are a click train ringing a resonant body and not a wingbeat
+at all.
 
 **WhooshPact** — the one plugin here that models no natural source. Its
 reference library is 211 finished production sounds rather than recordings of

@@ -51,7 +51,7 @@ or mirror off this machine.
 
 ## Suite roadmap
 
-Seven plugins, each modelling one natural sound source:
+Eight plugins, each modelling one natural sound source:
 
 | # | Plugin | Folder | Status | Simulates |
 |---|--------|--------|--------|-----------|
@@ -62,7 +62,8 @@ Seven plugins, each modelling one natural sound source:
 | 5 | **ChirpParade** | `chirpparade/` | WIP | bird chirps |
 | 6 | **RiverFlow** | `riverflow/` | WIP | rivers, streams |
 | 7 | **CrackleBlaze** | `crackleblaze/` | WIP | fire |
-| 8 | **NightLife** | `nightlife/` | planned | night insects, crickets, howling wolfes, foxes, owls, night birds |
+| 8 | **InsectSwarm** | `insectswarm/` | WIP | flying and calling insects |
+| 9 | **NightLife** | `nightlife/` | planned | night insects, howling wolfes, foxes, owls, night birds |
 
 Plus one plugin that is deliberately **not** on that list:
 
@@ -555,6 +556,7 @@ with a coloured knob.
 | ShoreBreak | `#4FD0BA` | sea green, a warmer and greener chassis |
 | SkyHowl | `#F0845C` | dust coral -- greys with a red-brown cast |
 | ChirpParade | `#F2C744` | finch gold, greys with an olive cast |
+| InsectSwarm | `#E6D93B` | wasp yellow at hue 56, sharper and more acid than ChirpParade's warm gold at 43; a chitin-green-black chassis so the greys lean away from ChirpParade's olive |
 | RiverFlow | `#57C77A` | river green -- moss on wet stone, cool green-grey greys |
 | CrackleBlaze | `#FF5A2C` | ember orange, the darkest chassis in the suite -- a deep red-brown cast, deliberately hotter and redder than SkyHowl's dusty coral |
 | WhooshPact | `#FF3C97` | impact magenta at hue 330, with a cool blue-violet chassis -- the one plugin that models nothing natural, and the one accent that reads as obviously synthetic |
