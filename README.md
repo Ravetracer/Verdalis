@@ -49,74 +49,65 @@ preset library and a window.
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
 
-**RainyDay** — 50 parameters covering droplet statistics, impact surface, stereo
-field, distance, space, filter and a full ADSR. 17 factory presets, each fitted
-against a real recording of the thing it imitates.
+**RainyDay** — rain, from one drip in an empty room to a monsoon on a tin roof.
+Rain on leaves, on a windscreen, down a gutter, or heard as a wall of it from
+half a mile away. Hold a note and it keeps falling for as long as you hold it,
+never repeating, because every drop is worked out as it lands. 50 parameters,
+17 presets, each one fitted against a real recording of the thing it imitates.
 
-**ThunderClap** — shock-wave modelling from the bolt channel outwards, with
-distance-dependent air absorption. 18 presets from a distant rumble to a strike
-directly overhead, and a window that flashes with the bolt.
+**ThunderClap** — thunder, from a rumble on the horizon to a strike that lands
+on top of you. Distance is the main control and it does what distance really
+does: the crack goes first, the low end survives, and a far-off bolt arrives
+seconds after the flash. 47 parameters, 18 presets, and a window that lights up
+with the bolt.
 
-**ShoreBreak** — a breaking wave in four overlapping layers: the crest
-collapsing into its bubble cloud, the foam it leaves, the wash back down the
-shore and the individual bubbles popping in it. 52 parameters, 17 presets, and
-Galvin's four breaker types, which measurably differ in the slope above 1.5 kHz.
+**ShoreBreak** — surf, from a distant roar to a shore in uproar. A wave is built
+the way it actually breaks: the crest collapsing into a cloud of bubbles, the
+foam it leaves behind, the wash running back down the beach, and single bubbles
+popping in it. 52 parameters, 17 presets, and the four kinds of breaker
+oceanographers name — which really do sound different, measurably so above
+1.5 kHz.
 
-**SkyHowl** — built on the fact that wind is silent: a flow field that makes no
-sound at all, and the sources it drives. Aeolian tones shed at the Strouhal
-frequency, so a howl's pitch swoops with every gust — which the reference
-library confirms. 53 parameters, 23 presets, and rustling foliage as a bonus
-layer.
+**SkyHowl** — wind, from a breath through a gap to a storm. It is built on the
+fact that wind itself is silent: what you hear is whatever it blows past. So the
+plugin models the moving air, and the edges, wires and openings it drives — which
+is why a howl swoops in pitch with every gust instead of just getting louder.
+53 parameters, 23 presets, and rustling foliage as a layer of its own.
 
-**RiverFlow** — built on a measurement that reads as a criticism and is not: the
-smoothest third of its reference library is statistically indistinguishable from
-shaped Gaussian noise, so a bed of it is a complete model of those rivers. The
-other end measures thirteen times as grainy, and the band it happens in says
-whether that is a creek dabbling between stones or drops off an overhang. 50
-parameters, 20 presets, six octave-band colours taken as cluster centroids from
-77 recordings, and a bed whose bands each wander on their own because the
-measured correlation between neighbours is 0.07.
+**ChirpParade** — birds, from a single chirp to a dawn chorus. A blackbird, a
+robin, a nightingale, a woodpecker drumming on a dead branch. Play a note and
+you get one call; hold it and the flock answers itself, each bird with its own
+pitch, distance and position. 62 parameters, 18 presets, nine species, and 72
+song shapes traced off real recordings and rebuilt from the tracing.
 
-**CrackleBlaze** — a fire is the opposite of a river: a median crest factor of
-31.7 dB against a river's 19.6, which is a quiet bed with very loud, very short
-things on top of it. Its crackles arrive on three timescales that disagree —
-exactly Poisson at 50 ms, twice Poisson below 10 ms, and four to twenty times
-Poisson at one second — so the spawner is a wandering rate, a Poisson process at
-it, and a one-to-three pulse train per arrival. A crackle is measurably a click
-and not a ring, so no resonator is fitted. 47 parameters, 18 presets, five
-octave-band colours taken from the beds of 17 recordings with their crackles
-gated out first.
+**RiverFlow** — running water, from a river's roar down to one drop falling on
+stone. The plugin's odd discovery is that a smooth river really is just noise,
+beautifully shaped — so half the work is the shaping, and the other half is the
+grain: the stones, the dabbling, the drips off an overhang. Where that grain sits
+in the spectrum is what tells a creek picking its way between stones from water
+falling off a ledge. 50 parameters, 20 presets, built from 77 recordings.
 
-**InsectSwarm** — a honeybee's buzz measures a harmonic-to-noise ratio of 6.6 dB
-and a mosquito's 16.0, so a bee is very nearly as much turbulent air as tone,
-which is why a stack of oscillators never sounds like one. A crowd needs no
-mechanism of its own: a single close insect measures 8 to 13 dB and a hive 0 to
-2, because enough fundamentals scattered widely enough *are* noise. The Doppler
-shift of a pass is a measured 30 cents against 43 to 103 cents of the insect's own
-wander, so a flyby reads as movement through its level and not its pitch. 53
-parameters, 16 presets, seven species fitted to their measured harmonic stacks
-from 67 field recordings, plus a separate stridulation layer for the cicada and
-the cricket, which are a click train ringing a resonant body and not a wingbeat
-at all.
+**CrackleBlaze** — fire, from a cottage hearth to a burning roof. A fire is a
+quiet bed with very loud, very short things on top, and the crackles are the
+whole character: they never fall into a rhythm, they arrive in twos and threes
+inside a hundredth of a second, and they flare and die away over seconds. They
+are also dry clicks rather than little bell-like rings, so nothing here is made
+to ring. 47 parameters, 18 presets, five fire colours taken from 17 recordings.
 
-**WhooshPact** — the one plugin here that models no natural source. Its
-reference library is 211 finished production sounds rather than recordings of
-the world, so the measurement describes the target rather than a mechanism. One
-number carries the design: where the peak sits. A boom peaks 2.4 % into itself
-and a whoosh a third of the way in, so the gesture is five parameters and there
-are no modes. Four layers — noise through a swept filter, a band-limited
-oscillator stack, a struck sub and a struck transient — and a *Variation* knob
-that makes every trigger its own sound, which is the reason it exists at all.
-64 parameters, 31 presets, six families. Flutter is off by default because the
-measurement says five of the six families do not have any.
+**InsectSwarm** — insects, from one bee against a window to a hive you can stand
+next to. A wasp crossing the microphone, a mosquito that will not leave, cicadas
+in the heat, crickets after dark. Count one insect or sixty: there is no separate
+"swarm mode", because a crowd of them genuinely turns into noise on its own, the
+way a real hive does. 53 parameters, 16 presets, seven species, all of them
+fitted against 67 field recordings.
 
-**ChirpParade** — a bird syllable *is* its frequency contour, so 72 of them were
-measured off real recordings and ship as coefficients that drive the oscillator
-directly, each at its own measured duration. Above them a one-sided valve, which
-is where every even harmonic comes from, and a tracheal resonance that follows
-the pitch the way a beak does. 62 parameters, 18 presets, nine species,
-woodpecker drumming as a layer of its own. Plays one shot on a note and a flock
-while it is held.
+**WhooshPact** — the odd one out, and deliberately so: it models nothing in
+nature. Whooshes, impacts, booms, braams, downshifters and stings — the sounds a
+trailer or a title sequence needs. Its references are 211 finished production
+sounds rather than field recordings, and the one thing they agree on is where
+the punch sits in time, which is what the gesture controls are built around.
+Every trigger comes out slightly different, which is the reason it exists.
+64 parameters, 31 presets, six families.
 
 ## Build
 
