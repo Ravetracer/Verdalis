@@ -508,8 +508,9 @@ shared/
 │                               clap_entry.version
 ├── patches/                    fixes for the gitignored CLAP/ checkouts
 └── tools/                      install-plugin.sh, fithost.cpp, analysis/wavio.py,
-                                and the manual toolchain: make-manual.sh,
-                                docgen.cpp, manual.py, manual.css
+                                make-demos.sh (the website demo audio), and the
+                                manual toolchain: make-manual.sh, docgen.cpp,
+                                manual.py, manual.css
 ```
 
 A plugin pulls it in with
@@ -713,6 +714,47 @@ Two constraints come from `wkhtmltopdf`, and both are in `manual.css`:
   the contents page is a list of links instead. A row of a long table can also
   be split across a page break and leave a sliver behind; `page-break-inside`
   is only partly honoured.
+
+## The website material
+
+**Every new plugin needs two things for the site, and neither is optional:
+website copy and demo tracks.** They are as much part of finishing a plugin as
+its manual is, and they are easy to forget because neither lives in the
+repository — both are gitignored, local to this machine.
+
+**Website copy** goes in `_designs/website-copy.md`, which holds the suite's
+download-page text, the AI disclosure, and then one `## <Plugin>` section per
+instrument carrying **three variants** of 2–3 paragraphs each in a plain product
+register: what the plugin aims to be, then what it features. A new plugin gets
+its own section in the same shape as the existing ones. Where the author has
+given his own description of a plugin, it is kept **verbatim** under *The
+author's own brief* ahead of the variants and the marketing prose is written
+around it rather than replacing it. Every factual claim in a variant comes from
+the plugin's README, STATUS and parameter table, so re-check the numbers when a
+version changes them — including the suite section's instrument, preset and
+parameter totals.
+
+**Demo tracks** go in `dist/demos/<Plugin>/`, one MP3 per factory preset, built
+by
+
+```sh
+shared/tools/make-demos.sh <plugin-folder>
+```
+
+which renders 16 seconds plus a 3 second tail at 48 kHz from the plugin's own
+offline renderer, applies a single linear gain towards -16 LUFS backed off to
+keep the true peak under -1 dBTP, and encodes at 256 kbps. There is no
+compression and no limiting, so the relative loudness the presets were fitted to
+survives and a sparse preset stays quiet. The script reads each demo's
+description straight out of the preset file and what the plugin simulates out of
+the root README's plugin table, so nothing about it is per-plugin; it then
+updates `dist/demos/demos.json` and `dist/demos/README.md` in place, touching
+only that plugin's section.
+
+`DemoTracks/` is the other, smaller thing: curated demos that are not one plain
+render per preset. WhooshPact has its own `tools/make-demos.sh` there because its
+presets are one-shots and a 19 second render of one is mostly silence. Reach for
+that pattern only when a plugin's presets are not sustained.
 
 ## Branding
 
