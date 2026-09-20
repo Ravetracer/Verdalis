@@ -187,6 +187,10 @@ struct WindowSpec {
    int mixerCount;
 
    // Optional; nothing is drawn behind the wordmark when it is null.
+   // Owned by the window, which deletes it. A plugin creates a fresh one per
+   // window rather than passing a shared instance: an ornament carries
+   // animation state, and one instance behind two windows makes them fight
+   // over it. Null for a plugin with nothing to animate.
    HeaderOrnament *ornament;
 };
 

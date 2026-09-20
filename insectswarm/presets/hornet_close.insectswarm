@@ -2,13 +2,13 @@
 format = 1
 name = Hornet Close
 author = Ravetracer
-description = Two hornets at arm's length. The lowest wingbeat in the library at 85.7 Hz, and the one species whose fitted resonance sits between its first and second harmonics -- so the pitch you hear is an octave above the beat. Roam is slow to match the mass: a hornet manoeuvres like something heavy.
+description = Two hornets at arm's length. The lowest wingbeat in the library at 85.7 Hz, and the one species whose fitted resonance sits between its first and second harmonics -- so the pitch you hear is an octave above the beat.
 features = hornet, close, threat
 
 species = Hornet
 rate_shift = 0
 count = 2
-swarm_level = -12.5
+swarm_level = -14
 spread = 70
 wander = 18
 wander_rate = 2.9994
@@ -56,5 +56,6 @@ vel_to_swarm = 0.3
 gain = -3
 max_voices = 128
 seed = 0
-roam = 8
-roam_rate = 0.35
+roam = 4
+roam_rate = 0.4
+scrape = 0.45

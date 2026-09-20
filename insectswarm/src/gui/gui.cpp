@@ -40,7 +40,8 @@ constexpr uint32_t kFlybyParams[] = {kParamFlybyRate, kParamFlybyLevel, kParamFl
                                      kParamFlybyPass, kParamFlybySpeed, kParamFlybySweep};
 constexpr uint32_t kStridParams[] = {
    kParamStridLevel, kParamCarrier,    kParamCarrierQ,   kParamPulseRate,
-   kParamEchemeRate, kParamDuty,       kParamChorus,     kParamStridSpread,
+   kParamScrape,     kParamEchemeRate, kParamDuty,       kParamChorus,
+   kParamStridSpread,
 };
 constexpr uint32_t kAirParams[] = {kParamDistance,    kParamAir,       kParamWidth,
                                    kParamSpaceAmount, kParamSpaceSize, kParamSpaceDamping};
@@ -56,7 +57,7 @@ constexpr uint32_t kOutParams[] = {kParamGain, kParamMaxVoices, kParamSeed};
 
 constexpr PanelSpec kPanelSpecs[] = {
    PANEL("SWARM", 5, 2, kSwarmParams),      PANEL("WING", 3, 2, kWingParams),
-   PANEL("FLYBY", 3, 2, kFlybyParams),      PANEL("STRIDULATE", 4, 2, kStridParams),
+   PANEL("FLYBY", 3, 2, kFlybyParams),      PANEL("STRIDULATE", 5, 2, kStridParams),
    PANEL("AIR", 3, 2, kAirParams),          PANEL("BED", 3, 1, kBedParams),
    PANEL("FILTER", 3, 2, kFilterParams),    PANEL("ENVELOPE", 3, 2, kEnvParams),
    PANEL("OUTPUT", 3, 1, kOutParams),
@@ -308,8 +309,6 @@ private:
    double mPhase = 0.0;
 };
 
-Swarm gSwarm;
-
 const WindowSpec kSpec = {
    /* wordmarkFirst  */ "Insect",
    /* wordmarkSecond */ "Swarm",
@@ -329,14 +328,17 @@ const WindowSpec kSpec = {
    /* paramCount     */ kNumParams,
    /* mixer          */ kMixerStrips,
    /* mixerCount     */ kNumStrips,
-   /* ornament       */ &gSwarm,
+   /* ornament       */ nullptr, // per window, created in createGui()
 };
 
 } // namespace
 
 Gui *createGui(GuiDelegate &delegate) {
-   static WindowSpec spec = kSpec;
+   WindowSpec spec = kSpec;
    spec.params = paramTable();
+   // One ornament per window: it carries animation state, and a single
+   // shared instance would let two windows of this plugin drive each other.
+   spec.ornament = new Swarm();
    return createWindow(delegate, spec);
 }
 

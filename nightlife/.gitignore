@@ -1,0 +1,28 @@
+# Build output. Anything starting with "build" -- build/, build-win/, and any
+# other tree someone points cmake at -- so a stray -B directory cannot be
+# committed by a careless `git add -A`, which is exactly how a 5 MB Windows DLL
+# once got in here.
+/build*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Python bytecode from tools/analysis
+__pycache__/
+*.py[cod]
+
+# Local reference material: recordings and screenshots supplied for comparison
+# while working on the plugin. Not part of the project, and not ours to ship.
+# The leading "!" has to be escaped or git reads it as a negation.
+/\!dev/
+
+# Editor and OS noise
+*.swp
+*~
+.DS_Store
+.vscode/
+.idea/
+# The analysis venv, for the tools that need librosa (see
+# tools/analysis/setup-venv.sh). Half a gigabyte of scipy and numba.
+.venv/

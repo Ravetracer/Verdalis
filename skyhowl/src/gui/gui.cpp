@@ -251,8 +251,6 @@ private:
    uint32_t mLastEvent = 0;
 };
 
-Streaklines gStreaklines;
-
 const WindowSpec kSpec = {
    /* wordmarkFirst  */ "Sky",
    /* wordmarkSecond */ "Howl",
@@ -272,14 +270,17 @@ const WindowSpec kSpec = {
    /* paramCount     */ kNumParams,
    /* mixer          */ kMixerStrips,
    /* mixerCount     */ kNumStrips,
-   /* ornament       */ &gStreaklines,
+   /* ornament       */ nullptr, // per window, created in createGui()
 };
 
 } // namespace
 
 Gui *createGui(GuiDelegate &delegate) {
-   static WindowSpec spec = kSpec;
+   WindowSpec spec = kSpec;
    spec.params = paramTable();
+   // One ornament per window: it carries animation state, and a single
+   // shared instance would let two windows of this plugin drive each other.
+   spec.ornament = new Streaklines();
    return createWindow(delegate, spec);
 }
 

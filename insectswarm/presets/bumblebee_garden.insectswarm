@@ -2,7 +2,7 @@
 format = 1
 name = Bumblebee Garden
 author = Ravetracer
-description = Four bumblebees, measured at 143 Hz. Its second harmonic sits 11.7 dB above its fundamental in the references, which is the whole reason a bumblebee reads as heavier than a honeybee rather than merely lower. Roam is the slowest in the library, which is how a bumblebee moves between flowers.
+description = Four bumblebees, measured at 143 Hz. Its second harmonic sits 11.7 dB above its fundamental in the references, which is the whole reason a bumblebee reads as heavier than a honeybee rather than merely lower.
 features = bumblebee, garden, low
 
 species = Bumblebee
@@ -56,5 +56,6 @@ vel_to_swarm = 0.3
 gain = -3
 max_voices = 128
 seed = 0
-roam = 6
-roam_rate = 0.3
+roam = 4
+roam_rate = 0.4
+scrape = 0.45

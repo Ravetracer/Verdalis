@@ -354,8 +354,6 @@ private:
    uint32_t mIdleSeed = 100;
 };
 
-Sonogram gSonogram;
-
 const WindowSpec kSpec = {
    /* wordmarkFirst  */ "Chirp",
    /* wordmarkSecond */ "Parade",
@@ -375,14 +373,17 @@ const WindowSpec kSpec = {
    /* paramCount     */ kNumParams,
    /* mixer          */ kMixerStrips,
    /* mixerCount     */ kNumStrips,
-   /* ornament       */ &gSonogram,
+   /* ornament       */ nullptr, // per window, created in createGui()
 };
 
 } // namespace
 
 Gui *createGui(GuiDelegate &delegate) {
-   static WindowSpec spec = kSpec;
+   WindowSpec spec = kSpec;
    spec.params = paramTable();
+   // One ornament per window: it carries animation state, and a single
+   // shared instance would let two windows of this plugin drive each other.
+   spec.ornament = new Sonogram();
    return createWindow(delegate, spec);
 }
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(InsectSwarm VERSION 0.2.0 LANGUAGES CXX)
+project(InsectSwarm VERSION 0.3.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -322,12 +322,19 @@ if(INSECTSWARM_BUILD_VST3)
       set_target_properties(InsectSwarm-vst3 PROPERTIES PREFIX "")
       # Same reasoning as the .clap: the runtime is linked in so the plugin
       # needs no MinGW DLLs beside it. GetPluginFactory carries dllexport from
-      # SMTG_EXPORT_SYMBOL, so unlike the .clap there is no version script and
-      # no --exclude-all-symbols here.
+      # SMTG_EXPORT_SYMBOL, so unlike the .clap there is no --exclude-all-symbols
+      # here; the ELF version script in the else() branch is the Linux equivalent.
       target_link_options(InsectSwarm-vst3 PRIVATE
          "-Wl,--no-undefined"
          "-static-libgcc" "-static-libstdc++"
          "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic"
+      )
+   else()
+      # Every plugin links the same wrapper and SDK sources, so without this the
+      # module exports ~1700 identical symbols and a host that uses RTLD_GLOBAL
+      # binds one plugin's calls to another's. See vst3_entry.version.
+      target_link_options(InsectSwarm-vst3 PRIVATE
+         "-Wl,--version-script=${VERDALIS_SHARED_DIR}/cmake/vst3_entry.version"
       )
    endif()
 

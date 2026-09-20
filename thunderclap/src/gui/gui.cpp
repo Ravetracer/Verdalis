@@ -234,8 +234,6 @@ private:
    int mFrames = 0;
 };
 
-Lightning gLightning;
-
 const WindowSpec kSpec = {
    /* wordmarkFirst  */ "Thunder",
    /* wordmarkSecond */ "Clap",
@@ -255,14 +253,17 @@ const WindowSpec kSpec = {
    /* paramCount     */ kNumParams,
    /* mixer          */ kMixerStrips,
    /* mixerCount     */ kNumStrips,
-   /* ornament       */ &gLightning,
+   /* ornament       */ nullptr, // per window, created in createGui()
 };
 
 } // namespace
 
 Gui *createGui(GuiDelegate &delegate) {
-   static WindowSpec spec = kSpec;
+   WindowSpec spec = kSpec;
    spec.params = paramTable();
+   // One ornament per window: it carries animation state, and a single
+   // shared instance would let two windows of this plugin drive each other.
+   spec.ornament = new Lightning();
    return createWindow(delegate, spec);
 }
 

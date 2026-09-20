@@ -18,6 +18,7 @@ comes from `shared/tools/analysis`.
 | `wingbeat.py` | the wingbeat rate, its harmonic stack, how far it wanders |
 | `swarm.py` | harmonic-to-noise ratio, pitch dispersion, the bed under the buzz, stereo width |
 | `pulse.py` | the stridulators: carrier, Q, click rate, chirp rate, duty |
+| `chorus.py` | the stridulation layer *in time*: steadiness, chirp-peak width, within-chirp duty |
 | `flyby.py` | a single pass: level trajectory, Doppler ratio, the speed it implies |
 | `species.py` | reduces all of it to `src/dsp/species_generated.h` |
 | `fit.py` | renders the plugin back out and measures it with the same estimators |

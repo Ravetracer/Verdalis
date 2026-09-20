@@ -2,13 +2,13 @@
 format = 1
 name = Mosquito In The Ear
 author = Ravetracer
-description = One mosquito, as close as it ever gets. The most harmonic thing in the library at 16 dB harmonic-to-noise, which is why a mosquito is a whine where a bee is a buzz. Roam is at 10 dB and its fastest, which is the thing circling your head rather than sitting in front of you.
+description = One mosquito, as close as it ever gets. The most harmonic thing in the library at 16 dB harmonic-to-noise, which is why a mosquito is a whine where a bee is a buzz.
 features = mosquito, solo, close
 
 species = Mosquito
 rate_shift = 0
 count = 1
-swarm_level = -16
+swarm_level = -18
 spread = 150
 wander = 18
 wander_rate = 2.9994
@@ -56,5 +56,6 @@ vel_to_swarm = 0.3
 gain = -3
 max_voices = 128
 seed = 0
-roam = 10
-roam_rate = 0.7
+roam = 4
+roam_rate = 0.4
+scrape = 0.45

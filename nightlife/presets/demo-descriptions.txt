@@ -1,0 +1,24 @@
+# Website wording for the demo sounds, one "Preset Name = text" per line.
+#
+# These are for a visitor browsing the site, not for the manual. The preset's
+# own description stays in the preset file and stays technical -- it is
+# documentation and says what was measured. This says what it sounds like.
+# A preset with no line here falls back to its own description.
+# Read by shared/tools/make-demos.sh.
+
+Barred Phrase = Eight notes in a row, speeding up slightly and walking downwards. The owl that sounds like it is asking a question.
+Bullfrog Bank = Slow enough to hear every pulse: a knock rather than a rattle, from a few big frogs on a bank.
+Cricket Field = Crickets, and nothing else. A dry, high shimmer that sits above everything in a mix and never gets in its way.
+Deep Forest Bed = No animals at all -- just the night itself, dark and slowly breathing. A floor to put anything else on.
+Fox Across Fields = The same scream as Vixen Scream, four hundred metres away. This is the one people report as somebody shouting.
+Loon Lake = A wail over open water, with the far shore answering it. The most recognisable sound in any northern night.
+Midnight Marsh = A wet place with something large a long way off. Frogs close, crickets behind them, a wolf every fifteen seconds or so.
+Pack Answering = Six wolves, each at its own pitch, answering each other across a valley. It builds itself while you hold the note.
+Pond Chorus = Sixteen frogs on one pond, keeping time. Dense, wet and oddly rhythmic -- which is what a real chorus does.
+Scops Metronome = One small owl repeating the same note every two and a half seconds, all night. Hypnotic on purpose.
+Screech Whinny = A fast descending trill that never settles. Half an owl, half a horse, and the reason screech owls are in folklore.
+Spring Peepers = The high, fast end: two dozen small frogs at four hundred and eighty calls a minute. A shimmer rather than a rattle.
+Summer Night = Everything at once, balanced: a bed, crickets, a pond, and an owl that says something every eight seconds. The whole plugin in one preset.
+Tawny Wood = The two-note hoot everybody knows, in a wood with a second bird answering from further off.
+Vixen Scream = Close, harsh and deliberately unpleasant. The noisiest thing the plugin makes, and the most useful for a jump.
+Wolf Valley = One wolf, far away, holding a note for two seconds. Distance does most of the work here.

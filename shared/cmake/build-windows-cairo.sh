@@ -53,13 +53,23 @@ done
 
 export PKG_CONFIG_LIBDIR="${prefix}/lib/pkgconfig"
 
+# -Db_ndebug=true is not optional. Meson does not define NDEBUG for
+# --buildtype=release; b_ndebug defaults to false, so every assert() inside
+# Cairo and pixman would otherwise survive into the static library and into the
+# shipped plugin. On Linux the distribution's Cairo is built with NDEBUG and
+# those checks are compiled out, so a failing internal assertion can only bite
+# on Windows -- where it is an abort() behind a modal CRT dialog that takes the
+# host down with it. Reported as issue #1: an assertion in cairo-hash.c froze
+# Cubase 15 mid-session. -DCMAKE_BUILD_TYPE=Release in release.sh does not
+# cover this, because Cairo is already a prebuilt static library by then.
+
 meson setup "${work}/${PIXMAN}/_b" "${work}/${PIXMAN}" --cross-file="$cross" \
-   --prefix="$prefix" --buildtype=release --default-library=static \
+   --prefix="$prefix" --buildtype=release --default-library=static -Db_ndebug=true \
    -Dtests=disabled -Ddemos=disabled -Dgtk=disabled
 ninja -C "${work}/${PIXMAN}/_b" install
 
 meson setup "${work}/${CAIRO}/_b" "${work}/${CAIRO}" --cross-file="$cross" \
-   --prefix="$prefix" --buildtype=release --default-library=static \
+   --prefix="$prefix" --buildtype=release --default-library=static -Db_ndebug=true \
    -Dxlib=disabled -Dxcb=disabled -Dfreetype=disabled -Dfontconfig=disabled \
    -Dpng=disabled -Dzlib=disabled -Dglib=disabled -Dtests=disabled \
    -Dspectre=disabled -Dsymbol-lookup=disabled -Dgtk_doc=false

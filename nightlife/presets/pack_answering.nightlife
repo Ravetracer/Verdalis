@@ -1,0 +1,102 @@
+# NightLife preset
+format = 1
+name = Pack Answering
+author = NightLife
+description = A chorus of six. Answer is at 0.85, which is the whole preset: one animal calls and another replies from somewhere else a third of a second to two seconds later, and that behaviour -- not the voice -- is what makes a group of wolves sound like a group. Pitch Spread is wide at 0.85 octaves because wolves in a chorus avoid each other's pitch, which is why a pack sounds like more animals than it holds.
+
+# Call
+pitch = 470
+contour = 0.45
+detail = 1
+sweep = 100
+length = 1200
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Wolf
+voice = 0.3
+breath = 0.06
+throat = 24
+muzzle = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+calls = 1
+call_rate = 0.98
+rate_drift = 0
+legato = 0
+motif = 0
+variation = 0.5
+phrase_gap = 3.7
+repeats = 1
+
+# Pack
+shot_level = -3
+pack_level = -4
+pack_rate = 26
+animals = 6
+pitch_spread = 0.85
+voice_spread = 0.5
+answer = 0.85
+restless = 0.55
+max_voices = 24
+
+# Chorus
+chorus_level = -60
+croak = 0.5
+croak_pitch = 2063
+pulse_rate = 27
+pulses = 10
+croak_length = 325
+frogs = 12
+croak_rate = 121
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.85
+
+# Insects
+insect_level = -60
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -30
+bed_tilt = 0
+bed_motion = 0.3
+
+# Place
+distance = 0.45
+distance_spread = 0.6
+air = 0.5
+width = 0.85
+space_amount = 0.55
+space_size = 0.9
+space_damping = 0.4
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 9.76
+decay = 400
+sustain = 1
+release = 4000
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 0
+seed = 0

@@ -156,19 +156,26 @@ PRESETS = [
    ("Cicada Noon",
     "Sixteen cicadas in the heat. Not a wingbeat at all: a tymbal buckling 268 times a "
     "second into a body resonant at 5549 Hz with a Q of 13, which the library measures "
-    "as sounding nearly half the time.",
+    "as sounding nearly half the time. Scrape is low, at 0.15: a tymbal snaps rib by "
+    "rib, so each buckling drives the body briefly -- unlike a cricket, which drags a "
+    "scraper across a file and sounds for most of every stroke.",
     "cicada, chorus, heat",
     {"swarm_level": -60, "strid_level": -2, "chorus": 16, "carrier": 5549,
      "carrier_q": 13.2, "pulse_rate": 268.4, "echeme_rate": 12.54, "duty": 0.48,
+     "scrape": 0.15,
      "strid_spread": 0.55, "distance": 0.25, "width": 0.9, "space_amount": 0.15}),
 
    ("Cricket Field",
-    "Twelve crickets after dark. The same mechanism as a cicada with the numbers the "
-    "library separates them by: twice the Q at 25.8, a seventh of the click rate at "
-    "35.9, and two thirds of the time silent.",
+    "Twelve crickets after dark. Not the same mechanism as a cicada, which is what "
+    "0.3.0 changed: twice the Q at 25.8, a seventh of the pulse rate at 35.9, two "
+    "thirds of the time silent -- and Scrape at 0.45, because a file-and-scraper drives "
+    "the harp for most of each wing stroke where a tymbal only snaps. Measured inside a "
+    "chirp the references are sounding 0.27 of the time for a cricket and 0.79 for a "
+    "cicada; one click into a resonator is 0.06 and is neither.",
     "cricket, chorus, night",
     {"swarm_level": -60, "strid_level": -3, "chorus": 12, "carrier": 4518,
      "carrier_q": 25.8, "pulse_rate": 35.9, "echeme_rate": 10.51, "duty": 0.33,
+     "scrape": 0.45,
      "strid_spread": 0.45, "distance": 0.3, "width": 0.95, "space_amount": 0.12}),
 
    ("Summer Meadow",
@@ -178,7 +185,7 @@ PRESETS = [
     "mixed, ambience, wide",
     {"count": 20, "spread": 180, "swarm_level": -21, "distance": 0.3,
      "strid_level": -10, "chorus": 10, "carrier": 5200, "carrier_q": 16,
-     "pulse_rate": 200, "echeme_rate": 9, "duty": 0.42,
+     "pulse_rate": 200, "echeme_rate": 9, "duty": 0.42, "scrape": 0.3,
      "bed_level": -34, "bed_tone": 900, "bed_tilt": -0.35,
      "flyby_level": -22, "flyby_rate": 0.18, "width": 0.95, "space_amount": 0.2}),
 

@@ -2,7 +2,7 @@
 format = 1
 name = Cricket Field
 author = Ravetracer
-description = Twelve crickets after dark. The same mechanism as a cicada with the numbers the library separates them by: twice the Q at 25.8, a seventh of the click rate at 35.9, and two thirds of the time silent.
+description = Twelve crickets after dark. Not the same mechanism as a cicada, which is what 0.3.0 changed: twice the Q at 25.8, a seventh of the pulse rate at 35.9, two thirds of the time silent -- and Scrape at 0.45, because a file-and-scraper drives the harp for most of each wing stroke where a tymbal only snaps. Measured inside a chirp the references are sounding 0.27 of the time for a cricket and 0.79 for a cicada; one click into a resonator is 0.06 and is neither.
 features = cricket, chorus, night
 
 species = Honeybee
@@ -56,5 +56,6 @@ vel_to_swarm = 0.3
 gain = -3
 max_voices = 128
 seed = 0
-roam = 0
+roam = 4
 roam_rate = 0.4
+scrape = 0.45

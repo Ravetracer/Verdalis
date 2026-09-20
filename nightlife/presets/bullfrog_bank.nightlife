@@ -1,0 +1,102 @@
+# NightLife preset
+format = 1
+name = Bullfrog Bank
+author = NightLife
+description = The slow end: a 9.8 Hz pulse rate, which is slow enough to hear the individual pulses rather than a rattle, and four of them to a croak. Croak Pitch is pulled below the measured 2169 Hz of that row, which is the one liberty in this preset -- the library has no recording of a true bullfrog, and its lowest measured resonance is 1529 Hz.
+
+# Call
+pitch = 893
+contour = 0.5
+detail = 1
+sweep = 100
+length = 490
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Wolf
+voice = 0.3
+breath = 0.06
+throat = 19
+muzzle = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+calls = 3
+call_rate = 0.98
+rate_drift = 0
+legato = 0.32
+motif = 0
+variation = 0.3
+phrase_gap = 3.7
+repeats = 1
+
+# Pack
+shot_level = -60
+pack_level = -60
+pack_rate = 30
+animals = 3
+pitch_spread = 0.5
+voice_spread = 0.35
+answer = 0.45
+restless = 0.4
+max_voices = 24
+
+# Chorus
+chorus_level = -3
+croak = 0.06
+croak_pitch = 1200
+pulse_rate = 9
+pulses = 4
+croak_length = 420
+frogs = 6
+croak_rate = 36
+regularity = 0.85
+chorus_spread = 0.35
+chorus_width = 0.7
+
+# Insects
+insect_level = -60
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -22
+bed_tilt = -0.35
+bed_motion = 0.3
+
+# Place
+distance = 0.35
+distance_spread = 0.45
+air = 0.4
+width = 0.7
+space_amount = 0.4
+space_size = 0.75
+space_damping = 0.55
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 500
+decay = 400
+sustain = 1
+release = 3000
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 4
+seed = 0

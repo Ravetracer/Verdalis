@@ -286,14 +286,14 @@ whatever the insect is doing.
 ## Cicadas and crickets are a different instrument
 
 Neither beats its wings. A cicada buckles a tymbal membrane and a cricket draws a
-scraper across a file, and both produce a train of clicks ringing a resonant
-body. That is a carrier and a pulse rate, not a fundamental and a harmonic stack,
-which is why it is a separate layer with its own panel.
+scraper across a file, and what comes out is a resonant body driven in pulses.
+That is a carrier and a pulse rate, not a fundamental and a harmonic stack, which
+is why it is a separate layer with its own panel.
 
-| | carrier | Q | clicks/s | chirps/s | duty |
-|---|---|---|---|---|---|
-| Cicada | 5549 Hz | **13.2** | **268** | 12.5 | 0.48 |
-| Cricket | 4518 Hz | **25.8** | **36** | 10.5 | 0.33 |
+| | carrier | Q | pulses/s | chirps/s | duty | within-chirp duty |
+|---|---|---|---|---|---|---|
+| Cicada | 5549 Hz | **13.2** | **268** | 12.5 | 0.48 | **0.79** |
+| Cricket | 4518 Hz | **25.8** | **36** | 10.5 | 0.33 | **0.27** |
 
 Twice as sharp and seven times slower is the whole distance between a dry rattle
 and a pure whistling trill. Nothing else in the measurement separates them — so
@@ -302,13 +302,45 @@ there is deliberately **no Stridulator selector**. A chip that picked between tw
 of numbers are shipped as factory presets, and every one of them is a knob you
 can move.
 
-*Chorus* is how many are calling, each with its own phase and its own rates.
-*Scatter* is how unalike they are, and its range is set by the library rather
-than chosen: a chorus recording measures the *composite* resonance, and a
-composite at Q 25.8 cannot come from callers spread much wider than a thirteenth
-of their carrier. At the top of the knob the carriers scatter 3 per cent and no
-further. Their click and chirp rates scatter several times as far, because a
-species' carrier is its anatomy and its clock is not.
+*Scrape* is the last column of that table: how much of each pulse period the
+insect is actually driving its body. A scraper crossing a file drives the harp
+for most of a wing stroke; a tymbal snaps rib by rib and drives it briefly. Model
+both as a single click into the resonator — which is what version 0.2.0 did — and
+the insect is sounding for 6 per cent of each period, which is neither of them.
+At *Scrape* 0 you get that single click back exactly.
+
+*Chorus* is how many are calling, each with its own phase, its own rates and its
+own drifting clock. *Scatter* is how unalike they are, and its range is set by
+the library rather than chosen — but in two different ways, because the library
+bounds the two halves of it differently.
+
+The **carrier** is bounded tightly. A chorus recording measures the *composite*
+resonance, and a composite at Q 25.8 cannot come from callers spread much wider
+than a thirteenth of their carrier. At the top of the knob the carriers scatter
+3 per cent and no further: a species' carrier is its anatomy, and every member of
+it shares one.
+
+The **rhythms** are not bounded at all, and they scatter far more — 45 per cent
+on the chirp rate, 30 on the pulse rate, 35 on the duty. A clock is not anatomy
+and no two callers keep the same time.
+
+## A chorus is not twelve of the same insect
+
+Neither of those is enough on its own, and finding out why is the one thing in
+this plugin that was found by ear first and measured afterwards.
+
+Twelve callers within a few per cent of one chirp rate drift in and out of phase
+*together*: the chorus throbs at its own chirp rate and drops into near-silence
+between. Measured as the tenth percentile of the band's envelope over its median,
+nine cricket references sit between 0.16 and 0.85 and version 0.2.0 rendered
+0.08 — holes no field has.
+
+And widening the spread does not fix it by itself, because twelve *exactly
+periodic* trains are a picket fence however far apart the pickets stand. A real
+caller is not periodic: a lone cricket's own chirp-rate peak is 0.73 of its
+centre wide. So every caller here carries a filtered random walk on its chirp
+rate, at the corner *Wander Rate* already sets for the wing layer — the same
+mechanism that keeps a swarm from sounding like a chord.
 
 ## Nothing below 80 Hz
 
@@ -460,11 +492,14 @@ the note when bouncing.
 
 Every factory preset renders between −20.8 and −28.8 dBFS RMS with peaks no
 higher than −3.5 dBFS, at the default output gain. The one layer to watch is the
-stridulation: a cricket is 36 clicks a second each ringing for under two
-milliseconds, so 6 per cent of it is sounding and it peaks some 18 dB over its own
-average. At a level a swarm would use that is comfortable; pushed to the top of
-its knob it will reach the output stage's soft clipper, which is what the top of
-that knob is for.
+stridulation, and how much depends on *Scrape*: at the bottom of that knob a
+cricket is 36 clicks a second each ringing for under two milliseconds, so 6 per
+cent of it is sounding and it peaks some 18 dB over its own average. Opening
+*Scrape* fills those gaps in and the crest factor falls with it — the level stays
+put either way, because the layer's normalisation is measured from the same shape
+the audio path plays. At a level a swarm would use both are comfortable; pushed
+to the top of its knob it will reach the output stage's soft clipper, which is
+what the top of that knob is for.
 
 # What is still being fitted
 
@@ -481,7 +516,9 @@ there yet. All of this is in the plugin's `TODO.md` with what is known about it.
   source in free field and is not quite what the library's ten clean passes
   trace. The suite's rule allows a measured curve shipped as coefficients;
   extracting those ten envelopes is the obvious next step.
-- **The click train is exactly periodic**, which no tymbal is.
+- **The pulse train inside a chirp is exactly periodic**, which no tymbal is.
+  The *chirp* clock wanders as of 0.3.0 and the pulse clock does not, because the
+  references bound the first and say nothing about the second.
 - **Nothing measures a swarm's inter-individual rate spread**, which is why
   *Spread* is calibrated rather than fitted.
 

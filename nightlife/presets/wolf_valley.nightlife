@@ -1,0 +1,102 @@
+# NightLife preset
+format = 1
+name = Wolf Valley
+author = NightLife
+description = One wolf, far off. The howl is a measured contour: the eight wolf archetypes run 311 ms to 2.8 s and six of them carry a vibrato of their own at 2.1 to 6.4 Hz, which is what a howl is and what no oscillator with a vibrato on it sounds like. Distance is doing most of the work -- the measured group median is 484 Hz and the air absorption at 0.62 takes everything above about 2 kHz off it.
+
+# Call
+pitch = 484
+contour = 0.55
+detail = 1
+sweep = 100
+length = 1290
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Wolf
+voice = 0.26
+breath = 0.05
+throat = 26
+muzzle = 0.55
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+calls = 1
+call_rate = 0.98
+rate_drift = 0
+legato = 0
+motif = 0
+variation = 0.35
+phrase_gap = 3.7
+repeats = 1
+
+# Pack
+shot_level = 6
+pack_level = -14
+pack_rate = 6
+animals = 2
+pitch_spread = 0.35
+voice_spread = 0.35
+answer = 0.25
+restless = 0.5
+max_voices = 24
+
+# Chorus
+chorus_level = -60
+croak = 0.5
+croak_pitch = 2063
+pulse_rate = 27
+pulses = 10
+croak_length = 325
+frogs = 12
+croak_rate = 121
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.85
+
+# Insects
+insect_level = -60
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -26
+bed_tilt = -0.2
+bed_motion = 0.3
+
+# Place
+distance = 0.62
+distance_spread = 0.4
+air = 0.45
+width = 0.6
+space_amount = 0.5
+space_size = 0.85
+space_damping = 0.45
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 80
+decay = 400
+sustain = 1
+release = 3000
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 12
+seed = 0

@@ -4,7 +4,8 @@
 # containing the Linux and Windows binaries plus everything needed to install
 # them.
 #
-# One archive per plugin and one for the suite, each holding both platforms.
+# One archive: the whole suite, both platforms. The plugins are free, so the
+# site offers the suite on every page rather than a download per plugin.
 #
 #   ./release.sh 0.1.0                  Linux + Windows (needs cross-built Cairo)
 #   ./release.sh 0.1.0 --linux-only     skip the Windows half
@@ -74,6 +75,9 @@ out_dir="${here}/dist"
 # not. Keeping this discovered rather than hardcoded means a new plugin joins a
 # release by existing; "shared" carries a CMakeLists.txt of its own and is a
 # library, not a plugin.
+in_git_tree=0
+git -C "$here" rev-parse --is-inside-work-tree >/dev/null 2>&1 && in_git_tree=1
+
 plugins=()
 for d in "${here}"/*/; do
    d="${d%/}"
@@ -84,6 +88,15 @@ for d in "${here}"/*/; do
    [ -f "${d}/CMakeLists.txt" ] || continue
    # What actually makes it a plugin: a CLAP entry point of its own.
    [ -f "${d}/src/plugin.cpp" ] || continue
+   # A release ships what is in the repository. A plugin folder git does not
+   # track is work in progress living beside the suite -- another branch
+   # checked out here, or something under .git/info/exclude -- and discovering
+   # by directory alone would put it in an archive by accident. Skipped only
+   # when this really is a git checkout, so an exported tree still releases.
+   if [ "$in_git_tree" = 1 ] && [ -z "$(git -C "$here" ls-files -- "$name" | head -1)" ]; then
+      echo "    skipping ${name}: not tracked by git"
+      continue
+   fi
    plugins+=("$name")
 done
 
@@ -447,10 +460,9 @@ build_info > "${stage}/BUILD-INFO.txt"
 
 # ----------------------------------------------------------------------- pack
 #
-# One archive per plugin, plus one for the whole suite. Each carries the Linux
-# and the Windows build together: one download per plugin is what a site wants
-# to offer, and splitting it by operating system only made two links where one
-# would do.
+# One archive: the whole suite, Linux and Windows together. There used to be a
+# per-plugin archive beside it, but the plugins are free and the site offers the
+# suite on every page, so a download per plugin was a second link to nothing.
 #
 # Everything is a .zip, including the Linux builds. That is not the Unix habit,
 # but a release nobody can publish is worse than one in the wrong format, and
@@ -462,64 +474,26 @@ cd "$out_dir"
 
 made=()
 
-pack() {
-   local dir="$1"
-   if command -v zip >/dev/null 2>&1; then
-      rm -f "${dir}.zip"; zip -qr "${dir}.zip" "$dir"; made+=("${dir}.zip")
-   else
-      echo "!!  zip not found: install it, or the release cannot be published" >&2
-   fi
-   if [ "$tarball" = 1 ]; then
-      rm -f "${dir}.tar.gz"; tar czf "${dir}.tar.gz" "$dir"; made+=("${dir}.tar.gz")
-   fi
-   rm -rf "$dir"
-}
-
-# --- one per plugin, both operating systems in the one archive
-for plugin in "${plugins[@]}"; do
-   name="$(project_name "$plugin")"
-   pver="$(project_version "$plugin")"
-   d="${name}-${pver}"
-   rm -rf "$d"; mkdir -p "$d"
-   have=0
-   for os in "${targets[@]}"; do
-      # Both formats: the <Name>/ folder holding the .clap and its presets, and
-      # the <Name>.vst3 bundle beside it. Copying only the first is a silent
-      # failure -- the archive still builds, it is just missing a format -- so
-      # the VST3 is checked for below rather than left to the eye.
-      if [ -d "${stage}/${os}/${name}" ]; then
-         mkdir -p "${d}/${os}"
-         cp -r "${stage}/${os}/${name}" "${d}/${os}/"
-         have=1
-      fi
-      if [ -d "${stage}/${os}/${name}.vst3" ]; then
-         mkdir -p "${d}/${os}"
-         cp -r "${stage}/${os}/${name}.vst3" "${d}/${os}/"
-         have=1
-      elif [ "$build_vst3" = 1 ]; then
-         echo "!!  ${name}: no ${os} VST3 in the staging tree" >&2
-         exit 1
-      fi
+# The per-plugin archives are gone, but the check they carried is not: a staged
+# plugin missing its VST3 is a silent failure -- the archive still builds, it is
+# just missing a format, and the file sizes are the only tell. It shipped that
+# way once.
+if [ "$build_vst3" = 1 ]; then
+   for plugin in "${plugins[@]}"; do
+      name="$(project_name "$plugin")"
+      for os in "${targets[@]}"; do
+         [ -d "${stage}/${os}/${name}" ] || continue
+         if [ ! -d "${stage}/${os}/${name}.vst3" ]; then
+            echo "!!  ${name}: no ${os} VST3 in the staging tree" >&2
+            exit 1
+         fi
+      done
    done
-   if [ "$have" = 0 ]; then
-      rm -rf "$d"
-      continue
-   fi
-   own="$(plugin_license "$plugin")"
-   cp "${own:-${here}/LICENSE}" "${d}/LICENSE"
-   [ -f "${here}/${plugin}/README.md" ] && cp "${here}/${plugin}/README.md" "${d}/"
-   manual="$(manual_for "$plugin")"
-   [ -f "$manual" ] && cp "$manual" "${d}/"
-   install_note "${name} ${pver}" \
-      "linux/${name}" "windows\\${name}" \
-      "linux/${name}.vst3" "windows\\${name}.vst3" > "${d}/INSTALL.txt"
-   build_info > "${d}/BUILD-INFO.txt"
-   pack "$d"
-done
+fi
 
-# --- the whole suite, every plugin for both platforms. Kept out of pack()
-# because the staging tree it names is also where BUILD-INFO.txt is read from
-# below.
+# --- the whole suite, every plugin for both platforms. The staging tree it
+# names is also where BUILD-INFO.txt is read from below, so it is not removed
+# until after that.
 base="verdalis-suite-${version}"
 if command -v zip >/dev/null 2>&1; then
    rm -f "${base}.zip"; zip -qr "${base}.zip" "$base"; made+=("${base}.zip")

@@ -2,7 +2,7 @@
 format = 1
 name = Cicada Noon
 author = Ravetracer
-description = Sixteen cicadas in the heat. Not a wingbeat at all: a tymbal buckling 268 times a second into a body resonant at 5549 Hz with a Q of 13, which the library measures as sounding nearly half the time.
+description = Sixteen cicadas in the heat. Not a wingbeat at all: a tymbal buckling 268 times a second into a body resonant at 5549 Hz with a Q of 13, which the library measures as sounding nearly half the time. Scrape is low, at 0.15: a tymbal snaps rib by rib, so each buckling drives the body briefly -- unlike a cricket, which drags a scraper across a file and sounds for most of every stroke.
 features = cicada, chorus, heat
 
 species = Honeybee
@@ -56,5 +56,6 @@ vel_to_swarm = 0.3
 gain = -3
 max_voices = 128
 seed = 0
-roam = 0
+roam = 4
 roam_rate = 0.4
+scrape = 0.15

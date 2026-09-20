@@ -1,0 +1,102 @@
+# NightLife preset
+format = 1
+name = Tawny Wood
+author = NightLife
+description = The two-note hoot, at the measured numbers: the owl group's phrases hold a median of two calls 2.85 Hz apart with 6.3 s between phrases, and its fundamental is 497 Hz with a single harmonic -- the purest voice in the library at a measured -34 dB of roughness. Motif drops the second note a tone and a half, which is what the tawny recordings do.
+
+# Call
+pitch = 497
+contour = 0.4
+detail = 1
+sweep = 100
+length = 181
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Owl
+voice = 0.2
+breath = 0.04
+throat = 22
+muzzle = 0.35
+formant = 0.7
+rasp = 0
+radiate = 0.35
+partials = 0.7
+
+# Phrase
+calls = 2
+call_rate = 2.85
+rate_drift = 0
+legato = 0.1
+motif = -1.5
+variation = 0.2
+phrase_gap = 6.3
+repeats = 2
+
+# Pack
+shot_level = 6
+pack_level = -12
+pack_rate = 30
+animals = 2
+pitch_spread = 0.25
+voice_spread = 0.35
+answer = 0.5
+restless = 0.4
+max_voices = 24
+
+# Chorus
+chorus_level = -60
+croak = 0.5
+croak_pitch = 2063
+pulse_rate = 27
+pulses = 10
+croak_length = 325
+frogs = 12
+croak_rate = 121
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.85
+
+# Insects
+insect_level = -34
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -28
+bed_tilt = 0
+bed_motion = 0.3
+
+# Place
+distance = 0.4
+distance_spread = 0.35
+air = 0.5
+width = 0.55
+space_amount = 0.45
+space_size = 0.6
+space_damping = 0.7
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 9.76
+decay = 400
+sustain = 1
+release = 2500
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 6
+seed = 0

@@ -63,7 +63,7 @@ Eight plugins, each modelling one natural sound source:
 | 6 | **RiverFlow** | `riverflow/` | WIP | rivers, streams |
 | 7 | **CrackleBlaze** | `crackleblaze/` | WIP | fire |
 | 8 | **InsectSwarm** | `insectswarm/` | WIP | flying and calling insects |
-| 9 | **NightLife** | `nightlife/` | planned | night insects, howling wolfes, foxes, owls, night birds |
+| 9 | **NightLife** | `nightlife/` | WIP | night insects, howling wolves, foxes, owls, frogs |
 
 Plus one plugin that is deliberately **not** on that list:
 
@@ -82,8 +82,8 @@ Naming follows a consistent pattern: a two-word CamelCase compound naming the
 phenomenon, lowercase and joined for the folder, the CLAP id
 (`de.ravetracer.<folder>`) and the preset extension (`.<folder>`).
 
-**This roadmap is why `shared/` exists.** Every one of the five remaining
-plugins starts as a copy of an existing one, and without a shared foundation
+**This roadmap is why `shared/` exists.** Every one of the remaining plugins
+starts as a copy of an existing one, and without a shared foundation
 each copy would duplicate the DSP toolbox and the GUI layer again. The
 extraction was done before ShoreBreak, so the remaining five are built against
 it from their first commit. See *Shared components* below for what is in it and
@@ -98,6 +98,15 @@ retrofitting:
   radius-to-pitch relation in it, is the obvious next extraction.
 - SkyHowl and ThunderClap both need **large-scale air movement** and distance
   modelling; ThunderClap's `Lp2` air-absorption filter generalises directly.
+- **The Fano factor now says three different things in three plugins, and it is
+  the one statistic that decides whether a spawner is right.** CrackleBlaze
+  measures 3.90 at one second for fire (clustered); NightLife measures 0.30 for
+  a frog chorus (regular); RainyDay and ShoreBreak spawn Poisson and have never
+  been measured. NightLife also found the trap in rendering the regular case:
+  the superposition of many independent renewal processes tends to Poisson
+  however regular each one is, so per-individual clocks cannot produce an
+  under-dispersed chorus -- the regularity has to belong to the pond. The
+  measurement belongs in `shared/tools/analysis` beside `wavio.py`.
 - CrackleBlaze and RainyDay share **stochastic impulse spawning**, and
   CrackleBlaze has now shown that a plain Poisson process is not the whole story.
   Its references measure a Fano factor of 3.90 at one second against a Poisson
@@ -119,6 +128,14 @@ retrofitting:
   octave has. A shelving-filter tilt carrying the curve's average slope, with
   the bank solving only the residual, would fix it for both -- and belongs in
   `shared/`.
+- **The contour pipeline is now in two plugins and diverging.** NightLife's
+  `contours.py` is ChirpParade's with a different analysis window, different
+  gates and -- the one change that is a finding rather than a setting -- a term
+  count *per second of call* rather than per call, because a fixed budget over
+  calls running 75 ms to 3.1 s is a hidden duration filter. Every difference is
+  measured and recorded in both plugins' analysis READMEs, which is exactly the
+  argument for extracting the pipeline with its parameters exposed rather than
+  copying it a third time.
 - ChirpParade was the outlier, and it turned out that way: it needs pitched,
   formant-shaped voices rather than noise, and it reuses only the parameter
   model, the preset format, the window, `Svf`/`Lp2`/`OnePoleHp`, `Space` and
@@ -131,7 +148,9 @@ retrofitting:
   - **the phrase scheduler with per-individual identities.** RainyDay,
     ShoreBreak and CrackleBlaze all spawn events at a rate; ChirpParade is the
     first to model *individuals* -- each with its own pitch, position, distance
-    and voice, answering each other -- and NightLife will want exactly that.
+    and voice, answering each other. NightLife is the second: its `Animal`,
+    `Phrase` and answering behaviour are that code with the names changed, which
+    settles the question of whether it is reusable.
 
 ## Plugin anatomy
 
@@ -233,8 +252,11 @@ cd vst3sdk && git submodule update --init base pluginterfaces public.sdk && cd .
 Reference versions currently in use: `clap` 1.2.10, `clap-wrapper` v0.16.0,
 `clap-validator` 0.4.1, `clap-info` v1.2.2, `vst3sdk` 3.8.1.
 
-`clap-wrapper` needs one patch to build against VST3 3.8; it is kept in
-`shared/patches/` because `CLAP/` is gitignored and a fresh clone would lose it.
+`clap-wrapper` needs two patches, kept in `shared/patches/` because `CLAP/` is
+gitignored and a fresh clone would lose them: one to build against VST3 3.8 at
+all, and one fixing a use-after-free in its Linux run-loop timers that crashed
+REAPER whenever a plugin window was closed and opened again. Apply both before
+building a VST3.
 
 If the checkout lives anywhere else, point CMake at it explicitly with
 `-DCLAP_INCLUDE_DIR=/path/to/clap/include`.
@@ -258,16 +280,16 @@ is no list to update. It reads each plugin's display name and version from its
 `project()` line, builds Release for Linux and Windows, installs into a staging
 tree, and writes `BUILD-INFO.txt` recording what went in.
 
-It produces one archive per plugin plus one for the suite — **each holding both
-platforms**, so a site offers a single download per plugin rather than making
-the visitor pick an operating system first:
+It produces **one archive: the suite, both platforms in it**, so the visitor
+never has to pick an operating system first:
 
 ```
-RainyDay-1.5.1.zip              one plugin, Linux + Windows
-ThunderClap-1.0.0.zip
-ShoreBreak-0.1.0.zip
 verdalis-suite-0.2.0.zip        every plugin, Linux + Windows
 ```
+
+There used to be a per-plugin archive beside it. The plugins are free and the
+site offers the suite on every page, so a download per plugin was a second link
+to the same thing; the per-plugin pack loop is gone.
 
 **Everything is a `.zip`, the Linux builds included.** That is not the Unix
 habit, but the download manager the site runs handles zip alone, and a release
@@ -276,37 +298,33 @@ zip records Unix permissions, and a `.clap` is `dlopen`'d, which needs no execut
 bit — verified by extracting one and loading it. `--tarball` emits `.tar.gz`
 alongside for anywhere that prefers it.
 
-The per-plugin archives carry that plugin's **own** version from its `project()`
-line, not the suite's, because they are downloaded and updated separately.
+The archive carries the suite version, which is independent of the individual
+plugin versions in each `CMakeLists.txt`.
 
-Every archive is self-contained: a `linux/` and a `windows/` folder holding
-**both formats** — the plugin's CLAP folder with its presets, and its `.vst3`
-bundle beside it — plus the plugin's README, its manual, the LICENSE, a
-BUILD-INFO.txt, and an INSTALL.txt with a section per platform and per format —
-written from the `targets` and formats the build actually produced, so a
-`--linux-only` release does not describe a `windows/` folder that is not in it,
-and a `--no-vst3` one does not describe a VST3.
+It is self-contained: a `linux/` and a `windows/` folder each holding **both
+formats** for every plugin — the plugin's CLAP folder with its presets, and its
+`.vst3` bundle beside it — plus the README, every manual in `manuals/`, the
+LICENSE, a BUILD-INFO.txt, and an INSTALL.txt with a section per platform and
+per format, written from the `targets` and formats the build actually produced,
+so a `--linux-only` release does not describe a `windows/` folder that is not in
+it, and a `--no-vst3` one does not describe a VST3.
 
 ```
-RainyDay-1.8.0/
+verdalis-suite-0.2.0/
 ├── linux/
 │   ├── RainyDay/
 │   │   ├── RainyDay.clap
-│   │   └── presets/        (17 files)
-│   └── RainyDay.vst3/      bundle: Contents/x86_64-linux + Contents/Resources
+│   │   └── presets/        (18 files)
+│   ├── RainyDay.vst3/      bundle: Contents/x86_64-linux + Contents/Resources
+│   └── ...                 one pair per plugin
 ├── windows/
-│   ├── RainyDay/
-│   │   ├── RainyDay.clap
-│   │   └── presets/
-│   └── RainyDay.vst3/      bundle: Contents/x86_64-win + Contents/Resources
+│   └── ...                 the same, Contents/x86_64-win
+├── manuals/                one PDF per plugin
 ├── README.md
-├── RainyDay-1.8.0-Manual.pdf
 ├── LICENSE
 ├── INSTALL.txt             both platforms, both formats
 └── BUILD-INFO.txt
 ```
-
-The suite archive carries every plugin's manual in a `manuals/` folder instead.
 
 Options: `--tarball` adds `.tar.gz` beside every `.zip`; `--linux-only` skips
 the Windows half; `--windows-no-gui` allows a
@@ -380,9 +398,20 @@ cd rainyday && ./install.sh --vst3      # -> ~/.clap/RainyDay + ~/.vst3/RainyDay
   in the `<PLUGIN>_BUILD_VST3` block: CMake gives a MODULE library a `lib`
   prefix with the GNU toolchain and the wrapper only clears it on its
   single-file path, so `PREFIX ""` is set explicitly; and the mingw runtime has
-  to be linked in exactly as the `.clap` does it. Unlike the `.clap` there is no
-  version script and no `--exclude-all-symbols` -- `GetPluginFactory` carries
-  dllexport from `SMTG_EXPORT_SYMBOL` and must stay visible.
+  to be linked in exactly as the `.clap` does it. There is no
+  `--exclude-all-symbols` -- `GetPluginFactory` carries dllexport from
+  `SMTG_EXPORT_SYMBOL` and must stay visible.
+- **On Linux the `.vst3` gets a version script of its own**,
+  `shared/cmake/vst3_entry.version`, exporting `GetPluginFactory`, `ModuleEntry`
+  and `ModuleExit` and nothing else. Without it each `.vst3` exported ~1700
+  symbols, identical in every plugin because they all link the same wrapper and
+  SDK sources -- among them `Steinberg::gPluginFactory`, which the SDK treats as
+  one-per-module. A host that loads plugins with `RTLD_GLOBAL` then binds the
+  second plugin's calls to the first plugin's copies, and every plugin after the
+  first hands out the first one's factory and reports itself as that plugin.
+  Reproduced with a two-`dlopen` probe: RainyDay then ThunderClap, and
+  ThunderClap's factory came back naming "RainyDay". REAPER uses `RTLD_LOCAL`
+  and is not affected, which is exactly why this stayed invisible.
 
 ### Presets in a VST3, and what actually carries them
 
@@ -409,17 +438,17 @@ readable on-disk copy for the user -- and what that upstream bridge would read
 
 ### Archive layout
 
-Both formats sit side by side in each platform folder:
+Both formats sit side by side in each platform folder, for every plugin:
 
 ```
-RainyDay-1.8.0/
+verdalis-suite-<version>/
 ├── linux/
 │   ├── RainyDay/           RainyDay.clap + presets/
-│   └── RainyDay.vst3/      Contents/x86_64-linux/ + Contents/Resources/presets/
+│   ├── RainyDay.vst3/      Contents/x86_64-linux/ + Contents/Resources/presets/
+│   └── ...                 one pair per plugin
 ├── windows/
-│   ├── RainyDay/
-│   └── RainyDay.vst3/      Contents/x86_64-win/ + Contents/Resources/presets/
-├── README.md, LICENSE, the manual, INSTALL.txt, BUILD-INFO.txt
+│   └── ...                 Contents/x86_64-win/ + Contents/Resources/presets/
+├── manuals/, README.md, LICENSE, INSTALL.txt, BUILD-INFO.txt
 ```
 
 `INSTALL.txt` names `~/.clap` and `~/.vst3` on Linux, and the two
@@ -427,11 +456,11 @@ RainyDay-1.8.0/
 VST3 SDK versions the binaries came from, because the wrapper needs a local
 patch to build at all and "which checkout" is not rhetorical.
 
-**The per-plugin pack loop copies two things per platform**, the `<Name>/`
-folder and the `<Name>.vst3` bundle. Copying only the first is a silent failure
--- the archive still builds, it is just missing a format, and the file sizes are
-the only tell. It shipped that way once. `release.sh` now hard-fails if a
-staged VST3 is missing, so it cannot happen quietly again.
+**A staged plugin missing its VST3 is a silent failure** -- the archive still
+builds, it is just missing a format, and the file sizes are the only tell. It
+shipped that way once. `release.sh` hard-fails before packing if any staged
+plugin has no `.vst3` beside its `<Name>/` folder, so it cannot happen quietly
+again. That check outlived the per-plugin archives it was written for.
 
 ### Verifying one
 
@@ -561,6 +590,7 @@ with a coloured knob.
 | RiverFlow | `#57C77A` | river green -- moss on wet stone, cool green-grey greys |
 | CrackleBlaze | `#FF5A2C` | ember orange, the darkest chassis in the suite -- a deep red-brown cast, deliberately hotter and redder than SkyHowl's dusty coral |
 | WhooshPact | `#FF3C97` | impact magenta at hue 330, with a cool blue-violet chassis -- the one plugin that models nothing natural, and the one accent that reads as obviously synthetic |
+| NightLife | `#9FB4E8` | moonlight: the only *desaturated* accent in the suite, a pale indigo at hue 221 over the darkest blue-black chassis. It sits between RainyDay's saturated cyan and ThunderClap's saturated violet and is mistakable for neither, because it is washed out where both of those are vivid |
 
 A new plugin picks its own accent and derives its greys from it. Do not reuse
 another plugin's theme, and do not fall back to the suite brand palette — that
@@ -580,6 +610,13 @@ keeps a few dim strokes on screen when nothing is playing, because a sonogram
 with nothing on it reads as a broken graph rather than a quiet one.
 `animating()` decides whether the window repaints, and must not
 change state. A plugin with nothing to animate leaves `ornament` null.
+
+**The ornament belongs to one window, and the window deletes it.** `createGui()`
+allocates a fresh one per call rather than pointing the spec at a file-scope
+instance, which is what all ten plugins used to do: an ornament carries
+animation state -- a phase counter, a sonogram's scroll history -- and one
+instance behind two windows of the same plugin made them drive each other's
+picture. The window owning it is what keeps two instances independent.
 
 **The layer mixer.** Every plugin layers several generators, and each layer's
 level sits on whichever panel that layer belongs to -- right for editing one
@@ -640,7 +677,7 @@ One file remains substantially shared but is **not** extracted:
 
 | File | Size | Differing lines | What blocks extraction |
 |------|------|-----------------|------------------------|
-| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface. With eight copies of it now, the question of which parts are really common is answered: everything except the engine type and `syncEngineParams`. |
+| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface. With nine copies of it now, the question of which parts are really common is answered: everything except the engine type and `syncEngineParams`. |
 
 ### Rule for a shared change
 
@@ -883,6 +920,13 @@ Vary `--rate` and the seed; identical output across several of each is strong
 evidence. Also run `render --selftest` (it round-trips a saved preset) and
 `render --list` (it exercises preset discovery, and its output should be
 byte-identical).
+
+**A GUI change must actually open a window before it is called done.** Nothing
+else exercises one: `render --selftest` never creates a GUI, and Steinberg's
+validator only *scans* the editor classes without creating or attaching a view,
+so both pass on a window that crashes the moment a host opens it. `guihost`
+exiting 0 is the bar, and it is a real check -- a dangling `WindowSpec` shipped
+once because the self-test and 47/47 from the validator were taken as enough.
 
 For a GUI change, `<plugin>-guihost <plugin>.clap "" 8` opens the real window
 for eight seconds; capture it with `import -window $(xdotool search --name

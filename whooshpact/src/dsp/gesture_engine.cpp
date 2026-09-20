@@ -1,12 +1,19 @@
 #include "gesture_engine.h"
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 
 namespace whooshpact {
 
 namespace {
+
+// Seed 0 is the "always different" setting, so two instances must not start
+// from the same state. Every other engine in the suite mixes a per-instance
+// counter into its start seed for this; this one is no different.
+std::atomic<uint32_t> gInstanceCounter{0};
 
 // The control rate. Everything that costs a transcendental -- the gesture
 // curve, the filter coefficients, the oscillator frequencies, the flutter rate
@@ -131,6 +138,9 @@ inline float NoiseSource::tick(int kind) {
 
 void GestureEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
    mSampleRate = sampleRate;
+   const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
+   mRng.reseed(static_cast<uint32_t>(now) ^
+               (0x9E3779B9u * (gInstanceCounter.fetch_add(1) + 1)));
    // The sub layer works down to 15 Hz, so the tank's loop highpass has to sit
    // below that or a boom loses its bottom the moment it enters the reverb.
    mSpace.prepare(static_cast<float>(sampleRate), 18.0f);
@@ -173,7 +183,12 @@ void GestureEngine::reset() {
    mProfileTiltR.reset();
    mProfileShelfL.reset();
    mProfileShelfR.reset();
-   mRng.reseed(mP.seed > 0 ? static_cast<uint32_t>(mP.seed) : 0x5EED1234u);
+   // A non-zero Seed promises the same sequence of gestures every time. Seed 0
+   // is the "always different" setting and deliberately keeps running: falling
+   // back to a constant here made every instance, and every restart, produce
+   // the same gestures.
+   if (mP.seed > 0)
+      mRng.reseed(static_cast<uint32_t>(mP.seed));
    mAppliedSeed = mP.seed;
    mSilenceCounter = 0.0f;
 }
@@ -184,7 +199,8 @@ void GestureEngine::setParams(const EngineParams &p) {
    // A non-zero Seed promises the same sequence of gestures every time, so
    // setting it has to restart the sequence rather than merely change it.
    if (p.seed != previousSeed) {
-      mRng.reseed(p.seed > 0 ? static_cast<uint32_t>(p.seed) : 0x5EED1234u);
+      if (p.seed > 0)
+         mRng.reseed(static_cast<uint32_t>(p.seed));
       mAppliedSeed = p.seed;
    }
    updateFilters();

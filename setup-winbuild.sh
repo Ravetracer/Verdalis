@@ -33,10 +33,22 @@ if [ ${#missing[@]} -gt 0 ]; then
    exit 1
 fi
 
+# A Cairo built before issue #1 has its assert()s compiled in, and a failing
+# one aborts the host behind a modal CRT dialog. Those builds must not survive
+# a re-run of this script, so the "already built" check tests for NDEBUG as
+# well as for the library: the assertion text is only in the archive when the
+# asserts are.
 if [ -f "${prefix}/lib/libcairo.a" ]; then
-   echo "==> Windows Cairo already built: ${prefix}"
-   echo "    delete winbuild/ to force a rebuild"
-   exit 0
+   if strings "${prefix}/lib/libcairo.a" | grep -q "tmp.table_size - hash_table_sizes"; then
+      echo "==> Windows Cairo in ${prefix} was built with assertions enabled"
+      echo "    rebuilding it; see shared/cmake/build-windows-cairo.sh"
+      rm -rf "${prefix}/lib" "${prefix}/include" \
+             "${prefix}"/src/*/_b
+   else
+      echo "==> Windows Cairo already built: ${prefix}"
+      echo "    delete winbuild/ to force a rebuild"
+      exit 0
+   fi
 fi
 
 mkdir -p "$winbuild"

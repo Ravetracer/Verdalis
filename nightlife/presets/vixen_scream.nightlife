@@ -1,0 +1,102 @@
+# NightLife preset
+format = 1
+name = Vixen Scream
+author = NightLife
+description = Close, and deliberately unpleasant. The fox group is the noisiest thing in the library by a distance: a measured roughness of -23 dB against every other caller's -32 to -34, and three harmonics against their one. Rasp is up at 0.35 because a scream's roughness has structure -- the valve does not close the same way twice -- and no amount of extra harmonics is the same thing.
+
+# Call
+pitch = 1053
+contour = 0.65
+detail = 1
+sweep = 100
+length = 949
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Fox
+voice = 0.55
+breath = 0.18
+throat = 11
+muzzle = 0.7
+formant = 0.65
+rasp = 0.35
+radiate = 0.5
+partials = 0.7
+
+# Phrase
+calls = 2
+call_rate = 0.77
+rate_drift = 0
+legato = 0.15
+motif = 0
+variation = 0.4
+phrase_gap = 3.4
+repeats = 2
+
+# Pack
+shot_level = 6
+pack_level = -18
+pack_rate = 14
+animals = 1
+pitch_spread = 0.5
+voice_spread = 0.35
+answer = 0.45
+restless = 0.4
+max_voices = 24
+
+# Chorus
+chorus_level = -60
+croak = 0.5
+croak_pitch = 2063
+pulse_rate = 27
+pulses = 10
+croak_length = 325
+frogs = 12
+croak_rate = 121
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.85
+
+# Insects
+insect_level = -60
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -32
+bed_tilt = 0
+bed_motion = 0.3
+
+# Place
+distance = 0.25
+distance_spread = 0.25
+air = 0.5
+width = 0.45
+space_amount = 0.35
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 9.76
+decay = 400
+sustain = 1
+release = 1500
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 5
+seed = 0

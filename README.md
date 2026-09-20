@@ -36,15 +36,16 @@ preset library and a window.
 
 | Plugin | Simulates | Version |
 |--------|-----------|---------|
-| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | 1.8.0 |
-| **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | 1.5.0 |
-| **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | 0.2.0 |
-| **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | 0.2.0 |
-| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.6.0 |
-| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.2.0 |
-| **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.1.0 |
-| **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.2.0 |
-| **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.2.1 |
+| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | 1.8.1 |
+| **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | 1.5.1 |
+| **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | 0.2.1 |
+| **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | 0.2.1 |
+| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.6.1 |
+| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.2.1 |
+| **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.1.1 |
+| **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.3.1 |
+| **[NightLife](nightlife/)** — a night, from one wolf on a ridge to a pond full of frogs | night animals | 0.1.1 |
+| **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.2.2 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
@@ -98,8 +99,19 @@ to ring. 47 parameters, 18 presets, five fire colours taken from 17 recordings.
 next to. A wasp crossing the microphone, a mosquito that will not leave, cicadas
 in the heat, crickets after dark. Count one insect or sixty: there is no separate
 "swarm mode", because a crowd of them genuinely turns into noise on its own, the
-way a real hive does. 53 parameters, 16 presets, seven species, all of them
-fitted against 67 field recordings.
+way a real hive does. 54 parameters, 16 presets, seven species, all of them
+fitted against 67 field recordings. Its cicadas and crickets are a mechanism of
+their own, and 0.3.0 rebuilt what a *chorus* of them does in time: real callers
+neither share a clock nor keep their own.
+
+**NightLife** — a night: a wolf howling across a valley, an owl in a wood, a fox
+screaming in a field, a loon over a lake, a pond full of frogs and a field of
+crickets. Four layers, and each is built from a different kind of measurement,
+because the things they model are different kinds of thing — a howl is a
+frequency contour traced off a real animal, a croak is a pulse train through a
+body resonance, and the pond they arrive in keeps time, because a measured frog
+chorus is more regular than a random one and not less. 75 parameters, 16
+presets, six callers and eight frogs, from 45 field recordings.
 
 **WhooshPact** — the odd one out, and deliberately so: it models nothing in
 nature. Whooshes, impacts, booms, braams, downshifters and stings — the sounds a
@@ -127,16 +139,16 @@ cd rainyday
 ./install.sh          # configure, build, self-test, install to ~/.clap
 ```
 
-Or build the whole suite and pack the release archives:
+Or build the whole suite and pack the release archive:
 
 ```sh
-./release.sh 0.2.0
+./release.sh 0.23.0
 ```
 
-That produces one `.zip` per plugin per platform, one per platform for the whole
-suite, and one containing everything. Each is self-contained, with the plugin,
-its presets, its manual as a PDF, and install instructions for that platform.
-Pass `--tarball` to get `.tar.gz` alongside.
+That produces one `.zip`: every plugin, in both formats, for Linux and Windows
+together. It is self-contained — the plugins, their presets, every manual as a
+PDF, and install instructions for both platforms. Pass `--tarball` to get a
+`.tar.gz` alongside.
 
 ## Documentation
 

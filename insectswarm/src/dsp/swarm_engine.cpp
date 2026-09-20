@@ -339,6 +339,13 @@ void SwarmEngine::calibrate(float &rmsPulse, float &rmsNoiseUnit) const {
 // calibrate(): the closed form exists but would have to be rederived every time
 // the excitation or the resonator changed, and this runs the code that actually
 // makes the sound.
+// The level correction that goes with `Scrape`: a noise burst lasting a
+// fraction of the pulse period carries far more energy into the resonator than
+// a single sample does, and Stridulate Level must keep meaning what it meant.
+// It is mirrored in calibrateStrid() below -- if that ever disagrees with the
+// audio path, the layer's level drifts silently.
+constexpr float kStrokeNorm = 0.20f;
+
 float SwarmEngine::calibrateStrid() const {
    const float sr = static_cast<float>(mSampleRate);
    constexpr int kWarm = 2048;
@@ -355,14 +362,19 @@ float SwarmEngine::calibrateStrid() const {
    for (int i = 0; i < kWarm + kMeasure; ++i) {
       phase += inc;
       float drive = 0.0f;
+      bool struck = false;
       if (phase >= 1.0f) {
          phase -= 1.0f;
-         // A unit click, where the audio path draws one uniformly over 0..1.
-         // So the normalisation is referenced to the loudest click the layer
-         // can produce and a typical one lands 6 dB under it, which is the
-         // headroom a train with an 18 dB crest factor needs.
-         drive = 1.0f;
+         struck = true;
       }
+      // A unit stroke, where the audio path draws its loudness uniformly over
+      // 0.5..1. So the normalisation is referenced to the loudest stroke the
+      // layer can produce and a typical one lands under it, which is the
+      // headroom a train with a high crest factor needs. The shape has to be
+      // the audio path's shape: a burst of noise over the same fraction of the
+      // period, or this measures a different layer than the one that plays.
+      if (struck || phase < clampf(mP.scrape, 0.0f, 1.0f))
+         drive = kStrokeNorm * rng.white();
       float lp, bp, hp;
       body.tick(drive, lp, bp, hp);
       if (i >= kWarm) {
@@ -416,8 +428,14 @@ void SwarmEngine::refreshSwarmSize(Voice &v, float fire) {
 
 // Re-derives the whole chorus from the current parameters, keeping each
 // caller's own place in it and its own phase.
+// How much of `Wander` reaches a caller's chirp clock. A wingbeat's wander is a
+// pitch and is quoted in cents; a chirp clock's is a tempo. The factor is swept
+// against the references' fractional chirp-peak width -- see refreshStrid().
+constexpr float kStridClockFactor = 8.0f;
+
 void SwarmEngine::refreshStrid(Voice &v) const {
    const float sr = static_cast<float>(mSampleRate);
+   const float modSr = sr / static_cast<float>(kModInterval);
    const float carrier = clampf(mP.carrierHz * semitonesToRatio(static_cast<float>(v.key - 60)),
                                 200.0f, 0.45f * sr);
    const float res = resonanceFor(clampf(mP.carrierQ, 1.0f, 200.0f));
@@ -441,13 +459,55 @@ void SwarmEngine::refreshStrid(Voice &v) const {
       //
       // Which is also the biology. A species' carrier is its anatomy and every
       // member of it shares one; its clock is not, and no two of them keep
-      // time. So the rhythms scatter several times as far, and nothing in the
-      // library bounds them.
+      // time. So the rhythms scatter several times as far -- and 0.2.0 said
+      // exactly that in this comment while scattering them by a tenth, which is
+      // the defect this version fixes.
+      //
+      // **How far, measured.** A per-file median cannot answer it: every
+      // recording gives one number, and the question is how much the callers
+      // *inside* one chorus differ. So it is read off the width of the chirp
+      // peak in each recording's own modulation spectrum -- a chorus of callers
+      // that all keep the same time has a sharp peak, a real field has a hump:
+      //
+      //   fractional width of the chirp peak, -6 dB
+      //     nine cricket references     0.07 .. 0.86, median 0.31
+      //     InsectSwarm 0.2.0 rendered  0.10
+      //
+      // 0.10 is the figure a *single caller* produces, which is what twelve
+      // callers within +-5 % of one rate amount to. They then drift in and out
+      // of phase together and the chorus throbs at its own chirp rate and drops
+      // into near-silence between: the render's quietest tenth of frames sat at
+      // 0.12 of its median against the references' 0.37.
+      //
+      // The scatter below is set where a rendered chorus measures the library's
+      // 0.31. The carrier stays where it was, for the reason above it.
       s.carrierHz = clampf(carrier * (1.0f + 0.03f * sc * s.dCarrier), 200.0f, 0.45f * sr);
       s.body.setCutoff(s.carrierHz, res, sr);
-      s.pulseInc = clampf(mP.pulseRateHz * (1.0f + 0.12f * sc * s.dPulse), 1.0f, 2000.0f) / sr;
-      s.echemeInc = clampf(mP.echemeRateHz * (1.0f + 0.10f * sc * s.dEcheme), 0.05f, 80.0f) / sr;
-      s.duty = clampf(mP.duty, 0.02f, 1.0f);
+      s.pulseInc = clampf(mP.pulseRateHz * (1.0f + 0.30f * sc * s.dPulse), 1.0f, 2000.0f) / sr;
+      s.echemeBase = clampf(mP.echemeRateHz * (1.0f + 0.45f * sc * s.dEcheme), 0.05f, 80.0f) / sr;
+      s.echemeInc = s.echemeBase * s.clockMul;
+      // And the clock drifts. **This is the change that mattered most.**
+      //
+      // Spreading the callers' rates is not enough on its own, because twelve
+      // *exactly* periodic chirp trains are twelve razor-sharp lines in the
+      // modulation spectrum -- a picket fence, not a hump -- and widening the
+      // spacing between the pickets leaves them pickets. Measured on the
+      // references, a chorus is a hump because a single caller is already one:
+      //
+      //   fractional width of the chirp peak, -6 dB, one caller in the open
+      //     lonecricketseptember2013      0.86
+      //     night-ambience                0.61
+      //     city-night-crickets           0.31
+      //     InsectSwarm 0.2.0, any Scatter  0.06 .. 0.10
+      //
+      // A lone cricket's own chirp clock wanders that far. So each caller here
+      // gets a filtered random walk on its rate, at the corner Wander Rate
+      // already sets for the wingbeat layer.
+      s.clockLp.setCutoff(clampf(mP.wanderRateHz, 0.05f, 40.0f), modSr);
+      // Duty scatters too. The nine cricket references measure 0.09 to 0.65 of
+      // the cycle sounding, and a chorus in which every caller holds its chirp
+      // for exactly as long as its neighbours is the same mistake one line up.
+      s.duty = clampf(mP.duty * (1.0f + 0.35f * sc * s.dDuty), 0.02f, 0.98f);
       s.active = true;
    }
    v.stridEpoch = mStridEpoch;
@@ -627,6 +687,7 @@ void SwarmEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t not
       s2.dCarrier = s2.rng.white();
       s2.dPulse = s2.rng.white();
       s2.dEcheme = s2.rng.white();
+      s2.dDuty = s2.rng.white();
       s2.pulsePhase = s2.rng.uniformPositive();
       s2.echemePhase = s2.rng.uniformPositive();
       s2.amp = 0.5f + 0.5f * s2.rng.uniformPositive();
@@ -696,6 +757,7 @@ void SwarmEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numS
    const float passGain = mP.flybyGain * mVoiceNorm * velLevel;
    const float stridGain =
       mP.stridGain * velLevel / std::sqrt(static_cast<float>(std::max(mP.chorus, 1)));
+   const float scrape = clampf(mP.scrape, 0.0f, 1.0f);
    const float bedGain = mP.bedGain * velLevel;
 
    // The wander is a filtered random walk at the control rate; at a corner of
@@ -763,6 +825,20 @@ void SwarmEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numS
             f.rateMul = std::exp2(f.wanderLp.tick(f.rng.white()) * wanderOct);
             const float re = clampf(f.roamLp.tick(f.rng.white()) * roamK, -roamLimit, roamLimit);
             f.roamGain = std::exp2(re - roamBias);
+         }
+         // The callers' clocks. `Wander` is in cents because a wingbeat is a
+         // pitch; a chirp clock is not, so the same control drives it through
+         // the factor below -- calibrated, not chosen, so that the default 18
+         // cents renders the fractional chirp-peak width the references
+         // measure. At 18 cents this is a drift of about 12 per cent.
+         if (stridGain > 1.0e-6f) {
+            const float clockDepth = clampf(mP.wanderCents, 0.0f, 200.0f) *
+                                     (1.0f / 1200.0f) * wanderNorm * kStridClockFactor;
+            for (int k = 0; k < v.numStrid; ++k) {
+               Stridulator &s = v.strid[k];
+               s.clockMul = std::exp2(s.clockLp.tick(s.rng.white()) * clockDepth);
+               s.echemeInc = s.echemeBase * s.clockMul;
+            }
          }
          for (auto &f : v.passes) {
             if (!f.active)
@@ -887,16 +963,38 @@ void SwarmEngine::processVoice(Voice &v, float *outL, float *outR, uint32_t numS
 
             s.pulsePhase += s.pulseInc;
             float drive = 0.0f;
+            bool struck = false;
             if (s.pulsePhase >= 1.0f) {
                s.pulsePhase -= 1.0f;
-               // One click, over a 6 dB spread, scaled by the layer's measured
-               // normalisation. Drawn uniformly over the whole range instead, a
-               // third of the clicks land far enough under the loudest to be
-               // inaudible, and what is left is a sparser and more irregular
-               // train than the one that was asked for -- a cicada set to 268
-               // clicks a second produced 127 audible ones.
-               drive = (0.5f + 0.5f * s.rng.uniformPositive()) * qNorm;
+               struck = true;
+               // The stroke's own loudness, over a 6 dB spread. Drawn uniformly
+               // over the whole range instead, a third of the strokes land far
+               // enough under the loudest to be inaudible, and what is left is a
+               // sparser and more irregular train than the one that was asked
+               // for -- a cicada set to 268 a second produced 127 audible ones.
+               s.strokeAmp = (0.5f + 0.5f * s.rng.uniformPositive()) * qNorm;
             }
+            // **A stroke, not a click.** A scraper dragged across a file
+            // excites the harp for as long as the wing is moving -- tens to
+            // hundreds of teeth in one stroke -- and a tymbal buckles rib by
+            // rib. 0.2.0 modelled each as a single sample into the resonator,
+            // and its own calibration comment recorded what that costs: "6 per
+            // cent of it is sounding". The composite of a dozen callers hid it
+            // in every spectral statistic, and left the chorus with holes in it
+            // that no reference has -- the quietest tenth of its frames sat at
+            // 0.09 of the median where nine references sit at 0.13 to 0.68.
+            //
+            // So the stroke drives the resonator with noise for a fraction of
+            // the pulse period. The fraction is the one number here that the
+            // library does not bound tightly -- within-chirp duty measures 0.08
+            // to 0.69 across the references -- so it is set where the rendered
+            // chorus lands on their median rather than at either end.
+            // `struck ||` is not a detail: at Scrape 0 the condition below is
+            // never true and the layer falls silent, where the bottom of that
+            // knob has to be the single click 0.2.0 always fired. One sample
+            // minimum, always.
+            if (struck || s.pulsePhase < scrape)
+               drive = s.strokeAmp * kStrokeNorm * s.rng.white();
             if (gate <= 0.0f && !s.body.ringing(1.0e-6f))
                continue;
             // The raw bandpass, not Svf::bandpassNormalised. That one

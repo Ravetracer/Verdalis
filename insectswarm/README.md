@@ -82,18 +82,43 @@ Push *Speed* past anything an insect can do and it becomes an effect.
 
 ## Cicadas and crickets are a different instrument
 
-Neither beats its wings. A tymbal buckles and a scraper crosses a file, and both
-are a train of clicks ringing a resonant body — a carrier and a click rate, not a
+Neither beats its wings. A tymbal buckles and a scraper crosses a file, and what
+comes out is a resonant body driven in pulses — a carrier and a pulse rate, not a
 fundamental and a stack. The *Stridulate* layer is that model, and the library
 separates the two sharply:
 
-| | carrier | Q | clicks/s | duty |
-|---|---|---|---|---|
-| Cicada | 5549 Hz | **13.2** | **268** | 0.48 |
-| Cricket | 4518 Hz | **25.8** | **36** | 0.33 |
+| | carrier | Q | pulses/s | duty | within-chirp duty |
+|---|---|---|---|---|---|
+| Cicada | 5549 Hz | **13.2** | **268** | 0.48 | **0.79** |
+| Cricket | 4518 Hz | **25.8** | **36** | 0.33 | **0.27** |
 
 Twice as sharp and seven times slower is the whole distance between a dry rattle
 and a pure whistling trill. Both are factory presets.
+
+The last column is what 0.3.0 added and it is the difference between the two
+mechanisms rather than between their numbers. A scraper dragged across a file
+drives the harp for most of a wing stroke; a tymbal snaps rib by rib. Modelled as
+a single click into a resonator — which is what 0.2.0 did for both — the insect
+is sounding for 6 % of each pulse period, and neither of those is 6 %. *Scrape*
+is that fraction, and at zero it is the old single click exactly.
+
+## A chorus is not twelve of the same insect
+
+The measurement that found this was not a spectrum. Every spectral statistic the
+stridulation layer was fitted to — carrier, bandwidth, Q, comb depth, flatness —
+was inside the references' spread in 0.2.0 and still is. What was wrong was in
+time:
+
+| | references (9 cricket) | 0.2.0 | 0.3.0 |
+|---|---|---|---|
+| steadiness (how deep the holes are) | 0.16 – 0.85, med 0.36 | **0.08** | 0.44 |
+| chirp-peak width / centre | 0.07 – 0.73, med 0.55 | **0.04** | 0.11 |
+
+Twelve callers within ±5 % of one chirp rate drift in and out of phase *together*
+and leave the chorus with holes no field has. And widening the spread alone does
+not fix it, because twelve exactly periodic trains are a picket fence however far
+apart the pickets stand: a lone cricket's own chirp-rate peak is 0.73 of its
+centre wide, so a real caller's clock wanders. Each caller here now has one.
 
 ## Presets
 

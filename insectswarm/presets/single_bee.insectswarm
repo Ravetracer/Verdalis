@@ -2,13 +2,13 @@
 format = 1
 name = Single Bee
 author = Ravetracer
-description = One honeybee, close. At a Count of one the Spread does nothing -- one insect is one insect -- so this is the measured stack on its own, at the 8 to 13 dB harmonic-to-noise the library's close single recordings come out at. Roam carries the rest: the bee closes on the microphone and backs off again over a couple of seconds.
+description = One honeybee, close. At a Count of one the Spread does nothing -- one insect is one insect -- so this is the measured stack on its own, at the 8 to 13 dB harmonic-to-noise the library's close single recordings come out at.
 features = bees, solo, close
 
 species = Honeybee
 rate_shift = 0
 count = 1
-swarm_level = -15
+swarm_level = -16
 spread = 150
 wander = 18
 wander_rate = 2.9994
@@ -56,5 +56,6 @@ vel_to_swarm = 0.3
 gain = -3
 max_voices = 128
 seed = 0
-roam = 8
-roam_rate = 0.45
+roam = 4
+roam_rate = 0.4
+scrape = 0.45

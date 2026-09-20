@@ -1,0 +1,102 @@
+# NightLife preset
+format = 1
+name = Summer Night
+author = NightLife
+description = All four layers at once, which is what the plugin is for: a bed measured from the quiet frames of every reference in the library, a cricket band in it, twelve frogs on a pond at a 48 Hz pulse rate, and an owl that says something every eight seconds or so. The balance is the part worth keeping -- the callers are 4 dB under the chorus and the chorus 4 dB over the bed.
+
+# Call
+pitch = 497
+contour = 0.4
+detail = 1
+sweep = 100
+length = 181
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Owl
+voice = 0.2
+breath = 0.06
+throat = 22
+muzzle = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+calls = 2
+call_rate = 2.85
+rate_drift = 0
+legato = 0.1
+motif = 0
+variation = 0.3
+phrase_gap = 6.3
+repeats = 1
+
+# Pack
+shot_level = -4
+pack_level = -16
+pack_rate = 8
+animals = 2
+pitch_spread = 0.5
+voice_spread = 0.35
+answer = 0.45
+restless = 0.6
+max_voices = 24
+
+# Chorus
+chorus_level = -14
+croak = 0.69
+croak_pitch = 2016
+pulse_rate = 48
+pulses = 18
+croak_length = 373
+frogs = 12
+croak_rate = 90
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.9
+
+# Insects
+insect_level = -14
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -18
+bed_tilt = 0
+bed_motion = 0.35
+
+# Place
+distance = 0.5
+distance_spread = 0.5
+air = 0.5
+width = 0.8
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 700
+decay = 400
+sustain = 1
+release = 3500
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 4
+seed = 0

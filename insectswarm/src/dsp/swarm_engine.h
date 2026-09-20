@@ -124,6 +124,7 @@ struct EngineParams {
    float pulseRateHz = 268.4f;
    float echemeRateHz = 12.54f;
    float duty = 0.48f;
+   float scrape = 0.45f;
    int chorus = 6;
    float stridSpread = 0.5f;
 
@@ -245,7 +246,15 @@ struct Stridulator {
    float carrierHz = 5549.0f;
    // Its own place in the chorus, drawn once and kept, so that moving Scatter
    // or Carrier moves every caller together rather than reshuffling them.
-   float dCarrier = 0.0f, dPulse = 0.0f, dEcheme = 0.0f;
+   float dCarrier = 0.0f, dPulse = 0.0f, dEcheme = 0.0f, dDuty = 0.0f;
+   // A caller's clock is not a metronome, and this is the filtered random walk
+   // that says so. It drifts the chirp rate, which is the difference between a
+   // field of insects and a bank of oscillators -- see refreshStrid().
+   OnePoleLp clockLp;
+   float clockMul = 1.0f;
+   // The loudness of the stroke under way, held for its duration.
+   float strokeAmp = 0.0f;
+   float echemeBase = 0.0f;
    Svf body;
    float amp = 1.0f;
    float panL = 0.70710678f, panR = 0.70710678f;

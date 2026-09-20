@@ -98,6 +98,12 @@ enum ParamId : uint32_t {
    kParamRoam,
    kParamRoamRate,
 
+   // Appended after the fact, so its id is last -- the ids are persisted in
+   // presets and state and are never reordered. It belongs to Stridulate and
+   // the window puts it there. Not `Stroke`: the WING panel already has one,
+   // and a wing's half-stroke asymmetry is a different thing entirely.
+   kParamScrape,
+
    kNumParams
 };
 

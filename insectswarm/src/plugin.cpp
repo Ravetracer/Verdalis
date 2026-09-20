@@ -161,6 +161,7 @@ private:
       p.pulseRateHz = static_cast<float>(realValue(kParamPulseRate));
       p.echemeRateHz = static_cast<float>(realValue(kParamEchemeRate));
       p.duty = static_cast<float>(realValue(kParamDuty));
+      p.scrape = static_cast<float>(realValue(kParamScrape));
       p.chorus = static_cast<int>(realValue(kParamChorus));
       p.stridSpread = static_cast<float>(realValue(kParamStridSpread));
 

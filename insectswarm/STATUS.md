@@ -1,5 +1,44 @@
 # InsectSwarm — status
 
+**0.3.0. The stridulation layer was wrong about the chorus, not about the
+insect.** Every spectral statistic it was fitted to was inside the references'
+spread and stayed there; what it got wrong was in time, and no per-file median
+could have said so. Found by ear, against NightLife's crickets, and then
+measured: `tools/analysis/chorus.py` is the new file, and these are its numbers.
+
+| statistic (9 cricket references) | references | 0.2.0 | 0.3.0 |
+|---|---|---|---|
+| steadiness — how deep the holes are | 0.16 .. 0.85, med 0.36 | **0.08** | 0.44 |
+| chirp-peak width / centre | 0.07 .. 0.73, med 0.55 | **0.04** | 0.11 |
+| within-chirp crest | 1.70 .. 9.06, med 2.49 | 2.28 | 1.99 |
+| within-chirp duty | 0.08 .. 0.69, med 0.27 | 0.33 | 0.39 |
+
+Three changes, in the order they mattered:
+
+- **A stroke, not a click.** A scraper dragged across a file drives the harp for
+  most of a wing stroke and a tymbal buckles rib by rib; 0.2.0 modelled both as
+  one sample into a resonator, and its own calibration comment recorded the
+  cost — "6 per cent of it is sounding". The new `Scrape` parameter is how much
+  of each pulse period the insect is driving its body, and it is the one control
+  that separates the two mechanisms: measured inside a chirp the references
+  sound 0.27 of the time for a cricket and 0.79 for a cicada. At 0 it is 0.2.0's
+  single click exactly.
+- **A caller's clock is not a metronome.** A lone cricket's chirp-rate peak is
+  0.73 of its own centre wide; 0.2.0 rendered 0.04, because twelve exactly
+  periodic trains are a picket fence however far apart the pickets are. Each
+  caller now has a filtered random walk on its chirp rate, at the corner `Wander
+  Rate` already sets for the wing layer.
+- **The rhythms scatter as far as the library says.** 0.2.0's comment said "the
+  rhythms scatter several times as far, and nothing in the library bounds them"
+  while scattering them by a tenth. Echeme ±45 %, pulse ±30 %, duty ±35 % at
+  full `Scatter`. The carrier stays at ±3 %, which the composite-Q argument
+  really does bound.
+
+54 parameters now, up one. **0.2.0 presets load and sound different**: `Scrape`
+defaults to 0.45 and a 0.2.0 preset does not set it, so a stridulation preset
+from before will sound as this version intends rather than as it did. Setting
+Scrape to 0 restores the old behaviour exactly.
+
 **0.2.0.** Adds `Roam`, the level counterpart of `Wander`: an individual closing
 on the listener and backing off again. Corrects the rate wander, which was
 running a factor of 64 too slow and a factor of 1.7 too shallow.
@@ -28,7 +67,10 @@ the full record.
 | Flight speed | 3.2 m/s | `Speed`, and the finding that Doppler is inaudible |
 | Cicada carrier / Q / clicks | 5549 Hz / 13.2 / 268 a second | the Cicada preset |
 | Cricket carrier / Q / clicks | 4518 Hz / 25.8 / 36 a second | the Cricket preset |
-| Chorus composite Q | 13.2 and 25.8 | bounds `Scatter` at ±3 % |
+| Chorus composite Q | 13.2 and 25.8 | bounds the *carrier* scatter at ±3 % |
+| Chorus steadiness | 0.16 – 0.85, median 0.36 | `Scrape`, and the rhythm scatter |
+| Chirp-peak width | 0.07 – 0.73, median 0.55 | the callers' clock wander |
+| Within-chirp duty | 0.27 cricket, 0.79 cicada | `Scrape`'s default and the two presets |
 
 ## What is verified
 

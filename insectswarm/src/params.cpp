@@ -323,6 +323,20 @@ const ParamDesc kParams[kNumParams] = {
        "How fast that drifting is -- the corner of the filtered noise driving it. An "
        "insect crosses its own body length many times a second but changes where it "
        "is in the room over seconds, so this sits well below Wander Rate."),
+
+   // ---------------------------------------------------- stridulate, appended
+   PCT(kParamScrape, "scrape", "Scrape", "Stridulate", 0.45,
+       "How much of each pulse period the insect is actually driving its\n"
+       "       resonator -- one wing stroke dragging a scraper across a file, or one\n"
+       "       tymbal contraction buckling its ribs.\n"
+       "\n"
+       "       At the bottom it is a single click ringing the body, which is what\n"
+       "       0.2.0 always did and what its own calibration comment recorded as\n"
+       "       \"6 per cent of it is sounding\". Measured inside a chirp, the\n"
+       "       references are on for a median 0.27 of the time for a cricket and 0.79\n"
+       "       for a cicada -- so a click is right for neither, and the two mechanisms\n"
+       "       do not agree with each other either. This is the control that separates\n"
+       "       them."),
 };
 
 #undef LIN

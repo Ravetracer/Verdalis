@@ -203,8 +203,6 @@ private:
    double mPhase = 0.0;
 };
 
-RainStreaks gStreaks;
-
 const WindowSpec kSpec = {
    /* wordmarkFirst  */ "Rainy",
    /* wordmarkSecond */ "Day",
@@ -224,14 +222,17 @@ const WindowSpec kSpec = {
    /* paramCount     */ kNumParams,
    /* mixer          */ kMixerStrips,
    /* mixerCount     */ kNumStrips,
-   /* ornament       */ &gStreaks,
+   /* ornament       */ nullptr, // per window, created in createGui()
 };
 
 } // namespace
 
 Gui *createGui(GuiDelegate &delegate) {
-   static WindowSpec spec = kSpec;
+   WindowSpec spec = kSpec;
    spec.params = paramTable();
+   // One ornament per window: it carries animation state, and a single
+   // shared instance would let two windows of this plugin drive each other.
+   spec.ornament = new RainStreaks();
    return createWindow(delegate, spec);
 }
 

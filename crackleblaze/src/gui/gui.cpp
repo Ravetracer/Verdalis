@@ -302,8 +302,6 @@ private:
    double mPhase = 0.0;
 };
 
-Blaze gBlaze;
-
 const WindowSpec kSpec = {
    /* wordmarkFirst  */ "Crackle",
    /* wordmarkSecond */ "Blaze",
@@ -323,14 +321,17 @@ const WindowSpec kSpec = {
    /* paramCount     */ kNumParams,
    /* mixer          */ kMixerStrips,
    /* mixerCount     */ kNumStrips,
-   /* ornament       */ &gBlaze,
+   /* ornament       */ nullptr, // per window, created in createGui()
 };
 
 } // namespace
 
 Gui *createGui(GuiDelegate &delegate) {
-   static WindowSpec spec = kSpec;
+   WindowSpec spec = kSpec;
    spec.params = paramTable();
+   // One ornament per window: it carries animation state, and a single
+   // shared instance would let two windows of this plugin drive each other.
+   spec.ornament = new Blaze();
    return createWindow(delegate, spec);
 }
 

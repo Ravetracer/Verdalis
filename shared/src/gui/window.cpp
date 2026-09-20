@@ -23,6 +23,7 @@
 
 #if defined(_WIN32)
 #   include <cairo-win32.h>
+#   include <cwchar> // swprintf, for the per-module window class name
 #   include <windows.h>
 #   include <windowsx.h> // GET_X_LPARAM
 // MinGW's <cmath> hides M_PI unless this is asked for, and the knob arcs need it.
@@ -56,38 +57,83 @@ public:
       buildLayout();
    }
 
-   ~PluginWindow() override { closeWindow(); }
+   // The ornament belongs to this window: the spec hands over a fresh one per
+   // window so that two instances of a plugin never share animation state.
+   ~PluginWindow() override {
+      closeWindow();
+      delete mSpec.ornament;
+   }
 
 #if defined(_WIN32)
    static LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
-   static const wchar_t *windowClassName() { return L"VerdalisPluginWindow"; }
+   // The module this code is linked into -- the plugin's own .clap or .vst3,
+   // never the host .exe.
+   //
+   // A window class is keyed on (HINSTANCE, name), and registering one under
+   // GetModuleHandle(nullptr) keys it on the host instead, so every Verdalis
+   // binary in the process competes for one name. The second one to register
+   // loses silently with ERROR_CLASS_ALREADY_EXISTS and then creates its
+   // windows against the first one's class -- which means the first binary's
+   // wndProc, and therefore the first binary's statically linked Cairo,
+   // driving surfaces the second binary's Cairo allocated. Two copies of Cairo
+   // with separate global state handing each other objects corrupts both of
+   // them; issue #1 is what that looks like from the outside. X11 has no class
+   // registry, so this can only happen on Windows, which is why it never
+   // showed up here.
+   static HINSTANCE moduleInstance() {
+      HMODULE mod = nullptr;
+      GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                         reinterpret_cast<LPCWSTR>(&PluginWindow::wndProc), &mod);
+      return reinterpret_cast<HINSTANCE>(mod);
+   }
+
+   // Per-module too, for the same reason and so that a stale class left by an
+   // unloaded build cannot be picked up by a new one.
+   static const wchar_t *windowClassName() {
+      static wchar_t name[64] = {};
+      if (!name[0])
+         swprintf(name, 64, L"VerdalisPluginWindow_%p", static_cast<void *>(moduleInstance()));
+      return name;
+   }
+
+   // Registered on the first window this module opens and dropped with the
+   // last, so the class never outlives the code its wndProc points into: a
+   // host that unloads the plugin would otherwise leave a dangling procedure
+   // behind under a name a later load would find.
+   static int &windowCount() {
+      static int count = 0;
+      return count;
+   }
 
    bool open() override {
       if (mWindow)
          return true;
-      static bool registered = false;
-      if (!registered) {
+      if (windowCount() == 0) {
          WNDCLASSEXW wc{};
          wc.cbSize = sizeof(wc);
          wc.style = CS_OWNDC;
          wc.lpfnWndProc = &PluginWindow::wndProc;
-         wc.hInstance = GetModuleHandleW(nullptr);
+         wc.hInstance = moduleInstance();
          wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
          wc.hbrBackground = nullptr; // every pixel is painted, so never erase
          wc.lpszClassName = windowClassName();
          if (!RegisterClassExW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
             return false;
-         registered = true;
       }
       // Created as an unowned popup, not as a child: WS_CHILD demands a parent
       // at creation and CLAP does not supply one until set_parent. embed()
       // turns it into a child once the host says where it goes.
       mWindow = CreateWindowExW(0, windowClassName(), L"Verdalis", WS_POPUP | WS_CLIPCHILDREN,
                                 0, 0, static_cast<int>(pixelW()), static_cast<int>(pixelH()),
-                                nullptr, nullptr, GetModuleHandleW(nullptr), this);
-      if (!mWindow)
+                                nullptr, nullptr, moduleInstance(), this);
+      if (!mWindow) {
+         if (windowCount() == 0)
+            UnregisterClassW(windowClassName(), moduleInstance());
          return false;
+      }
+      ++windowCount();
       // No target surface is made here. A cached DC belongs to the window as it
       // was when the DC was taken, and this window is reparented into the
       // host's afterwards; the surface to draw on is the one BeginPaint hands
@@ -313,6 +359,8 @@ private:
       if (mWindow) {
          releaseKeyboard();
          DestroyWindow(mWindow);
+         if (--windowCount() == 0)
+            UnregisterClassW(windowClassName(), moduleInstance());
       }
       mWindow = nullptr;
 #else
@@ -2465,7 +2513,10 @@ private:
    static constexpr int kBrowserScrollW = 14;
 
    GuiDelegate &mDelegate;
-   const WindowSpec &mSpec;
+   // By value, not by reference. The window outlives the call that built the
+   // spec -- createGui() fills a local one -- and it owns spec.ornament, so a
+   // reference here is a dangling one the moment createGui() returns.
+   const WindowSpec mSpec;
    const int mWindowW;
 
 #if defined(_WIN32)

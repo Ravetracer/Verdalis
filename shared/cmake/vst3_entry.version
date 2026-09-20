@@ -1,0 +1,18 @@
+/* Export only the VST3 module entry points.
+ *
+ * Every plugin links the same clap-wrapper and VST3 SDK sources statically, so
+ * without this each .vst3 exports ~1700 identical symbols -- among them
+ * Steinberg::gPluginFactory, which the SDK uses as a one-per-module singleton.
+ * A host that loads plugins with RTLD_GLOBAL then binds the second plugin's
+ * calls to the first plugin's copies, and every plugin after the first reports
+ * itself as the first one. Keeping the module to its three entry points makes
+ * each .vst3 independent of the others whatever the host does.
+ */
+{
+   global:
+      GetPluginFactory;
+      ModuleEntry;
+      ModuleExit;
+   local:
+      *;
+};

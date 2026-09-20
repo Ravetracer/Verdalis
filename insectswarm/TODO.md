@@ -1,5 +1,35 @@
 # InsectSwarm — planned work
 
+## The chorus, after 0.3.0
+
+- **The chirp-peak width is still 0.11 against the references' 0.55.** The
+  clock wander tripled it and that is not the whole distance. Two things are
+  probably in the gap: the references' fractional widths are inflated where the
+  chirp centre is slow (a 1 Hz centre with a 0.7 Hz spread reads as 0.73, while
+  our 12 Hz centre with a 1.4 Hz spread reads as 0.11 -- the same *absolute*
+  spread), and a real caller's clock probably wanders over minutes as well as
+  over seconds. The statistic should be reported in absolute Hz beside the
+  fraction before anything more is changed on the strength of it.
+- **The cicada chorus is steadier than the reference median.** 0.71 against
+  0.23, though the cicada references run 0.03 to 0.77 and the ones that are
+  choruses rather than singles sit at the top of that. `Cicada Noon` is a chorus
+  of sixteen, so this is defensible and is not fitted; a single-cicada preset
+  would be the honest test of it and there is not one.
+- **The pulse clock inside a chirp does not wander**, only the chirp clock does.
+  The references bound the first and say nothing about the second.
+- **The rendered carrier Q is 16.5 against the references' 25.8, and it was
+  before 0.3.0 too.** Measured on a single caller with the scatter off, `Scrape`
+  moves it by less than a point -- 16.7 at 0 %, 16.4 at 45 % -- so the burst
+  excitation did not cost it. The gap is the resonator's own response through
+  `pulse.py`'s estimator plus the sidebands a pulse train puts either side of
+  the carrier, and closing it means either a sharper resonator than the measured
+  Q or an estimator that subtracts its own sidebands. Neither has been tried.
+- **`Scrape` is one number for what is really two mechanisms.** A file-and-
+  scraper drives the harp with a series of tooth strikes; a tymbal snaps a few
+  ribs. Both are rendered here as a band of noise over a fraction of the period,
+  which is right about the duration and says nothing about the grain inside it.
+  The references have the resolution to measure that grain and nobody has.
+
 ## Measurement
 
 - **Find a second hornet reference.** The row rests on one recording of 4.2
