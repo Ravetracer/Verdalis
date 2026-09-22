@@ -140,6 +140,13 @@ The browser lists the factory library followed by anything in
 way. A `*` after the preset name means a parameter has been touched since it
 was loaded.
 
+Saving as `Folder/Name` puts the preset in a folder of that name, and the
+browser then lists the library by shelf rather than as one flat grid. A whole
+folder can be written out as one **preset pack** file (`.thunderclappack`) with
+`EXPORT` in the browser's footer and read back with `IMPORT...`, which is how a
+library travels to another machine or another person. See the manual for the
+whole of it.
+
 Knob moves leave the window as real CLAP events — a gesture-begin, the values,
 a gesture-end — so host automation recording sees them exactly as it would a
 move made in the host's own panel. The window never writes the plugin's

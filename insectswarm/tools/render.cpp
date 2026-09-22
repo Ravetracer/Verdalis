@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 
-#include <dirent.h>
 #if defined(_WIN32)
 #   include <windows.h>
 #else
@@ -323,15 +322,22 @@ std::vector<PresetEntry> discoverPresets(const clap_plugin_entry_t *entry) {
             continue;
          }
 
-         // Crawl the directory the way a host indexer would.
-         DIR *dir = opendir(loc.second.c_str());
-         if (!dir) {
+         // Crawl the directory the way a host indexer would: a declared location
+         // is a directory to walk, not a single flat listing, and the user
+         // library has one level of folders in it. A flat walk here would list
+         // fewer presets than the plugin's own browser shows.
+         std::error_code walkEc;
+         std::filesystem::recursive_directory_iterator walk(
+            loc.second, std::filesystem::directory_options::skip_permission_denied, walkEc);
+         if (walkEc) {
             std::fprintf(stderr, "  cannot open location %s\n", loc.second.c_str());
             continue;
          }
          std::vector<std::string> files;
-         while (dirent *de = readdir(dir)) {
-            const std::string name = de->d_name;
+         for (const auto &entry : walk) {
+            if (!entry.is_regular_file())
+               continue;
+            const std::string name = entry.path().filename().string();
             if (name.size() < 2 || name[0] == '.')
                continue;
             bool match = gIndexer.extensions.empty();
@@ -344,9 +350,8 @@ std::vector<PresetEntry> discoverPresets(const clap_plugin_entry_t *entry) {
                   match = true;
             }
             if (match)
-               files.push_back(loc.second + "/" + name);
+               files.push_back(entry.path().string());
          }
-         closedir(dir);
          std::sort(files.begin(), files.end());
          for (const auto &f : files) {
             rx.locationKind = CLAP_PRESET_DISCOVERY_LOCATION_FILE;
@@ -1242,6 +1247,29 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
          std::string readErr;
          check(parsePresetFile(target, readBack, readErr) && readBack.name == original.name,
                "a saved preset file reads back");
+
+         // A pack is a whole folder in one file, and what makes it a way of
+         // moving presets rather than of copying most of them is that each
+         // preset's text comes back byte for byte.
+         const std::string inFolder =
+            verdalis::userPresetPathIn(presetContext(), "My Pack", "Two");
+         check(inFolder.find("My_Pack") != std::string::npos &&
+                  inFolder.find("Two.") != std::string::npos,
+               "a folder in a preset name becomes a directory");
+         const std::vector<verdalis::PresetPackEntry> packIn = {{"One", text}, {"Two", text}};
+         const std::string packText =
+            verdalis::formatPresetPack(presetContext(), "My Pack", packIn);
+         std::string packName;
+         std::vector<verdalis::PresetPackEntry> packOut;
+         std::string packErr;
+         check(verdalis::parsePresetPack(presetContext(), packText, packName, packOut, packErr) &&
+                  packName == "My Pack" && packOut.size() == 2,
+               "a preset pack reads back with its name and every preset");
+         check(packOut.size() == 2 && packOut[0].name == "One" && packOut[1].name == "Two" &&
+                  packOut[0].text == text && packOut[1].text == text,
+               "a packed preset's text survives the round trip byte for byte");
+         check(!verdalis::parsePresetPack(presetContext(), text, packName, packOut, packErr),
+               "a plain preset is not mistaken for a pack");
          std::error_code rmec;
          std::filesystem::remove_all(tmpdir, rmec);
          setEnvVar("XDG_CONFIG_HOME", nullptr);

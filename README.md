@@ -32,6 +32,11 @@ hand-drawn plugin window with no toolkit dependency. Every one ships as both a
 built from one implementation, so they share an engine, a parameter set, a
 preset library and a window.
 
+Your own presets can be kept in folders — save one as `Folder/Name` and the
+window's browser grows a column of shelves — and a whole folder can be written
+out as a single **preset pack** file to hand to somebody else, or read one back
+in. That is the same in every plugin in the suite.
+
 ## The plugins
 
 | Plugin | Simulates | Version |

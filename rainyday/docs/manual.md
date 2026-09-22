@@ -101,6 +101,52 @@ User presets appear in the browser immediately, listed after the factory ones.
 They are plain text, so they can be copied between machines, kept in version
 control, or edited in any editor.
 
+### Folders
+
+A preset library is a shelf, and a long one is worth tidying. Saving a preset as
+`Folder/Name` puts it in a folder of that name under the user preset directory,
+creating the folder if it is not there; a name with no slash in it saves into the
+library's root, as every save did before. Typing the folder is the whole gesture
+— there is no separate "new folder" step, and a folder with nothing in it cannot
+be made.
+
+Folders are one level deep on purpose: a preset library is a shelf rather than a
+filesystem, and a tree deep enough to get lost in is one somebody will get lost
+in. The browser then grows a column of shelves down its left side — *All*, the
+factory library, each of your own folders, and *Unfiled* for anything saved
+without one — each with the number of presets on it. Clicking a shelf lists just
+that shelf.
+
+### Preset packs
+
+A whole folder can be written out as a single file — a **preset pack**, extension
+`.rainydaypack` — so a library can be handed to somebody else, or moved between
+machines, as one file rather than a directory.
+
+With a folder selected in the browser:
+
+| Button | What it does |
+|---|---|
+| `EXPORT` | Writes the selected folder as a pack into the `packs` directory beside `presets` |
+| `EXPORT AS...` | The same, to a location you choose |
+| `IMPORT...` | Lists the packs already in `packs`, plus *Other file...* for one from anywhere |
+| `REVEAL` | Opens the folder the pack was just written to in the system's file browser |
+
+Importing adds the pack's presets to the library as a new folder named after the
+pack. Nothing is ever overwritten: importing the same pack twice gives two
+folders rather than a mixture of both versions in one.
+
+A pack is the preset format again with a separator line between the presets, so
+it can be read, diffed and edited by hand like everything else here. It carries
+each preset's text verbatim rather than a re-serialised copy, which is what makes
+a round trip through a pack lossless.
+
+`EXPORT AS...`, *Other file...* and `REVEAL` need the desktop's own file chooser —
+`zenity` or `kdialog` on Linux, `xdg-open` to reveal, and the operating system's
+own on Windows. Where none is installed the buttons that need one are not drawn,
+and the plugin's own `packs` directory, which is where `EXPORT` writes, is enough
+on its own.
+
 ## Building from source
 
 The suite builds with a C++17 compiler and CMake 3.16 or newer. From the plugin
@@ -409,6 +455,10 @@ knobs on the panels is what the mixer is for.
 preset folder, creating it if it is not there. The name becomes the filename with
 awkward characters replaced, so *My Rain / 2* is saved as `My_Rain_2.rainyday`,
 and the browser picks it up immediately.
+
+A name with a slash in it saves into a folder: *Night Walk/Soft Drizzle* writes
+`Night Walk/Soft_Drizzle.rainyday`, creating the folder if it is not there. See
+*Folders* above for what the browser then does with it.
 
 # Parameter reference
 

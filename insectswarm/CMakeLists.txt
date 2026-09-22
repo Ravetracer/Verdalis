@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(InsectSwarm VERSION 0.3.2 LANGUAGES CXX)
+project(InsectSwarm VERSION 0.4.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -89,7 +89,11 @@ if(INSECTSWARM_BUILD_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
       set(INSECTSWARM_GUI_DEPS_INCLUDE_DIRS "${INSECTSWARM_WIN_CAIRO}/include" "${INSECTSWARM_WIN_CAIRO}/include/cairo")
       set(INSECTSWARM_GUI_DEPS_LIBRARY_DIRS "${INSECTSWARM_WIN_CAIRO}/lib")
       # Cairo's win32 backend draws through GDI and measures text with it.
-      set(INSECTSWARM_GUI_DEPS_LIBRARIES cairo pixman-1 gdi32 msimg32 user32)
+      # comdlg32: the file chooser a preset pack is exported to and imported
+      # from. shell32: ShellExecuteW, which shows a written pack in Explorer.
+      # There is no COM in either -- neither needs an apartment, which is why
+      # they are used rather than the COM file dialogs.
+      set(INSECTSWARM_GUI_DEPS_LIBRARIES cairo pixman-1 gdi32 msimg32 user32 comdlg32 shell32)
       set(INSECTSWARM_GUI_SOURCES src/gui/gui.cpp)
       # Cairo's headers declare everything dllimport unless told the library is
       # static, which is how it is built here.

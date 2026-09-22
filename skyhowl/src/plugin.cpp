@@ -13,6 +13,7 @@
 #include "dsp/wind_engine.h"
 #include "entry.h"
 #include "factories.h"
+#include "verdalis/preset_library.h"
 #include "params.h"
 #include "presets_generated.h"
 #include "skyhowl.h"
@@ -674,50 +675,18 @@ private:
    // directory. Loading goes through the same preset-load path a host uses, so
    // there is exactly one code path for it.
 
+   // What the shared library machinery needs from this plugin: its preset
+   // context and the factory presets embedded in the binary.
+   verdalis::PresetLibrarySpec presetLibrary() const {
+      return {presetContext(), kBuiltinPresets, kNumBuiltinPresets};
+   }
+
    void ensurePresetList() {
       if (mPresetsScanned)
          return;
       mPresetsScanned = true;
 #ifdef SKYHOWL_WITH_GUI
-      for (unsigned i = 0; i < kNumBuiltinPresets; ++i) {
-         PresetData data;
-         std::string error;
-         if (!parsePreset(kBuiltinPresets[i].text, std::strlen(kBuiltinPresets[i].text), data,
-                          error))
-            continue;
-         GuiPreset entry;
-         entry.name = data.name.empty() ? kBuiltinPresets[i].loadKey : data.name;
-         entry.description = data.description;
-         entry.loadKey = kBuiltinPresets[i].loadKey;
-         mPresets.push_back(entry);
-      }
-
-      const std::string dir = userPresetDir();
-      std::error_code ec;
-      if (dir.empty() || !std::filesystem::is_directory(dir, ec))
-         return;
-      std::vector<GuiPreset> user;
-      const std::string suffix = std::string(".") + kPresetExtension;
-      for (const auto &entry : std::filesystem::directory_iterator(dir, ec)) {
-         const std::string name = entry.path().filename().string();
-         if (name.size() <= suffix.size() ||
-             name.compare(name.size() - suffix.size(), suffix.size(), suffix) != 0)
-            continue;
-         const std::string path = entry.path().string();
-         PresetData data;
-         std::string error;
-         if (!parsePresetFile(path, data, error))
-            continue;
-         GuiPreset item;
-         item.name = data.name.empty() ? name.substr(0, name.size() - suffix.size()) : data.name;
-         item.description = data.description;
-         item.path = path;
-         item.userContent = true;
-         user.push_back(item);
-      }
-      std::sort(user.begin(), user.end(),
-                [](const GuiPreset &a, const GuiPreset &b) { return a.name < b.name; });
-      mPresets.insert(mPresets.end(), user.begin(), user.end());
+      mPresets = verdalis::scanPresetLibrary(presetLibrary());
 #endif
    }
 
@@ -834,8 +803,17 @@ private:
       return "My Wind";
    }
 
-   bool guiSavePreset(const std::string &name, std::string &error) override {
-      const std::string path = userPresetPath(name);
+   bool guiSavePreset(const std::string &input, std::string &error) override {
+      // "Folder/Name" saves into a folder, creating it if it is not there; a
+      // name with no slash in it saves into the library's root, which is what
+      // every save did before folders existed.
+      std::string folder, name;
+      verdalis::splitPresetFolder(input, folder, name);
+      if (name.empty()) {
+         error = "Give the preset a name after the folder.";
+         return false;
+      }
+      const std::string path = verdalis::userPresetPathIn(presetContext(), folder, name);
       if (path.empty()) {
          error = "No user preset directory: neither XDG_CONFIG_HOME nor HOME is set.";
          return false;
@@ -865,6 +843,40 @@ private:
          }
       }
       mPresetEdited = false;
+      return true;
+   }
+
+   // --------------------------------------------------- folders and packs
+   //
+   // The browser groups the library by folder and can write a whole folder out
+   // as one file, or read one back in. Everything about it is shared -- see
+   // shared/src/preset_library.cpp -- because none of it is per-plugin: a pack
+   // carries each preset's text rather than a re-serialised copy, so nothing
+   // here has to know what is in one.
+
+   bool guiPresetFoldersSupported() const override { return true; }
+
+   std::string guiPackPathFor(const std::string &folder) const override {
+      return verdalis::presetPackPathFor(presetLibrary(), folder);
+   }
+
+   std::vector<std::string> guiPresetPacks() const override {
+      return verdalis::presetPackFiles(presetLibrary());
+   }
+
+   bool guiExportPack(const std::string &folder, const std::string &path,
+                      std::string &error) override {
+      ensurePresetList();
+      return verdalis::exportPresetPack(presetLibrary(), mPresets, folder, path, error);
+   }
+
+   bool guiImportPack(const std::string &path, std::string &folder,
+                      std::string &error) override {
+      if (!verdalis::importPresetPack(presetLibrary(), path, folder, error))
+         return false;
+      mPresets.clear();
+      mPresetsScanned = false;
+      ensurePresetList();
       return true;
    }
 

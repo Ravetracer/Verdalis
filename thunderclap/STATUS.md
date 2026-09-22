@@ -3,6 +3,29 @@
 Written 2026-09-04. See `README.md` for the design and parameter reference, and
 `TODO.md` for what is still open.
 
+## Preset folders and packs (1.6.0)
+
+User presets can be filed in folders. Saving as `Folder/Name` writes into a
+folder one level under the user preset directory, creating it if it is not
+there; a name with no slash saves into the root, as before. The browser lists
+the library by shelf -- *All*, the factory set, each user folder, *Unfiled* --
+with a count on each.
+
+A whole folder exports as one **preset pack** (`.thunderclappack`), written to a
+`packs` directory beside `presets`, and imports back as a new folder. Nothing is
+overwritten: the same pack imported twice gives two folders. A pack carries each
+preset's text verbatim, so a round trip is lossless.
+
+`EXPORT AS...`, *Other file...* and `REVEAL` use the desktop's own chooser
+(`zenity`/`kdialog`, `xdg-open`, or the Windows dialogs) and are not drawn where
+there is none; `EXPORT` into the plugin's own `packs` folder always works.
+
+All of it is shared -- `shared/src/preset_library.cpp`, the browser in
+`shared/src/gui/window.cpp`, `shared/src/gui/filedialog.cpp` -- and was ported
+from SäureKiste in `Ravetracer/audio-plugins`. The offline renderer's preset
+crawl is now recursive too, so `--list` agrees with the window's browser.
+
+
 ## A VST3 as well (2026-09-12)
 
 ThunderClap ships as a VST3 alongside the CLAP, for Linux and Windows, in every

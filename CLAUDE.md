@@ -523,16 +523,21 @@ shared/
 ├── include/verdalis/
 │   ├── params.h                ParamDesc, ParamKind, FilterKind, conversions
 │   ├── param_macros.h          table-building shorthand (params.cpp only)
-│   ├── preset.h                PresetContext, PresetData, the text format
+│   ├── preset.h                PresetContext, PresetData, the text format,
+│   │                            user folders and the preset pack format
+│   ├── preset_library.h        the library as the browser sees it: the scan,
+│   │                            the folder split, export and import
 │   ├── preset_provider.h       PresetProviderSpec, the discovery factory
 │   ├── dsp/{adsr,biquad,denormals,fastmath,filters,reverb,rng}.h
 │   └── gui/
+│       ├── filedialog.h        the desktop's file chooser, and reveal-in-files
 │       ├── gui.h               Gui + GuiDelegate, the plugin/window contract
 │       ├── toolkit.h           Cairo drawing primitives, Rect, Align
 │       └── window.h            Theme, PanelSpec, HeaderOrnament, MixerStrip,
 │                                WindowSpec
-├── src/{params,preset,preset_provider}.cpp
+├── src/{params,preset,preset_library,preset_provider}.cpp
 ├── src/gui/window.cpp          the window: layout, widgets, browser, entry
+├── src/gui/filedialog.cpp      zenity/kdialog on Linux, commdlg on Windows
 ├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
 │                               clap_entry.version
 ├── patches/                    fixes for the gitignored CLAP/ checkouts
@@ -642,6 +647,37 @@ range and remembers what it was. Everything else follows from that --
 held fader releases rather than fights it, and the preset bar carries a
 `SOLO ON` / `MUTE ON` chip for as long as a hold is active, because a
 forced-down layer that looks like a saved one is the whole trap.
+
+**The preset library has folders, and a folder is a file.** Saving a preset as
+`Folder/Name` puts it one level under the user preset directory; a name with no
+slash saves into the root, as every save did before. One level only, and typing
+the folder is the whole of the "make a folder" gesture -- a folder with nothing
+in it cannot be made, which is right for something whose only purpose is to hold
+presets. The browser then draws a column of shelves: *All*, the plugin's own
+factory set, each user folder, and *Unfiled* for the root.
+
+A whole shelf can be written out as a **preset pack**: one text file, extension
+`<presetext>pack`, kept in a `packs` directory beside `presets`. It is the preset
+format again with a separator line between the presets, and it carries each
+preset's *text* rather than a re-serialised copy -- which is what makes a round
+trip lossless even for a plugin whose presets hold lines the shared format knows
+nothing about. Importing never overwrites: a pack whose folder already exists is
+imported beside it under a numbered name.
+
+All of it is shared. `shared/src/preset_library.cpp` has the scan, the folder
+split and the pack read and write; the browser's shelves, footer and import list
+are in `window.cpp`; `shared/src/gui/filedialog.cpp` is the only place that
+talks to the desktop, and it reports honestly when there is no chooser rather
+than offering a button that does nothing. A plugin opts in by implementing five
+`GuiDelegate` methods that all default to "this plugin does not do that", so the
+flat browser is still what a plugin gets for free -- see any plugin's
+`guiPresetFoldersSupported()`.
+
+The feature was taken from **SäureKiste** in `Ravetracer/audio-plugins`, whose
+`shared/` is a fork of this one. Its browser lives in its own
+`src/gui/seqwindow.cpp` rather than the shared window, so the backend ported
+across unchanged and the browser UI had to be transplanted. If either copy
+changes here, the other is worth a look -- there is no submodule between them.
 
 **Not every layer can have a strip.** A strip is its fader, so a layer with no
 level parameter of its own gets none: RainyDay's close droplets are loudness

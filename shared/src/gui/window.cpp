@@ -13,6 +13,8 @@
 
 #include "verdalis/gui/window.h"
 
+#include "verdalis/gui/filedialog.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -1203,7 +1205,9 @@ private:
       setColor(cr, mSpec.theme.accent);
       drawText(cr, p.x + 20, p.y + 26, "SAVE PRESET", 11, true, Align::Left);
       setColor(cr, mSpec.theme.textMute);
-      drawText(cr, p.x + p.w - 20, p.y + 26, "to your own preset folder", 9, false, Align::Right);
+      drawText(cr, p.x + p.w - 20, p.y + 26,
+               hasFolders() ? "to your own preset library" : "to your own preset folder", 9, false,
+               Align::Right);
 
       const Rect f = saveFieldRect();
       setColor(cr, mSpec.theme.knobFace);
@@ -1220,7 +1224,9 @@ private:
 
       setColor(cr, mSpec.theme.textMute);
       drawText(cr, p.x + 20, f.y + f.h + 20,
-               mSaveStatus.empty() ? "Type a name, then Enter. Esc cancels." : mSaveStatus.c_str(),
+               !mSaveStatus.empty() ? mSaveStatus.c_str()
+               : hasFolders() ? "Type a name, then Enter. \"Folder/Name\" saves into a folder."
+                              : "Type a name, then Enter. Esc cancels.",
                9, false, Align::Left);
 
       auto dialogButton = [&](const Rect &r, const char *label, bool accent) {
@@ -1335,18 +1341,78 @@ private:
    }
 
    // ---------------------------------------------------------------- browser
+   //
+   // The library, grouped. A plugin that says nothing about folders gets the
+   // flat grid this always was; one that does gets a column of shelves down
+   // the left, the selected shelf's presets beside it, and a footer that can
+   // write a whole shelf out as one file or read one back in.
+
+   bool hasFolders() const { return mDelegate.guiPresetFoldersSupported(); }
+
+   // Every folder in the library, in the order the browser lists them:
+   // whatever the plugin calls its built-in set first, then the user's own
+   // alphabetically, then the library's root. Rebuilt whenever the browser
+   // opens or the library changes under it, which is the only time it can
+   // move.
+   void rebuildFolders() {
+      mFolders.clear();
+      if (!hasFolders())
+         return;
+      bool root = false;
+      for (const auto &preset : mDelegate.guiPresets()) {
+         if (preset.folder.empty()) {
+            root = true;
+            continue;
+         }
+         if (std::find(mFolders.begin(), mFolders.end(), preset.folder) == mFolders.end())
+            mFolders.push_back(preset.folder);
+      }
+      if (root)
+         mFolders.push_back(std::string()); // the root, drawn as "Unfiled"
+      if (mBrowserFolder >= static_cast<int>(mFolders.size()))
+         mBrowserFolder = -1;
+   }
+
+   // -1 is "All", which is the flat list this browser has always shown and is
+   // what it opens on.
+   std::string selectedFolder() const {
+      return mBrowserFolder >= 0 && mBrowserFolder < static_cast<int>(mFolders.size())
+                ? mFolders[static_cast<size_t>(mBrowserFolder)]
+                : std::string();
+   }
+
+   // The presets on the selected shelf, as indices into the plugin's list --
+   // loading still goes through the same index the plugin handed out, so
+   // filtering cannot make the browser load the wrong preset.
+   std::vector<int> browserItems() const {
+      std::vector<int> out;
+      const auto &list = mDelegate.guiPresets();
+      for (size_t i = 0; i < list.size(); ++i)
+         if (mBrowserFolder < 0 || list[i].folder == selectedFolder())
+            out.push_back(static_cast<int>(i));
+      return out;
+   }
+
+   int browserCols() const { return hasFolders() ? kBrowserCols - 1 : kBrowserCols; }
 
    int browserRows() const {
-      const int n = static_cast<int>(mDelegate.guiPresets().size());
-      return (n + kBrowserCols - 1) / kBrowserCols;
+      const int n = static_cast<int>(browserItems().size());
+      return (n + browserCols() - 1) / browserCols();
    }
+
+   double browserFolderW() const { return hasFolders() ? kBrowserFolderW : 0.0; }
+   double browserFooterH() const { return hasFolders() ? kBrowserFooterH : 0.0; }
 
    Rect browserPanel() const {
       const double maxH = mSpec.windowH - kHeaderH - 90;
+      const int folderRows = static_cast<int>(mFolders.size()) + 1; // + "All"
+      // Tall enough for whichever side needs more room, so a library with many
+      // folders and few presets in the one on screen still shows its shelves.
+      const int rows = std::max(browserRows(), hasFolders() ? folderRows : 0);
       Rect r;
       r.x = kMargin + 40;
       r.w = mSpec.contentW - 80;
-      r.h = std::min(maxH, 40.0 + browserRows() * kBrowserRowH + kBrowserPad);
+      r.h = std::min(maxH, 40.0 + rows * kBrowserRowH + kBrowserPad + browserFooterH());
       r.y = kHeaderH + (maxH - r.h) * 0.5 + 20;
       return r;
    }
@@ -1355,7 +1421,8 @@ private:
    // per wheel step; the factory set fits without scrolling.
    int browserVisibleRows() const {
       const Rect p = browserPanel();
-      return std::max(1, static_cast<int>((p.h - 40 - kBrowserPad) / kBrowserRowH));
+      return std::max(
+         1, static_cast<int>((p.h - 40 - kBrowserPad - browserFooterH()) / kBrowserRowH));
    }
 
    int browserMaxScroll() const { return std::max(0, browserRows() - browserVisibleRows()); }
@@ -1371,33 +1438,120 @@ private:
    void openBrowser() {
       mBrowserOpen = true;
       mBrowserHover = -1;
-      // Open with the current preset in view.
+      mFolderHover = -2;
+      mFooterHover = -1;
+      mImportOpen = false;
+      mBrowserStatus.clear();
+      rebuildFolders();
+      // Open with the current preset in view, on its own shelf rather than in
+      // the flat list: the folder a preset is in is part of where it is.
       const int cur = mDelegate.guiCurrentPreset();
-      const int row = cur >= 0 ? cur / kBrowserCols : 0;
+      const auto &list = mDelegate.guiPresets();
+      if (hasFolders() && cur >= 0 && cur < static_cast<int>(list.size())) {
+         const auto it =
+            std::find(mFolders.begin(), mFolders.end(), list[static_cast<size_t>(cur)].folder);
+         mBrowserFolder = it == mFolders.end() ? -1 : static_cast<int>(it - mFolders.begin());
+      }
+      const std::vector<int> items = browserItems();
+      const auto at = std::find(items.begin(), items.end(), cur);
+      const int position = at == items.end() ? 0 : static_cast<int>(at - items.begin());
       mBrowserScroll = std::min(browserMaxScroll(),
-                                std::max(0, row - browserVisibleRows() / 2));
+                                std::max(0, position / browserCols() - browserVisibleRows() / 2));
       closeMenu();
       mDirty = true;
    }
 
    // Row-major, so scrolling by rows keeps every column moving together. The
-   // row is relative to the scroll position; a negative or too-large row is a
-   // preset that is currently out of view and browserItemVisible() says so.
-   Rect browserItemRect(int index) const {
+   // position is the preset's place on the shelf on screen, not its index in
+   // the plugin's list; a negative or too-large row is out of view and
+   // browserItemVisible() says so.
+   Rect browserItemRect(int position) const {
       const Rect p = browserPanel();
-      const int col = index % kBrowserCols;
-      const int row = index / kBrowserCols - mBrowserScroll;
+      const int cols = browserCols();
+      const int col = position % cols;
+      const int row = position / cols - mBrowserScroll;
       Rect r;
-      r.w = (p.w - 2 * kBrowserPad - kBrowserScrollW) / kBrowserCols;
+      r.w = (p.w - 2 * kBrowserPad - kBrowserScrollW - browserFolderW()) / cols;
       r.h = kBrowserRowH;
-      r.x = p.x + kBrowserPad + col * r.w;
+      r.x = p.x + kBrowserPad + browserFolderW() + col * r.w;
       r.y = p.y + 40 + row * r.h;
       return r;
    }
 
-   bool browserItemVisible(int index) const {
-      const int row = index / kBrowserCols - mBrowserScroll;
+   bool browserItemVisible(int position) const {
+      const int row = position / browserCols() - mBrowserScroll;
       return row >= 0 && row < browserVisibleRows();
+   }
+
+   // The shelves. Row 0 is "All"; the rest are mFolders in order.
+   Rect browserFolderRect(int row) const {
+      const Rect p = browserPanel();
+      Rect r;
+      r.x = p.x + kBrowserPad;
+      r.w = kBrowserFolderW - kBrowserPad;
+      r.h = kBrowserRowH;
+      r.y = p.y + 40 + row * kBrowserRowH;
+      return r;
+   }
+
+   int browserFolderAt(double x, double y) const {
+      if (!hasFolders())
+         return -2;
+      for (int row = 0; row <= static_cast<int>(mFolders.size()); ++row)
+         if (browserFolderRect(row).contains(x, y))
+            return row - 1; // row 0 is "All", which is folder -1
+      return -2;
+   }
+
+   // The footer: export this shelf, export it somewhere else, import a pack,
+   // and show the last pack written in the desktop's file manager. A pack is a
+   // file somebody is going to send to somebody else, so the gesture after
+   // writing one is getting at it -- which is why REVEAL is here rather than
+   // the path being read off the status line and typed somewhere.
+   bool canReveal() const { return !mRevealPath.empty() && fileRevealAvailable(); }
+
+   // Where the status line starts: after whichever button is the last one on.
+   int lastFooter() const { return canReveal() ? 3 : 2; }
+
+   Rect browserFooterRect(int which) const {
+      const Rect p = browserPanel();
+      const double w = 108.0;
+      Rect r;
+      r.h = 22.0;
+      r.y = p.y + p.h - kBrowserFooterH + 6.0;
+      r.x = p.x + kBrowserPad + which * (w + 8.0);
+      r.w = w;
+      return r;
+   }
+
+   int browserFooterAt(double x, double y) const {
+      if (!hasFolders())
+         return -1;
+      for (int which = 0; which <= lastFooter(); ++which) {
+         if (which == 1 && !fileDialogAvailable())
+            continue;
+         if (browserFooterRect(which).contains(x, y))
+            return which;
+      }
+      return -1;
+   }
+
+   // The list of packs the plugin can see, shown under IMPORT. The last entry
+   // is the desktop's own file chooser, when there is one.
+   Rect browserImportRect(int row) const {
+      const Rect anchor = browserFooterRect(2);
+      Rect r;
+      r.x = anchor.x;
+      r.w = 260.0;
+      r.h = kMenuRowH;
+      r.y = anchor.y - 4.0 - (browserImportCount() - row) * kMenuRowH;
+      return r;
+   }
+
+   // The packs, then "Other file...", which needs a desktop chooser and is
+   // left out where there is none.
+   int browserImportCount() const {
+      return static_cast<int>(mImportPacks.size()) + (fileDialogAvailable() ? 1 : 0);
    }
 
    Rect browserScrollbar() const {
@@ -1480,6 +1634,102 @@ private:
       }
    }
 
+   // ------------------------------------------------------------- the packs
+
+   // Where a pack of the selected folder goes by default, and what the status
+   // line says afterwards. Writing it is the plugin's job; the window only
+   // knows which shelf is on screen.
+   void exportPack(bool chooseWhere) {
+      if (!hasFolders())
+         return;
+      const std::string folder = selectedFolder();
+      if (mBrowserFolder < 0) {
+         mBrowserStatus = "Pick a folder to export -- All is the whole library.";
+         mDirty = true;
+         return;
+      }
+      std::string path = mDelegate.guiPackPathFor(folder);
+      if (chooseWhere) {
+         path = saveFileDialog("Export preset pack", path, "Preset pack",
+                               packExtensionFromPath(path));
+         if (path.empty()) {
+            mDirty = true;
+            return; // cancelled
+         }
+      }
+      if (path.empty()) {
+         mBrowserStatus = "Nowhere to write a pack: no user config directory.";
+         mDirty = true;
+         return;
+      }
+      std::string error;
+      const bool wrote = mDelegate.guiExportPack(folder, path, error);
+      mBrowserStatus = wrote ? "Wrote " + fileNameOf(path) + (fileRevealAvailable()
+                                                                 ? " -- REVEAL shows it."
+                                                                 : "")
+                             : (error.empty() ? std::string("Could not write the pack.") : error);
+      // Kept until the window closes rather than until the browser does: a pack
+      // is written once and fetched later, often after a look at the library.
+      if (wrote)
+         mRevealPath = path;
+      mImportPacks = mDelegate.guiPresetPacks();
+      mDirty = true;
+   }
+
+   void revealPack() {
+      if (!canReveal())
+         return;
+      if (!revealInFileBrowser(mRevealPath))
+         mBrowserStatus = "No file manager answered.";
+      mDirty = true;
+   }
+
+   void importPack(const std::string &path) {
+      mImportOpen = false;
+      if (path.empty()) {
+         mDirty = true;
+         return;
+      }
+      std::string folder;
+      std::string error;
+      if (!mDelegate.guiImportPack(path, folder, error)) {
+         mBrowserStatus = error.empty() ? std::string("Could not read the pack.") : error;
+         mDirty = true;
+         return;
+      }
+      rebuildFolders();
+      const auto it = std::find(mFolders.begin(), mFolders.end(), folder);
+      mBrowserFolder = it == mFolders.end() ? -1 : static_cast<int>(it - mFolders.begin());
+      mBrowserScroll = 0;
+      mBrowserStatus = "Imported as \"" + folder + "\"";
+      mDirty = true;
+   }
+
+   // The extension a pack path ends in, so the file chooser can filter on it
+   // without the window having to know what the plugin calls its presets.
+   static std::string packExtensionFromPath(const std::string &path) {
+      const size_t dot = path.find_last_of('.');
+      return dot == std::string::npos ? std::string("pack") : path.substr(dot + 1);
+   }
+
+   static std::string fileNameOf(const std::string &path) {
+      const size_t cut = path.find_last_of("/\\");
+      return cut == std::string::npos ? path : path.substr(cut + 1);
+   }
+
+   void drawFooterButton(cairo_t *cr, const Rect &r, const char *label, bool enabled, bool hot) {
+      const Theme &t = mSpec.theme;
+      hot = hot && enabled;
+      roundedRect(cr, r.x, r.y, r.w, r.h, 3);
+      setColor(cr, hot ? t.track : t.knobFace, enabled ? 1.0 : 0.5);
+      cairo_fill_preserve(cr);
+      setColor(cr, t.panelEdge, enabled ? 1.0 : 0.5);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      setColor(cr, hot ? t.text : t.textDim, enabled ? 1.0 : 0.45);
+      drawText(cr, r.x + r.w * 0.5, r.y + r.h - 7.0, label, 9.0, false, Align::Center);
+   }
+
    void drawBrowser(cairo_t *cr) {
       setColor(cr, mSpec.theme.bgBottom, 0.88);
       cairo_rectangle(cr, 0, 0, mWindowW, mSpec.windowH);
@@ -1503,22 +1753,121 @@ private:
 
       const auto &list = mDelegate.guiPresets();
       const int cur = mDelegate.guiCurrentPreset();
-      for (size_t i = 0; i < list.size(); ++i) {
-         if (!browserItemVisible(static_cast<int>(i)))
+
+      // ---- the shelves
+      if (hasFolders()) {
+         const double top = p.y + 40;
+         const double bottom = top + browserVisibleRows() * kBrowserRowH;
+         setColor(cr, mSpec.theme.panelEdge, 0.8);
+         cairo_set_line_width(cr, 1.0);
+         cairo_move_to(cr, p.x + browserFolderW() + 2.0, top);
+         cairo_line_to(cr, p.x + browserFolderW() + 2.0, bottom);
+         cairo_stroke(cr);
+
+         for (int row = 0; row <= static_cast<int>(mFolders.size()); ++row) {
+            const Rect r = browserFolderRect(row);
+            if (r.y + r.h > bottom + 1.0)
+               break;
+            const int folder = row - 1;
+            const bool sel = folder == mBrowserFolder;
+            const bool hot = mFolderHover == folder;
+            if (sel || hot) {
+               setColor(cr, mSpec.theme.accent, sel ? 0.18 : 0.10);
+               roundedRect(cr, r.x, r.y + 1, r.w, r.h - 2, 3);
+               cairo_fill(cr);
+            }
+            const char *label = row == 0 ? "All"
+                                : mFolders[static_cast<size_t>(folder)].empty()
+                                   ? "Unfiled"
+                                   : mFolders[static_cast<size_t>(folder)].c_str();
+            setColor(cr, sel ? mSpec.theme.accent : mSpec.theme.text, hot ? 1.0 : 0.8);
+            drawText(cr, r.x + 8, r.y + r.h * 0.5 + 4, label, 10.5, sel, Align::Left);
+            // How many presets are on it, which is the one thing a shelf can
+            // say about itself without being opened.
+            int count = 0;
+            for (const auto &preset : list)
+               if (row == 0 || preset.folder == mFolders[static_cast<size_t>(folder)])
+                  ++count;
+            char num[12];
+            std::snprintf(num, sizeof(num), "%d", count);
+            setColor(cr, mSpec.theme.textMute);
+            drawText(cr, r.x + r.w - 8, r.y + r.h * 0.5 + 4, num, 9, false, Align::Right);
+         }
+      }
+
+      // ---- the presets on the shelf
+      const std::vector<int> items = browserItems();
+      for (size_t k = 0; k < items.size(); ++k) {
+         if (!browserItemVisible(static_cast<int>(k)))
             continue;
-         const Rect r = browserItemRect(static_cast<int>(i));
-         const bool hot = mBrowserHover == static_cast<int>(i);
-         const bool sel = cur == static_cast<int>(i);
+         const int index = items[k];
+         const Rect r = browserItemRect(static_cast<int>(k));
+         const bool hot = mBrowserHover == index;
+         const bool sel = cur == index;
          if (hot || sel) {
             setColor(cr, mSpec.theme.accent, hot ? 0.20 : 0.10);
             roundedRect(cr, r.x + 2, r.y + 1, r.w - 4, r.h - 2, 3);
             cairo_fill(cr);
          }
          setColor(cr, sel ? mSpec.theme.accent : mSpec.theme.text, hot ? 1.0 : 0.85);
-         drawText(cr, r.x + 10, r.y + r.h * 0.5 + 4, list[i].name.c_str(), 11, sel, Align::Left);
-         if (list[i].userContent) {
+         drawText(cr, r.x + 10, r.y + r.h * 0.5 + 4, list[static_cast<size_t>(index)].name.c_str(),
+                  11, sel, Align::Left);
+         if (list[static_cast<size_t>(index)].userContent) {
             setColor(cr, mSpec.theme.textMute);
             drawText(cr, r.x + r.w - 10, r.y + r.h * 0.5 + 4, "USER", 8, true, Align::Right);
+         }
+      }
+
+      // ---- the footer: a folder in, a folder out, and whatever the last one
+      // of those had to say about itself.
+      if (hasFolders()) {
+         drawFooterButton(cr, browserFooterRect(0), "EXPORT", mBrowserFolder >= 0,
+                          mFooterHover == 0);
+         if (fileDialogAvailable())
+            drawFooterButton(cr, browserFooterRect(1), "EXPORT AS...", mBrowserFolder >= 0,
+                             mFooterHover == 1);
+         drawFooterButton(cr, browserFooterRect(2), "IMPORT...", true, mFooterHover == 2);
+         if (canReveal())
+            drawFooterButton(cr, browserFooterRect(3), "REVEAL", true, mFooterHover == 3);
+
+         const Rect last = browserFooterRect(lastFooter());
+         cairo_save(cr);
+         cairo_rectangle(cr, p.x, last.y - 4.0, p.w - kBrowserPad, last.h + 8.0);
+         cairo_clip(cr);
+         setColor(cr, mSpec.theme.textMute);
+         drawText(cr, last.x + last.w + 12.0, last.y + last.h - 6.0,
+                  mBrowserStatus.empty()
+                     ? "A pack is one file holding a whole folder. Save as \"Folder/Name\" to "
+                       "put a preset on a shelf."
+                     : mBrowserStatus.c_str(),
+                  9, false, Align::Left);
+         cairo_restore(cr);
+
+         if (mImportOpen && browserImportCount() > 0) {
+            const int rows = browserImportCount();
+            const Rect first = browserImportRect(0);
+            setColor(cr, mSpec.theme.bgTop, 0.98);
+            roundedRect(cr, first.x - 4.0, first.y - 4.0, first.w + 8.0, rows * kMenuRowH + 8.0,
+                        4.0);
+            cairo_fill_preserve(cr);
+            setColor(cr, mSpec.theme.accent, 0.6);
+            cairo_set_line_width(cr, 1.0);
+            cairo_stroke(cr);
+            for (int row = 0; row < rows; ++row) {
+               const Rect r = browserImportRect(row);
+               const bool hot = mImportHover == row;
+               if (hot) {
+                  setColor(cr, mSpec.theme.accent, 0.2);
+                  roundedRect(cr, r.x, r.y, r.w, r.h, 3.0);
+                  cairo_fill(cr);
+               }
+               const bool other = row >= static_cast<int>(mImportPacks.size());
+               const std::string label =
+                  other ? std::string("Other file...")
+                        : fileNameOf(mImportPacks[static_cast<size_t>(row)]);
+               setColor(cr, mSpec.theme.text, hot ? 1.0 : 0.85);
+               drawText(cr, r.x + 8, r.y + r.h - 6.0, label.c_str(), 10, other, Align::Left);
+            }
          }
       }
 
@@ -2241,6 +2590,56 @@ private:
             return;
          }
          if (be.button == kButtonLeft) {
+            // The import list is on top of everything else in the panel, so it
+            // is asked first and swallows the click either way.
+            if (mImportOpen) {
+               for (int row = 0; row < browserImportCount(); ++row) {
+                  if (!browserImportRect(row).contains(x, y))
+                     continue;
+                  if (row < static_cast<int>(mImportPacks.size()))
+                     importPack(mImportPacks[static_cast<size_t>(row)]);
+                  else
+                     importPack(openFileDialog(
+                        "Import preset pack", "Preset pack",
+                        packExtensionFromPath(mDelegate.guiPackPathFor("pack"))));
+                  mDirty = true;
+                  return;
+               }
+               mImportOpen = false;
+               mDirty = true;
+               return;
+            }
+
+            if (hasFolders()) {
+               const int folder = browserFolderAt(x, y);
+               if (folder != -2) {
+                  mBrowserFolder = folder;
+                  mBrowserScroll = 0;
+                  mBrowserHover = -1;
+                  mDirty = true;
+                  return;
+               }
+               const int footer = browserFooterAt(x, y);
+               if (footer == 0 || footer == 1) {
+                  exportPack(footer == 1);
+                  return;
+               }
+               if (footer == 3) {
+                  revealPack();
+                  return;
+               }
+               if (footer == 2) {
+                  mImportPacks = mDelegate.guiPresetPacks();
+                  mImportHover = -1;
+                  if (browserImportCount() == 0)
+                     mBrowserStatus = "No packs found, and no file chooser to look with.";
+                  else
+                     mImportOpen = true;
+                  mDirty = true;
+                  return;
+               }
+            }
+
             const int item = browserItemAt(x, y);
             if (item >= 0)
                loadPreset(item);
@@ -2391,8 +2790,19 @@ private:
 
       if (mBrowserOpen) {
          const int item = browserItemAt(x, y);
-         if (item != mBrowserHover) {
+         const int folder = hasFolders() ? browserFolderAt(x, y) : -2;
+         const int footer = hasFolders() ? browserFooterAt(x, y) : -1;
+         int importRow = -1;
+         if (mImportOpen)
+            for (int row = 0; row < browserImportCount(); ++row)
+               if (browserImportRect(row).contains(x, y))
+                  importRow = row;
+         if (item != mBrowserHover || folder != mFolderHover || footer != mFooterHover ||
+             importRow != mImportHover) {
             mBrowserHover = item;
+            mFolderHover = folder;
+            mFooterHover = footer;
+            mImportHover = importRow;
             mDirty = true;
          }
          return;
@@ -2429,13 +2839,16 @@ private:
       }
    }
 
+   // The index the plugin handed out, not the position on the shelf: everything
+   // outside the browser -- loading, the arrows, the name on the bar -- works in
+   // those, and they must not shift because the browser is showing a subset.
    int browserItemAt(double x, double y) const {
-      const auto &list = mDelegate.guiPresets();
-      for (size_t i = 0; i < list.size(); ++i) {
-         if (!browserItemVisible(static_cast<int>(i)))
+      const std::vector<int> items = browserItems();
+      for (size_t k = 0; k < items.size(); ++k) {
+         if (!browserItemVisible(static_cast<int>(k)))
             continue;
-         if (browserItemRect(static_cast<int>(i)).contains(x, y))
-            return static_cast<int>(i);
+         if (browserItemRect(static_cast<int>(k)).contains(x, y))
+            return items[k];
       }
       return -1;
    }
@@ -2511,6 +2924,11 @@ private:
    static constexpr int kBrowserPad = 14;
    static constexpr int kBrowserRowH = 26;
    static constexpr int kBrowserScrollW = 14;
+   // The shelf column down the left of the browser, and the strip under it
+   // holding the pack buttons. Both are zero wide for a plugin that does not
+   // group its presets, and then the browser is the flat grid it always was.
+   static constexpr double kBrowserFolderW = 190.0;
+   static constexpr double kBrowserFooterH = 34.0;
 
    GuiDelegate &mDelegate;
    // By value, not by reference. The window outlives the call that built the
@@ -2557,6 +2975,25 @@ private:
    bool mBrowserOpen = false;
    int mBrowserHover = -1;
    int mBrowserScroll = 0; // first visible row
+   // The library's shelves, as the browser lists them, and which one is on
+   // screen: -1 is "All", which is the flat list the browser has always shown.
+   std::vector<std::string> mFolders;
+   int mBrowserFolder = -1;
+   int mFolderHover = -2; // -2 is "not over a shelf"; -1 is "All"
+   int mFooterHover = -1;
+   // The packs the plugin can see, read when IMPORT is opened rather than kept
+   // in step with the disk: a folder somebody drops a pack into while the
+   // window is up is seen the next time the list is asked for.
+   std::vector<std::string> mImportPacks;
+   bool mImportOpen = false;
+   int mImportHover = -1;
+   // What the last export or import had to say. Cleared when the browser
+   // opens, so a message never outlives the gesture that produced it.
+   std::string mBrowserStatus;
+   // The last pack this window wrote, which is what REVEAL shows. Empty until
+   // something has been exported, and REVEAL is not drawn until then: a button
+   // that reveals nothing in particular is worse than no button.
+   std::string mRevealPath;
    bool mSaveOpen = false;
    int mEntryParam = -1; // knob whose value is being typed, or -1
    std::string mEntryText;

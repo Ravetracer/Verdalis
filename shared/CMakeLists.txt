@@ -30,11 +30,12 @@ cmake_minimum_required(VERSION 3.16)
 set(VERDALIS_SOURCES
    src/params.cpp
    src/preset.cpp
+   src/preset_library.cpp
    src/preset_provider.cpp
 )
 
 if(VERDALIS_WITH_GUI)
-   list(APPEND VERDALIS_SOURCES src/gui/window.cpp)
+   list(APPEND VERDALIS_SOURCES src/gui/window.cpp src/gui/filedialog.cpp)
 endif()
 
 add_library(verdalis_shared STATIC ${VERDALIS_SOURCES})
