@@ -4,6 +4,17 @@ Version 0.5.0. The reference library was **cleaned rather than grown** — every
 file isolated to a single bird by hand, the dense multi-bird recordings dropped
 — and that one change did more for the plugin than any fitting so far.
 
+## The VST3 loads on its own (0.7.1)
+
+On Linux the `.vst3` never found the plugin inside itself: the clap-wrapper's
+lookup of its own CLAP entry did not work, so it quietly wrapped whatever
+`ChirpParade.clap` it found in `~/.clap` or `/usr/lib/clap` instead -- and had no
+factory at all on a machine with only the VST3 installed. It now takes the entry
+it was linked with, by address (`STATICALLY_LINKED_CLAP_ENTRY` in the VST3 block
+of `CMakeLists.txt`), and passes Steinberg's validator with no CLAP installed.
+Windows was never affected. Nothing else changed: every preset renders
+bit-identical to the version before.
+
 - **82 % of segmented syllables now pass the contour quality gate, against
   45 % before.** 88 files, 6991 syllables, **5749 usable contours** — 61 % more
   usable material out of 10 % fewer recordings. The gate was never the problem;

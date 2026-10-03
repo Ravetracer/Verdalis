@@ -26,7 +26,9 @@ Verdalis/
 ├── dist/              release archives         — GITIGNORED
 ├── rainyday/          RainyDay — synthesised rain
 ├── thunderclap/       ThunderClap — synthesised thunder
-└── ...                one folder per plugin; see the roadmap below
+├── ...                one folder per plugin; see the roadmap below
+└── verdaliscene/      VerdaliScene — the nine nature plugins as layers of one
+                       scene, built from their folders above
 ```
 
 **The suite is one git repository**, the whole of `Verdalis/`:
@@ -70,6 +72,19 @@ Plus one plugin that is deliberately **not** on that list:
 | # | Plugin | Folder | Status | Simulates |
 |---|--------|--------|--------|-----------|
 | — | **WhooshPact** | `whooshpact/` | WIP | transitions, impacts — production sounds, not a natural source |
+
+And one that is all of them at once:
+
+| # | Plugin | Folder | Status | Simulates |
+|---|--------|--------|--------|-----------|
+| — | **VerdaliScene** | `verdaliscene/` | WIP | whole scenes — the nine nature plugins layered and mixed |
+
+VerdaliScene synthesises nothing of its own. Each of its layers *is* one of the
+nine nature plugins -- that plugin's engine, parameter table, preset library and
+panel layout, compiled from the plugin's own folder -- so it is the one place in
+the suite that depends on the others, and a change to any nature plugin is a
+change to VerdaliScene. See *VerdaliScene and the plugins it layers* below before
+touching any plugin's `engine_params.cpp`, `gui.cpp` or parameter ids.
 
 WhooshPact is the suite's first non-nature plugin and the first whose reference
 library is *finished production sounds* rather than recordings of the world.
@@ -175,12 +190,15 @@ drawing primitives all come from `shared/`; see *Shared components* below.
 │   │                        .vst3 can be built from one implementation
 │   ├── plugin.cpp           CLAP host glue and the audio callback
 │   ├── params.{h,cpp}       this plugin's ParamId enum and ParamDesc table
+│   ├── engine_params.{h,cpp} the parameters -> EngineParams mapping, kept out
+│   │                        of plugin.cpp so VerdaliScene runs the same one
 │   ├── preset.cpp           binds the shared preset format to this plugin
 │   ├── preset_provider.cpp  binds the shared discovery provider
 │   ├── factories.h
 │   ├── dsp/                 the synthesis engine (the DSP toolbox is shared)
-│   └── gui/                 its theme, panel layout and header ornament;
-│                            the window itself comes from shared/
+│   └── gui/                 its theme, panel layout and header ornament,
+│                            exposed as windowSpec() / createOrnament(); the
+│                            window itself comes from shared/
 ├── tools/
 │   ├── render.cpp           offline renderer + self-test
 │   ├── guihost.cpp          standalone GUI host for window development
@@ -401,6 +419,18 @@ cd rainyday && ./install.sh --vst3      # -> ~/.clap/RainyDay + ~/.vst3/RainyDay
   to be linked in exactly as the `.clap` does it. There is no
   `--exclude-all-symbols` -- `GetPluginFactory` carries dllexport from
   `SMTG_EXPORT_SYMBOL` and must stay visible.
+- **The wrapper takes the CLAP entry by address** -- every plugin's VST3 block
+  builds the wrapper's `clap-wrapper-shared-detail` with
+  `STATICALLY_LINKED_CLAP_ENTRY=1`. Without it the wrapper looks for `clap_entry`
+  inside its own binary, and on Linux that look never worked: it `dlsym()`s a
+  handle it has not opened yet, and the version script below keeps `clap_entry`
+  unexported anyway. It then fell back to searching `~/.clap` and
+  `/usr/lib/clap` for a `.clap` of the same name and wrapped *that* -- so every
+  Linux `.vst3` the suite shipped before this only loaded where the matching
+  CLAP was installed too, ran that CLAP's code rather than its own, and
+  returned no factory at all on a machine with only the VST3. Windows was never
+  affected: there `clap_entry` is exported and found. Found while building
+  VerdaliScene, which was not installed in `~/.clap` and so failed outright.
 - **On Linux the `.vst3` gets a version script of its own**,
   `shared/cmake/vst3_entry.version`, exporting `GetPluginFactory`, `ModuleEntry`
   and `ModuleExit` and nothing else. Without it each `.vst3` exported ~1700
@@ -472,12 +502,16 @@ cmake -S CLAP/vst3sdk -B /tmp/vst3sdk-build -G Ninja -DCMAKE_BUILD_TYPE=Release 
    -DSMTG_ENABLE_VSTGUI_SUPPORT=OFF -DSMTG_CREATE_PLUGIN_LINK=OFF \
    -DSMTG_ENABLE_VST3_PLUGIN_EXAMPLES=OFF -DSMTG_ENABLE_VST3_HOSTING_EXAMPLES=OFF
 cmake --build /tmp/vst3sdk-build --target validator
-/tmp/vst3sdk-build/bin/Release/validator ~/.vst3/RainyDay.vst3        # 47 tests
-/tmp/vst3sdk-build/bin/Release/validator -e ~/.vst3/RainyDay.vst3     # 537 tests
+HOME=/tmp/empty /tmp/vst3sdk-build/bin/Release/validator ~/.vst3/RainyDay.vst3     # 47 tests
+HOME=/tmp/empty /tmp/vst3sdk-build/bin/Release/validator -e ~/.vst3/RainyDay.vst3  # 537 tests
 ```
 
 Hosting examples must be off: `editorhost` wants gtkmm, which is not installed
-and is not needed. All seven plugins pass 47/47.
+and is not needed. **Run it with `HOME` pointing at an empty directory**, so no
+`.clap` in `~/.clap` can stand in for the one inside the `.vst3` -- that is
+exactly how the broken entry lookup described above passed 47/47 for every
+plugin for as long as it did. All eleven plugins pass 47/47 that way, and
+VerdaliScene 537/537 with `-e`.
 
 `-e` reports a few `getParamValueByString` notes -- three on RainyDay (Density,
 Trickle Rate, Trickle Decay). They are not failures. The displayed text is
@@ -533,10 +567,12 @@ shared/
 │       ├── filedialog.h        the desktop's file chooser, and reveal-in-files
 │       ├── gui.h               Gui + GuiDelegate, the plugin/window contract
 │       ├── toolkit.h           Cairo drawing primitives, Rect, Align
-│       └── window.h            Theme, PanelSpec, HeaderOrnament, MixerStrip,
-│                                WindowSpec
+│       ├── window.h            Theme, PanelSpec, HeaderOrnament, MixerStrip,
+│       │                        WindowSpec
+│       └── plugin_window.h     the window class itself, for a plugin that
+│                                extends it (only VerdaliScene does)
 ├── src/{params,preset,preset_library,preset_provider}.cpp
-├── src/gui/window.cpp          the window: layout, widgets, browser, entry
+├── src/gui/window.cpp          createWindow(), and the Win32 window procedure
 ├── src/gui/filedialog.cpp      zenity/kdialog on Linux, commdlg on Windows
 ├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
 │                               clap_entry.version
@@ -577,6 +613,17 @@ dropdowns, the preset browser, the save field, the typed value entry and the
 meters are written once. A plugin describes itself with a `WindowSpec` and calls
 `createWindow()`.
 
+**The window can be extended, and VerdaliScene is the one plugin that does.** The
+class lives in `plugin_window.h` rather than hidden in `window.cpp`, with
+`buildLayout()`, `drawFrame()`, `needsRepaint()`, `onPointerDown()`, `onMotion()`,
+`onOverlayKey()` and the three overlay titles virtual, and `mSpec` changeable
+between frames. VerdaliScene's window subclasses it to add tabs and a scene
+mixer and to swap a whole page of panels in and out; every widget it draws is
+the base class's. The extraction changed no other plugin by a pixel -- checked by
+capturing all ten windows before and after -- and a change to the window still
+has to be checked in VerdaliScene as well as the plain plugins, because it is
+the one caller that reaches past `createWindow()`.
+
 **Every plugin has its own colour theme, and that is the only thing that tells
 the windows apart.** The `Theme` in the spec carries the whole palette, not just
 the accent: the backgrounds, the panel fill and edge, the knob face, the track
@@ -595,6 +642,7 @@ with a coloured knob.
 | RiverFlow | `#57C77A` | river green -- moss on wet stone, cool green-grey greys |
 | CrackleBlaze | `#FF5A2C` | ember orange, the darkest chassis in the suite -- a deep red-brown cast, deliberately hotter and redder than SkyHowl's dusty coral |
 | WhooshPact | `#FF3C97` | impact magenta at hue 330, with a cool blue-violet chassis -- the one plugin that models nothing natural, and the one accent that reads as obviously synthetic |
+| VerdaliScene | `#A6D35A` | meadow: a yellow-green at hue 84, between InsectSwarm's yellow and RiverFlow's green and mistakable for neither, over a near-neutral chassis -- because a layer's page swaps in that plugin's own accent, and the greys have to carry all nine |
 | NightLife | `#9FB4E8` | moonlight: the only *desaturated* accent in the suite, a pale indigo at hue 221 over the darkest blue-black chassis. It sits between RainyDay's saturated cyan and ThunderClap's saturated violet and is mistakable for neither, because it is washed out where both of those are vivid |
 
 A new plugin picks its own accent and derives its greys from it. Do not reuse
@@ -701,10 +749,14 @@ Genuinely per-plugin, and correctly so:
 - `src/entry.{h,cpp}` — the entry-point split; identical in all seven bar the
   plugin's own prefix
 - `src/params.cpp` / `params.h` — its ParamId enum and its ParamDesc table
+- `src/engine_params.{h,cpp}` — the one function turning real parameter values
+  into its engine's `EngineParams`; `plugin.cpp`'s `syncEngineParams()` and
+  VerdaliScene's layer both call it
 - `src/preset.cpp`, `src/preset_provider.cpp` — ~35-line bindings that supply
   the plugin's name, extension and table to the shared implementations
 - `src/gui/gui.cpp` — its theme, its panel layout, its mixer strips and its
-  header ornament
+  header ornament, behind `windowSpec()` and `createOrnament()` so a
+  VerdaliScene layer page is the plugin's own layout
 - `presets/`, `README.md`, `STATUS.md`, `TODO.md`, `!dev/`
 
 ### Still duplicated
@@ -713,7 +765,7 @@ One file remains substantially shared but is **not** extracted:
 
 | File | Size | Differing lines | What blocks extraction |
 |------|------|-----------------|------------------------|
-| `src/plugin.cpp` | ~1140 | ~128 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface. With nine copies of it now, the question of which parts are really common is answered: everything except the engine type and `syncEngineParams`. |
+| `src/plugin.cpp` | ~1110 | ~40 | The CLAP lifecycle is common; the engine type is not. Wants a template parameter or an engine interface. `syncEngineParams`'s body has moved to `engine_params.cpp`, so what still differs is the engine type, the meters it publishes and SkyHowl's and ChirpParade's version-label hooks. VerdaliScene's `LayerEngine` is that engine interface already, for nine engines. |
 
 ### Rule for a shared change
 
@@ -744,6 +796,55 @@ against all of them — see the verification recipe under *Working notes*.
    (a new accent, with the greys tinted towards it), its panel table, and a
    `HeaderOrnament` if it has something to animate. See *The window, and its
    theme*.
+9. Keep the parameter-to-engine mapping in `src/engine_params.{h,cpp}` and the
+   window's description behind `windowSpec()` / `createOrnament()`, as every
+   plugin does. A new **nature** plugin then joins VerdaliScene as a layer; see
+   *VerdaliScene and the plugins it layers*.
+
+## VerdaliScene and the plugins it layers
+
+VerdaliScene is built from the nine nature plugins' own source folders, so it is
+the one plugin a change elsewhere can break. What it relies on from each:
+
+- **`src/engine_params.{h,cpp}`** -- `engineParams(const double *real)`, the
+  plugin's whole parameter-to-engine mapping. A plugin's `syncEngineParams()` is
+  that call and nothing else; anything that changes what a parameter does
+  belongs in there, or VerdaliScene's layer and the plugin stop agreeing.
+- **The engine's public interface** -- `prepare`, `reset`, `setParams`,
+  `noteOn`/`noteOff`, `process`, `isSilent` and its activity counters, called
+  from the adapter in `verdaliscene/src/layers/<plugin>.cpp`. ChirpParade's and
+  NightLife's `triggerShot()` is how a scene fires their phrase at random.
+- **The parameter ids.** A layer's parameter id is
+  `64 + slot * 256 + <the plugin's ParamId>`, so the append-only rule for
+  `ParamId` now protects VerdaliScene's saved projects too, and a plugin may not
+  grow past 200 parameters without moving VerdaliScene's id layout (a
+  `static_assert` in each adapter says so at compile time).
+- **`windowSpec()` and `createOrnament()`** in `gui.cpp` -- a layer page is the
+  plugin's own panel table and theme accent, drawn by VerdaliScene's window.
+- **The embedded factory presets and the preset context**, so a layer's browser
+  is the plugin's library and a layer saves into the plugin's user folder.
+- **Namespaces.** Nine plugins link into one binary. Each keeps everything in its
+  own namespace, which is what makes that safe; anything at global scope with
+  the same name in two plugins would be merged silently by the linker. Check
+  with `nm -C` over `verdaliscene/build/CMakeFiles/vs_layer_*` after adding
+  anything outside a namespace.
+
+A new nature plugin joins it by: an adapter in `src/layers/` (all nine are one
+template -- copy one), a new `LayerTypeId` appended before `kNumLayerTypes`, a
+line in `layers.cpp`, and its folder in `VERDALISCENE_LAYERS` in the CMake
+file. Appending a type appends slots after the existing ones, so no released id
+moves.
+
+What VerdaliScene adds on top of the layers, and why: one held note per layer
+(middle C at velocity 0.9, the velocity every fit and demo in the suite was
+rendered at), ThunderClap pinned to Storm mode with its first flash at a random
+moment within the storm's first average interval, a random clock firing
+ChirpParade's and NightLife's shot phrase, the mixer, and the scene's envelope
+and filter. Its `STATUS.md` has the rest.
+
+**After any change to a nature plugin, rebuild VerdaliScene and run its
+self-test** -- it loads every factory preset of all nine plugins into a layer
+and checks each writes back out unchanged, and it is the only test that does.
 
 ## The manuals
 
@@ -822,6 +923,9 @@ survives and a sparse preset stays quiet. Nothing about the script is
 per-plugin; it then updates `dist/demos/demos.json` and `dist/demos/README.md`
 in place, touching only that plugin's section. `--text-only` refreshes that
 metadata without re-rendering, which is what a wording change needs.
+`--seconds N` changes the held length: VerdaliScene's demos are made with
+`--seconds 45`, because a storm flashing two or three times a minute needs that
+long, and the hand-written intro of `dist/demos/README.md` says so.
 
 **A demo's blurb and a preset's description are two different texts, and a new
 plugin needs both.** The preset's `description` is documentation: it says what
@@ -899,7 +1003,9 @@ brand surfaces only: README, site, packaging.
   attribution its licence requires is in `skyhowl/LICENSE`, and
   `skyhowl/tools/make-vent-samples.py` records what it is and how it was
   prepared. That is a recording, so it is an exception. A coefficient table is
-  not.
+  not. VerdaliScene builds SkyHowl's engine with `SKYHOWL_WITHOUT_VENTS`, which
+  leaves the hidden function and its recordings out: the exception stays inside
+  SkyHowl, and VerdaliScene contains no recorded audio at all.
 
 - **Validate by ear, then by measurement.** ChirpParade 0.1.0 was 11,000 lines
   validated entirely against statistics the plugin's own analysis code produced,
@@ -983,3 +1089,11 @@ xdotool key Return
 
 Click a *knob*, not an enum chip: a chip opens its dropdown instead, which is
 correct behaviour and looks like a failed test.
+
+**Do GUI checks on a private display**: `Xvfb :97 -screen 0 2200x1400x24 &` and
+`DISPLAY=:97` for the guihost, `import` and `xdotool`. Nothing typed can reach
+another window then, and no other window can be the one a search finds. The
+plugins' own `guihost` reparents with `XFlush` rather than `XSync`, which on an
+idle Xvfb occasionally loses the race and exits with `BadWindow` from
+`X_ReparentWindow`; rerun it. VerdaliScene's guihost syncs, and also answers
+`request_callback`, which VerdaliScene needs to build its layers' engines.

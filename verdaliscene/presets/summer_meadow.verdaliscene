@@ -1,0 +1,40 @@
+# VerdaliScene preset
+format = 1
+name = Summer Meadow
+author = VerdaliScene
+description = Midday in open grassland: crickets and bees in the grass, sparrows in the hedge and a warm breeze moving through it all.
+features = ambient, nature, meadow, insects, birds, wind, day
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = InsectSwarm
+layer_from = Summer Meadow
+layer_level = 1
+
+layer = ChirpParade
+layer_from = Garden Sparrows
+layer_level = 1
+
+layer = SkyHowl
+layer_from = Meadow Breeze
+layer_level = -0.5
+
+layer = InsectSwarm
+layer_from = Honeybee Field
+layer_level = -17
+layer_pan = -0.35

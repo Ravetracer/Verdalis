@@ -1,0 +1,41 @@
+# VerdaliScene preset
+format = 1
+name = Rain on the Cabin
+author = VerdaliScene
+description = Rain drumming on a tin roof while the stove ticks over inside, wind worrying at the corners and a storm grumbling somewhere beyond the valley.
+features = ambient, nature, rain, fire, indoor, thunder
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = RainyDay
+layer_from = Tin Roof
+layer_level = -1
+
+layer = CrackleBlaze
+layer_from = Wood Stove
+layer_level = -5
+layer_pan = -0.25
+
+layer = SkyHowl
+layer_from = Between Houses
+layer_level = -13
+
+layer = ThunderClap
+layer_from = Distant Rumble
+layer_level = -9.5
+storm_rate = 2

@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/wind_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,80 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-
-      // Wind. The flow field: nothing here makes a sound, everything else is
-      // driven by it.
-      p.windSpeedMs = static_cast<float>(realValue(kParamWindSpeed));
-      // Turbulence reads as a percentage because that is how meteorology
-      // reports it; the engine wants the ratio it actually is.
-      p.turbulence = static_cast<float>(realValue(kParamTurbulence)) * 0.01f;
-      p.gustRatePerMin = static_cast<float>(realValue(kParamGustRate));
-      p.gustDepth = static_cast<float>(realValue(kParamGustDepth));
-      p.gustLengthSec = static_cast<float>(realValue(kParamGustLength)) * 0.001f;
-      p.gustShape = static_cast<float>(realValue(kParamGustShape));
-      p.squall = static_cast<float>(realValue(kParamSquall));
-      p.squallRatePerMin = static_cast<float>(realValue(kParamSquallRate));
-
-      // Airflow.
-      p.flowGain = dbToGain(static_cast<float>(realValue(kParamFlowLevel)));
-      p.flowToneHz = static_cast<float>(realValue(kParamFlowTone));
-      p.flowTiltDbOct = static_cast<float>(realValue(kParamFlowTilt));
-      p.buffetGain = dbToGain(static_cast<float>(realValue(kParamBuffet)));
-      p.buffetToneHz = static_cast<float>(realValue(kParamBuffetTone));
-      p.hiss = static_cast<float>(realValue(kParamHiss));
-      p.speedLaw = static_cast<float>(realValue(kParamSpeedLaw));
-
-      // Howl.
-      p.howlAmount = static_cast<float>(realValue(kParamHowlAmount));
-      p.obstacle = static_cast<int>(realValue(kParamObstacle));
-      p.howlSizeMm = static_cast<float>(realValue(kParamHowlSize));
-      p.howlSpreadOct = static_cast<float>(realValue(kParamHowlSpread));
-      p.howlVoices = static_cast<int>(realValue(kParamHowlVoices));
-      p.howlReso = static_cast<float>(realValue(kParamHowlReso));
-      p.howlTrack = static_cast<float>(realValue(kParamHowlTrack));
-      p.howlThreshold = static_cast<float>(realValue(kParamHowlThreshold));
-      p.warble = static_cast<float>(realValue(kParamWarble));
-
-      // Rustle.
-      p.rustleAmount = static_cast<float>(realValue(kParamRustleAmount));
-      p.foliage = static_cast<int>(realValue(kParamFoliage));
-      p.rustleSizeMm = static_cast<float>(realValue(kParamRustleSize));
-      p.rustleDensityHz = static_cast<float>(realValue(kParamRustleDensity));
-      p.rustleSpreadOct = static_cast<float>(realValue(kParamRustleSpread));
-      p.rustleDecaySec = static_cast<float>(realValue(kParamRustleDecay)) * 0.001f;
-      p.rustleThreshold = static_cast<float>(realValue(kParamRustleThreshold));
-      p.clatter = static_cast<float>(realValue(kParamClatter));
-
-      // Place.
-      p.terrain = static_cast<int>(realValue(kParamTerrain));
-      p.distance = static_cast<float>(realValue(kParamDistance));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      // Filter.
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      // Envelope.
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.decaySec = static_cast<float>(realValue(kParamDecay)) * 0.001f;
-      p.sustain = static_cast<float>(realValue(kParamSustain));
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToSpeed = static_cast<float>(realValue(kParamVelToSpeed));
-
-      p.maxGusts = static_cast<int>(realValue(kParamMaxGusts));
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }

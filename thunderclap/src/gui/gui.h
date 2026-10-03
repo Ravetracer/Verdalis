@@ -6,6 +6,11 @@
 
 #include "verdalis/gui/gui.h"
 
+namespace verdalis {
+struct WindowSpec;
+class HeaderOrnament;
+} // namespace verdalis
+
 namespace thunderclap {
 
 using verdalis::Gui;
@@ -14,5 +19,12 @@ using verdalis::GuiPreset;
 
 // Returns nullptr if no X display could be opened.
 Gui *createGui(GuiDelegate &delegate);
+
+// The window's description without its ornament, and a fresh ornament of the
+// kind this window draws. createGui() is these two and createWindow(); they are
+// separate so that VerdaliScene can show this plugin's panels as one of its
+// layer pages.
+verdalis::WindowSpec windowSpec();
+verdalis::HeaderOrnament *createOrnament();
 
 } // namespace thunderclap

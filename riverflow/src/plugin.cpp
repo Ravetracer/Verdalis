@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/river_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,75 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-
-      // Flow: the bed. Time parameters read in milliseconds, as elsewhere in
-      // the suite, and levels in dB.
-      p.waterType = static_cast<int>(realValue(kParamWaterType));
-      p.waterBlend = static_cast<float>(realValue(kParamWaterBlend));
-      p.flowGain = dbToGain(static_cast<float>(realValue(kParamFlowLevel)));
-      p.flowTilt = static_cast<float>(realValue(kParamFlowTilt));
-      p.flowBody = static_cast<float>(realValue(kParamFlowBody));
-      p.turbulence = static_cast<float>(realValue(kParamTurbulence));
-      p.surgeRateHz = static_cast<float>(realValue(kParamSurgeRate));
-      p.flowGrain = static_cast<float>(realValue(kParamFlowGrain));
-
-      // Stones.
-      p.dabbleRateHz = static_cast<float>(realValue(kParamDabbleRate));
-      p.dabbleGain = dbToGain(static_cast<float>(realValue(kParamDabbleLevel)));
-      p.dabbleSizeMm = static_cast<float>(realValue(kParamDabbleSize));
-      p.dabbleSpreadOct = static_cast<float>(realValue(kParamDabbleSpread));
-      p.dabbleCluster = static_cast<int>(realValue(kParamDabbleCluster));
-      p.dabbleSpillSec = static_cast<float>(realValue(kParamDabbleSpill)) * 0.001f;
-      p.dabbleDamping = static_cast<float>(realValue(kParamDabbleDamping));
-      p.dabbleGlug = static_cast<float>(realValue(kParamDabbleGlug));
-
-      // Trickle.
-      p.trickleRateHz = static_cast<float>(realValue(kParamTrickleRate));
-      p.trickleGain = dbToGain(static_cast<float>(realValue(kParamTrickleLevel)));
-      p.trickleSizeMm = static_cast<float>(realValue(kParamTrickleSize));
-      p.trickleSpreadOct = static_cast<float>(realValue(kParamTrickleSpread));
-      p.trickleDecaySec = static_cast<float>(realValue(kParamTrickleDecay)) * 0.001f;
-      p.trickleImpact = static_cast<float>(realValue(kParamTrickleImpact));
-      p.stoneToneHz = static_cast<float>(realValue(kParamStoneTone));
-      p.splash = static_cast<float>(realValue(kParamSplash));
-
-      // Plunge.
-      p.plungeGain = dbToGain(static_cast<float>(realValue(kParamPlungeLevel)));
-      p.plungeToneHz = static_cast<float>(realValue(kParamPlungeTone));
-      p.plungeDepth = static_cast<float>(realValue(kParamPlungeDepth));
-      p.plungeQ = static_cast<float>(realValue(kParamPlungeQ));
-
-      // Reach.
-      p.bank = static_cast<int>(realValue(kParamBankType));
-      p.distance = static_cast<float>(realValue(kParamDistance));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.flowWidth = static_cast<float>(realValue(kParamFlowWidth));
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      // Filter.
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      // Envelope.
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.decaySec = static_cast<float>(realValue(kParamDecay)) * 0.001f;
-      p.sustain = static_cast<float>(realValue(kParamSustain));
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToFlow = static_cast<float>(realValue(kParamVelToFlow));
-
-      p.maxEvents = static_cast<int>(realValue(kParamMaxEvents));
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }

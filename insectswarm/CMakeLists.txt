@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(InsectSwarm VERSION 0.4.0 LANGUAGES CXX)
+project(InsectSwarm VERSION 0.4.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -143,6 +143,7 @@ add_library(InsectSwarm-impl STATIC
    src/preset_provider.cpp
    src/preset.cpp
    src/params.cpp
+   src/engine_params.cpp
    src/dsp/swarm_engine.cpp
    ${INSECTSWARM_GUI_SOURCES}
    "${INSECTSWARM_GENERATED_HEADER}"
@@ -317,6 +318,14 @@ if(INSECTSWARM_BUILD_VST3)
       BUNDLE_VERSION "${PROJECT_VERSION}"
       ASSET_OUTPUT_DIRECTORY "${INSECTSWARM_VST3_ASSET_DIR}"
    )
+
+   # The wrapper finds the CLAP it wraps either inside this binary or as a .clap
+   # installed somewhere else. On Linux its look inside the binary never works
+   # -- it dlsym()s a handle it has not opened yet, and the version script below
+   # keeps clap_entry unexported anyway -- so without this the .vst3 silently
+   # loaded whatever .clap of the same name it found in ~/.clap, and nothing at
+   # all where there was none. Linked statically, the entry is taken by address.
+   target_compile_definitions(clap-wrapper-shared-detail PRIVATE STATICALLY_LINKED_CLAP_ENTRY=1)
 
    # Two things the wrapper leaves to the plugin on a mingw cross build.
    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")

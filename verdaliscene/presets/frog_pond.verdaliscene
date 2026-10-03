@@ -1,0 +1,42 @@
+# VerdaliScene preset
+format = 1
+name = Frog Pond
+author = VerdaliScene
+description = A pond at dusk: a chorus of frogs, spring peepers in the reeds, a little water bubbling in at one end and mosquitoes over the surface.
+features = ambient, nature, night, frogs, water, insects, dusk
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = NightLife
+layer_from = Pond Chorus
+layer_level = 4
+
+layer = NightLife
+layer_from = Spring Peepers
+layer_level = 3.5
+layer_pan = 0.3
+
+layer = RiverFlow
+layer_from = Bubbling Creek
+layer_level = -9
+layer_stereo = Mono
+layer_pan = -0.5
+
+layer = InsectSwarm
+layer_from = Mosquito Night
+layer_level = -17.5

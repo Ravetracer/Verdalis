@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/swarm_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,80 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-
-      // swarm
-      p.species = static_cast<int>(realValue(kParamSpecies));
-      p.rateShiftSemis = static_cast<float>(realValue(kParamRateShift));
-      p.count = static_cast<int>(realValue(kParamCount));
-      p.swarmGain = dbToGain(static_cast<float>(realValue(kParamSwarmLevel)));
-      p.spreadCents = static_cast<float>(realValue(kParamSpread));
-      p.wanderCents = static_cast<float>(realValue(kParamWander));
-      p.wanderRateHz = static_cast<float>(realValue(kParamWanderRate));
-      p.roamDb = static_cast<float>(realValue(kParamRoam));
-      p.roamRateHz = static_cast<float>(realValue(kParamRoamRate));
-      p.rasp = static_cast<float>(realValue(kParamRasp));
-
-      // wing
-      p.tilt = static_cast<float>(realValue(kParamTilt));
-      p.formantSemis = static_cast<float>(realValue(kParamFormant));
-      p.resonance = static_cast<float>(realValue(kParamResonance));
-      p.stroke = static_cast<float>(realValue(kParamStroke));
-      p.bite = static_cast<float>(realValue(kParamBite));
-      p.flutter = static_cast<float>(realValue(kParamFlutter));
-
-      // flyby
-      p.flybyRateHz = static_cast<float>(realValue(kParamFlybyRate));
-      p.flybyGain = dbToGain(static_cast<float>(realValue(kParamFlybyLevel)));
-      p.flybyRiseDb = static_cast<float>(realValue(kParamFlybyRise));
-      p.flybyPassSec = static_cast<float>(realValue(kParamFlybyPass));
-      p.flybySpeed = static_cast<float>(realValue(kParamFlybySpeed));
-      p.flybySweep = static_cast<float>(realValue(kParamFlybySweep));
-
-      // stridulate
-      p.stridGain = dbToGain(static_cast<float>(realValue(kParamStridLevel)));
-      p.carrierHz = static_cast<float>(realValue(kParamCarrier));
-      p.carrierQ = static_cast<float>(realValue(kParamCarrierQ));
-      p.pulseRateHz = static_cast<float>(realValue(kParamPulseRate));
-      p.echemeRateHz = static_cast<float>(realValue(kParamEchemeRate));
-      p.duty = static_cast<float>(realValue(kParamDuty));
-      p.scrape = static_cast<float>(realValue(kParamScrape));
-      p.chorus = static_cast<int>(realValue(kParamChorus));
-      p.stridSpread = static_cast<float>(realValue(kParamStridSpread));
-
-      // air
-      p.distance = static_cast<float>(realValue(kParamDistance));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      // bed
-      p.bedGain = dbToGain(static_cast<float>(realValue(kParamBedLevel)));
-      p.bedToneHz = static_cast<float>(realValue(kParamBedTone));
-      p.bedTilt = static_cast<float>(realValue(kParamBedTilt));
-
-      // filter
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      // envelope
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.decaySec = static_cast<float>(realValue(kParamDecay)) * 0.001f;
-      p.sustain = static_cast<float>(realValue(kParamSustain));
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToSwarm = static_cast<float>(realValue(kParamVelToSwarm));
-
-      p.maxIndividuals = static_cast<int>(realValue(kParamMaxVoices));
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }

@@ -1,0 +1,51 @@
+# VerdaliScene preset
+format = 1
+name = Dawn Chorus
+author = VerdaliScene
+description = The hour before sunrise in a wood: the chorus building, a blackbird and a robin singing close by, a woodpecker drumming further off.
+features = ambient, nature, birds, forest, morning
+
+# Envelope
+gate = Always
+attack = 4000
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = ChirpParade
+layer_from = Dawn Chorus
+layer_level = 6
+
+layer = ChirpParade
+layer_from = Blackbird Song
+layer_level = -0.5
+layer_stereo = Mono
+layer_pan = -0.35
+layer_shot_rate = 4
+
+layer = ChirpParade
+layer_from = Robin Whistle
+layer_level = -1.5
+layer_stereo = Mono
+layer_pan = 0.4
+layer_shot_rate = 3
+
+layer = ChirpParade
+layer_from = Woodpecker Drum
+layer_level = 2.5
+layer_stereo = Mono
+layer_pan = 0.7
+
+layer = SkyHowl
+layer_from = Soft Breath
+layer_level = -8

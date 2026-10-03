@@ -1,0 +1,40 @@
+# VerdaliScene preset
+format = 1
+name = Winter Cabin
+author = VerdaliScene
+description = A gale and driving snow outside, a hearth glowing in the room, and the river below the cabin slowed to a murmur under the ice.
+features = ambient, nature, winter, wind, fire, indoor
+
+# Envelope
+gate = Always
+attack = 4000
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = SkyHowl
+layer_from = Winter Gale
+layer_level = 7
+
+layer = CrackleBlaze
+layer_from = Hearth Glow
+layer_level = 5
+layer_pan = 0.2
+
+layer = SkyHowl
+layer_from = Snow Storm
+layer_level = -3
+
+layer = RiverFlow
+layer_from = Winter River
+layer_level = -14

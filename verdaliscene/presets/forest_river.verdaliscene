@@ -1,0 +1,40 @@
+# VerdaliScene preset
+format = 1
+name = Forest River
+author = VerdaliScene
+description = A stream running through a summer wood: birds in the canopy, wind moving the leaves overhead, and bees working the bank.
+features = ambient, nature, forest, water, birds, day
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = RiverFlow
+layer_from = Forest Stream
+layer_level = -1
+
+layer = ChirpParade
+layer_from = Forest Morning
+layer_level = 1
+
+layer = SkyHowl
+layer_from = Wind In Birches
+layer_level = 0
+
+layer = InsectSwarm
+layer_from = Bumblebee Garden
+layer_level = -20
+layer_pan = 0.3

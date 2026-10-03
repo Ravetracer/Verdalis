@@ -1,0 +1,41 @@
+# VerdaliScene preset
+format = 1
+name = Campfire Night
+author = VerdaliScene
+description = A fire burning down in a clearing at night: crickets in the grass, an owl somewhere in the trees and the faintest breath of wind.
+features = ambient, nature, fire, night, owls, insects
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = CrackleBlaze
+layer_from = Forest Campfire
+layer_level = 2.5
+
+layer = NightLife
+layer_from = Summer Night
+layer_level = -4.5
+
+layer = NightLife
+layer_from = Tawny Wood
+layer_level = -5.5
+layer_stereo = Mono
+layer_pan = -0.55
+
+layer = SkyHowl
+layer_from = Soft Breath
+layer_level = -8

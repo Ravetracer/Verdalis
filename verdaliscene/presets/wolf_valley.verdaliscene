@@ -1,0 +1,35 @@
+# VerdaliScene preset
+format = 1
+name = Wolf Valley
+author = VerdaliScene
+description = Moonlight over a valley: wolves answering each other from slope to slope, a river far below and a cold wind coming down off the tops.
+features = ambient, nature, night, wolves, water, wind
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = NightLife
+layer_from = Wolf Valley
+layer_level = -5
+
+layer = RiverFlow
+layer_from = Distant River
+layer_level = -11.5
+
+layer = SkyHowl
+layer_from = Spooky Wind
+layer_level = -0.5

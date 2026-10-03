@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/night_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,106 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-
-      // Call: one call of one animal, which is the unit the caller layer is
-      // built out of.
-      p.pitchHz = static_cast<float>(realValue(kParamPitch));
-      p.contour = static_cast<float>(realValue(kParamContour));
-      p.detail = static_cast<float>(realValue(kParamDetail));
-      p.sweep = static_cast<float>(realValue(kParamSweep)) * 0.01f;
-      p.lengthSec = static_cast<float>(realValue(kParamLength)) * 0.001f;
-      p.skew = static_cast<float>(realValue(kParamSkew));
-      p.jitter = static_cast<float>(realValue(kParamJitter));
-      p.vibrato = static_cast<float>(realValue(kParamVibrato));
-      p.vibratoHz = static_cast<float>(realValue(kParamVibratoRate));
-
-      // voice
-      p.caller = static_cast<int>(realValue(kParamCaller));
-      p.voice = static_cast<float>(realValue(kParamVoice));
-      p.breath = static_cast<float>(realValue(kParamBreath));
-      p.throatCm = static_cast<float>(realValue(kParamThroat));
-      p.muzzle = static_cast<float>(realValue(kParamMuzzle));
-      p.formant = static_cast<float>(realValue(kParamFormant));
-      p.rasp = static_cast<float>(realValue(kParamRasp));
-      p.radiate = static_cast<float>(realValue(kParamRadiate));
-      p.partials = static_cast<float>(realValue(kParamPartials));
-
-      // phrase
-      p.calls = static_cast<int>(realValue(kParamCalls));
-      p.callRate = static_cast<float>(realValue(kParamCallRate));
-      p.rateDrift = static_cast<float>(realValue(kParamRateDrift));
-      p.legato = static_cast<float>(realValue(kParamLegato));
-      p.motifSemis = static_cast<float>(realValue(kParamMotif));
-      p.variation = static_cast<float>(realValue(kParamVariation));
-      p.phraseGapSec = static_cast<float>(realValue(kParamPhraseGap));
-      p.repeats = static_cast<int>(realValue(kParamRepeats));
-
-      // pack
-      p.shotGain = dbToGain(static_cast<float>(realValue(kParamShotLevel)));
-      p.packGain = dbToGain(static_cast<float>(realValue(kParamPackLevel)));
-      p.packRatePerMin = static_cast<float>(realValue(kParamPackRate));
-      p.animals = static_cast<int>(realValue(kParamAnimals));
-      p.pitchSpreadOct = static_cast<float>(realValue(kParamPitchSpread));
-      p.voiceSpread = static_cast<float>(realValue(kParamVoiceSpread));
-      p.answer = static_cast<float>(realValue(kParamAnswer));
-      p.restless = static_cast<float>(realValue(kParamRestless));
-      p.maxVoices = static_cast<int>(realValue(kParamMaxVoices));
-
-      // chorus
-      p.chorusGain = dbToGain(static_cast<float>(realValue(kParamChorusLevel)));
-      p.croak = static_cast<float>(realValue(kParamCroak));
-      p.croakHz = static_cast<float>(realValue(kParamCroakPitch));
-      p.pulseHz = static_cast<float>(realValue(kParamPulseRate));
-      p.pulses = static_cast<int>(realValue(kParamPulses));
-      p.croakSec = static_cast<float>(realValue(kParamCroakLength)) * 0.001f;
-      p.frogs = static_cast<int>(realValue(kParamFrogs));
-      p.croakRatePerMin = static_cast<float>(realValue(kParamCroakRate));
-      p.regularity = static_cast<float>(realValue(kParamRegularity));
-      p.chorusSpreadOct = static_cast<float>(realValue(kParamChorusSpread));
-      p.chorusWidth = static_cast<float>(realValue(kParamChorusWidth));
-
-      // insects
-      p.insectGain = dbToGain(static_cast<float>(realValue(kParamInsectLevel)));
-      p.insectHz = static_cast<float>(realValue(kParamInsectPitch));
-      p.insectWidth = static_cast<float>(realValue(kParamInsectWidth));
-      p.trillHz = static_cast<float>(realValue(kParamTrillRate));
-      p.trillDepth = static_cast<float>(realValue(kParamTrillDepth));
-      p.shimmer = static_cast<float>(realValue(kParamShimmer));
-
-      // bed
-      p.bedGain = dbToGain(static_cast<float>(realValue(kParamBedLevel)));
-      p.bedTilt = static_cast<float>(realValue(kParamBedTilt));
-      p.bedMotion = static_cast<float>(realValue(kParamBedMotion));
-
-      // place
-      p.distance = static_cast<float>(realValue(kParamDistance));
-      p.distanceSpread = static_cast<float>(realValue(kParamDistanceSpread));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      // filter
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      // envelope
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.decaySec = static_cast<float>(realValue(kParamDecay)) * 0.001f;
-      p.sustain = static_cast<float>(realValue(kParamSustain));
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToPitch = static_cast<float>(realValue(kParamVelToPitch));
-
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }

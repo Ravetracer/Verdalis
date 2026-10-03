@@ -1,0 +1,40 @@
+# VerdaliScene preset
+format = 1
+name = Stormy Shore
+author = VerdaliScene
+description = An ocean shore in a thunderstorm: heavy surf, rain sweeping in off the sea, wind tearing along the beach and thunder rolling out over the water.
+features = ambient, nature, sea, rain, storm, thunder, wind
+
+# Envelope
+gate = Always
+attack = 3000
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = ShoreBreak
+layer_from = Big Waves Crashing
+layer_level = 3.5
+
+layer = RainyDay
+layer_from = Storm Front
+layer_level = -7.5
+
+layer = SkyHowl
+layer_from = Howling Storm
+layer_level = -6
+
+layer = ThunderClap
+layer_from = Rolling Thunder
+layer_level = 0.5
+storm_rate = 3

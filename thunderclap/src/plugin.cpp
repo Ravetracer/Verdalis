@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/thunder_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,65 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-
-      p.distanceKm = static_cast<float>(realValue(kParamDistance));
-      p.heightKm = static_cast<float>(realValue(kParamHeight));
-      p.cloudSpreadKm = static_cast<float>(realValue(kParamCloudSpread));
-      p.tortuosity = static_cast<float>(realValue(kParamTortuosity));
-      p.branching = static_cast<float>(realValue(kParamBranching));
-      p.strokes = static_cast<int>(realValue(kParamStrokes));
-      p.strokeGapSec = static_cast<float>(realValue(kParamStrokeGap)) * 0.001f;
-      p.variation = static_cast<float>(realValue(kParamVariation));
-
-      p.crack = static_cast<float>(realValue(kParamCrack));
-      p.weight = static_cast<float>(realValue(kParamWeight));
-      p.swell = static_cast<float>(realValue(kParamSwell));
-      p.rumble = static_cast<float>(realValue(kParamRumble));
-      p.rumbleTone = static_cast<float>(realValue(kParamRumbleTone));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.scatter = static_cast<float>(realValue(kParamScatter));
-      p.focus = static_cast<float>(realValue(kParamFocus));
-      p.impact = static_cast<float>(realValue(kParamImpact));
-      p.bloom = static_cast<float>(realValue(kParamBloom));
-      p.ground = static_cast<float>(realValue(kParamGround));
-
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.pan = static_cast<float>(realValue(kParamPan));
-      p.rumbleWidth = static_cast<float>(realValue(kParamRumbleWidth));
-      p.drift = static_cast<float>(realValue(kParamDrift));
-
-      p.echoGain = dbToGain(static_cast<float>(realValue(kParamEchoLevel)));
-      p.echoCount = static_cast<int>(realValue(kParamEchoCount));
-      p.echoSpreadSec = static_cast<float>(realValue(kParamEchoSpread));
-      p.echoDamping = static_cast<float>(realValue(kParamEchoDamping));
-
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      p.mode = static_cast<int>(realValue(kParamMode));
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.stormRatePerMin = static_cast<float>(realValue(kParamStormRate));
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToDistance = static_cast<float>(realValue(kParamVelToDistance));
-
-      p.maxShocks = static_cast<int>(realValue(kParamMaxShocks));
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      p.compress = static_cast<float>(realValue(kParamCompress));
-      p.compAttackSec = static_cast<float>(realValue(kParamCompAttack)) * 0.001f;
-      p.compReleaseSec = static_cast<float>(realValue(kParamCompRelease)) * 0.001f;
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }

@@ -6,6 +6,17 @@ spread and stayed there; what it got wrong was in time, and no per-file median
 could have said so. Found by ear, against NightLife's crickets, and then
 measured: `tools/analysis/chorus.py` is the new file, and these are its numbers.
 
+## The VST3 loads on its own (0.4.1)
+
+On Linux the `.vst3` never found the plugin inside itself: the clap-wrapper's
+lookup of its own CLAP entry did not work, so it quietly wrapped whatever
+`InsectSwarm.clap` it found in `~/.clap` or `/usr/lib/clap` instead -- and had no
+factory at all on a machine with only the VST3 installed. It now takes the entry
+it was linked with, by address (`STATICALLY_LINKED_CLAP_ENTRY` in the VST3 block
+of `CMakeLists.txt`), and passes Steinberg's validator with no CLAP installed.
+Windows was never affected. Nothing else changed: every preset renders
+bit-identical to the version before.
+
 | statistic (9 cricket references) | references | 0.2.0 | 0.3.0 |
 |---|---|---|---|
 | steadiness — how deep the holes are | 0.16 .. 0.85, med 0.36 | **0.08** | 0.44 |

@@ -1,0 +1,19 @@
+# What the website says about each scene's demo. One line per scene,
+# "Scene Name = text". The scene's own description stays in its file; this is
+# the sentence a musician reads next to the player.
+Forest River = A stream through a summer wood, with birds overhead, leaves moving in the wind and bees along the bank.
+Stormy Shore = Heavy surf, driving rain, a gale along the beach and thunder rolling over the water.
+Campfire Night = A fire burning down under the stars, crickets in the grass and an owl in the trees.
+Rain on the Cabin = Rain drumming on a tin roof, the stove ticking over inside and a storm far off.
+Summer Meadow = Midday in tall grass: crickets, bees, sparrows and a warm breeze.
+Monsoon Jungle = A tropical downpour with thunder overhead, screeching birds and endless cicadas.
+Mountain Stream = A cold stream between boulders, wind on the ridge and birds far below.
+Frog Pond = A pond at dusk full of frogs and peepers, with a little water bubbling in.
+Winter Cabin = A snowstorm outside and a hearth glowing in the room.
+Harbour Drizzle = Water lapping in a small harbour on a grey, drizzly morning.
+Distant Storm = A storm passing far away: a wall of rain on the horizon and slow rolling thunder.
+Wolf Valley = Wolves answering each other across a moonlit valley, a river far below.
+Waterfall Clearing = The roar of a waterfall, a dawn chorus around it and dragonflies over the pool.
+Beach Bonfire = A bonfire on the sand, small waves breaking and crickets in the dunes.
+Rain in the Woods = Steady rain on the canopy, a swollen creek, a robin singing through it and the odd rumble of thunder.
+Dawn Chorus = The hour before sunrise: the chorus building, a blackbird and a robin close by, a woodpecker further off.

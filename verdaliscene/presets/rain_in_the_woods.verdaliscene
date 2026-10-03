@@ -1,0 +1,43 @@
+# VerdaliScene preset
+format = 1
+name = Rain in the Woods
+author = VerdaliScene
+description = Steady rain on the forest canopy, a swollen creek running between the trees, a robin singing through it and thunder now and then.
+features = ambient, nature, rain, forest, water, birds, thunder
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = RainyDay
+layer_from = Rain On Leaves
+layer_level = 0
+
+layer = RiverFlow
+layer_from = Forest Creek
+layer_level = -3.5
+
+layer = ChirpParade
+layer_from = Robin Whistle
+layer_level = -1
+layer_stereo = Mono
+layer_pan = 0.45
+layer_shot_rate = 3
+
+layer = ThunderClap
+layer_from = Distant Rumble
+layer_level = -7
+storm_rate = 2

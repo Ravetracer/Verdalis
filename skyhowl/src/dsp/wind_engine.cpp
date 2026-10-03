@@ -1,6 +1,11 @@
 #include "wind_engine.h"
 
+// SKYHOWL_WITHOUT_VENTS builds the engine without the embedded recordings and
+// the hidden function that plays them. Only VerdaliScene sets it: it runs this
+// engine as a layer, has no way to reach that function, and is synthesis only.
+#if !defined(SKYHOWL_WITHOUT_VENTS)
 #include "vent_samples.h"
+#endif
 
 #include "verdalis/dsp/fastmath.h"
 
@@ -176,6 +181,7 @@ uint32_t rngStateForSeed(int seed) {
 
 std::atomic<uint32_t> gInstanceCounter{0};
 
+#if !defined(SKYHOWL_WITHOUT_VENTS)
 // The embedded recordings, decoded once and shared by every instance: the data
 // is immutable, so there is no reason for each plugin in a project to carry its
 // own 2.4 MB of it. The first call does the work, which is why prepare() asks
@@ -213,6 +219,7 @@ const std::vector<int16_t> &ventSamples() {
    }();
    return data;
 }
+#endif
 
 } // namespace
 
@@ -226,9 +233,11 @@ void WindEngine::prepare(double sampleRate, uint32_t /*maxBlockSize*/) {
    // The buffet runs lower than surf rumble and about as low as thunder, so
    // the tank's loop highpass has to sit under it rather than over it.
    mSpace.prepare(static_cast<float>(sampleRate), 22.0f);
+#if !defined(SKYHOWL_WITHOUT_VENTS)
    // Force the one-off decode here, on the main thread, rather than letting the
    // first click pay for it inside process().
    (void)ventSamples().size();
+#endif
    reset();
    updateFilters();
 }
@@ -926,6 +935,11 @@ void WindEngine::processLeaves(float *outL, float *outR, uint32_t numSamples) {
    }
 }
 
+#if defined(SKYHOWL_WITHOUT_VENTS)
+void WindEngine::triggerVent() {}
+
+void WindEngine::processVents(float *, float *, uint32_t) {}
+#else
 void WindEngine::triggerVent() {
    Vent *slot = nullptr;
    for (auto &v : mVents) {
@@ -1014,6 +1028,7 @@ void WindEngine::processVents(float *outL, float *outR, uint32_t numSamples) {
       }
    }
 }
+#endif
 
 void WindEngine::processOutputChain(float *outL, float *outR, uint32_t numSamples) {
    const float wet = clampf(mP.spaceAmount, 0.0f, 1.0f);

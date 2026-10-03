@@ -1,0 +1,40 @@
+# VerdaliScene preset
+format = 1
+name = Beach Bonfire
+author = VerdaliScene
+description = A bonfire on the sand on a warm night: small waves breaking on the beach, crickets in the dunes and a soft wind off the sea.
+features = ambient, nature, fire, sea, night, insects
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = CrackleBlaze
+layer_from = Bonfire
+layer_level = 1.5
+layer_pan = -0.15
+
+layer = ShoreBreak
+layer_from = Gentle Waves
+layer_level = 9.5
+
+layer = NightLife
+layer_from = Cricket Field
+layer_level = -9
+
+layer = SkyHowl
+layer_from = Beach Grass
+layer_level = -14.5

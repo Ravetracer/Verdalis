@@ -1,0 +1,36 @@
+# VerdaliScene preset
+format = 1
+name = Distant Storm
+author = VerdaliScene
+description = A storm passing far off across open country: a wall of rain on the horizon, thunder rolling in from kilometres away and wind off the plain.
+features = ambient, nature, rain, thunder, wind, distant
+
+# Envelope
+gate = Always
+attack = 4000
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 9000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = RainyDay
+layer_from = Distant Rain Wall
+layer_level = -7.5
+
+layer = SkyHowl
+layer_from = Far Away
+layer_level = 0
+
+layer = ThunderClap
+layer_from = Far Horizon
+layer_level = -4.5
+storm_rate = 2

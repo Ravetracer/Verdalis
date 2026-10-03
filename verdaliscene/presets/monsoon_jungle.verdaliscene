@@ -1,0 +1,40 @@
+# VerdaliScene preset
+format = 1
+name = Monsoon Jungle
+author = VerdaliScene
+description = A tropical forest under a monsoon downpour: thunder overhead, screeching birds in the canopy and cicadas that never stop.
+features = ambient, nature, rain, thunder, jungle, birds, insects
+
+# Envelope
+gate = Always
+attack = 3000
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = RainyDay
+layer_from = Tropical Monsoon
+layer_level = -2.5
+
+layer = ChirpParade
+layer_from = Jungle Screech
+layer_level = 4
+
+layer = InsectSwarm
+layer_from = Cicada Noon
+layer_level = -13.5
+
+layer = ThunderClap
+layer_from = Under The Rain
+layer_level = -7.5
+storm_rate = 3

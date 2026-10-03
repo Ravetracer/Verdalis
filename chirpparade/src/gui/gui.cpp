@@ -378,12 +378,19 @@ const WindowSpec kSpec = {
 
 } // namespace
 
-Gui *createGui(GuiDelegate &delegate) {
+WindowSpec windowSpec() {
    WindowSpec spec = kSpec;
    spec.params = paramTable();
+   return spec;
+}
+
+HeaderOrnament *createOrnament() { return new Sonogram(); }
+
+Gui *createGui(GuiDelegate &delegate) {
+   WindowSpec spec = windowSpec();
    // One ornament per window: it carries animation state, and a single
    // shared instance would let two windows of this plugin drive each other.
-   spec.ornament = new Sonogram();
+   spec.ornament = createOrnament();
    return createWindow(delegate, spec);
 }
 

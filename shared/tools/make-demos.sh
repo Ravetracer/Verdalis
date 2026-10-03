@@ -3,11 +3,11 @@
 # Renders the website demo audio for one plugin into dist/demos/<Plugin>/.
 #
 # One MP3 per factory preset, straight out of the plugin's own offline renderer:
-# 16 seconds held plus a 3 second tail, 48 kHz, MP3 256 kbps joint stereo. There
-# is no editing, no layering and no dynamics processing. The only post-step is a
-# single linear gain towards -16 LUFS, backed off if that would push the true
-# peak above -1 dBTP, so the relative loudness the presets were fitted to
-# survives and a sparse preset stays quiet.
+# 16 seconds held (see --seconds) plus a 3 second tail, 48 kHz, MP3 256 kbps
+# joint stereo. There is no editing, no layering and no dynamics processing.
+# The only post-step is a single linear gain towards -16 LUFS, backed off if
+# that would push the true peak above -1 dBTP, so the relative loudness the
+# presets were fitted to survives and a sparse preset stays quiet.
 #
 # The seed is pinned and sox's dither is off, so a re-run reproduces the files.
 #
@@ -30,7 +30,12 @@
 # Needs ffmpeg, sox, lame and python3. Run it from anywhere:
 #
 #    shared/tools/make-demos.sh <plugin-folder> [--build DIR] [--seed N]
-#                                               [--simulates TEXT] [--text-only]
+#                                               [--seconds N] [--simulates TEXT]
+#                                               [--text-only]
+#
+# --seconds changes how long the held part of every demo is. 16 suits a plugin
+# whose presets show what they do at once; VerdaliScene's scenes are rendered at
+# 45, because a storm a few flashes a minute needs that long to flash.
 #
 # --text-only refreshes demos.json and README.md from the preset files and the
 # override without re-rendering anything, which is what a wording change needs.
@@ -43,6 +48,7 @@ suite_dir="$(dirname "$(dirname "$here")")"
 plugin=""
 build_dir=""
 seed=7
+seconds=16
 simulates=""
 text_only=0
 
@@ -50,6 +56,7 @@ while [ $# -gt 0 ]; do
    case "$1" in
       --build)     build_dir="$2"; shift 2 ;;
       --seed)      seed="$2"; shift 2 ;;
+      --seconds)   seconds="$2"; shift 2 ;;
       --simulates) simulates="$2"; shift 2 ;;
       --text-only) text_only=1; shift ;;
       -*)          echo "unknown option: $1" >&2; exit 2 ;;
@@ -57,7 +64,7 @@ while [ $# -gt 0 ]; do
    esac
 done
 
-[ -n "$plugin" ] || { echo "usage: make-demos.sh <plugin-folder> [--build DIR] [--seed N] [--simulates TEXT] [--text-only]" >&2; exit 2; }
+[ -n "$plugin" ] || { echo "usage: make-demos.sh <plugin-folder> [--build DIR] [--seed N] [--seconds N] [--simulates TEXT] [--text-only]" >&2; exit 2; }
 
 plugin_dir="${suite_dir}/${plugin}"
 [ -d "$plugin_dir" ] || { echo "no such plugin folder: $plugin_dir" >&2; exit 1; }
@@ -118,7 +125,7 @@ else
 
 echo "==> rendering ${name}'s presets"
 "$render" --plugin "$clap" --all --outdir "$work" \
-   --seconds 16 --tail 3 --rate 48000 --param randomseed="$seed" >/dev/null
+   --seconds "$seconds" --tail 3 --rate 48000 --param randomseed="$seed" >/dev/null
 
 shopt -s nullglob
 wavs=("$work"/*.wav)

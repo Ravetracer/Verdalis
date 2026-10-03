@@ -1,0 +1,36 @@
+# VerdaliScene preset
+format = 1
+name = Waterfall Clearing
+author = VerdaliScene
+description = A clearing beside a waterfall on a spring morning: the roar of the fall, a dawn chorus in the trees around it and dragonflies over the pool.
+features = ambient, nature, water, birds, insects, morning
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = RiverFlow
+layer_from = Big Falls
+layer_level = -6.5
+
+layer = ChirpParade
+layer_from = Dawn Chorus
+layer_level = -0.5
+
+layer = InsectSwarm
+layer_from = Dragonfly Pond
+layer_level = -18.5
+layer_pan = 0.4

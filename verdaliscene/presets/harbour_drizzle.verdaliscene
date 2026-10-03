@@ -1,0 +1,35 @@
+# VerdaliScene preset
+format = 1
+name = Harbour Drizzle
+author = VerdaliScene
+description = A small harbour on a grey morning: water lapping at the stones, a fine drizzle, and the wind in the grass along the quay.
+features = ambient, nature, sea, rain, wind, morning
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = ShoreBreak
+layer_from = Harbour Lapping
+layer_level = 10.5
+
+layer = RainyDay
+layer_from = Light Drizzle
+layer_level = -2
+
+layer = SkyHowl
+layer_from = Beach Grass
+layer_level = -11.5

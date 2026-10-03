@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/fire_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,71 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-
-      // blaze
-      p.fireType = static_cast<int>(realValue(kParamFireType));
-      p.fireBlend = static_cast<float>(realValue(kParamFireBlend));
-      p.roarGain = dbToGain(static_cast<float>(realValue(kParamRoarLevel)));
-      p.roarTilt = static_cast<float>(realValue(kParamRoarTilt));
-      p.roarBody = static_cast<float>(realValue(kParamRoarBody));
-      p.flare = static_cast<float>(realValue(kParamFlare));
-      p.flareRateHz = static_cast<float>(realValue(kParamFlareRate));
-      p.draught = static_cast<float>(realValue(kParamDraught));
-
-      // crackle
-      p.crackleRateHz = static_cast<float>(realValue(kParamCrackleRate));
-      p.crackleGain = dbToGain(static_cast<float>(realValue(kParamCrackleLevel)));
-      p.crackleDecaySec = static_cast<float>(realValue(kParamCrackleDecay)) * 0.001f;
-      p.crackleToneHz = static_cast<float>(realValue(kParamCrackleTone));
-      p.crackleSpreadDb = static_cast<float>(realValue(kParamCrackleSpread));
-      p.burst = static_cast<float>(realValue(kParamBurst));
-      p.snap = static_cast<float>(realValue(kParamSnap));
-      p.crackleBody = static_cast<float>(realValue(kParamCrackleBody));
-
-      // sizzle
-      p.sap = static_cast<float>(realValue(kParamSap));
-      p.sizzleGain = dbToGain(static_cast<float>(realValue(kParamSizzleLevel)));
-      p.sizzleDecaySec = static_cast<float>(realValue(kParamSizzleDecay)) * 0.001f;
-      p.sizzleToneHz = static_cast<float>(realValue(kParamSizzleTone));
-      p.steam = static_cast<float>(realValue(kParamSteam));
-
-      // settle
-      p.settleRateHz = static_cast<float>(realValue(kParamSettleRate));
-      p.settleGain = dbToGain(static_cast<float>(realValue(kParamSettleLevel)));
-      p.settleToneHz = static_cast<float>(realValue(kParamSettleTone));
-      p.settleDecaySec = static_cast<float>(realValue(kParamSettleDecay)) * 0.001f;
-
-      // hearth
-      p.hearth = static_cast<int>(realValue(kParamHearthType));
-      p.distance = static_cast<float>(realValue(kParamDistance));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.roarWidth = static_cast<float>(realValue(kParamRoarWidth));
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      // filter
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      // envelope
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.decaySec = static_cast<float>(realValue(kParamDecay)) * 0.001f;
-      p.sustain = static_cast<float>(realValue(kParamSustain));
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToFire = static_cast<float>(realValue(kParamVelToFire));
-
-      p.maxEvents = static_cast<int>(realValue(kParamMaxEvents));
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }

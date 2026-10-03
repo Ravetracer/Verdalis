@@ -41,16 +41,17 @@ in. That is the same in every plugin in the suite.
 
 | Plugin | Simulates | Version |
 |--------|-----------|---------|
-| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | 1.8.1 |
-| **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | 1.5.1 |
-| **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | 0.2.1 |
-| **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | 0.2.1 |
-| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.6.1 |
-| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.2.1 |
-| **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.1.1 |
-| **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.3.1 |
-| **[NightLife](nightlife/)** — a night, from one wolf on a ridge to a pond full of frogs | night animals | 0.1.1 |
-| **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.2.2 |
+| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | 1.9.1 |
+| **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | 1.6.1 |
+| **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | 0.3.1 |
+| **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | 0.3.1 |
+| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.7.1 |
+| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.3.1 |
+| **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.2.1 |
+| **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.4.1 |
+| **[NightLife](nightlife/)** — a night, from one wolf on a ridge to a pond full of frogs | night animals | 0.2.1 |
+| **[VerdaliScene](verdaliscene/)** — every nature instrument above at once, layered and mixed into one scene | whole scenes | 0.1.0 |
+| **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.3.1 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
@@ -117,6 +118,16 @@ frequency contour traced off a real animal, a croak is a pulse train through a
 body resonance, and the pond they arrive in keeps time, because a measured frog
 chorus is more regular than a random one and not less. 75 parameters, 16
 presets, six callers and eight frogs, from 45 field recordings.
+
+**VerdaliScene** — the nine nature instruments in one plugin, layered into a
+place: a stream through a summer wood with birds in the canopy, a shore in a
+thunderstorm, a fire burning down under the stars. A layer is not an imitation of
+its plugin, it is the plugin — its engine, every one of its parameters, its own
+preset library and its own panels — so your RainyDay presets load straight into a
+rain layer and a layer saves back as a RainyDay preset. Up to four layers of each
+kind, a mixer with a strip for every one, and an envelope and filter over the
+whole scene. It plays by itself: thunder flashes at a realistic random rate,
+birds sing when they sing, and a note is never needed. 16 scenes.
 
 **WhooshPact** — the odd one out, and deliberately so: it models nothing in
 nature. Whooshes, impacts, booms, braams, downshifters and stings — the sounds a

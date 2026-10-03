@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/wave_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,79 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-
-      // Surf. Time parameters read in milliseconds, as elsewhere in the suite,
-      // so they are scaled to the seconds the engine works in.
-      p.wavePeriodSec = static_cast<float>(realValue(kParamWavePeriod)) * 0.001f;
-      p.setVariation = static_cast<float>(realValue(kParamSetVariation));
-      p.waveSize = static_cast<float>(realValue(kParamWaveSize));
-      p.sizeVariation = static_cast<float>(realValue(kParamSizeVariation));
-      p.breakAttackSec = static_cast<float>(realValue(kParamBreakAttack)) * 0.001f;
-      p.breakDecaySec = static_cast<float>(realValue(kParamBreakDecay)) * 0.001f;
-      p.breakToneHz = static_cast<float>(realValue(kParamBreakTone));
-      p.breakBody = static_cast<float>(realValue(kParamBreakBody));
-      p.crestSweep = static_cast<float>(realValue(kParamCrestSweep));
-      p.breakerType = static_cast<int>(realValue(kParamBreakerType));
-      p.precursor = static_cast<float>(realValue(kParamPrecursor));
-      p.bubbleMix = static_cast<float>(realValue(kParamBubbleMix));
-
-      // Foam.
-      p.foamGain = dbToGain(static_cast<float>(realValue(kParamFoamLevel)));
-      p.foamDecaySec = static_cast<float>(realValue(kParamFoamDecay)) * 0.001f;
-      p.foamToneHz = static_cast<float>(realValue(kParamFoamTone));
-      p.foamDelaySec = static_cast<float>(realValue(kParamFoamDelay)) * 0.001f;
-      p.fizz = static_cast<float>(realValue(kParamFizz));
-      p.foamBubbles = static_cast<float>(realValue(kParamFoamBubbles));
-
-      // Swell.
-      p.swellGain = dbToGain(static_cast<float>(realValue(kParamSwellLevel)));
-      p.swellToneHz = static_cast<float>(realValue(kParamSwellTone));
-      p.swellDepth = static_cast<float>(realValue(kParamSwellDepth));
-      p.swellRatePerMin = static_cast<float>(realValue(kParamSwellRate));
-      p.swellWidth = static_cast<float>(realValue(kParamSwellWidth));
-
-      // Bubbles.
-      p.bubbleRateHz = static_cast<float>(realValue(kParamBubbleRate));
-      p.bubbleRadiusMm = static_cast<float>(realValue(kParamBubblePitch));
-      p.bubbleSpreadOct = static_cast<float>(realValue(kParamBubbleSpread));
-      p.bubbleDamping = static_cast<float>(realValue(kParamBubbleDecay));
-
-      // Wash.
-      p.washGain = dbToGain(static_cast<float>(realValue(kParamWashLevel)));
-      p.washDecaySec = static_cast<float>(realValue(kParamWashDecay)) * 0.001f;
-      p.washToneHz = static_cast<float>(realValue(kParamWashTone));
-      p.sand = static_cast<float>(realValue(kParamSand));
-
-      // Shore.
-      p.shore = static_cast<int>(realValue(kParamShoreType));
-      p.distance = static_cast<float>(realValue(kParamDistance));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      // Filter.
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      // Envelope.
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.decaySec = static_cast<float>(realValue(kParamDecay)) * 0.001f;
-      p.sustain = static_cast<float>(realValue(kParamSustain));
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToSize = static_cast<float>(realValue(kParamVelToSize));
-
-      p.maxWaves = static_cast<int>(realValue(kParamMaxWaves));
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }

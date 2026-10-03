@@ -1,0 +1,35 @@
+# VerdaliScene preset
+format = 1
+name = Mountain Stream
+author = VerdaliScene
+description = High up, where a cold stream drops between boulders: wind along the ridge and a few birds on the tree line far below.
+features = ambient, nature, mountain, water, wind, birds
+
+# Envelope
+gate = Always
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+
+layer = RiverFlow
+layer_from = Mountain River
+layer_level = -2.5
+
+layer = SkyHowl
+layer_from = Mountain Ridge
+layer_level = -6.5
+
+layer = ChirpParade
+layer_from = Far Treeline
+layer_level = -4.5

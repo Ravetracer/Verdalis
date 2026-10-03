@@ -11,6 +11,7 @@
 #include "verdalis/dsp/denormals.h"
 #include "verdalis/dsp/fastmath.h"
 #include "dsp/rain_engine.h"
+#include "engine_params.h"
 #include "entry.h"
 #include "factories.h"
 #include "verdalis/preset_library.h"
@@ -124,64 +125,12 @@ private:
    double realValue(uint32_t id) const { return paramToReal(paramTable()[id], effective(id)); }
 
    void syncEngineParams() {
-      EngineParams p;
-      p.gain = dbToGain(static_cast<float>(realValue(kParamGain)));
-      p.densityHz = static_cast<float>(realValue(kParamDensity));
-      p.clumping = static_cast<float>(realValue(kParamClumping));
-      p.dropPitchHz = static_cast<float>(realValue(kParamDropPitch));
-      p.pitchSpreadOct = static_cast<float>(realValue(kParamPitchSpread));
-      p.dropDecaySec = static_cast<float>(realValue(kParamDropDecay)) * 0.001f;
-      p.decaySpread = static_cast<float>(realValue(kParamDecaySpread));
-      p.tonality = static_cast<float>(realValue(kParamTonality));
-      p.impact = static_cast<float>(realValue(kParamImpact));
-      p.splash = static_cast<float>(realValue(kParamSplash));
-      p.slosh = static_cast<float>(realValue(kParamSlosh));
-      p.levelSpread = static_cast<float>(realValue(kParamLevelSpread));
-      p.chirp = static_cast<float>(realValue(kParamChirp));
-      p.bubbleChance = static_cast<float>(realValue(kParamBubble));
-      p.surface = static_cast<int>(realValue(kParamSurface));
-      p.trickleGain = dbToGain(static_cast<float>(realValue(kParamTrickleLevel)));
-      p.trickleRateHz = static_cast<float>(realValue(kParamTrickleRate));
-      p.trickleSizeMm = static_cast<float>(realValue(kParamTrickleSize));
-      p.trickleSpreadOct = static_cast<float>(realValue(kParamTrickleSpread));
-      p.trickleDecaySec = static_cast<float>(realValue(kParamTrickleDecay)) * 0.001f;
-      p.trickleImpact = static_cast<float>(realValue(kParamTrickleImpact));
-      p.stoneToneHz = static_cast<float>(realValue(kParamStoneTone));
-      p.trickleSplash = static_cast<float>(realValue(kParamTrickleSplash));
-      p.noteTracking = static_cast<float>(realValue(kParamNoteTracking));
-
-      p.bedGain = dbToGain(static_cast<float>(realValue(kParamBedLevel)));
-      p.bedTone = static_cast<float>(realValue(kParamBedTone));
-      p.bedBody = static_cast<float>(realValue(kParamBedBody));
-      p.bedDrift = static_cast<float>(realValue(kParamBedDrift));
-      p.bedWidth = static_cast<float>(realValue(kParamBedWidth));
-      p.bedPan = static_cast<float>(realValue(kParamBedPan));
-
-      p.width = static_cast<float>(realValue(kParamWidth));
-      p.dropPan = static_cast<float>(realValue(kParamDropPan));
-      p.distance = static_cast<float>(realValue(kParamDistance));
-      p.air = static_cast<float>(realValue(kParamAir));
-      p.spaceAmount = static_cast<float>(realValue(kParamSpaceAmount));
-      p.spaceSize = static_cast<float>(realValue(kParamSpaceSize));
-      p.spaceDamping = static_cast<float>(realValue(kParamSpaceDamping));
-
-      p.filterType = static_cast<int>(realValue(kParamFilterType));
-      p.highpassHz = static_cast<float>(realValue(kParamHighpass));
-      p.filterCutoffHz = static_cast<float>(realValue(kParamFilterCutoff));
-      p.filterReso = static_cast<float>(realValue(kParamFilterReso));
-      p.filterKeyTrack = static_cast<float>(realValue(kParamFilterKeyTrack));
-
-      p.attackSec = static_cast<float>(realValue(kParamAttack)) * 0.001f;
-      p.decaySec = static_cast<float>(realValue(kParamDecay)) * 0.001f;
-      p.sustain = static_cast<float>(realValue(kParamSustain));
-      p.releaseSec = static_cast<float>(realValue(kParamRelease)) * 0.001f;
-      p.velToLevel = static_cast<float>(realValue(kParamVelToLevel));
-      p.velToDensity = static_cast<float>(realValue(kParamVelToDensity));
-
-      p.maxDroplets = static_cast<int>(realValue(kParamMaxDroplets));
-      p.seed = static_cast<int>(realValue(kParamSeed));
-
-      mEngine.setParams(p);
+      // The mapping itself lives in engine_params.cpp, where VerdaliScene can
+      // reach it too.
+      double real[kNumParams];
+      for (uint32_t i = 0; i < kNumParams; ++i)
+         real[i] = realValue(i);
+      mEngine.setParams(engineParams(real));
    }
 
    static uint32_t paramsCount(const clap_plugin_t *) { return kNumParams; }
