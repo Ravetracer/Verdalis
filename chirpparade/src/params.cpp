@@ -15,7 +15,7 @@ namespace {
 const char *const kFilterNames[] = {"Lowpass", "Bandpass", "Highpass", "Notch"};
 const char *const kSpeciesNames[] = {"Whistler", "Sparrow", "Warbler", "Budgie",
                                      "Woodpecker", "Crane", "Goose", "Screech",
-                                     "Piper"};
+                                     "Piper", "Cuckoo"};
 
 // Defaults are the medians measured across the reference library: 4287
 // syllables in 58 recordings. See tools/analysis/README.md for every number
@@ -38,7 +38,8 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamContour, "contour", "Contour", "Syllable", 0.5,
        "Which syllable. Each species carries up to eight contours measured off real "
        "recordings -- the medoids of its clustered syllables -- and this walks across "
-       "them, lowest-sitting first. It is the most important control in the plugin: a "
+       "them, lowest-sitting first (for Cuckoo, across each of its two notes). It is "
+       "the most important control in the plugin: a "
        "syllable's identity is its frequency contour, and these are measured curves "
        "rather than a shape derived from summary statistics."),
    PCT(kParamDetail, "detail", "Detail", "Syllable", 1.0,
@@ -73,7 +74,9 @@ const ParamDesc kParams[kNumParams] = {
         "What kind of bird. Each entry biases pitch, sweep, length, harmonic "
         "richness, roughness and syllable rate together, because in the references "
         "they move together. Every one is the median of the recordings of that bird; "
-        "only Screech is invented."),
+        "only Screech is invented. Cuckoo is the one whose call is two different "
+        "notes: a phrase plays its measured \"cu\" and \"coo\" in turn, and Motif "
+        "sets the fall between them -- measured at 4.2 semitones."),
    PCT(kParamVoice, "voice", "Voice", "Timbre", 0.30,
        "How much of each cycle the syrinx is shut. Air passes only while the labia "
        "are apart, so this is not a filter: at the bottom the valve never closes and "

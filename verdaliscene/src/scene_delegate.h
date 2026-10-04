@@ -48,6 +48,9 @@ public:
    virtual void setLayerSoloed(int slot, bool on) = 0;
 
    // -------------------------------------------------------------- meters
+   // Whether the scene's gate is open: a key held, the transport running, or
+   // Always.
+   virtual bool sceneGateOpen() const = 0;
    virtual void outputPeaks(float &left, float &right) const = 0;
    virtual void layerPeaks(int slot, float &left, float &right) const = 0;
    virtual uint32_t layerVoices(int slot) const = 0;

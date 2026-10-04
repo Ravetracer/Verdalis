@@ -71,7 +71,29 @@ struct PendingLayer {
    std::string preset;
    std::string body; // the plugin's own lines
    std::vector<std::pair<uint32_t, double>> mix;
+   std::vector<std::pair<uint32_t, double>> fx;
 };
+
+// The effect lines worth writing: every parameter of an effect that is on or
+// has been moved from its defaults, grouped by effect.
+std::string fxBody(const double *fx) {
+   const ParamDesc *table = fxParamTable();
+   const PresetContext fxCtx{kPluginName, kPresetExtension, table, kNumFxParams};
+   PresetData data;
+   for (int k = 0; k < kNumFxKinds; ++k) {
+      const FxKindInfo &info = fxKind(k);
+      bool keep = false;
+      for (uint32_t p = info.first; p < info.first + info.count; ++p)
+         keep = keep || fx[p] != table[p].def;
+      if (!keep)
+         continue;
+      for (uint32_t p = info.first; p < info.first + info.count; ++p)
+         data.values.emplace_back(p, fx[p]);
+   }
+   if (data.values.empty())
+      return {};
+   return presetBody(fxCtx, data);
+}
 
 void finishLayer(PendingLayer &p, Scene &out) {
    if (p.type < 0)
@@ -103,6 +125,8 @@ void finishLayer(PendingLayer &p, Scene &out) {
    }
    for (const auto &kv : p.mix)
       layer.mix[kv.first] = kv.second;
+   for (const auto &kv : p.fx)
+      layer.fx[kv.first] = kv.second;
    if (!p.preset.empty())
       layer.presetName = p.preset;
    out.layers.push_back(std::move(layer));
@@ -111,11 +135,18 @@ void finishLayer(PendingLayer &p, Scene &out) {
 
 } // namespace
 
+void defaultFx(double *fx) {
+   const ParamDesc *table = fxParamTable();
+   for (uint32_t i = 0; i < kNumFxParams; ++i)
+      fx[i] = table[i].def;
+}
+
 Scene emptyScene() {
    Scene s;
    const ParamDesc *table = sceneParamTable();
    for (uint32_t i = 0; i < kNumSceneParams; ++i)
       s.values[i] = table[i].def;
+   defaultFx(s.fx);
    return s;
 }
 
@@ -130,6 +161,7 @@ SceneLayer defaultLayer(int type) {
    const ParamDesc *mix = slotParamTable();
    for (uint32_t p = 0; p < kNumSlotParams; ++p)
       layer.mix[p] = mix[p].def;
+   defaultFx(layer.fx);
    return layer;
 }
 
@@ -204,6 +236,10 @@ bool parseScene(const char *text, size_t length, Scene &out, std::string &error)
             double raw = 0.0;
             if (d->id != kSlotActive && parseValue(*d, value, raw))
                pending.mix.emplace_back(d->id, raw);
+         } else if (const ParamDesc *f = fxParamByKey(key.c_str())) {
+            double raw = 0.0;
+            if (parseValue(*f, value, raw))
+               pending.fx.emplace_back(f->id, raw);
          } else {
             pending.body += line;
             pending.body += '\n';
@@ -238,6 +274,10 @@ bool parseScene(const char *text, size_t length, Scene &out, std::string &error)
          double raw = 0.0;
          if (parseValue(*d, value, raw))
             out.values[d->id] = raw;
+      } else if (const ParamDesc *f = fxParamByKey(key.c_str())) {
+         double raw = 0.0;
+         if (parseValue(*f, value, raw))
+            out.fx[f->id] = raw;
       }
       // Anything else -- "format", a key from a later version -- is ignored,
       // so newer scenes stay loadable.
@@ -260,6 +300,9 @@ std::string formatScene(const Scene &scene) {
    for (uint32_t i = 0; i < kNumSceneParams; ++i)
       head.values.emplace_back(i, scene.values[i]);
    std::string out = verdalis::formatPreset(presetContext(), head);
+   const std::string sceneFx = fxBody(scene.fx);
+   if (!sceneFx.empty())
+      out += "\n" + sceneFx;
 
    const PresetContext mixCtx{kPluginName, kPresetExtension, slotParamTable(), kNumSlotParams};
    int count[kNumLayerTypes] = {};
@@ -276,11 +319,9 @@ std::string formatScene(const Scene &scene) {
          out += "layer_preset = " + layer.presetName + "\n";
 
       PresetData mix;
-      for (uint32_t p = kSlotLevel; p < kNumSlotParams; ++p) {
-         if (p == kSlotShotRate && t.shotLevelParam == kNoLayerParam)
-            continue;
-         mix.values.emplace_back(p, layer.mix[p]);
-      }
+      for (uint32_t p = kSlotLevel; p < kNumSlotParams; ++p)
+         if (slotParamApplies(t, p))
+            mix.values.emplace_back(p, layer.mix[p]);
       std::string mixBody = presetBody(mixCtx, mix);
       // The placement keys sit directly under `layer =`, without a heading of
       // their own: they belong to the section line above them.
@@ -288,6 +329,9 @@ std::string formatScene(const Scene &scene) {
       if (nl != std::string::npos && mixBody[0] == '#')
          mixBody = mixBody.substr(nl + 1);
       out += mixBody;
+      const std::string layerFx = fxBody(layer.fx);
+      if (!layerFx.empty())
+         out += "\n" + layerFx;
 
       PresetData own;
       for (uint32_t i = 0; i < layer.values.size(); ++i)

@@ -21,6 +21,7 @@
 
 #include "entry.h"
 #include "factories.h"
+#include "fx/chain.h"
 #include "params.h"
 #include "presets_generated.h"
 #include "scene_delegate.h"
@@ -69,6 +70,8 @@ constexpr double kDroneVelocity = 0.9;
 // How long a removed layer is given to fade out on its own release before it
 // is cut. Long enough for any envelope the plugins offer.
 constexpr double kMaxReleaseSeconds = 30.0;
+
+constexpr double StereoDelayMax = fx::StereoDelay::kMaxSec;
 
 // The mixer's controls are smoothed over about this long, so a fader drag or
 // a mute is a fade rather than a click.
@@ -120,6 +123,8 @@ public:
          mSlotVoices[s].store(0, std::memory_order_relaxed);
          mSlotEvents[s].store(0, std::memory_order_relaxed);
       }
+      for (auto &d : mFxDirty)
+         d.store(true, std::memory_order_relaxed);
 
       mPlugin.desc = &kDescriptor;
       mPlugin.plugin_data = this;
@@ -167,6 +172,7 @@ private:
       mMaxFrames = std::max<uint32_t>(maxFrames, 1);
       mScratchL.assign(mMaxFrames, 0.0f);
       mScratchR.assign(mMaxFrames, 0.0f);
+      mEnvBuf.assign(mMaxFrames, 0.0f);
       // The audio thread is not running yet, so every layer the scene holds
       // can be built straight into its slot.
       deleteEngines();
@@ -178,6 +184,12 @@ private:
          a.engine = newEngine(s);
          mLive[s].store(true, std::memory_order_release);
       }
+      for (int c = 0; c < kNumFxChannels; ++c) {
+         mFx[c].prepare(static_cast<float>(sampleRate), mMaxFrames);
+         mFxDirty[c].store(true, std::memory_order_release);
+      }
+      mActive = true;
+      ensureFx();
       for (int s = 0; s < kNumSlots; ++s)
          mSlotDirty[s].store(true, std::memory_order_release);
       mSceneDirty.store(true, std::memory_order_release);
@@ -195,6 +207,8 @@ private:
    void deactivate() {
       mActive = false;
       deleteEngines();
+      for (auto &c : mFx)
+         c.releaseAll();
    }
 
    // [main-thread, not processing] Every engine, wherever it is in its life.
@@ -222,6 +236,8 @@ private:
             a.engine->reset();
          a.resetPlayState();
       }
+      for (auto &c : mFx)
+         c.clear();
       mEnv.reset();
       mGateOpen = false;
       mHpL.reset();
@@ -265,6 +281,23 @@ private:
       }
    }
 
+   // [main-thread] Makes the buffers of every effect that is switched on and
+   // has none yet: on the scene, and on every layer that exists. An effect's
+   // buffers are kept once made, until the plugin is deactivated.
+   void ensureFx() {
+      if (!mActive)
+         return;
+      for (int c = 0; c < kNumFxChannels; ++c) {
+         if (c != kMasterFx && !slotWanted(c))
+            continue;
+         for (int k = 0; k < kNumFxKinds; ++k) {
+            const uint32_t on = fxParamId(c, fxKind(k).first);
+            if (mValues[on].load(std::memory_order_relaxed) >= 0.5 && !mFx[c].ready(k))
+               mFx[c].allocate(k);
+         }
+      }
+   }
+
    void collectDead() {
       for (int s = 0; s < kNumSlots; ++s)
          delete mDead[s].exchange(nullptr, std::memory_order_acq_rel);
@@ -274,6 +307,7 @@ private:
       mCallbackPending.store(false, std::memory_order_release);
       collectDead();
       ensureEngines();
+      ensureFx();
    }
 
    // [audio-thread]
@@ -322,6 +356,7 @@ private:
       }
       a.engine = nullptr;
       a.resetPlayState();
+      mFx[slot].clear();
       mLive[slot].store(false, std::memory_order_release);
       mSlotPeakL[slot].store(0.0f, std::memory_order_relaxed);
       mSlotPeakR[slot].store(0.0f, std::memory_order_relaxed);
@@ -341,11 +376,26 @@ private:
    double realValue(uint32_t id) const { return paramToReal(fullTable()[id], effective(id)); }
 
    void markDirty(uint32_t id) {
+      const int fxChannel = fxChannelOf(id);
+      if (fxChannel >= 0) {
+         mFxDirty[fxChannel].store(true, std::memory_order_release);
+         return;
+      }
       const int slot = slotOf(id);
       if (slot < 0)
          mSceneDirty.store(true, std::memory_order_release);
       else
          mSlotDirty[slot].store(true, std::memory_order_release);
+   }
+
+   // [audio-thread] One channel's effects.
+   void syncFx(int channel) {
+      double real[kNumFxParams];
+      for (uint32_t p = 0; p < kNumFxParams; ++p)
+         real[p] = realValue(fxParamId(channel, p));
+      mFx[channel].setParams(real, mTempo);
+      if (mFx[channel].missing())
+         requestMainThread();
    }
 
    // [audio-thread] The scene's envelope, filter and output.
@@ -354,8 +404,12 @@ private:
       mSustain = static_cast<float>(realValue(kParamSustain));
       mEnv.setParams(static_cast<float>(realValue(kParamAttack)) * 0.001f,
                      static_cast<float>(realValue(kParamDecay)) * 0.001f, mSustain,
-                     static_cast<float>(realValue(kParamRelease)) * 0.001f, sr);
+                     static_cast<float>(realValue(kParamRelease)) * 0.001f, sr,
+                     static_cast<float>(realValue(kParamAttackCurve)),
+                     static_cast<float>(realValue(kParamDecayCurve)),
+                     static_cast<float>(realValue(kParamReleaseCurve)));
       mGateMode = static_cast<int>(realValue(kParamGate));
+      mTailsMode = static_cast<int>(realValue(kParamFxTails));
 
       const float hp = static_cast<float>(realValue(kParamHighpass));
       mHighpassBypass = hp <= 20.5f;
@@ -402,8 +456,12 @@ private:
          const PinnedParam *pin = pinnedParam(t, i);
          a.real[i] = pin ? paramToReal(table[id], pin->raw) : realValue(id);
       }
+      EnvelopeCurves curves;
+      curves.attack = static_cast<float>(realValue(slotMixId(slot, kSlotAttackCurve)));
+      curves.decay = static_cast<float>(realValue(slotMixId(slot, kSlotDecayCurve)));
+      curves.release = static_cast<float>(realValue(slotMixId(slot, kSlotReleaseCurve)));
       if (a.engine)
-         a.engine->setParams(a.real.data());
+         a.engine->setParams(a.real.data(), curves);
 
       if (t.shotLevelParam != kNoLayerParam) {
          a.shotLevelDb = static_cast<float>(a.real[t.shotLevelParam]);
@@ -415,7 +473,9 @@ private:
 
       // The placement as a 2x2 matrix, so that switching between a stereo
       // balance and a mono point is one smoothed fade like any other move.
-      const float gain = dbToGain(static_cast<float>(realValue(slotMixId(slot, kSlotLevel))));
+      // The fader comes after the layer's effects, so it is kept apart.
+      a.gain = dbToGain(static_cast<float>(realValue(slotMixId(slot, kSlotLevel))));
+      const float gain = 1.0f;
       const float pan = static_cast<float>(realValue(slotMixId(slot, kSlotPan)));
       const bool mono = static_cast<int>(realValue(slotMixId(slot, kSlotStereo))) == kStereoMono;
       if (mono) {
@@ -597,6 +657,7 @@ private:
    // [main-thread] After any change to which layers exist or what they hold.
    void structureChanged() {
       ensureEngines();
+      ensureFx();
       notifyParamValuesChanged();
       markStateDirty();
    }
@@ -608,6 +669,8 @@ private:
       Scene scene = emptyScene();
       for (uint32_t i = 0; i < kNumSceneParams; ++i)
          scene.values[i] = mValues[i].load(std::memory_order_relaxed);
+      for (uint32_t p = 0; p < kNumFxParams; ++p)
+         scene.fx[p] = mValues[fxParamId(kMasterFx, p)].load(std::memory_order_relaxed);
       for (int s = 0; s < kNumSlots; ++s) {
          if (!slotWanted(s))
             continue;
@@ -625,6 +688,8 @@ private:
          layer.values[i] = mValues[slotParamId(slot, i)].load(std::memory_order_relaxed);
       for (uint32_t p = 0; p < kNumSlotParams; ++p)
          layer.mix[p] = mValues[slotMixId(slot, p)].load(std::memory_order_relaxed);
+      for (uint32_t p = 0; p < kNumFxParams; ++p)
+         layer.fx[p] = mValues[fxParamId(slot, p)].load(std::memory_order_relaxed);
       layer.presetName = mSlotPreset[slot].name;
       return layer;
    }
@@ -634,9 +699,15 @@ private:
       const LayerType &t = layerType(slotType(slot));
       for (uint32_t i = 0; i < t.paramCount && i < layer.values.size(); ++i)
          mValues[slotParamId(slot, i)].store(layer.values[i], std::memory_order_relaxed);
-      if (withMix)
+      // The layer's place in the scene and its effects belong to the scene: a
+      // plugin preset loaded into the layer leaves them alone.
+      if (withMix) {
          for (uint32_t p = kSlotLevel; p < kNumSlotParams; ++p)
             mValues[slotMixId(slot, p)].store(layer.mix[p], std::memory_order_relaxed);
+         for (uint32_t p = 0; p < kNumFxParams; ++p)
+            mValues[fxParamId(slot, p)].store(layer.fx[p], std::memory_order_relaxed);
+         mFxDirty[slot].store(true, std::memory_order_release);
+      }
       mValues[slotMixId(slot, kSlotActive)].store(1.0, std::memory_order_relaxed);
       mSlotDirty[slot].store(true, std::memory_order_release);
    }
@@ -646,6 +717,9 @@ private:
    void applyScene(const Scene &scene) {
       for (uint32_t i = 0; i < kNumSceneParams; ++i)
          mValues[i].store(scene.values[i], std::memory_order_relaxed);
+      for (uint32_t p = 0; p < kNumFxParams; ++p)
+         mValues[fxParamId(kMasterFx, p)].store(scene.fx[p], std::memory_order_relaxed);
+      mFxDirty[kMasterFx].store(true, std::memory_order_release);
       for (int s = 0; s < kNumSlots; ++s) {
          mValues[slotMixId(s, kSlotActive)].store(0.0, std::memory_order_relaxed);
          mSlotPreset[s] = SlotPreset{};
@@ -771,8 +845,11 @@ private:
       plug->mScene.key.clear();
       for (int s = 0; s < kNumSlots; ++s)
          plug->mSlotDirty[s].store(true, std::memory_order_release);
+      for (auto &d : plug->mFxDirty)
+         d.store(true, std::memory_order_release);
       plug->mSceneDirty.store(true, std::memory_order_release);
       plug->ensureEngines();
+      plug->ensureFx();
       plug->notifyParamValuesChanged();
       return true;
    }
@@ -890,13 +967,51 @@ private:
       return true;
    }
 
-   // A scene with a layer in it never ends by itself.
+   // How long one channel's effects ring on after their input has stopped, in
+   // seconds; infinite for a frozen reverb or a delay that does not decay.
+   double fxTailSeconds(int channel) const {
+      auto fx = [&](uint32_t p) { return realValue(fxParamId(channel, p)); };
+      double seconds = 0.0;
+      if (fx(kFxReverbOn) >= 0.5) {
+         if (fx(kFxReverbFreeze) >= 0.5)
+            return HUGE_VAL;
+         seconds += 1.2 * fx(kFxReverbDecay) * 0.001 + fx(kFxReverbPredelay) * 0.001;
+      }
+      if (fx(kFxDelayOn) >= 0.5) {
+         const double fb = fx(kFxDelayFeedback);
+         if (fb >= 0.98)
+            return HUGE_VAL;
+         // Down by 90 dB, at the longest time the delay can be set to.
+         seconds += StereoDelayMax * std::ceil(-4.5 / std::log10(std::max(fb, 0.01)));
+      }
+      return seconds;
+   }
+
+   // A scene that is always open never ends by itself. One a key or the
+   // transport closes ends when the longest release it can have has run out:
+   // a layer's own, cut off at kMaxReleaseSeconds, or the scene's, whose
+   // analogue shape takes about 1.4 times its Release to settle -- and, with
+   // FX Tails on Ring Out, when the effects have rung out after that: the
+   // longest of the layers' chains, then the scene's, which they feed.
    static uint32_t tailGet(const clap_plugin_t *p) {
       VerdaliScenePlugin *plug = self(p);
+      bool layers = false;
       for (int s = 0; s < kNumSlots; ++s)
-         if (plug->slotWanted(s))
-            return UINT32_MAX;
-      return static_cast<uint32_t>(plug->mSampleRate * kMaxReleaseSeconds);
+         layers = layers || plug->slotWanted(s);
+      if (layers && static_cast<int>(plug->realValue(kParamGate)) == kGateAlways)
+         return UINT32_MAX;
+      double seconds =
+         std::max(kMaxReleaseSeconds, 1.4 * plug->realValue(kParamRelease) * 0.001 + 1.0);
+      if (static_cast<int>(plug->realValue(kParamFxTails)) == kTailsRingOut) {
+         double layerTail = 0.0;
+         for (int s = 0; s < kNumSlots; ++s)
+            if (plug->slotWanted(s))
+               layerTail = std::max(layerTail, plug->fxTailSeconds(s));
+         seconds += layerTail + plug->fxTailSeconds(kMasterFx);
+      }
+      if (!std::isfinite(seconds))
+         return UINT32_MAX;
+      return static_cast<uint32_t>(std::min(plug->mSampleRate * seconds, 4.0e9));
    }
 
    // ------------------------------------------------------------------ process
@@ -987,6 +1102,15 @@ private:
       // No transport means nobody is saying it is stopped.
       mTransportPlaying =
          !pr->transport || (pr->transport->flags & CLAP_TRANSPORT_IS_PLAYING) != 0;
+      // A synced delay follows the host's tempo; 120 BPM when there is none.
+      const double tempo = pr->transport && (pr->transport->flags & CLAP_TRANSPORT_HAS_TEMPO)
+                              ? pr->transport->tempo
+                              : 120.0;
+      if (tempo > 0.0 && tempo != mTempo) {
+         mTempo = tempo;
+         for (auto &d : mFxDirty)
+            d.store(true, std::memory_order_release);
+      }
 
       drainGuiEdits(pr->out_events, 0);
       adoptEngines();
@@ -1018,6 +1142,9 @@ private:
          for (int s = 0; s < kNumSlots; ++s)
             if (mSlots[s].engine && mSlotDirty[s].exchange(false, std::memory_order_acq_rel))
                syncSlot(s);
+         for (int c = 0; c < kNumFxChannels; ++c)
+            if (mFxDirty[c].exchange(false, std::memory_order_acq_rel))
+               syncFx(c);
 
          renderBlock(outL + frame, outR + frame, next - frame);
          frame = next;
@@ -1057,61 +1184,187 @@ private:
          mEnv.gateOn();
       }
 
+      mGateShown.store(mGateOpen, std::memory_order_relaxed);
+
       // A closed gate whose release has run out is silence, and the layers
-      // are left where they are rather than run unheard. A layer removed in
-      // the meantime has nothing left to be heard fading out, so it goes now.
+      // are stopped rather than run unheard (see pauseSlot) -- all but their
+      // effects' tails, with FX Tails on Ring Out.
       const bool paused = !mGateOpen && mEnv.isIdle();
+      const bool ringOut = mTailsMode == kTailsRingOut;
+
+      // The scene's envelope, once per sample. Where it is applied is what FX
+      // Tails decides: on Ring Out it fades each layer on its way into its
+      // effects, and the effects' output is left alone; on Release it fades
+      // the scene on its way out, after every effect.
+      float *env = mEnvBuf.data();
+      if (paused) {
+         std::fill(env, env + n, 0.0f);
+      } else {
+         for (uint32_t i = 0; i < n; ++i)
+            env[i] = mEnv.tick();
+      }
+
       bool anySolo = false;
       for (int s = 0; s < kNumSlots; ++s)
          anySolo = anySolo || (mSolo[s].load(std::memory_order_relaxed) && mSlots[s].engine);
+      bool tails = false;
       for (int s = 0; s < kNumSlots; ++s) {
          if (!mSlots[s].engine)
             continue;
-         if (paused) {
-            if (!slotWanted(s))
-               retire(s);
-            continue;
-         }
-         renderSlot(s, outL, outR, n, anySolo);
+         if (!paused)
+            renderSlot(s, outL, outR, n, anySolo, ringOut ? env : nullptr);
+         else if (ringOut)
+            tails = ringOutSlot(s, outL, outR, n, anySolo) || tails;
+         else
+            pauseSlot(s);
       }
-      if (paused)
+
+      fx::Chain &master = mFx[kMasterFx];
+      if (paused && !ringOut) {
+         // On Release the scene's effects are inside its envelope, so nothing
+         // of them is left once it has run out -- and nothing of this tail may
+         // come back when the gate next opens.
+         if (!mMasterCleared) {
+            master.clear();
+            mMasterCleared = true;
+         }
+         return;
+      }
+      mMasterCleared = false;
+      // On Ring Out the scene's effects run while the scene does and for as
+      // long as they, or the layers' tails feeding them, still sound.
+      if (paused && !tails && master.quiet())
          return;
 
       const float sr = static_cast<float>(mSampleRate);
       const float smooth = 1.0f - std::exp(-1.0f / static_cast<float>(kMixSmoothSeconds * sr));
       if (mGainSmoothed < 0.0f)
          mGainSmoothed = mGainTarget;
+      if (!paused || tails) {
+         for (uint32_t i = 0; i < n; ++i) {
+            float l = outL[i];
+            float r = outR[i];
+            if (!mHighpassBypass) {
+               l = mHpL.tick(l);
+               r = mHpR.tick(r);
+            }
+            if (!mFilterBypass) {
+               float lp, bp, hp;
+               mFilterL.tick(l, lp, bp, hp);
+               l = mWLp * lp + mWBp * bp + mWHp * hp;
+               mFilterR.tick(r, lp, bp, hp);
+               r = mWLp * lp + mWBp * bp + mWHp * hp;
+            }
+            outL[i] = l;
+            outR[i] = r;
+         }
+      }
+      if (ringOut) {
+         master.process(outL, outR, n);
+      } else {
+         master.process(outL, outR, n);
+         for (uint32_t i = 0; i < n; ++i) {
+            outL[i] *= env[i];
+            outR[i] *= env[i];
+         }
+      }
       for (uint32_t i = 0; i < n; ++i) {
-         float l = outL[i];
-         float r = outR[i];
-         if (!mHighpassBypass) {
-            l = mHpL.tick(l);
-            r = mHpR.tick(r);
-         }
-         if (!mFilterBypass) {
-            float lp, bp, hp;
-            mFilterL.tick(l, lp, bp, hp);
-            l = mWLp * lp + mWBp * bp + mWHp * hp;
-            mFilterR.tick(r, lp, bp, hp);
-            r = mWLp * lp + mWBp * bp + mWHp * hp;
-         }
-         const float env = mEnv.tick();
-         const float mid = 0.5f * (l + r);
-         const float side = 0.5f * (l - r) * mWidth;
+         const float mid = 0.5f * (outL[i] + outR[i]);
+         const float side = 0.5f * (outL[i] - outR[i]) * mWidth;
          mGainSmoothed += smooth * (mGainTarget - mGainSmoothed);
-         const float g = env * mGainSmoothed;
-         outL[i] = softClip((mid + side) * g);
-         outR[i] = softClip((mid - side) * g);
+         outL[i] = softClip((mid + side) * mGainSmoothed);
+         outR[i] = softClip((mid - side) * mGainSmoothed);
       }
    }
 
-   void renderSlot(int slot, float *outL, float *outR, uint32_t n, bool anySolo) {
+   // [audio-thread] A layer while the scene is silent. Whatever is left of its
+   // own release cannot be heard any more, so it is cut, and the next opening
+   // starts the layer from nothing. A layer removed in the meantime has
+   // nothing left to fade out, so it goes now.
+   void pauseSlot(int slot) {
+      SlotAudio &a = mSlots[slot];
+      if (!slotWanted(slot)) {
+         retire(slot);
+         return;
+      }
+      if (a.noteHeld || a.releasing) {
+         a.engine->allSoundOff();
+         mFx[slot].clear();
+         a.noteHeld = false;
+         a.releasing = false;
+      }
+      a.firstDelay = -1.0;
+      a.shotTimer = -1.0;
+   }
+
+   // [audio-thread] The same, with FX Tails on Ring Out: the layer stops as it
+   // does there, but whatever its effects still hold rings on through its
+   // fader until it has died away. Returns whether anything did.
+   bool ringOutSlot(int slot, float *outL, float *outR, uint32_t n, bool anySolo) {
+      SlotAudio &a = mSlots[slot];
+      if (!slotWanted(slot)) {
+         retire(slot);
+         return false;
+      }
+      if (a.noteHeld || a.releasing) {
+         a.engine->allSoundOff();
+         a.noteHeld = false;
+         a.releasing = false;
+      }
+      a.firstDelay = -1.0;
+      a.shotTimer = -1.0;
+      if (mFx[slot].quiet())
+         return false;
+      float *sl = mScratchL.data();
+      float *sr2 = mScratchR.data();
+      std::memset(sl, 0, n * sizeof(float));
+      std::memset(sr2, 0, n * sizeof(float));
+      mFx[slot].process(sl, sr2, n);
+      mixSlot(slot, sl, sr2, outL, outR, n, anySolo);
+      return true;
+   }
+
+   // [audio-thread] A layer's fader, into the scene's bus.
+   void mixSlot(int slot, const float *sl, const float *sr2, float *outL, float *outR, uint32_t n,
+                bool anySolo) {
+      SlotAudio &a = mSlots[slot];
+      const float smooth =
+         1.0f - std::exp(-1.0f / static_cast<float>(kMixSmoothSeconds * mSampleRate));
+      const bool audible = anySolo ? mSolo[slot].load(std::memory_order_relaxed)
+                                   : !mMute[slot].load(std::memory_order_relaxed);
+      const float gainTarget = audible ? a.gain : 0.0f;
+      float peakL = 0.0f;
+      float peakR = 0.0f;
+      for (uint32_t i = 0; i < n; ++i) {
+         a.g += smooth * (gainTarget - a.g);
+         const float l = a.g * sl[i];
+         const float r = a.g * sr2[i];
+         outL[i] += l;
+         outR[i] += r;
+         peakL = std::max(peakL, std::fabs(l));
+         peakR = std::max(peakR, std::fabs(r));
+      }
+      a.blockPeakL = std::max(a.blockPeakL, peakL);
+      a.blockPeakR = std::max(a.blockPeakR, peakR);
+   }
+
+   // [audio-thread] One layer for one block. The gate is the layer's drone
+   // note: it is struck when the gate opens and let go when it closes, so the
+   // layer's own envelope -- the plugin's Attack and Release, bent by the
+   // layer's curves -- plays inside the scene's.
+   //
+   // `env` is the scene's envelope for the block when FX Tails is on Ring Out,
+   // applied between the layer's placement and its effects; null on Release,
+   // where the scene applies it after everything.
+   void renderSlot(int slot, float *outL, float *outR, uint32_t n, bool anySolo,
+                   const float *env) {
       SlotAudio &a = mSlots[slot];
       LayerEngine *e = a.engine;
       const LayerType &t = layerType(slotType(slot));
       const double sr = mSampleRate;
+      const bool wanted = slotWanted(slot);
 
-      if (slotWanted(slot)) {
+      if (wanted && mGateOpen) {
          if (!a.noteHeld) {
             // A storm's first flash lands at a random moment within its first
             // average interval: not the instant the layer is added, which would
@@ -1149,16 +1402,22 @@ private:
                a.shotTimer = a.rng.exponential(rate) * sr;
             }
          }
-      } else if (a.noteHeld) {
-         e->noteOff();
-         a.noteHeld = false;
-         a.releasing = true;
-         a.releaseSec = 0.0;
-      } else if (!a.releasing) {
-         // Never struck: removed before its first note, or a storm still
-         // waiting for its first flash.
-         retire(slot);
-         return;
+      } else {
+         if (a.noteHeld) {
+            e->noteOff();
+            a.noteHeld = false;
+            a.releasing = true;
+            a.releaseSec = 0.0;
+         }
+         // The next opening draws its own first flash.
+         a.firstDelay = -1.0;
+         if (!wanted && !a.releasing) {
+            // Never struck, or already faded: removed before its first note,
+            // a storm still waiting for its first flash, or a layer removed
+            // after the gate had closed and its release had run out.
+            retire(slot);
+            return;
+         }
       }
 
       float *sl = mScratchL.data();
@@ -1167,32 +1426,37 @@ private:
       std::memset(sr2, 0, n * sizeof(float));
       e->process(sl, sr2, n);
 
-      const bool audible = anySolo ? mSolo[slot].load(std::memory_order_relaxed)
-                                   : !mMute[slot].load(std::memory_order_relaxed);
-      float target[4];
-      for (int k = 0; k < 4; ++k)
-         target[k] = audible ? a.target[k] : 0.0f;
+      // Placed first, then the layer's effects, then its fader: a bird
+      // placed to the left goes into its reverb from the left, and the
+      // reverb spreads it into the room the way a real one would.
       const float smooth =
          1.0f - std::exp(-1.0f / static_cast<float>(kMixSmoothSeconds * mSampleRate));
-      float peakL = 0.0f;
-      float peakR = 0.0f;
       for (uint32_t i = 0; i < n; ++i) {
          for (int k = 0; k < 4; ++k)
-            a.m[k] += smooth * (target[k] - a.m[k]);
+            a.m[k] += smooth * (a.target[k] - a.m[k]);
          const float l = a.m[0] * sl[i] + a.m[1] * sr2[i];
          const float r = a.m[2] * sl[i] + a.m[3] * sr2[i];
-         outL[i] += l;
-         outR[i] += r;
-         peakL = std::max(peakL, std::fabs(l));
-         peakR = std::max(peakR, std::fabs(r));
+         sl[i] = l;
+         sr2[i] = r;
       }
-      a.blockPeakL = std::max(a.blockPeakL, peakL);
-      a.blockPeakR = std::max(a.blockPeakR, peakR);
+      if (env) {
+         for (uint32_t i = 0; i < n; ++i) {
+            sl[i] *= env[i];
+            sr2[i] *= env[i];
+         }
+      }
+      mFx[slot].process(sl, sr2, n);
+      mixSlot(slot, sl, sr2, outL, outR, n, anySolo);
 
       if (a.releasing) {
          a.releaseSec += n / sr;
-         if (e->isSilent() || a.releaseSec > kMaxReleaseSeconds)
-            retire(slot);
+         // Released when the engine is silent and its effects' tails have
+         // died away too.
+         if ((e->isSilent() && mFx[slot].quiet()) || a.releaseSec > kMaxReleaseSeconds) {
+            a.releasing = false;
+            if (!wanted)
+               retire(slot);
+         }
       }
    }
 
@@ -1307,6 +1571,8 @@ public:
       if (slot >= 0 && slot < kNumSlots)
          mSolo[slot].store(on, std::memory_order_relaxed);
    }
+
+   bool sceneGateOpen() const override { return mGateShown.load(std::memory_order_relaxed); }
 
    void outputPeaks(float &left, float &right) const override {
       left = mPeakL.load(std::memory_order_relaxed);
@@ -1668,6 +1934,7 @@ private:
          // without an engine for as long as the window is open.
          plug->collectDead();
          plug->ensureEngines();
+         plug->ensureFx();
          plug->mGui->tick();
       }
    }
@@ -1768,6 +2035,8 @@ private:
       float firstRatePerMin = 0.0f;
       float target[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // placement: LL, LR, RL, RR
       float m[4] = {0.0f, 0.0f, 0.0f, 0.0f};      // the same, smoothed
+      float gain = 0.0f;                          // the fader, after the effects
+      float g = 0.0f;                             // the same, smoothed, with mute and solo
       float blockPeakL = 0.0f, blockPeakR = 0.0f;
       float fallL = 0.0f, fallR = 0.0f;
       verdalis::Rng rng;
@@ -1780,6 +2049,7 @@ private:
          shotTimer = -1.0;
          for (float &v : m)
             v = 0.0f;
+         g = 0.0f;
          blockPeakL = blockPeakR = fallL = fallR = 0.0f;
       }
    };
@@ -1801,6 +2071,10 @@ private:
    std::atomic<bool> mSlotDirty[kNumSlots];
 
    SlotAudio mSlots[kNumSlots];
+   // Every layer's effects and, last, the scene's (kMasterFx).
+   fx::Chain mFx[kNumFxChannels];
+   std::atomic<bool> mFxDirty[kNumFxChannels];
+   double mTempo = 120.0; // audio thread
    std::atomic<LayerEngine *> mPending[kNumSlots];
    std::atomic<LayerEngine *> mDead[kNumSlots];
    std::atomic<bool> mLive[kNumSlots];
@@ -1821,8 +2095,11 @@ private:
    // The scene's own processing, audio thread only.
    verdalis::Adsr mEnv;
    int mGateMode = kGateAlways;
+   int mTailsMode = kTailsRingOut;
+   bool mMasterCleared = false;
    float mSustain = 1.0f;
    bool mGateOpen = false;
+   std::atomic<bool> mGateShown{false}; // mGateOpen, for the window
    bool mTransportPlaying = true;
    std::bitset<16 * 128> mHeldNotes;
    verdalis::Hp2 mHpL, mHpR;
@@ -1834,6 +2111,7 @@ private:
    float mGainTarget = 1.0f;
    float mGainSmoothed = -1.0f;
    std::vector<float> mScratchL, mScratchR;
+   std::vector<float> mEnvBuf; // the scene's envelope over one block
    double mSampleRate = 48000.0;
    uint32_t mMaxFrames = 1;
 

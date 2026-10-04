@@ -31,6 +31,13 @@
 // name the layer's preset browser shows) and `layer_from`, which loads one of
 // the plugin's presets by name before the section's own lines are applied.
 //
+// Effects are written with their fx_ keys (params.cpp): the scene's own chain
+// in the head, among the scene's parameters, and a layer's in its section,
+// after the layer_ keys. Only an effect that is on, or whose settings differ
+// from the defaults, is written at all -- every one of its parameters then --
+// so a scene without effects reads exactly as it did before they existed and a
+// switched-off reverb keeps the settings it was switched off with.
+//
 // layer_from is what keeps the factory scenes short and readable: a scene is
 // "Forest Stream, a little quieter", not sixty numbers. A scene the window
 // saves writes every value out instead, so it does not change when a factory
@@ -55,6 +62,8 @@ struct SceneLayer {
    std::vector<double> values;
    // The placement parameters, raw, indexed by SlotParamId. Active is unused.
    double mix[kNumSlotParams] = {};
+   // The layer's effects, raw, indexed by FxParamId.
+   double fx[kNumFxParams] = {};
 };
 
 struct Scene {
@@ -63,6 +72,8 @@ struct Scene {
    std::string description;
    std::vector<std::string> features;
    double values[kNumSceneParams] = {};
+   // The scene's own effects, raw, indexed by FxParamId.
+   double fx[kNumFxParams] = {};
    std::vector<SceneLayer> layers;
    // Lines that were understood but could not be honoured: an unknown layer,
    // a layer_from naming no preset. Loading goes on without them; the factory
@@ -72,6 +83,9 @@ struct Scene {
 
 // The scene's own parameters at their defaults, and no layers.
 Scene emptyScene();
+
+// Every effect parameter at its default: everything off.
+void defaultFx(double *fx);
 
 // A layer of `type` with the plugin's parameter defaults and the placement
 // defaults.

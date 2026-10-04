@@ -123,6 +123,12 @@ struct EngineParams {
    float decaySec = 0.8f;
    float sustain = 1.0f;
    float releaseSec = 4.0f;
+   // How the envelope's stages bend: 0 is its natural shape. The plugin's own
+   // parameters leave these at 0; VerdaliScene bends a layer's envelope with
+   // them (see verdalis/dsp/adsr.h).
+   float attackCurve = 0.0f;
+   float decayCurve = 0.0f;
+   float releaseCurve = 0.0f;
    float velToLevel = 0.5f;
    float velToSpeed = 0.4f;
 

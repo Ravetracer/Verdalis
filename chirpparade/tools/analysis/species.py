@@ -60,6 +60,11 @@ GROUPS = [
     # neighbour is Woodpecker at 1.5, far enough that folding it in would have
     # moved that table rather than joined it.
     ("Piper", ["eurasian-oystercatchers", "oystercatcher"]),
+    # The common cuckoo. Its own group because nothing else in the library is
+    # a two-note call this low and this pure: 665 Hz falling 4.2 semitones,
+    # one harmonic, -37 dB of flatness. The files have other birds under it;
+    # contours.py keeps only the call's band.
+    ("Cuckoo", ["cuckoo"]),
     # Drumming is sonation rather than voice and is measured by drums.py; the
     # files are listed here only so that nothing is silently left out.
     ("(drumming)", ["woodpecker_hammering", "multiple_bird_chirps_and_woodpecker"]),

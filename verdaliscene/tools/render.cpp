@@ -69,6 +69,7 @@ const char *dlerrorCompat() { return "see GetLastError()"; }
 #include "verdalis/preset_library.h"
 
 #include <filesystem>
+#include <fstream>
 
 // Setting an environment variable is spelled differently on each platform, and
 // the self-test needs it to point the preset directory somewhere disposable.
@@ -1106,7 +1107,8 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
       check(!r.sawNonFinite && r.peak == 0.0f, "an empty scene renders exact silence");
    }
 
-   // --- every factory scene: loads cleanly, plays without a note, stays bounded
+   // --- every factory scene: loads cleanly, is silent until a key opens it,
+   // plays on the key, stays bounded
    const std::vector<PresetEntry> scenes = discoverPresets(entry);
    check(!scenes.empty(), "factory scenes are discovered");
    for (const PresetEntry &p : scenes) {
@@ -1117,14 +1119,227 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
       const uint32_t errors = gPresetErrorCount;
       const bool loaded = loadPreset(pl, p);
       pl->activate(pl, sampleRate, 1, 512);
-      const RenderResult r = renderPlugin(pl, sampleRate, 512, -1.0, 4.0, 60, 0.0);
+      const RenderResult quiet = renderPlugin(pl, sampleRate, 512, -1.0, 1.0, 60, 0.0);
+      const RenderResult r = renderPlugin(pl, sampleRate, 512, 4.0, 0.0, 60, 0.9);
       check(loaded && gPresetErrorCount == errors && gLogWarnings == warnings &&
-               !r.sawNonFinite && r.peak > 0.001f && r.peak <= 1.001f,
-            "scene \"" + p.name + "\" loads and plays (peak " +
+               quiet.peak == 0.0f && !r.sawNonFinite && r.peak > 0.001f && r.peak <= 1.001f,
+            "scene \"" + p.name + "\" loads, waits for a key and plays (peak " +
                std::to_string(20.0 * std::log10(std::max(r.peak, 1e-9f))).substr(0, 5) +
                " dBFS)");
       pl->deactivate(pl);
       pl->destroy(pl);
+   }
+
+   // --- a key starts the scene and letting go ends it: the scene's release and
+   // every layer's own run out into exact silence, and the next key starts it
+   // all again
+   if (!scenes.empty()) {
+      const clap_plugin_t *pl = createPlugin(entry);
+      loadPreset(pl, scenes.front());
+      pl->activate(pl, sampleRate, 1, 512);
+      const RenderResult held = renderPlugin(pl, sampleRate, 512, 3.0, 0.0, 60, 0.9);
+      // The note-off goes out with the first block of the next render.
+      const RenderResult after = renderPlugin(pl, sampleRate, 512, 0.0, 40.0, 60, 0.9);
+      float lastSecond = 0.0f;
+      const size_t tailStart = after.interleaved.size() - static_cast<size_t>(2 * sampleRate);
+      for (size_t i = tailStart; i < after.interleaved.size(); ++i)
+         lastSecond = std::max(lastSecond, std::fabs(after.interleaved[i]));
+      check(held.peak > 0.001f && after.peak > 0.0f && lastSecond == 0.0f,
+            "letting go of the key fades the scene out into silence");
+      const RenderResult again = renderPlugin(pl, sampleRate, 512, 2.0, 0.0, 60, 0.9);
+      check(again.peak > 0.001f, "the next key starts the scene again");
+      pl->deactivate(pl);
+      pl->destroy(pl);
+   }
+
+   // --- the curves reach the sound: a release bent to hold the level up
+   // leaves more of the scene after the key than one bent to let go at once,
+   // for the scene's own envelope and for a layer's
+   if (!scenes.empty()) {
+      auto releaseEnergy = [&](const std::vector<std::pair<clap_id, double>> &curves) {
+         const clap_plugin_t *pl = createPlugin(entry);
+         loadPreset(pl, scenes.front());
+         pl->activate(pl, sampleRate, 1, 512);
+         resolveParamOverrides(pl, {"random seed=7"});
+         for (const auto &c : curves)
+            gParamOverrides.push_back(c);
+         renderPlugin(pl, sampleRate, 512, 5.0, 0.0, 60, 0.9);
+         gParamOverrides.clear();
+         const RenderResult tail = renderPlugin(pl, sampleRate, 512, 0.0, 1.5, 60, 0.9);
+         pl->deactivate(pl);
+         pl->destroy(pl);
+         return tail.rms;
+      };
+      const double heldScene = releaseEnergy({{kParamReleaseCurve, -1.0}});
+      const double goneScene = releaseEnergy({{kParamReleaseCurve, 1.0}});
+      check(heldScene > 1.5 * goneScene,
+            "the scene's release curve shapes its fade-out (" +
+               std::to_string(toDb(heldScene)).substr(0, 5) + " vs " +
+               std::to_string(toDb(goneScene)).substr(0, 5) + " dBFS)");
+      Scene first;
+      std::string err;
+      int slot = -1;
+      // The scene the energy was measured on, from wherever discovery found it.
+      std::string text;
+      if (scenes.front().locationKind == CLAP_PRESET_DISCOVERY_LOCATION_FILE) {
+         std::ifstream in(scenes.front().location, std::ios::binary);
+         text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+      } else {
+         for (unsigned i = 0; i < kNumBuiltinPresets; ++i)
+            if (scenes.front().loadKey == kBuiltinPresets[i].loadKey)
+               text = kBuiltinPresets[i].text;
+      }
+      if (parseScene(text.c_str(), text.size(), first, err) && !first.layers.empty())
+         slot = slotIndex(first.layers.front().type, 0);
+      bool ok = false;
+      std::string what = "no layer";
+      if (slot >= 0) {
+         // The scene's own release long and straight, so what is left after
+         // the key is the layer's.
+         const double heldLayer =
+            releaseEnergy({{kParamReleaseCurve, -1.0}, {slotMixId(slot, kSlotReleaseCurve), -1.0}});
+         const double goneLayer =
+            releaseEnergy({{kParamReleaseCurve, -1.0}, {slotMixId(slot, kSlotReleaseCurve), 1.0}});
+         ok = heldLayer > goneLayer * 1.02;
+         what = std::to_string(toDb(heldLayer)).substr(0, 5) + " vs " +
+                std::to_string(toDb(goneLayer)).substr(0, 5) + " dBFS";
+      }
+      check(ok, "a layer's release curve shapes the layer's own fade-out (" + what + ")");
+   }
+
+   // --- effects: each one, switched on for a layer through the host's own
+   // parameter events, changes the sound and stays finite -- which also means
+   // its buffers were made on the main thread when it was asked for -- and the
+   // scene's own reverb rings on after the scene has faded
+   if (!scenes.empty()) {
+      Scene first;
+      std::string err;
+      std::string text;
+      if (scenes.front().locationKind == CLAP_PRESET_DISCOVERY_LOCATION_FILE) {
+         std::ifstream in(scenes.front().location, std::ios::binary);
+         text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+      }
+      const int slot = parseScene(text.c_str(), text.size(), first, err) && !first.layers.empty()
+                          ? slotIndex(first.layers.front().type, 0)
+                          : 0;
+      auto take = [&](const std::vector<std::pair<clap_id, double>> &extra, double hold,
+                      double tail) {
+         const clap_plugin_t *pl = createPlugin(entry);
+         loadPreset(pl, scenes.front());
+         pl->activate(pl, sampleRate, 1, 512);
+         resolveParamOverrides(pl, {"random seed=7"});
+         for (const auto &e : extra)
+            gParamOverrides.push_back(e);
+         RenderResult r = renderPlugin(pl, sampleRate, 512, hold, 0.0, 60, 0.9);
+         gParamOverrides.clear();
+         if (tail > 0.0) {
+            const RenderResult t = renderPlugin(pl, sampleRate, 512, 0.0, tail, 60, 0.9);
+            r.interleaved.insert(r.interleaved.end(), t.interleaved.begin(), t.interleaved.end());
+            r.sawNonFinite = r.sawNonFinite || t.sawNonFinite;
+            r.peak = std::max(r.peak, t.peak);
+         }
+         pl->deactivate(pl);
+         pl->destroy(pl);
+         return r;
+      };
+      const RenderResult plain = take({}, 2.0, 0.0);
+      bool allChange = true, allFinite = true;
+      std::string quietOnes;
+      for (int k = 0; k < kNumFxKinds; ++k) {
+         std::vector<std::pair<clap_id, double>> on = {{fxParamId(slot, fxKind(k).first), 1.0}};
+         // Make each one plainly audible.
+         if (k == kFxReverb)
+            on.push_back({fxParamId(slot, kFxReverbMix), 0.6});
+         if (k == kFxDelay)
+            on.push_back({fxParamId(slot, kFxDelayMix), 0.6});
+         if (k == kFxWidener)
+            on.push_back({fxParamId(slot, kFxWidenerWidth), 0.0});
+         if (k == kFxAutoPan)
+            on.push_back({fxParamId(slot, kFxAutoPanDepth), 1.0});
+         const RenderResult r = take(on, 2.0, 0.0);
+         double diff = 0.0;
+         for (size_t i = 0; i < r.interleaved.size() && i < plain.interleaved.size(); ++i)
+            diff += std::fabs(r.interleaved[i] - plain.interleaved[i]);
+         diff /= std::max<size_t>(1, r.interleaved.size());
+         allFinite = allFinite && !r.sawNonFinite && r.peak <= 1.001f;
+         if (!(diff > 1.0e-4)) {
+            allChange = false;
+            quietOnes += std::string(" ") + fxKind(k).name;
+         }
+      }
+      check(allChange, "every effect on a layer changes its sound" +
+                          (quietOnes.empty() ? std::string() : " (not:" + quietOnes + ")"));
+      check(allFinite, "every effect on a layer stays finite and bounded");
+
+      // The scene's own reverb, after the envelope: what is left a few seconds
+      // after the scene's release has run out.
+      auto lateRms = [](const RenderResult &r, double from, double to, double rate) {
+         const size_t a = static_cast<size_t>(from * rate) * 2;
+         const size_t b = std::min(r.interleaved.size(), static_cast<size_t>(to * rate) * 2);
+         double q = 0.0;
+         for (size_t i = a; i < b; ++i)
+            q += static_cast<double>(r.interleaved[i]) * r.interleaved[i];
+         return b > a ? std::sqrt(q / static_cast<double>(b - a)) : 0.0;
+      };
+      const double release = first.values[kParamRelease];
+      (void)release;
+      const RenderResult dryTail = take({}, 2.0, 14.0);
+      const RenderResult wetTail = take({{fxParamId(kMasterFx, kFxReverbOn), 1.0},
+                                         {fxParamId(kMasterFx, kFxReverbMix), 0.5},
+                                         {fxParamId(kMasterFx, kFxReverbDecay),
+                                          realToParam(fxParamTable()[kFxReverbDecay], 12000.0)}},
+                                        2.0, 14.0);
+      const double dryLate = lateRms(dryTail, 13.0, 16.0, sampleRate);
+      const double wetLate = lateRms(wetTail, 13.0, 16.0, sampleRate);
+      check(dryLate == 0.0 && wetLate > 1.0e-5,
+            "the scene's reverb rings on after the scene has faded (" +
+               std::to_string(toDb(wetLate)).substr(0, 5) + " dBFS 11 s after the key)");
+
+      // FX Tails: on Ring Out a layer's reverb rings on after the scene has
+      // faded, as the scene's does; on Release both are gone with the scene's
+      // release -- and the scene's reverb still sounds while the key is held.
+      const double ringOut = static_cast<double>(kTailsRingOut);
+      const double fadeOut = static_cast<double>(kTailsRelease);
+      const std::vector<std::pair<clap_id, double>> layerVerb = {
+         {fxParamId(slot, kFxReverbOn), 1.0},
+         {fxParamId(slot, kFxReverbMix), 0.5},
+         {fxParamId(slot, kFxReverbDecay), realToParam(fxParamTable()[kFxReverbDecay], 12000.0)}};
+      auto with = [](std::vector<std::pair<clap_id, double>> v, clap_id id, double value) {
+         v.push_back({id, value});
+         return v;
+      };
+      const double layerRing =
+         lateRms(take(with(layerVerb, kParamFxTails, ringOut), 2.0, 14.0), 13.0, 16.0, sampleRate);
+      const double layerGone =
+         lateRms(take(with(layerVerb, kParamFxTails, fadeOut), 2.0, 14.0), 13.0, 16.0, sampleRate);
+      const std::vector<std::pair<clap_id, double>> sceneVerb = {
+         {fxParamId(kMasterFx, kFxReverbOn), 1.0},
+         {fxParamId(kMasterFx, kFxReverbMix), 0.5},
+         {fxParamId(kMasterFx, kFxReverbDecay),
+          realToParam(fxParamTable()[kFxReverbDecay], 12000.0)}};
+      const RenderResult sceneFade = take(with(sceneVerb, kParamFxTails, fadeOut), 2.0, 14.0);
+      const double sceneGone = lateRms(sceneFade, 13.0, 16.0, sampleRate);
+      double heldDiff = 0.0;
+      const size_t held = static_cast<size_t>(2.0 * sampleRate) * 2;
+      for (size_t i = 0; i < held && i < sceneFade.interleaved.size() &&
+                         i < dryTail.interleaved.size();
+           ++i)
+         heldDiff += std::fabs(sceneFade.interleaved[i] - dryTail.interleaved[i]);
+      check(layerRing > 1.0e-5 && layerGone == 0.0,
+            "FX Tails: a layer's reverb rings on after the scene on Ring Out (" +
+               std::to_string(toDb(layerRing)).substr(0, 5) +
+               " dBFS 11 s after the key) and is gone with it on Release");
+      check(sceneGone == 0.0 && heldDiff > 1.0e-3,
+            "FX Tails: on Release the scene's reverb sounds while the key is held and is "
+            "gone with the scene's release");
+      // And fades *with* the release, rather than holding up until it ends:
+      // 3 to 4.5 s after the key the faded tail is well under the ringing one.
+      const double fading = lateRms(sceneFade, 5.0, 6.5, sampleRate);
+      const double ringing = lateRms(wetTail, 5.0, 6.5, sampleRate);
+      check(fading < 0.5 * ringing,
+            "FX Tails: on Release the scene's reverb fades with the release (" +
+               std::to_string(toDb(fading)).substr(0, 5) + " against " +
+               std::to_string(toDb(ringing)).substr(0, 5) + " dBFS on Ring Out, 3 s after the key)");
    }
 
    // --- with every layer's seed fixed, a scene is the same scene every time
@@ -1232,6 +1447,13 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
             v = std::floor(v + 0.5);
          original.values[i] = v;
       }
+      for (uint32_t f = 0; f < kNumFxParams; ++f) {
+         const ParamDesc &d = fxParamTable()[f];
+         double v = d.min + 0.61 * (d.max - d.min);
+         if (d.kind == ParamKind::Enum || d.kind == ParamKind::Stepped)
+            v = std::floor(v + 0.5);
+         original.fx[f] = v;
+      }
       for (int type = 0; type < kNumLayerTypes; ++type) {
          for (int copy = 0; copy < 2; ++copy) {
             SceneLayer layer = defaultLayer(type);
@@ -1248,6 +1470,16 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
             layer.mix[kSlotPan] = copy ? 0.4 : -0.25;
             layer.mix[kSlotStereo] = copy;
             layer.mix[kSlotShotRate] = t.shotLevelParam != kNoLayerParam ? 4.5 : 2.0;
+            layer.mix[kSlotAttackCurve] = copy ? -0.35 : 0.6;
+            layer.mix[kSlotDecayCurve] = slotParamApplies(t, kSlotDecayCurve) ? -0.8 : 0.0;
+            layer.mix[kSlotReleaseCurve] = copy ? 0.25 : -1.0;
+            for (uint32_t f = 0; f < kNumFxParams; ++f) {
+               const ParamDesc &d = fxParamTable()[f];
+               double v = d.min + (0.17 + 0.29 * copy + 0.013 * type) * (d.max - d.min);
+               if (d.kind == ParamKind::Enum || d.kind == ParamKind::Stepped)
+                  v = std::floor(v + 0.5);
+               layer.fx[f] = v;
+            }
             layer.presetName = "Layer " + std::to_string(copy);
             original.layers.push_back(layer);
          }
@@ -1272,6 +1504,8 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
       };
       for (uint32_t i = 0; i < kNumSceneParams; ++i)
          compare(scene[i], original.values[i], back.values[i], "scene");
+      for (uint32_t f = 0; f < kNumFxParams; ++f)
+         compare(fxParamTable()[f], original.fx[f], back.fx[f], "scene effects");
       for (size_t k = 0; k < back.layers.size() && k < original.layers.size(); ++k) {
          const SceneLayer &a = original.layers[k];
          const SceneLayer &b = back.layers[k];
@@ -1280,11 +1514,11 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
             worst = 1.0;
          for (uint32_t i = 0; i < t.paramCount; ++i)
             compare(t.paramTable()[i], a.values[i], b.values[i], t.pluginName);
-         for (uint32_t m = kSlotLevel; m < kNumSlotParams; ++m) {
-            if (m == kSlotShotRate && t.shotLevelParam == kNoLayerParam)
-               continue;
-            compare(slotParamTable()[m], a.mix[m], b.mix[m], "mixer");
-         }
+         for (uint32_t m = kSlotLevel; m < kNumSlotParams; ++m)
+            if (slotParamApplies(t, m))
+               compare(slotParamTable()[m], a.mix[m], b.mix[m], "mixer");
+         for (uint32_t f = 0; f < kNumFxParams; ++f)
+            compare(fxParamTable()[f], a.fx[f], b.fx[f], "effects");
       }
       if (worst > 0.005)
          std::printf("       worst drift %.4f on %s\n", worst, where.c_str());
@@ -1389,6 +1623,55 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
          check(found, "the plugin's own library lists it, in its folder");
          check(!findLayerPresetText(kLayerRain, "Saved By Selftest").empty(),
                "a scene can name it with layer_from");
+
+         // A scene mixed by ear, saved into a folder and handed over as a
+         // pack, comes back as the same file: every layer's every value, the
+         // layers' curves and the scene's own.
+         Scene mixed;
+         std::string perr;
+         const char *factory = kBuiltinPresets[0].text;
+         parseScene(factory, std::strlen(factory), mixed, perr);
+         mixed.name = "Mixed By Ear";
+         mixed.values[kParamGate] = kGateNotes;
+         mixed.values[kParamReleaseCurve] = -0.4;
+         mixed.fx[kFxReverbOn] = 1.0;
+         mixed.fx[kFxReverbDecay] = 0.8;
+         for (SceneLayer &layer : mixed.layers) {
+            layer.mix[kSlotLevel] -= 1.5;
+            layer.mix[kSlotAttackCurve] = 0.3;
+            layer.mix[kSlotReleaseCurve] = -0.65;
+            layer.values[0] = layer.values[0] * 0.5;
+            layer.fx[kFxDelayOn] = 1.0;
+            layer.fx[kFxDelayFeedback] = 1.2;
+         }
+         const verdalis::PresetLibrarySpec sceneLib{presetContext(), kBuiltinPresets,
+                                                    kNumBuiltinPresets};
+         const std::string written = formatScene(mixed);
+         const std::string scenePath =
+            verdalis::userPresetPathIn(sceneLib.ctx, "Handover", "Mixed By Ear");
+         const std::string packPath = tmpdir + "/handover.verdaliscenepack";
+         bool same = !scenePath.empty() && writePresetFile(scenePath, written, perr) &&
+                     verdalis::exportPresetPack(sceneLib, verdalis::scanPresetLibrary(sceneLib),
+                                                verdalis::presetFileStem("Handover"), packPath,
+                                                perr);
+         std::error_code dirEc;
+         std::filesystem::remove_all(std::filesystem::path(scenePath).parent_path(), dirEc);
+         std::string folder;
+         same = same && verdalis::importPresetPack(sceneLib, packPath, folder, perr);
+         std::string imported;
+         for (const auto &p : verdalis::scanPresetLibrary(sceneLib)) {
+            if (p.name != "Mixed By Ear" || p.folder != folder)
+               continue;
+            std::ifstream in(p.path, std::ios::binary);
+            imported.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+         }
+         Scene back;
+         same = same && imported == written &&
+                parseScene(imported.c_str(), imported.size(), back, perr) &&
+                formatScene(back) == written;
+         if (!same)
+            std::printf("       %s\n", perr.c_str());
+         check(same, "a scene exported as a pack and imported again is the same scene");
          std::error_code rmec;
          std::filesystem::remove_all(tmpdir, rmec);
          setEnvVar("XDG_CONFIG_HOME", nullptr);

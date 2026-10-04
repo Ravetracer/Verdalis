@@ -1,0 +1,64 @@
+# VerdaliScene preset
+format = 1
+name = Canyon Echo
+author = VerdaliScene
+description = A bird calling across a desert canyon and its song coming back off the far wall, wind wandering along the rim, and a river far below.
+features = ambient, nature, canyon, birds, wind, water, delay, reverb
+
+# Envelope
+gate = Notes
+attack = 3000
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+tails = Ring Out
+
+layer = SkyHowl
+layer_from = Mountain Ridge
+layer_level = 2
+fx_autopan_on = On
+fx_autopan_rate = 0.05
+fx_autopan_depth = 0.4
+fx_autopan_shape = Drift
+
+layer = ChirpParade
+layer_from = Melody Bird
+layer_level = 6.5
+layer_stereo = Mono
+layer_pan = -0.45
+layer_shot_rate = 4
+fx_delay_on = On
+fx_delay_mode = Ping-Pong
+fx_delay_time = 430
+fx_delay_offset = 0.3
+fx_delay_feedback = 0.5
+fx_delay_low_cut = 250
+fx_delay_high_cut = 5000
+fx_delay_saturation = 0.1
+fx_delay_diffusion = 0.25
+fx_delay_mix = 0.4
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_decay = 4500
+fx_reverb_size = 0.9
+fx_reverb_predelay = 60
+fx_reverb_low_cut = 200
+
+layer = RiverFlow
+layer_from = Distant River
+layer_level = -18
+fx_reverb_on = On
+fx_reverb_mix = 0.35
+fx_reverb_decay = 3500
+fx_reverb_size = 0.7
+fx_reverb_high_cut = 5000

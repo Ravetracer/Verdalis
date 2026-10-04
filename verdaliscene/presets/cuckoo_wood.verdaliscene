@@ -1,0 +1,52 @@
+# VerdaliScene preset
+format = 1
+name = Cuckoo Wood
+author = VerdaliScene
+description = A beech wood in late spring: a cuckoo calling from the trees close by, two more answering from across the valley, small birds in the canopy and a breeze in the leaves.
+features = ambient, nature, birds, forest, spring, cuckoo, reverb
+
+# Envelope
+gate = Notes
+attack = 3000
+decay = 1000
+sustain = 1
+release = 5000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+tails = Ring Out
+
+layer = ChirpParade
+layer_from = Garden Sparrows
+layer_level = -5.5
+
+layer = ChirpParade
+layer_from = Cuckoo Call
+layer_level = -3
+layer_stereo = Mono
+layer_pan = -0.3
+layer_shot_rate = 1
+
+layer = ChirpParade
+layer_from = Cuckoo Valley
+layer_level = -4
+layer_pan = 0.3
+layer_shot_rate = 0
+fx_reverb_on = On
+fx_reverb_decay = 4500
+fx_reverb_size = 0.9
+fx_reverb_predelay = 70
+fx_reverb_low_cut = 250
+fx_reverb_high_cut = 4500
+fx_reverb_mix = 0.35
+
+layer = SkyHowl
+layer_from = Wind In Birches
+layer_level = 3.5

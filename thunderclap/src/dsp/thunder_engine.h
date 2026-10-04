@@ -61,6 +61,12 @@ struct EngineParams {
    int mode = kModeOneShot;
    float attackSec = 0.001f;
    float releaseSec = 1.2f;
+   // How the envelope's stages bend: 0 is its natural shape. The plugin's own
+   // parameters leave these at 0; VerdaliScene bends a layer's envelope with
+   // them (see verdalis/dsp/adsr.h).
+   float attackCurve = 0.0f;
+   float decayCurve = 0.0f;
+   float releaseCurve = 0.0f;
    float stormRatePerMin = 6.0f;
    float velToLevel = 0.5f;
    float velToDistance = 0.5f;

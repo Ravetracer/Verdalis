@@ -36,7 +36,7 @@ PLUGIN = {'rain': 'RainyDay', 'thunder': 'ThunderClap', 'waves': 'ShoreBreak', '
           'insects': 'InsectSwarm', 'night': 'NightLife'}
 
 ENVELOPE = '''# Envelope
-gate = Always
+gate = Notes
 attack = {attack}
 decay = 1000
 sustain = 1
@@ -51,7 +51,15 @@ filter_reso = 0.1
 # Output
 width = {width}
 gain = {gain}
+tails = {tails}
 '''
+
+# A big, dark stone space for the cave's layers: long, damped hard above 3.5 kHz,
+# with the rumble kept out so the drips stay clear.
+CAVE_REVERB = ['fx_reverb_on = On', 'fx_reverb_size = 0.85', 'fx_reverb_diffusion = 0.8',
+               'fx_reverb_damping = 0.55', 'fx_reverb_damp_freq = 3500',
+               'fx_reverb_mod_depth = 0.4', 'fx_reverb_low_cut = 140',
+               'fx_reverb_high_cut = 7000']
 
 # name, file, description, features, scene settings, layers.
 # A layer is (kind, preset, role, extra lines). Extra lines are the plugin's
@@ -199,6 +207,63 @@ SCENES = [
                                          'layer_shot_rate = 3']),
       ('birds', 'Woodpecker Drum', 2.5, ['layer_stereo = Mono', 'layer_pan = 0.7']),
       ('wind', 'Soft Breath', 'faint', [])]),
+
+    # The two that show off the layers' effects. Inside the cave every sound
+    # carries the cave with it; the wind at its mouth is outside and dry. Their
+    # numeric faders were set from --layers renders of the finished scenes,
+    # because a reverb adds to a layer's level what its solo measurement does
+    # not know about.
+    ('Cave Mouth', 'cave_mouth',
+     'Just inside the mouth of a cave: water dripping into pools in the dark, a trickle running '
+     'down the rock, and the wind outside moaning across the entrance.',
+     'ambient, nature, cave, water, wind, reverb', {'attack': 3000, 'release': 6000},
+     [('rain', 'Cave Drips', 2.0, CAVE_REVERB + ['fx_reverb_decay = 7000',
+                                                   'fx_reverb_predelay = 35',
+                                                   'fx_reverb_mix = 0.5']),
+      ('river', 'Hanging Trickle', 7.5, CAVE_REVERB + ['fx_reverb_decay = 6000',
+                                                            'fx_reverb_predelay = 22',
+                                                            'fx_reverb_mix = 0.4',
+                                                            'layer_pan = 0.35']),
+      ('wind', 'Cave Mouth', 'texture', [])]),
+
+    ('Canyon Echo', 'canyon_echo',
+     'A bird calling across a desert canyon and its song coming back off the far wall, wind '
+     'wandering along the rim, and a river far below.',
+     'ambient, nature, canyon, birds, wind, water, delay, reverb', {'attack': 3000},
+     [('wind', 'Mountain Ridge', 2.0, ['fx_autopan_on = On', 'fx_autopan_rate = 0.05',
+                                         'fx_autopan_depth = 0.4', 'fx_autopan_shape = Drift']),
+      ('birds', 'Melody Bird', 'texture', ['layer_stereo = Mono', 'layer_pan = -0.45',
+                                           'layer_shot_rate = 4',
+                                           'fx_delay_on = On', 'fx_delay_mode = Ping-Pong',
+                                           'fx_delay_time = 430', 'fx_delay_offset = 0.3',
+                                           'fx_delay_feedback = 0.5', 'fx_delay_low_cut = 250',
+                                           'fx_delay_high_cut = 5000',
+                                           'fx_delay_saturation = 0.1',
+                                           'fx_delay_diffusion = 0.25', 'fx_delay_mix = 0.4',
+                                           'fx_reverb_on = On', 'fx_reverb_mix = 0.3',
+                                           'fx_reverb_decay = 4500', 'fx_reverb_size = 0.9',
+                                           'fx_reverb_predelay = 60', 'fx_reverb_low_cut = 200']),
+      ('river', 'Distant River', 'faint', ['fx_reverb_on = On', 'fx_reverb_mix = 0.35',
+                                           'fx_reverb_decay = 3500', 'fx_reverb_size = 0.7',
+                                           'fx_reverb_high_cut = 5000'])]),
+
+    # A cuckoo close by, and a pair answering from across the valley through a
+    # long reverb: the valley is the space the call carries in, which is why
+    # the far pair are wetter than the near one rather than only quieter.
+    # Cuckoo Valley's level in levels.tsv is taken through that reverb.
+    ('Cuckoo Wood', 'cuckoo_wood',
+     'A beech wood in late spring: a cuckoo calling from the trees close by, two more answering '
+     'from across the valley, small birds in the canopy and a breeze in the leaves.',
+     'ambient, nature, birds, forest, spring, cuckoo, reverb', {'attack': 3000, 'release': 5000},
+     [('birds', 'Garden Sparrows', 'faint', []),
+      ('birds', 'Cuckoo Call', 'second', ['layer_stereo = Mono', 'layer_pan = -0.3',
+                                     'layer_shot_rate = 1']),
+      ('birds', 'Cuckoo Valley', 'accent', ['layer_pan = 0.3', 'layer_shot_rate = 0',
+                                       'fx_reverb_on = On', 'fx_reverb_decay = 4500',
+                                       'fx_reverb_size = 0.9', 'fx_reverb_predelay = 70',
+                                       'fx_reverb_low_cut = 250', 'fx_reverb_high_cut = 4500',
+                                       'fx_reverb_mix = 0.35']),
+      ('wind', 'Wind In Birches', 'texture', [])]),
 ]
 
 
@@ -210,7 +275,7 @@ def main():
     out = Path(sys.argv[2])
     for name, stem, desc, features, settings, layers in SCENES:
         s = {'attack': 2500, 'release': 4000, 'highpass': 20, 'cutoff': 20000, 'width': 1,
-             'gain': 0}
+             'gain': 0, 'tails': 'Ring Out'}
         s.update(settings)
         text = '# VerdaliScene preset\nformat = 1\nname = %s\nauthor = VerdaliScene\n' % name
         text += 'description = %s\nfeatures = %s\n\n' % (desc, features)

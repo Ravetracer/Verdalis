@@ -1,5 +1,7 @@
 #include "layers.h"
 
+#include <cstring>
+
 namespace verdaliscene {
 
 // One per adapter in src/layers/.
@@ -42,6 +44,14 @@ const PinnedParam *pinnedParam(const LayerType &t, uint32_t id) {
       if (t.pinned[i].id == id)
          return &t.pinned[i];
    return nullptr;
+}
+
+uint32_t layerParamByKey(const LayerType &t, const char *key) {
+   const verdalis::ParamDesc *table = t.paramTable();
+   for (uint32_t i = 0; i < t.paramCount; ++i)
+      if (std::strcmp(table[i].key, key) == 0)
+         return i;
+   return kNoLayerParam;
 }
 
 } // namespace verdaliscene

@@ -45,12 +45,12 @@ in. That is the same in every plugin in the suite.
 | **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | 1.6.1 |
 | **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | 0.3.1 |
 | **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | 0.3.1 |
-| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.7.1 |
+| **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.8.0 |
 | **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.3.1 |
 | **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.2.1 |
 | **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.4.1 |
 | **[NightLife](nightlife/)** — a night, from one wolf on a ridge to a pond full of frogs | night animals | 0.2.1 |
-| **[VerdaliScene](verdaliscene/)** — every nature instrument above at once, layered and mixed into one scene | whole scenes | 0.1.0 |
+| **[VerdaliScene](verdaliscene/)** — every nature instrument above at once, layered and mixed into one scene | whole scenes | 0.4.0 |
 | **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.3.1 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
@@ -82,9 +82,9 @@ is why a howl swoops in pitch with every gust instead of just getting louder.
 53 parameters, 23 presets, and rustling foliage as a layer of its own.
 
 **ChirpParade** — birds, from a single chirp to a dawn chorus. A blackbird, a
-robin, a nightingale, a woodpecker drumming on a dead branch. Play a note and
+robin, a nightingale, a cuckoo, a woodpecker drumming on a dead branch. Play a note and
 you get one call; hold it and the flock answers itself, each bird with its own
-pitch, distance and position. 62 parameters, 18 presets, nine species, and 72
+pitch, distance and position. 62 parameters, 20 presets, ten species, and 80
 song shapes traced off real recordings and rebuilt from the tracing.
 
 **RiverFlow** — running water, from a river's roar down to one drop falling on
@@ -125,9 +125,14 @@ thunderstorm, a fire burning down under the stars. A layer is not an imitation o
 its plugin, it is the plugin — its engine, every one of its parameters, its own
 preset library and its own panels — so your RainyDay presets load straight into a
 rain layer and a layer saves back as a RainyDay preset. Up to four layers of each
-kind, a mixer with a strip for every one, and an envelope and filter over the
-whole scene. It plays by itself: thunder flashes at a realistic random rate,
-birds sing when they sing, and a note is never needed. 16 scenes.
+kind, a mixer with a channel strip for every one — each layer's own envelope and
+filter on it — and an envelope and filter over the whole scene, every envelope
+with stages you can bend. Hold a key and the scene fades in, let go and it fades
+out; in between it plays by itself: thunder flashes at a realistic random rate
+and birds sing when they sing. Every layer, and the scene, has its own reverb
+(tails up to two minutes, or frozen), delay (ping-pong, tempo sync, feedback past
+100 %), chorus, flanger, phaser, widener and auto-pan, whose tails either ring
+on after the scene has faded or fade with it. 19 scenes.
 
 **WhooshPact** — the odd one out, and deliberately so: it models nothing in
 nature. Whooshes, impacts, booms, braams, downshifters and stings — the sounds a

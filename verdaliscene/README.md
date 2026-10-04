@@ -28,14 +28,17 @@ Up to four layers of each kind can run at once — three rains on three surfaces
 two winds, one storm. A layer costs what the plugin costs; how many to run is
 yours to decide.
 
-## Only a drone
+## A drone you hold
 
-A scene plays by itself. No note ever fires a single event in a layer: each layer
-is played by one held note for as long as it exists — middle C, which puts every
-note-tracking control at its neutral point, at velocity 0.9, which is the velocity
-every preset in the suite was fitted and rendered at, so a layer sounds like its
-preset does in its plugin's own demos. The few things a plugin only does for a
-played note are handled for a scene instead:
+Hold any key and the scene fades in; let go and it fades out. No key ever fires a
+single event in a layer: while the scene's gate is open each layer is played by
+one held note of its own — middle C, which puts every note-tracking control at its
+neutral point, at velocity 0.9, which is the velocity every preset in the suite
+was fitted and rendered at, so a layer sounds like its preset does in its plugin's
+own demos. Because it is a real note, struck when the gate opens and let go when
+it closes, every layer fades in and out on its own envelope inside the scene's.
+The few things a plugin only does for a played note are handled for a scene
+instead:
 
 - **Thunder flashes at random.** A thunder layer is ThunderClap held in its Storm
   mode, which flashes as a Poisson process at *Storm Rate* — a realistic two or
@@ -51,24 +54,46 @@ played note are handled for a scene instead:
 
 ## The scene
 
-The **mixer** has a strip per layer: a fader with the layer's level meter, pan, a
-stereo or mono switch — mono folds a layer to one point that pan then places,
-for a sound that should come from one direction — and mute and solo, which are
-for listening and are never saved.
+The **mixer** has a channel strip per layer: the layer's envelope drawn as a
+graph, with its attack, decay, sustain and release as knobs under it; the layer's
+filter type, highpass, cutoff and resonance; then a fader with the layer's level
+meter, pan, a stereo or mono switch — mono folds a layer to one point that pan
+then places, for a sound that should come from one direction — and mute and solo,
+which are for listening and are never saved. The envelope and filter knobs are
+the plugin's own parameters, the same ones the layer's page shows.
 
-Over the whole scene sit an **envelope** with three ways to open it — always,
-with the host's transport, or while any note is held — a **filter** and highpass,
-a width control and the output gain. Notes only ever open and close the scene.
+Over the whole scene sit an **envelope** with three ways to open it — while any
+key is held (the default), with the host's transport, or always — a **filter**
+and highpass, a width control and the output gain, on a strip of its own at the
+end of the mixer with a light for the gate.
 
-Sixteen factory **scenes** come with it, from *Forest River* and *Stormy Shore* to
-*Frog Pond*, *Winter Cabin* and *Dawn Chorus*.
+**Every envelope bends.** The scene's and every layer's attack, decay and release
+each have a curve: 0 % is the natural analogue shape every Verdalis plugin has,
+lower values straighten a stage and then hold it back, higher ones make it move
+at once. Drag a stage up or down in any envelope graph to bend it.
+
+**Every layer has effects, and so does the scene**: a reverb built for long,
+smooth tails (a sixteen-line feedback delay network, decay up to two minutes,
+freeze, its own low and high cut), a delay with mono, stereo and ping-pong modes,
+tempo sync, feedback to 150 % into a saturating loop, loop filters, wow,
+diffusion, ducking and tape or crossfade glide, and a chorus, flanger, phaser,
+stereo widener and auto-pan. A layer's effects come after its placement, so a
+bird panned to one side goes into its reverb from that side. *FX Tails* decides
+what the scene's release does to them: on *Ring Out* every reverb and delay rings
+on after the scene has faded, on *Release* they fade with it. A row of letters on
+every strip shows which effects are on and opens them.
+
+Nineteen factory **scenes** come with it, from *Forest River* and *Stormy Shore*
+to *Frog Pond*, *Winter Cabin* and *Dawn Chorus* -- and *Cave Mouth* and *Canyon
+Echo*, which are built around the effects, and *Cuckoo Wood*, with ChirpParade's
+new cuckoo calling close by and answered from across a valley.
 
 ## The window
 
 The suite's window, with a tab for the scene and a tab for every layer. The scene
 page is the mixer and the scene's own controls. A layer's page is its plugin's own
-panel layout in the plugin's own colour, with the layer's preset and its place in
-the scene in a bar along the top. *+* adds a layer, *REMOVE* takes one away, and
+panel layout in the plugin's own colour, with the layer's preset, its envelope
+graph and its place in the scene in a bar along the top. *+* adds a layer, *REMOVE* takes one away, and
 it fades out on its own release.
 
 ## Scene presets
@@ -86,7 +111,9 @@ flow_level = -9
 ```
 
 which is how the factory scenes are written. A scene saved from the window writes
-every value out instead.
+every value out instead — every layer's every parameter, its place in the mix,
+its curves and its effects, and the scene's own — so a scene folder exported as a
+preset pack carries everything but mute and solo.
 
 ## Build and install
 

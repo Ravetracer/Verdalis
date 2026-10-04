@@ -814,6 +814,23 @@ the one plugin a change elsewhere can break. What it relies on from each:
   `noteOn`/`noteOff`, `process`, `isSilent` and its activity counters, called
   from the adapter in `verdaliscene/src/layers/<plugin>.cpp`. ChirpParade's and
   NightLife's `triggerShot()` is how a scene fires their phrase at random.
+- **The envelope curves in `EngineParams`** -- `attackCurve`, `decayCurve`,
+  `releaseCurve`. No plugin sets them (its own `engineParams()` leaves them at
+  0, which is `verdalis::Adsr`'s old shape, bit for bit); the adapter sets them
+  from the layer's curve parameters. So every `env.setParams()` of a note's
+  envelope in an engine passes all three on, and a new nature plugin's engine
+  must too, or its layers' curves silently do nothing. The self-test's
+  release-curve check catches it for the first layer of the first scene only.
+- **Nothing about effects.** VerdaliScene's per-layer effects (`verdaliscene/src/fx/`)
+  sit after a layer's engine and placement and need nothing from the plugin; their
+  ids are a block of their own past the layers' (`kFxIdBase`), 128 per channel,
+  so they never collide with a plugin's `ParamId`. Their scene-file keys all
+  start `fx_`, which no plugin key may -- check before naming a new plugin
+  parameter that way.
+- **`attack`, `decay`, `sustain`, `release`, `filter_type`, `highpass`,
+  `filter_cutoff`, `filter_reso`** -- the preset keys a mixer strip looks a
+  layer's envelope and filter up by (`layerParamByKey`). A plugin without one
+  of them gets a blank knob, as thunder does for decay and sustain.
 - **The parameter ids.** A layer's parameter id is
   `64 + slot * 256 + <the plugin's ParamId>`, so the append-only rule for
   `ParamId` now protects VerdaliScene's saved projects too, and a plugin may not
@@ -835,12 +852,17 @@ line in `layers.cpp`, and its folder in `VERDALISCENE_LAYERS` in the CMake
 file. Appending a type appends slots after the existing ones, so no released id
 moves.
 
-What VerdaliScene adds on top of the layers, and why: one held note per layer
-(middle C at velocity 0.9, the velocity every fit and demo in the suite was
-rendered at), ThunderClap pinned to Storm mode with its first flash at a random
-moment within the storm's first average interval, a random clock firing
-ChirpParade's and NightLife's shot phrase, the mixer, and the scene's envelope
-and filter. Its `STATUS.md` has the rest.
+What VerdaliScene adds on top of the layers, and why: one note per layer, held
+while the scene's gate is open -- a key by default, the transport, or always --
+so each layer's own envelope plays (middle C at velocity 0.9, the velocity every
+fit and demo in the suite was rendered at), ThunderClap pinned to Storm mode
+with its first flash at a random moment within the storm's first average
+interval, a random clock firing ChirpParade's and NightLife's shot phrase, the
+mixer with a channel strip per layer, envelope curves for the scene and every
+layer, an effects chain on every layer and on the scene, and the scene's envelope
+and filter. *FX Tails* decides where that envelope sits against the effects: in
+front of every chain (the tails ring on past the release) or after them all (the
+tails fade with it). Its `STATUS.md` has the rest.
 
 **After any change to a nature plugin, rebuild VerdaliScene and run its
 self-test** -- it loads every factory preset of all nine plugins into a layer

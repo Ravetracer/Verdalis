@@ -6,7 +6,7 @@ description = Moonlight over a valley: wolves answering each other from slope to
 features = ambient, nature, night, wolves, water, wind
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 2500
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = NightLife
 layer_from = Wolf Valley

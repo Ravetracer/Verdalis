@@ -17,6 +17,7 @@
 
 #include "gui/gui.h"
 
+#include "verdalis/dsp/adsr.h"
 #include "verdalis/gui/plugin_window.h"
 
 #include <cmath>
@@ -95,15 +96,32 @@ constexpr int kPageTop = kTabY + kTabH + kGap;
 constexpr int kLayerPanelsTop = kPageTop + kBarH + kGap;
 // The scene page's lower row: two-row panels, as tall as one of a plugin's.
 constexpr int kSceneRowH = kPanelTitleH + 2 * kCellH + kPanelPad;
-// The mixer is never shorter than this, whatever the plugins' layouts allow.
-constexpr int kMinMixerH = 420;
+// The mixer is never shorter than this, whatever the plugins' layouts allow:
+// tall enough for a channel strip's envelope and filter above a fader that is
+// still worth dragging.
+constexpr int kMinMixerH = 460;
 
-constexpr double kStripMaxW = 84.0;
-constexpr double kStripMinW = 44.0;
-constexpr double kMasterW = 96.0;
+// A channel strip carries four envelope knobs side by side, which sets how
+// narrow it can get; more layers than fit scroll.
+constexpr double kStripMaxW = 124.0;
+constexpr double kStripMinW = 110.0;
+constexpr double kMasterW = 124.0;
 constexpr double kAddW = 64.0;
 constexpr double kMixPad = 12.0;
 constexpr double kStripButtonH = 18.0;
+// The top of a strip, from its top edge: name, envelope graph, the envelope's
+// knobs, the filter's type and its knobs, and then the fader.
+constexpr double kStripEnvY = 40.0;
+constexpr double kStripEnvH = 46.0;
+constexpr double kStripEnvKnobsY = 92.0;
+constexpr double kStripTypeY = 132.0;
+constexpr double kStripFilterKnobsY = 152.0;
+constexpr double kStripKnobH = 34.0;
+// The effects: one lit letter per effect on the channel.
+constexpr double kStripFxY = 196.0;
+constexpr double kStripFxH = 16.0;
+constexpr double kStripFaderY = 224.0;
+constexpr double kMiniKnobR = 10.0;
 
 // What every page has to fit in: as wide as the widest plugin window and as
 // tall as the tallest, plus the tabs and the layer bar above them.
@@ -143,26 +161,172 @@ const Geometry &geometry() {
 // the mixer's master strip too: the strip is where they are balanced against
 // the layers, the panel is where they sit with the rest of the scene's own
 // controls.
-constexpr uint32_t kEnvParams[] = {kParamGate, kParamAttack, kParamDecay, kParamSustain,
-                                   kParamRelease};
+// Each curve under the time it bends.
+constexpr uint32_t kEnvParams[] = {kParamGate,    kParamAttack,      kParamDecay,
+                                   kParamRelease, kParamSustain,     kParamAttackCurve,
+                                   kParamDecayCurve, kParamReleaseCurve};
 constexpr uint32_t kFilterParams[] = {kParamFilterType, kParamHighpass, kParamFilterCutoff,
                                       kParamFilterReso};
-constexpr uint32_t kOutParams[] = {kParamWidth, kParamGain};
+constexpr uint32_t kOutParams[] = {kParamWidth, kParamFxTails, kParamGain};
 
 #define PANEL(title, cols, rows, arr)                                                              \
    { title, cols, rows, arr, static_cast<int>(sizeof(arr) / sizeof(arr[0])) }
 const PanelSpec kScenePanels[] = {
-   PANEL("ENVELOPE", 3, 2, kEnvParams),
+   PANEL("ENVELOPE", 4, 2, kEnvParams),
    PANEL("FILTER", 2, 2, kFilterParams),
-   PANEL("OUTPUT", 1, 2, kOutParams),
+   PANEL("OUTPUT", 2, 2, kOutParams),
 };
 #undef PANEL
 constexpr int kNumScenePanels = static_cast<int>(sizeof(kScenePanels) / sizeof(kScenePanels[0]));
-static_assert(kNumSceneParams == 5 + 4 + 2, "every scene parameter must be on a scene panel");
+static_assert(kNumSceneParams == 8 + 4 + 3, "every scene parameter must be on a scene panel");
+
+// The effects' panel titles, by FxKind.
+const char *const kFxTitles[kNumFxKinds] = {"REVERB",  "DELAY",   "CHORUS",  "FLANGER",
+                                            "PHASER",  "WIDENER", "AUTO PAN"};
+// The order the chain runs them, which is the order they are shown in
+// wherever they are shown as a row.
+constexpr int kRunOrder[kNumFxKinds] = {kFxPhaser, kFxChorus,  kFxFlanger, kFxDelay,
+                                        kFxReverb, kFxWidener, kFxAutoPan};
+constexpr const int *kRunOrderDisplay = kRunOrder;
 
 Rgb accentOf(int type) {
    const LayerType &t = layerType(type);
    return {t.accent[0], t.accent[1], t.accent[2]};
+}
+
+// ----------------------------------------------------------- channel strips
+//
+// What a mixer strip carries of a layer -- or, on the master strip, of the
+// scene: its envelope with the curves that bend it, and its filter. A layer's
+// are the plugin's own parameters, the same ids its page shows, so a knob on
+// the strip and the knob on the page are one control; the curves are the
+// layer's own placement parameters. kNoParam where a layer has no such
+// control: thunder's envelope has no decay and no sustain.
+struct StripParams {
+   uint32_t attack = verdalis::kNoParam;
+   uint32_t decay = verdalis::kNoParam;
+   uint32_t sustain = verdalis::kNoParam;
+   uint32_t release = verdalis::kNoParam;
+   uint32_t curve[3] = {verdalis::kNoParam, verdalis::kNoParam, verdalis::kNoParam};
+   uint32_t filterType = verdalis::kNoParam;
+   uint32_t highpass = verdalis::kNoParam;
+   uint32_t cutoff = verdalis::kNoParam;
+   uint32_t reso = verdalis::kNoParam;
+};
+
+StripParams stripParams(int slot) {
+   StripParams sp;
+   if (slot < 0) {
+      sp.attack = kParamAttack;
+      sp.decay = kParamDecay;
+      sp.sustain = kParamSustain;
+      sp.release = kParamRelease;
+      sp.curve[0] = kParamAttackCurve;
+      sp.curve[1] = kParamDecayCurve;
+      sp.curve[2] = kParamReleaseCurve;
+      sp.filterType = kParamFilterType;
+      sp.highpass = kParamHighpass;
+      sp.cutoff = kParamFilterCutoff;
+      sp.reso = kParamFilterReso;
+      return sp;
+   }
+   const LayerType &t = layerType(slotType(slot));
+   auto own = [&](const char *key) {
+      const uint32_t p = layerParamByKey(t, key);
+      return p == kNoLayerParam || pinnedParam(t, p) ? verdalis::kNoParam : slotParamId(slot, p);
+   };
+   sp.attack = own("attack");
+   sp.decay = own("decay");
+   sp.sustain = own("sustain");
+   sp.release = own("release");
+   for (uint32_t i = 0; i < 3; ++i)
+      if (slotParamApplies(t, kSlotAttackCurve + i))
+         sp.curve[i] = slotMixId(slot, kSlotAttackCurve + i);
+   sp.filterType = own("filter_type");
+   sp.highpass = own("highpass");
+   sp.cutoff = own("filter_cutoff");
+   sp.reso = own("filter_reso");
+   return sp;
+}
+
+// An envelope as its graph draws it. Each stage gets a share of the width that
+// grows with the log of its length, so a 2 ms attack and a 20 s release are
+// both there to see and to grab; within a stage the shape is the one the
+// envelope plays (verdalis::Adsr), over the time it really takes.
+struct EnvShape {
+   enum Segment { kAttack = 0, kDecay, kSustain, kRelease, kNumSegments };
+   double x[kNumSegments + 1] = {}; // where each segment starts, and the last one ends
+   double sustain = 1.0;
+   float k[3] = {0.0f, 0.0f, 0.0f}; // attack, decay, release
+   double y0 = 0.0, yRange = 1.0;   // level 0 and full level, as y
+
+   double yOf(double level) const { return y0 - level * yRange; }
+   // The level along segment `seg` at its own normalised time p.
+   double level(int seg, double p) const {
+      using verdalis::Adsr;
+      switch (seg) {
+      case kAttack:
+         return Adsr::shape(static_cast<float>(p), k[0]);
+      case kDecay:
+         return 1.0 + (sustain - 1.0) * Adsr::shape(static_cast<float>(p), k[1]);
+      case kSustain:
+         return sustain;
+      case kRelease:
+      default:
+         return sustain * (1.0 - Adsr::shape(static_cast<float>(p), k[2]));
+      }
+   }
+};
+
+EnvShape envShape(const ParamDesc *table, const GuiDelegate &d, const StripParams &sp,
+                  const Rect &r) {
+   using verdalis::Adsr;
+   using verdalis::kNoParam;
+   auto real = [&](uint32_t id, double none) {
+      return id == kNoParam ? none : paramToReal(table[id], d.guiParamValue(id));
+   };
+   EnvShape e;
+   const double a = real(sp.attack, 0.0) * 0.001;
+   const double dec = real(sp.decay, 0.0) * 0.001;
+   const double rel = real(sp.release, 0.0) * 0.001;
+   e.sustain = sp.sustain == kNoParam ? 1.0 : std::min(1.0, std::max(0.0, real(sp.sustain, 1.0)));
+   const float s = static_cast<float>(e.sustain);
+
+   double len[3] = {0.0, 0.0, 0.0};
+   float k0 = 0.0f;
+   if (sp.attack != kNoParam && Adsr::naturalBend(0.0f, Adsr::kAttackTarget, 1.0f, k0)) {
+      len[0] = Adsr::kAttackTau * a * k0;
+      e.k[0] = Adsr::bend(k0, static_cast<float>(real(sp.curve[0], 0.0)));
+   }
+   if (sp.decay != kNoParam && Adsr::naturalBend(1.0f, s, s + Adsr::kSettle, k0)) {
+      len[1] = Adsr::kDecayTau * dec * k0;
+      e.k[1] = Adsr::bend(k0, static_cast<float>(real(sp.curve[1], 0.0)));
+   }
+   // With nothing to sustain the envelope has ended before a release.
+   if (sp.release != kNoParam && s > 0.0f &&
+       Adsr::naturalBend(s, Adsr::kReleaseTarget, Adsr::kSettle, k0)) {
+      len[2] = Adsr::kReleaseTau * rel * k0;
+      e.k[2] = Adsr::bend(k0, static_cast<float>(real(sp.curve[2], 0.0)));
+   }
+
+   const double inner = r.w - 8.0;
+   const double longest = std::log1p(60.0 / 0.005);
+   double w[3];
+   double used = 0.0;
+   for (int i = 0; i < 3; ++i) {
+      const bool there = (i == 0 && sp.attack != kNoParam) || (i == 1 && len[1] > 0.0) ||
+                         (i == 2 && len[2] > 0.0);
+      w[i] = there ? std::max(9.0, 0.27 * inner * std::log1p(len[i] / 0.005) / longest) : 0.0;
+      used += w[i];
+   }
+   e.x[0] = r.x + 4.0;
+   e.x[1] = e.x[0] + w[0];
+   e.x[2] = e.x[1] + w[1];
+   e.x[3] = e.x[2] + std::max(0.0, inner - used);
+   e.x[4] = e.x[3] + w[2];
+   e.y0 = r.y + r.h - 5.0;
+   e.yRange = r.h - 11.0;
+   return e;
 }
 
 // ------------------------------------------------------------------ the proxy
@@ -322,6 +486,11 @@ const ParamDesc *displayTable() {
          for (uint32_t m = 0; m < kNumSlotParams; ++m)
             out[slotMixId(slot, m)].name = slotParamTable()[m].name;
       }
+      // An effect's knob sits in that effect's panel: "Decay", not
+      // "Rain 1 Reverb Decay".
+      for (int ch = 0; ch < kNumFxChannels; ++ch)
+         for (uint32_t p = 0; p < kNumFxParams; ++p)
+            out[fxParamId(ch, p)].name = fxParamTable()[p].name;
       return out;
    }();
    return table.data();
@@ -405,12 +574,30 @@ private:
       kHitLayerMute,
       kHitLayerSolo,
       kHitLayerRemove,
+      // A channel strip's own controls, the master strip's included, and the
+      // envelope graph on a layer's bar. `param` says which.
+      kHitKnob,
+      kHitEnvelope,
+      kHitFilterType,
+      kHitScrollLeft,
+      kHitScrollRight,
+      // The effects: a strip's row of them or a layer bar's button, which
+      // open the effects view; and in that view, an effect's switch and the
+      // way back.
+      kHitStripFx,
+      kHitLayerFx,
+      kHitFxPower,
+      kHitFxBack,
    };
 
    struct Hit {
       HitKind kind = kHitNothing;
       int slot = -1;
-      bool operator==(const Hit &o) const { return kind == o.kind && slot == o.slot; }
+      uint32_t param = verdalis::kNoParam;
+      int segment = -1; // an envelope graph's EnvShape::Segment
+      bool operator==(const Hit &o) const {
+         return kind == o.kind && slot == o.slot && param == o.param && segment == o.segment;
+      }
       bool operator!=(const Hit &o) const { return !(*this == o); }
    };
 
@@ -420,10 +607,24 @@ private:
       Rect close;
    };
 
+   // A knob on a strip: its cell, label on top and the knob under it.
+   struct MiniKnob {
+      Rect r;
+      uint32_t id = verdalis::kNoParam;
+      const char *label = "";
+   };
+
+   enum { kKnobAttack = 0, kKnobDecay, kKnobSustain, kKnobRelease, kKnobHighpass, kKnobCutoff,
+          kKnobReso, kNumStripKnobs };
+
    struct Strip {
-      int slot;
+      int slot; // the layer, or kSceneTarget for the master strip
       Rect r;
       Rect label;
+      Rect env;
+      Rect filterType;
+      Rect fx;
+      MiniKnob knobs[kNumStripKnobs];
       Rect fader;
       Rect pan;
       Rect stereo;
@@ -462,7 +663,9 @@ private:
          if (mSaveOpen)
             closeSaveDialog();
          mAddOpen = false;
+         mTypeMenuParam = -1;
          mDrag = -1;
+         mFxChannel = -1;
       }
       mPage = page;
       mProxy.page = page;
@@ -530,7 +733,9 @@ private:
       }
       mAddTab = {x, static_cast<double>(kTabY), 32.0, static_cast<double>(kTabH)};
 
-      if (mPage < 0)
+      if (mFxChannel >= 0)
+         layoutFxView(W);
+      else if (mPage < 0)
          layoutScenePage(W, g);
       else
          layoutLayerPage(W);
@@ -583,42 +788,241 @@ private:
       addPanelRow(kScenePanels, indices, kNumScenePanels, kMargin, rowY, kMargin + W, false, rowH);
       mMeter = {mRowEndX, rowY, kMargin + W - mRowEndX, rowH};
 
-      // ---- the mixer's strips, left to right in the tabs' order
+      // ---- the mixer's strips, left to right in the tabs' order. As many as
+      // fit at a strip's narrowest; the rest are scrolled to.
       const Rect &p = mMixerPanel;
       const double top = p.y + kPanelTitleH + 6.0;
       const double h = p.h - kPanelTitleH - 6.0 - kMixPad;
       const double master = p.x + p.w - kMixPad - kMasterW;
       const double room = master - kMixPad - (p.x + kMixPad) - kAddW - 8.0;
-      mStripW = mLayers.empty()
-                   ? kStripMaxW
-                   : std::max(kStripMinW, std::min(kStripMaxW, room / mLayers.size()));
+      const int count = static_cast<int>(mLayers.size());
+      const int fit = std::max(1, static_cast<int>(std::floor(room / kStripMinW)));
+      mStripsShown = std::min(count, fit);
+      mStripFirst = std::max(0, std::min(mStripFirst, count - mStripsShown));
+      mStripW = count == 0 ? kStripMaxW
+                           : std::max(kStripMinW, std::min(kStripMaxW, room / mStripsShown));
       double x = p.x + kMixPad;
-      for (const int slot : mLayers) {
-         mStrips.push_back(stripAt(slot, x, top, mStripW, h));
+      for (int k = mStripFirst; k < mStripFirst + mStripsShown; ++k) {
+         mStrips.push_back(stripAt(mLayers[static_cast<size_t>(k)], x, top, mStripW, h));
          x += mStripW;
       }
       mAddStrip = {x + 4.0, top, kAddW, h};
-      mMaster = stripAt(-1, master, top, kMasterW, h);
+      mMaster = stripAt(kSceneTarget, master, top, kMasterW, h);
+      if (count > mStripsShown) {
+         mScrollLeft = {p.x + 70.0, p.y + 4.0, 22.0, 18.0};
+         mScrollRight = {mScrollLeft.x + mScrollLeft.w + 74.0, p.y + 4.0, 22.0, 18.0};
+      } else {
+         mScrollLeft = mScrollRight = {};
+      }
    }
 
-   // One strip's controls, top to bottom: the name, the fader, its value, pan,
+   // One strip's controls, top to bottom: the name, the envelope graph and
+   // its knobs, the filter's type and knobs, the fader and its value, pan,
    // stereo or mono, and mute and solo.
    static Strip stripAt(int slot, double x, double top, double w, double h) {
       Strip s;
       s.slot = slot;
       s.r = {x, top, w, h};
       s.label = {x + 2.0, top, w - 4.0, 34.0};
+      s.env = {x + 7.0, top + kStripEnvY, w - 14.0, kStripEnvH};
+
+      const StripParams sp = stripParams(slot);
+      const uint32_t ids[kNumStripKnobs] = {sp.attack,   sp.decay,  sp.sustain, sp.release,
+                                            sp.highpass, sp.cutoff, sp.reso};
+      static const char *const labels[kNumStripKnobs] = {"ATK", "DEC", "SUS", "REL",
+                                                         "HP",  "CUT", "RES"};
+      const double envW = (w - 12.0) / 4.0;
+      const double filterW = (w - 12.0) / 3.0;
+      for (int i = 0; i < kNumStripKnobs; ++i) {
+         MiniKnob &k = s.knobs[i];
+         k.id = ids[i];
+         k.label = labels[i];
+         k.r = i < kKnobHighpass
+                  ? Rect{x + 6.0 + i * envW, top + kStripEnvKnobsY, envW, kStripKnobH}
+                  : Rect{x + 6.0 + (i - kKnobHighpass) * filterW, top + kStripFilterKnobsY,
+                         filterW, kStripKnobH};
+      }
+      s.filterType = {x + 12.0, top + kStripTypeY, w - 24.0, 16.0};
+      s.fx = {x + 7.0, top + kStripFxY, w - 14.0, kStripFxH};
+
       const double buttonsY = top + h - kStripButtonH;
       const double stereoY = buttonsY - 8.0 - kStripButtonH;
       const double panY = stereoY - 14.0 - 10.0;
       const double faderBottom = panY - 34.0;
-      s.fader = {x + w * 0.5 - 6.0 - 4.0, top + 42.0, 12.0, faderBottom - (top + 42.0)};
+      const double faderTop = top + kStripFaderY;
+      s.fader = {x + w * 0.5 - 6.0 - 4.0, faderTop, 12.0, faderBottom - faderTop};
       s.pan = {x + 8.0, panY, w - 16.0, 10.0};
       s.stereo = {x + 6.0, stereoY, w - 12.0, kStripButtonH};
       const double bw = std::min(26.0, (w - 14.0) * 0.5);
       s.mute = {x + w * 0.5 - 2.0 - bw, buttonsY, bw, kStripButtonH};
       s.solo = {x + w * 0.5 + 2.0, buttonsY, bw, kStripButtonH};
       return s;
+   }
+
+   // ------------------------------------------------------- the effects view
+   //
+   // A channel's effects take the page below the tabs: a bar with the chain
+   // and the way back, then a panel per effect -- the suite's own panels, so
+   // every knob drags, types and resets the way every other knob does. The
+   // first row is the two that matter most, the reverb and the delay, with
+   // the channel's activity beside them; the second is the rest, in the order
+   // the chain runs them.
+
+   void openFx(int channel) {
+      closeEntry();
+      closeMenu();
+      mAddOpen = false;
+      mTypeMenuParam = -1;
+      mFxChannel = channel;
+      mSpec.theme = kTheme;
+      if (channel != kMasterFx) {
+         const WindowSpec &ts = mTypeSpecs[slotType(channel)];
+         mSpec.theme.accent = ts.theme.accent;
+         mSpec.theme.highlight = ts.theme.highlight;
+      }
+      mHover2 = {};
+      mHelp.clear();
+      buildLayout();
+      mDirty = true;
+   }
+
+   void closeFx() {
+      if (mFxChannel < 0)
+         return;
+      mFxChannel = -1;
+      closeEntry();
+      closeMenu();
+      // Back to the page's own theme and layout.
+      const int page = mPage;
+      mPage = -2;
+      showPage(page);
+   }
+
+   std::string channelName(int channel) const {
+      if (channel == kMasterFx)
+         return "SCENE";
+      char label[48];
+      std::snprintf(label, sizeof(label), "%s %d", layerType(slotType(channel)).label,
+                    slotInstance(channel) + 1);
+      upperCase(label, label, sizeof(label));
+      return label;
+   }
+
+   void layoutFxView(double W) {
+      const int ch = mFxChannel;
+      mFxIds.assign(kNumFxKinds, {});
+      mFxSpecs.clear();
+      mFxPanelKind.clear();
+      for (int k = 0; k < kNumFxKinds; ++k) {
+         const FxKindInfo &info = fxKind(k);
+         // The On switch is in the panel's title, not a knob.
+         for (uint32_t p = info.first + 1; p < info.first + info.count; ++p)
+            mFxIds[static_cast<size_t>(k)].push_back(fxParamId(ch, p));
+      }
+      auto spec = [&](int k, int cols) {
+         const auto &ids = mFxIds[static_cast<size_t>(k)];
+         mFxSpecs.push_back({kFxTitles[k], cols, 2, ids.data(), static_cast<int>(ids.size())});
+      };
+      // Sized first, so the panels below can point into the vector.
+      spec(kFxReverb, 7);
+      spec(kFxDelay, 8);
+      spec(kFxPhaser, 4);
+      spec(kFxChorus, 3);
+      spec(kFxFlanger, 3);
+      spec(kFxWidener, 2);
+      spec(kFxAutoPan, 2);
+      static const int kKinds[] = {kFxReverb, kFxDelay,   kFxPhaser, kFxChorus,
+                                   kFxFlanger, kFxWidener, kFxAutoPan};
+
+      // The bar: what this is, the chain as switches, and the way back.
+      const double barY = kPageTop;
+      mFxBack = {kMargin + W - 78.0, barY, 78.0, kBarH};
+      double cx = kMargin + 260.0;
+      for (const int k : kRunOrder) {
+         const double w = 22.0 + 7.2 * std::strlen(fxKind(k).name);
+         mFxChain[k] = {cx, barY + 5.0, w, kBarH - 10.0};
+         cx += w + 18.0;
+      }
+
+      double y = kLayerPanelsTop;
+      double rowH = 0.0;
+      const int first[2] = {0, 1};
+      addPanelRow(mFxSpecs.data(), first, 2, kMargin, y, kMargin + W, false, rowH);
+      mMeter = {mRowEndX, y, kMargin + W - mRowEndX, rowH};
+      for (int i = 0; i < 2; ++i)
+         mFxPanelKind.push_back(kKinds[i]);
+      y += rowH + kGap;
+      const int second[5] = {2, 3, 4, 5, 6};
+      addPanelRow(mFxSpecs.data(), second, 5, kMargin, y, kMargin + W, true, rowH);
+      for (int i = 2; i < 7; ++i)
+         mFxPanelKind.push_back(kKinds[i]);
+      for (size_t i = 0; i < mPanels.size(); ++i) {
+         const Rect &r = mPanels[i].rect;
+         mFxPower[mFxPanelKind[i]] = {r.x + r.w - kPanelPad - 44.0, r.y + 5.0, 44.0, 16.0};
+      }
+   }
+
+   bool fxOn(int channel, int kind) const {
+      return mDelegate.guiParamValue(fxParamId(channel, fxKind(kind).first)) >= 0.5;
+   }
+
+   void toggleFx(int channel, int kind) {
+      const uint32_t id = fxParamId(channel, fxKind(kind).first);
+      setParamNow(id, fxOn(channel, kind) ? 0.0 : 1.0);
+   }
+
+   void drawFxView(cairo_t *cr) {
+      const Theme &th = mSpec.theme;
+      const int ch = mFxChannel;
+      // The bar.
+      setColor(cr, th.textMute);
+      drawText(cr, kMargin, kPageTop + 21, "EFFECTS", 9, true, Align::Left);
+      setColor(cr, th.accent);
+      drawText(cr, kMargin + 66, kPageTop + 21, channelName(ch).c_str(), 12, true, Align::Left);
+      setColor(cr, th.textMute);
+      drawText(cr, kMargin + 250, kPageTop + 21, "CHAIN", 8.5, true, Align::Right);
+      bool firstBox = true;
+      for (const int k : kRunOrder) {
+         const Rect &r = mFxChain[k];
+         if (!firstBox) {
+            setColor(cr, th.textMute);
+            drawTriangle(cr, r.x - 9.0, r.y + r.h * 0.5, 6, 1);
+         }
+         firstBox = false;
+         const bool on = fxOn(ch, k);
+         const bool hot = mHover2.kind == kHitFxPower && mHover2.segment == k;
+         char label[32];
+         upperCase(fxKind(k).name, label, sizeof(label));
+         drawToggle(cr, r, label, on, hot, th.accent);
+      }
+      const bool backHot = mHover2.kind == kHitFxBack;
+      drawBarButton(cr, mFxBack, backHot);
+      setColor(cr, backHot ? th.accent : th.textDim);
+      drawText(cr, mFxBack.x + mFxBack.w * 0.5, mFxBack.y + 20, "BACK", 10, true, Align::Center);
+
+      // Each effect's switch, in its panel's title.
+      for (size_t i = 0; i < mPanels.size(); ++i) {
+         const int k = mFxPanelKind[i];
+         const bool on = fxOn(ch, k);
+         const bool hot = mHover2.kind == kHitFxPower && mHover2.segment == k;
+         drawToggle(cr, mFxPower[k], on ? "ON" : "OFF", on, hot, th.accent);
+      }
+   }
+
+   // A switched-off effect's panel is drawn faded: its settings are kept and
+   // can be changed, but nothing of it is heard.
+   void drawFxPanels(cairo_t *cr) {
+      for (size_t i = 0; i < mPanels.size(); ++i) {
+         const bool on = fxOn(mFxChannel, mFxPanelKind[i]);
+         if (on) {
+            drawPanel(cr, mPanels[i]);
+            continue;
+         }
+         cairo_push_group(cr);
+         drawPanel(cr, mPanels[i]);
+         cairo_pop_group_to_source(cr);
+         cairo_paint_with_alpha(cr, 0.45);
+      }
    }
 
    void layoutLayerPage(double W) {
@@ -667,6 +1071,9 @@ private:
       mLayerName = {mLayerPrev.x + 30, barY, 260, kBarH};
       mLayerNext = {mLayerName.x + mLayerName.w + 4, barY, 26, kBarH};
       mLayerSave = {mLayerNext.x + mLayerNext.w + 14, barY, 58, kBarH};
+      // The layer's envelope, bent where it is grabbed, as on its strip.
+      mLayerEnv = {mLayerSave.x + mLayerSave.w + 74, barY + 1, 156, kBarH - 2.0};
+      mLayerFx = {mLayerEnv.x + mLayerEnv.w + 14, barY, 54, kBarH};
 
       double right = kMargin + W;
       mLayerRemove = {right - 78.0, barY, 78.0, kBarH};
@@ -695,13 +1102,19 @@ private:
       drawBackground(cr);
       drawHeader(cr);
       drawTabs(cr);
-      for (const Panel &p : mPanels)
-         drawPanel(cr, p);
-      drawMeter(cr);
-      if (mPage < 0)
-         drawSceneMixer(cr);
-      else
-         drawLayerBar(cr);
+      if (mFxChannel >= 0) {
+         drawFxPanels(cr);
+         drawMeter(cr);
+         drawFxView(cr);
+      } else {
+         for (const Panel &p : mPanels)
+            drawPanel(cr, p);
+         drawMeter(cr);
+         if (mPage < 0)
+            drawSceneMixer(cr);
+         else
+            drawLayerBar(cr);
+      }
 
       // The bottom bar is always the scene's, whatever the overlays are about.
       const int keep = mProxy.target;
@@ -725,6 +1138,8 @@ private:
          drawMenu(cr);
       if (mAddOpen)
          drawAddMenu(cr);
+      if (mTypeMenuParam >= 0)
+         drawTypeMenu(cr);
       if (mSaveOpen)
          drawSaveDialog(cr);
    }
@@ -734,8 +1149,10 @@ private:
       drawText(cr, kMargin, mHelpY + kHelpH - 8, mHelp.c_str(), 10, false, Align::Left);
    }
 
-   // A slider of this window's own has no value printed beside it, so the help
-   // line says what it is set to while it is under the pointer or in the hand.
+   // A slider or knob of this window's own has no value printed beside it, so
+   // the help line says what it is set to while it is under the pointer or in
+   // the hand. A segment of an envelope graph says how to bend it instead of
+   // repeating its parameter's tip.
    void drawSliderHelp(cairo_t *cr, uint32_t id) {
       const ParamDesc &d = mSpec.params[id];
       char value[64];
@@ -747,7 +1164,8 @@ private:
       drawText(cr, kMargin, mHelpY + kHelpH - 8, head, 10, true, Align::Left);
       const double w = textWidth(cr, head, 10, true);
       setColor(cr, mSpec.theme.textMute);
-      drawText(cr, kMargin + w + 14, mHelpY + kHelpH - 8, d.tip, 10, false, Align::Left);
+      const char *tip = mHover2.kind == kHitEnvelope && !mHelp.empty() ? mHelp.c_str() : d.tip;
+      drawText(cr, kMargin + w + 14, mHelpY + kHelpH - 8, tip, 10, false, Align::Left);
    }
 
    const char *saveTitle() const override {
@@ -874,6 +1292,195 @@ private:
       }
    }
 
+   // ------------------------------------------------------- channel strips
+
+   static bool isStripKind(HitKind k) {
+      return (k >= kHitStripLabel && k <= kHitStripSolo) || k == kHitKnob || k == kHitEnvelope ||
+             k == kHitFilterType;
+   }
+
+   // The envelope, filled under its curve. The segment under the pointer, or in
+   // the hand, is drawn brighter with a handle at its middle: that is the one a
+   // drag bends.
+   void drawEnvelope(cairo_t *cr, const Rect &r, int slot, bool live) {
+      const Theme &th = mSpec.theme;
+      setColor(cr, th.knobFace);
+      roundedRect(cr, r.x, r.y, r.w, r.h, 3);
+      cairo_fill(cr);
+
+      const StripParams sp = stripParams(slot);
+      const EnvShape e = envShape(mSpec.params, mDelegate, sp, r);
+      setColor(cr, th.track, 0.7);
+      cairo_set_line_width(cr, 1.0);
+      cairo_move_to(cr, r.x + 3.0, std::floor(e.y0) + 0.5);
+      cairo_line_to(cr, r.x + r.w - 3.0, std::floor(e.y0) + 0.5);
+      cairo_stroke(cr);
+
+      auto traceSegment = [&](int seg) {
+         const int steps = seg == EnvShape::kSustain ? 1 : 28;
+         for (int j = 1; j <= steps; ++j) {
+            const double p = static_cast<double>(j) / steps;
+            cairo_line_to(cr, e.x[seg] + (e.x[seg + 1] - e.x[seg]) * p, e.yOf(e.level(seg, p)));
+         }
+      };
+      auto trace = [&]() {
+         cairo_new_path(cr);
+         cairo_move_to(cr, e.x[0], e.yOf(0.0));
+         for (int seg = 0; seg < EnvShape::kNumSegments; ++seg)
+            traceSegment(seg);
+      };
+      const Rgb &c = live ? th.accent : th.textMute;
+      trace();
+      cairo_line_to(cr, e.x[EnvShape::kNumSegments], e.y0);
+      cairo_close_path(cr);
+      setColor(cr, c, 0.16);
+      cairo_fill(cr);
+      trace();
+      setColor(cr, c, live ? 0.9 : 0.5);
+      cairo_set_line_width(cr, 1.4);
+      cairo_stroke(cr);
+
+      if (mHover2.kind != kHitEnvelope || mHover2.slot != slot || mHover2.segment < 0)
+         return;
+      const int seg = mHover2.segment;
+      cairo_new_path(cr);
+      cairo_move_to(cr, e.x[seg], e.yOf(e.level(seg, 0.0)));
+      traceSegment(seg);
+      setColor(cr, th.text, 0.95);
+      cairo_set_line_width(cr, 2.2);
+      cairo_stroke(cr);
+      const double mx = 0.5 * (e.x[seg] + e.x[seg + 1]);
+      const double my = e.yOf(e.level(seg, 0.5));
+      setColor(cr, th.knobFace);
+      cairo_arc(cr, mx, my, 3.6, 0, 2 * M_PI);
+      cairo_fill_preserve(cr);
+      setColor(cr, c);
+      cairo_set_line_width(cr, 1.4);
+      cairo_stroke(cr);
+   }
+
+   // A strip's knob: smaller than a panel's and without a value under it --
+   // the help line says what it is set to while it is under the pointer.
+   void drawMiniKnob(cairo_t *cr, const MiniKnob &k, bool hot, bool live) {
+      const Theme &th = mSpec.theme;
+      const double cx = k.r.x + k.r.w * 0.5;
+      const double cy = k.r.y + 22.0;
+      const bool absent = k.id == verdalis::kNoParam;
+      setColor(cr, hot ? th.text : th.textDim, absent ? 0.35 : (live ? 1.0 : 0.6));
+      drawText(cr, cx, k.r.y + 8.0, k.label, 7.0, true, Align::Center);
+      if (absent) {
+         setColor(cr, th.panelEdge);
+         cairo_set_line_width(cr, 1.0);
+         cairo_new_path(cr);
+         cairo_arc(cr, cx, cy, kMiniKnobR - 3.5, 0, 2 * M_PI);
+         cairo_stroke(cr);
+         return;
+      }
+      const ParamDesc &d = mSpec.params[k.id];
+      const double t = normalised(d, mDelegate.guiParamValue(k.id));
+      setColor(cr, th.track);
+      cairo_set_line_width(cr, 2.4);
+      cairo_new_path(cr);
+      cairo_arc(cr, cx, cy, kMiniKnobR, verdalis::kArcStart, verdalis::kArcStart + verdalis::kArcSweep);
+      cairo_stroke(cr);
+      const double from = verdalis::isBipolar(d) ? verdalis::kArcStart + verdalis::kArcSweep * 0.5
+                                                 : verdalis::kArcStart;
+      const double to = verdalis::kArcStart + verdalis::kArcSweep * t;
+      setColor(cr, live ? th.accent : th.textMute);
+      cairo_new_path(cr);
+      if (to >= from)
+         cairo_arc(cr, cx, cy, kMiniKnobR, from, to);
+      else
+         cairo_arc_negative(cr, cx, cy, kMiniKnobR, from, to);
+      cairo_stroke(cr);
+      setColor(cr, th.knobFace);
+      cairo_new_path(cr);
+      cairo_arc(cr, cx, cy, kMiniKnobR - 3.5, 0, 2 * M_PI);
+      cairo_fill_preserve(cr);
+      setColor(cr, hot ? th.accent : th.panelEdge, hot ? 0.7 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      setColor(cr, th.text);
+      cairo_set_line_width(cr, 1.6);
+      cairo_move_to(cr, cx + std::cos(to) * 1.5, cy + std::sin(to) * 1.5);
+      cairo_line_to(cr, cx + std::cos(to) * (kMiniKnobR - 4.5), cy + std::sin(to) * (kMiniKnobR - 4.5));
+      cairo_stroke(cr);
+   }
+
+   void drawTypeChip(cairo_t *cr, const Rect &r, uint32_t id, bool hot, bool live) {
+      if (id == verdalis::kNoParam)
+         return;
+      const Theme &th = mSpec.theme;
+      setColor(cr, th.knobFace);
+      roundedRect(cr, r.x, r.y, r.w, r.h, 3);
+      cairo_fill_preserve(cr);
+      setColor(cr, hot ? th.accent : th.panelEdge, hot ? 0.7 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      char text[64];
+      if (!paramValueToText(mSpec.params[id], mDelegate.guiParamValue(id), text, sizeof(text)))
+         std::snprintf(text, sizeof(text), "--");
+      setColor(cr, th.text, live ? 0.9 : 0.55);
+      drawText(cr, r.x + (r.w - 10.0) * 0.5, r.y + 12.0, text, 8.5, false, Align::Center);
+      setColor(cr, th.textMute);
+      drawTriangle(cr, r.x + r.w - 8.0, r.y + r.h * 0.5, 6, 0);
+   }
+
+   // Everything above the fader, the same on every strip: the envelope and
+   // its knobs, the filter's type and its knobs.
+   void drawChannelTop(cairo_t *cr, const Strip &s, bool live) {
+      const Theme &th = mSpec.theme;
+      drawEnvelope(cr, s.env, s.slot, live);
+      for (const MiniKnob &k : s.knobs) {
+         const bool hot = k.id != verdalis::kNoParam &&
+                          ((mHover2.kind == kHitKnob && mHover2.param == k.id) ||
+                           mDrag == static_cast<int>(k.id));
+         drawMiniKnob(cr, k, hot, live);
+      }
+      const uint32_t type = stripParams(s.slot).filterType;
+      const bool typeHot = type != verdalis::kNoParam &&
+                           ((mHover2.kind == kHitFilterType && mHover2.param == type) ||
+                            mTypeMenuParam == static_cast<int>(type));
+      setColor(cr, th.panelEdge);
+      cairo_set_line_width(cr, 1.0);
+      cairo_move_to(cr, s.r.x + 12.0, std::floor(s.filterType.y - 6.0) + 0.5);
+      cairo_line_to(cr, s.r.x + s.r.w - 12.0, std::floor(s.filterType.y - 6.0) + 0.5);
+      cairo_move_to(cr, s.r.x + 12.0, std::floor(s.fader.y - 8.0) + 0.5);
+      cairo_line_to(cr, s.r.x + s.r.w - 12.0, std::floor(s.fader.y - 8.0) + 0.5);
+      cairo_stroke(cr);
+      drawTypeChip(cr, s.filterType, type, typeHot, live);
+      drawFxRow(cr, s, live);
+   }
+
+   // One letter per effect, lit when it is on, in the order of the effects
+   // view. The whole row opens that view.
+   void drawFxRow(cairo_t *cr, const Strip &s, bool live) {
+      const Theme &th = mSpec.theme;
+      const int ch = s.slot < 0 ? kMasterFx : s.slot;
+      const bool hot = mHover2.kind == kHitStripFx && mHover2.slot == s.slot;
+      setColor(cr, th.knobFace);
+      roundedRect(cr, s.fx.x, s.fx.y, s.fx.w, s.fx.h, 3);
+      cairo_fill_preserve(cr);
+      setColor(cr, hot ? th.accent : th.panelEdge, hot ? 0.8 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      const double cell = s.fx.w / kNumFxKinds;
+      for (int i = 0; i < kNumFxKinds; ++i) {
+         const int k = kRunOrderDisplay[i];
+         const bool on = fxOn(ch, k);
+         const double cx = s.fx.x + cell * (i + 0.5);
+         if (on) {
+            setColor(cr, th.accent, live ? 0.85 : 0.4);
+            roundedRect(cr, cx - cell * 0.5 + 1.5, s.fx.y + 2.0, cell - 3.0, s.fx.h - 4.0, 2);
+            cairo_fill(cr);
+            setColor(cr, th.bgBottom);
+         } else {
+            setColor(cr, hot ? th.textDim : th.textMute, 0.8);
+         }
+         drawText(cr, cx, s.fx.y + 11.5, fxKind(k).letter, 7.5, true, Align::Center);
+      }
+   }
+
    void drawSceneMixer(cairo_t *cr) {
       const Theme &th = mSpec.theme;
       const Rect &p = mMixerPanel;
@@ -886,14 +1493,45 @@ private:
       setColor(cr, th.accent, 0.85);
       drawText(cr, p.x + kPanelPad + 2, p.y + 16, "MIXER", 10, true, Align::Left);
 
+      if (mScrollLeft.w > 0.0) {
+         const bool canLeft = mStripFirst > 0;
+         const bool canRight = mStripFirst + mStripsShown < static_cast<int>(mLayers.size());
+         drawBarButton(cr, mScrollLeft, canLeft && mHover2.kind == kHitScrollLeft);
+         setColor(cr, canLeft ? (mHover2.kind == kHitScrollLeft ? th.accent : th.textDim)
+                              : th.panelEdge);
+         drawTriangle(cr, mScrollLeft.x + mScrollLeft.w * 0.5, mScrollLeft.y + mScrollLeft.h * 0.5,
+                      7, -1);
+         drawBarButton(cr, mScrollRight, canRight && mHover2.kind == kHitScrollRight);
+         setColor(cr, canRight ? (mHover2.kind == kHitScrollRight ? th.accent : th.textDim)
+                               : th.panelEdge);
+         drawTriangle(cr, mScrollRight.x + mScrollRight.w * 0.5,
+                      mScrollRight.y + mScrollRight.h * 0.5, 7, 1);
+         char range[48];
+         std::snprintf(range, sizeof(range), "%d-%d of %d", mStripFirst + 1,
+                       mStripFirst + mStripsShown, static_cast<int>(mLayers.size()));
+         setColor(cr, th.textDim);
+         drawText(cr, 0.5 * (mScrollLeft.x + mScrollLeft.w + mScrollRight.x), p.y + 17, range, 9,
+                  false, Align::Center);
+      }
+
       bool holds = false;
       for (const int s : mLayers)
          holds = holds || mScene.layerMuted(s) || mScene.layerSoloed(s);
-      setColor(cr, th.textMute);
-      drawText(cr, p.x + p.w - kPanelPad - 2, p.y + 16,
-               holds ? "M and S are not saved with the scene"
-                     : "One strip per layer. Click a name to open the layer.",
-               9, false, Align::Right);
+      const int gate = static_cast<int>(std::floor(mDelegate.guiParamValue(kParamGate) + 0.5));
+      const char *note = holds ? "M and S are not saved with the scene"
+                               : "One strip per layer. Click a name to open the layer.";
+      bool waiting = false;
+      if (!holds && !mLayers.empty() && !mScene.sceneGateOpen()) {
+         if (gate == kGateNotes) {
+            note = "Hold a key to play the scene.";
+            waiting = true;
+         } else if (gate == kGateTransport) {
+            note = "Start the host's transport to play the scene.";
+            waiting = true;
+         }
+      }
+      setColor(cr, waiting ? kTheme.accent : th.textMute);
+      drawText(cr, p.x + p.w - kPanelPad - 2, p.y + 16, note, 9, waiting, Align::Right);
 
       for (const Strip &s : mStrips)
          drawStrip(cr, s);
@@ -919,8 +1557,7 @@ private:
       const Theme &th = mSpec.theme;
       const int type = slotType(s.slot);
       const Rgb accent = accentOf(type);
-      const bool hovered = mHover2.slot == s.slot && mHover2.kind >= kHitStripLabel &&
-                           mHover2.kind <= kHitStripSolo;
+      const bool hovered = mHover2.slot == s.slot && isStripKind(mHover2.kind);
       const bool muted = mScene.layerMuted(s.slot);
       bool anySolo = false;
       for (const int sl : mLayers)
@@ -955,6 +1592,8 @@ private:
                   8.0, false, Align::Center);
       }
       cairo_restore(cr);
+
+      drawChannelTop(cr, s, live);
 
       const uint32_t level = slotMixId(s.slot, kSlotLevel);
       const ParamDesc &ld = mSpec.params[level];
@@ -1016,6 +1655,8 @@ private:
       drawText(cr, r.x + r.w * 0.5, r.y + r.h * 0.5 + 16, "ADD", 9, true, Align::Center);
    }
 
+   // The scene's own strip, the same shape as a layer's: its envelope and
+   // filter, its output gain and width, and a light for its gate.
    void drawMasterStrip(cairo_t *cr) {
       const Theme &th = mSpec.theme;
       const Strip &s = mMaster;
@@ -1025,18 +1666,27 @@ private:
       cairo_line_to(cr, s.r.x - 8.5, s.r.y + s.r.h);
       cairo_stroke(cr);
 
+      const bool hovered = mHover2.slot == kSceneTarget &&
+                           (isStripKind(mHover2.kind) || mHover2.kind == kHitMasterFader ||
+                            mHover2.kind == kHitMasterWidth);
       setColor(cr, kTheme.accent, 0.9);
       cairo_rectangle(cr, s.r.x + 6, s.r.y, s.r.w - 12, 2.5);
       cairo_fill(cr);
-      setColor(cr, mHover2.kind == kHitMasterFader || mHover2.kind == kHitMasterWidth
-                      ? th.text
-                      : th.textDim);
+      setColor(cr, hovered ? th.text : th.textDim);
       drawText(cr, s.r.x + s.r.w * 0.5, s.r.y + 17, "SCENE", 9.0, true, Align::Center);
+      char gateText[48];
+      if (!paramValueToText(mSpec.params[kParamGate], mDelegate.guiParamValue(kParamGate),
+                            gateText, sizeof(gateText)))
+         std::snprintf(gateText, sizeof(gateText), "--");
+      char sub[64];
+      std::snprintf(sub, sizeof(sub), "gate: %s", gateText);
       setColor(cr, th.textMute);
-      drawText(cr, s.r.x + s.r.w * 0.5, s.r.y + 30, "output", 8.0, false, Align::Center);
+      drawText(cr, s.r.x + s.r.w * 0.5, s.r.y + 30, sub, 8.0, false, Align::Center);
 
       const Rgb keep = mSpec.theme.accent;
       mSpec.theme.accent = kTheme.accent;
+      drawChannelTop(cr, s, true);
+
       const ParamDesc &gd = mSpec.params[kParamGain];
       const double gain = mDelegate.guiParamValue(kParamGain);
       drawFader(cr, s.fader, normalised(gd, gain), mHover2.kind == kHitMasterFader, true);
@@ -1053,7 +1703,78 @@ private:
                  mHover2.kind == kHitMasterWidth, true);
       setColor(cr, th.textMute);
       drawText(cr, s.r.x + s.r.w * 0.5, s.stereo.y + 13, "WIDTH", 8.0, true, Align::Center);
+
+      // Lit while the gate is open: with the gate on Notes, an unlit light and
+      // silence mean no key is down, not that something is broken.
+      const bool open = mScene.sceneGateOpen();
+      const Rect led = {s.mute.x, s.mute.y, s.solo.x + s.solo.w - s.mute.x, s.mute.h};
+      drawMixerButton(cr, led, "GATE", open, false, kTheme.accent);
       mSpec.theme.accent = keep;
+   }
+
+   // A filter type's list, opened from a strip's chip.
+   Rect typeMenuPanel() const {
+      const ParamDesc &d = mSpec.params[mTypeMenuParam];
+      Rect r;
+      r.w = std::max(mTypeMenuAnchor.w, 96.0);
+      r.h = d.enumCount * kMenuRowH + 2 * kMenuPad;
+      r.x = mTypeMenuAnchor.x + (mTypeMenuAnchor.w - r.w) * 0.5;
+      r.y = mTypeMenuAnchor.y + mTypeMenuAnchor.h + 3.0;
+      if (r.y + r.h > geometry().windowH - 8)
+         r.y = mTypeMenuAnchor.y - 3.0 - r.h;
+      r.x = std::min(r.x, kMargin + geometry().contentW - r.w);
+      return r;
+   }
+
+   Rect typeMenuRow(int i) const {
+      const Rect p = typeMenuPanel();
+      return {p.x + kMenuPad, p.y + kMenuPad + i * kMenuRowH, p.w - 2 * kMenuPad, kMenuRowH};
+   }
+
+   int typeMenuRowAt(double x, double y) const {
+      if (mTypeMenuParam < 0)
+         return -1;
+      for (uint32_t i = 0; i < mSpec.params[mTypeMenuParam].enumCount; ++i)
+         if (typeMenuRow(static_cast<int>(i)).contains(x, y))
+            return static_cast<int>(i);
+      return -1;
+   }
+
+   void drawTypeMenu(cairo_t *cr) {
+      const Theme &th = mSpec.theme;
+      const ParamDesc &d = mSpec.params[mTypeMenuParam];
+      const Rect p = typeMenuPanel();
+      setColor(cr, th.panelFill);
+      roundedRect(cr, p.x, p.y, p.w, p.h, 5);
+      cairo_fill_preserve(cr);
+      setColor(cr, mTypeMenuAccent, 0.5);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      const int cur = static_cast<int>(
+         std::floor(mDelegate.guiParamValue(static_cast<uint32_t>(mTypeMenuParam)) + 0.5));
+      for (int i = 0; i < static_cast<int>(d.enumCount); ++i) {
+         const Rect r = typeMenuRow(i);
+         const bool hot = mTypeMenuHover == i;
+         const bool sel = cur == i;
+         if (hot || sel) {
+            setColor(cr, mTypeMenuAccent, hot ? 0.20 : 0.10);
+            roundedRect(cr, r.x, r.y, r.w, r.h, 3);
+            cairo_fill(cr);
+         }
+         setColor(cr, sel ? mTypeMenuAccent : th.text, hot ? 1.0 : 0.85);
+         drawText(cr, r.x + 8, r.y + r.h * 0.5 + 4, d.enumNames[i], 10, sel, Align::Left);
+      }
+   }
+
+   void openTypeMenu(uint32_t id, const Rect &anchor, const Rgb &accent) {
+      closeEntry();
+      closeMenu();
+      mAddOpen = false;
+      mTypeMenuParam = static_cast<int>(id);
+      mTypeMenuAnchor = anchor;
+      mTypeMenuAccent = accent;
+      mTypeMenuHover = -1;
+      mDirty = true;
    }
 
    void drawBarButton(cairo_t *cr, const Rect &r, bool hot) {
@@ -1117,6 +1838,21 @@ private:
       for (const int s : mLayers)
          anySolo = anySolo || mScene.layerSoloed(s);
       const bool live = anySolo ? mScene.layerSoloed(slot) : !muted;
+
+      sliderLabel(mLayerEnv, "SHAPE");
+      drawEnvelope(cr, mLayerEnv, slot, live);
+      {
+         const bool fxHot = mHover2.kind == kHitLayerFx;
+         int count = 0;
+         for (int k = 0; k < kNumFxKinds; ++k)
+            count += fxOn(slot, k) ? 1 : 0;
+         drawBarButton(cr, mLayerFx, fxHot);
+         char fxText[16];
+         std::snprintf(fxText, sizeof(fxText), count ? "FX %d" : "FX", count);
+         setColor(cr, fxHot || count ? th.accent : th.textDim);
+         drawText(cr, mLayerFx.x + mLayerFx.w * 0.5, mLayerFx.y + 20, fxText, 10, true,
+                  Align::Center);
+      }
 
       const uint32_t level = slotMixId(slot, kSlotLevel);
       sliderLabel(mLayerLevel, "LEVEL");
@@ -1218,6 +1954,7 @@ private:
    void openAddMenu(const Rect &anchor, bool fromTab) {
       closeEntry();
       closeMenu();
+      mTypeMenuParam = -1;
       mAddOpen = true;
       mAddFromTab = fromTab;
       mAddAnchor = anchor;
@@ -1261,10 +1998,26 @@ private:
       if (mAddTab.contains(x, y))
          return {kHitAddTab, -1};
 
+      if (mFxChannel >= 0) {
+         if (mFxBack.contains(x, y))
+            return {kHitFxBack, -1};
+         for (int k = 0; k < kNumFxKinds; ++k)
+            if (mFxChain[k].contains(x, y) || mFxPower[k].contains(x, y))
+               return {kHitFxPower, -1, fxParamId(mFxChannel, fxKind(k).first), k};
+         return {};
+      }
+
       if (mPage < 0) {
+         if (mScrollLeft.w > 0.0 && mScrollLeft.contains(x, y))
+            return {kHitScrollLeft, -1};
+         if (mScrollRight.w > 0.0 && mScrollRight.contains(x, y))
+            return {kHitScrollRight, -1};
          for (const Strip &s : mStrips) {
             if (!s.r.contains(x, y))
                continue;
+            const Hit own = channelHit(s, x, y);
+            if (own.kind != kHitNothing)
+               return own;
             Rect grab = s.fader;
             grab.x -= 6.0;
             grab.w += 12.0;
@@ -1284,6 +2037,11 @@ private:
          }
          if (mAddStrip.contains(x, y))
             return {kHitAddStrip, -1};
+         if (mMaster.r.contains(x, y)) {
+            const Hit own = channelHit(mMaster, x, y);
+            if (own.kind != kHitNothing)
+               return own;
+         }
          Rect grab = mMaster.fader;
          grab.x -= 6.0;
          grab.w += 12.0;
@@ -1308,6 +2066,10 @@ private:
          return {kHitLayerNext, slot};
       if (mLayerSave.contains(x, y))
          return {kHitLayerSave, slot};
+      if (mLayerEnv.contains(x, y))
+         return envelopeHit(mLayerEnv, slot, x);
+      if (mLayerFx.contains(x, y))
+         return {kHitLayerFx, slot};
       if (widen(mLayerLevel).contains(x, y))
          return {kHitLayerLevel, slot};
       if (widen(mLayerPan).contains(x, y))
@@ -1325,9 +2087,56 @@ private:
       return {};
    }
 
+   // What a click on a strip's envelope, knobs or filter chip lands on.
+   Hit channelHit(const Strip &s, double x, double y) const {
+      if (s.env.contains(x, y))
+         return envelopeHit(s.env, s.slot, x);
+      if (s.fx.contains(x, y))
+         return {kHitStripFx, s.slot};
+      for (const MiniKnob &k : s.knobs)
+         if (k.id != verdalis::kNoParam && k.r.contains(x, y))
+            return {kHitKnob, s.slot, k.id};
+      const uint32_t type = stripParams(s.slot).filterType;
+      if (type != verdalis::kNoParam && s.filterType.contains(x, y))
+         return {kHitFilterType, s.slot, type};
+      return {};
+   }
+
+   // The segment of an envelope graph under x: a stage's curve, or on the
+   // plateau the sustain level.
+   Hit envelopeHit(const Rect &r, int slot, double x) const {
+      const StripParams sp = stripParams(slot);
+      const EnvShape e = envShape(mSpec.params, mDelegate, sp, r);
+      int seg = EnvShape::kSustain;
+      for (int i = 0; i < EnvShape::kNumSegments; ++i) {
+         if (e.x[i + 1] > e.x[i] && x <= e.x[i + 1]) {
+            seg = i;
+            break;
+         }
+         if (i == EnvShape::kRelease && e.x[i + 1] > e.x[i])
+            seg = i; // past the end: the release is the last thing there
+      }
+      const uint32_t ids[EnvShape::kNumSegments] = {sp.curve[0], sp.curve[1], sp.sustain,
+                                                    sp.curve[2]};
+      if (ids[seg] == verdalis::kNoParam)
+         return {};
+      return {kHitEnvelope, slot, ids[seg], seg};
+   }
+
+   // Which way a drag on a graph segment moves its parameter, so the segment
+   // follows the hand: up bows a rising attack up by bending it towards +, but
+   // bows a falling decay or release up by bending it towards -.
+   static int envelopeSign(int segment) {
+      return segment == EnvShape::kDecay || segment == EnvShape::kRelease ? -1 : 1;
+   }
+
    // The parameter a hit drags or nudges, or kNoParam.
    static uint32_t hitParam(const Hit &h) {
       switch (h.kind) {
+      case kHitKnob:
+      case kHitEnvelope:
+      case kHitFilterType:
+         return h.param;
       case kHitStripFader:
       case kHitLayerLevel:
          return slotMixId(h.slot, kSlotLevel);
@@ -1414,6 +2223,30 @@ private:
          return std::string("Save this layer as a ") + layerType(slotType(h.slot)).pluginName +
                 " preset. It appears in " + layerType(slotType(h.slot)).pluginName +
                 " itself too.";
+      case kHitEnvelope:
+         return h.segment == EnvShape::kSustain
+                   ? "Drag up or down to set the level held while the gate is open."
+                   : "Drag up or down to bend this stage. Double-click puts back its natural "
+                     "shape.";
+      case kHitStripFx:
+      case kHitLayerFx: {
+         const int ch = h.slot < 0 ? kMasterFx : h.slot;
+         std::string on;
+         for (const int k : kRunOrder)
+            if (fxOn(ch, k))
+               on += std::string(on.empty() ? "" : ", ") + fxKind(k).name;
+         const std::string who = ch == kMasterFx ? "the whole scene" : "this layer";
+         return on.empty() ? "No effects on " + who + ". Click to open them."
+                           : "Effects on " + who + ": " + on + ". Click to open them.";
+      }
+      case kHitFxPower:
+         return std::string("Switch the ") + fxKind(h.segment).name +
+                " on or off. Its settings are kept either way.";
+      case kHitFxBack:
+         return mPage < 0 ? "Back to the mixer." : "Back to the layer's own controls.";
+      case kHitScrollLeft:
+      case kHitScrollRight:
+         return "More layers than fit: scroll the mixer. The wheel over a name does too.";
       default:
          return {};
       }
@@ -1434,8 +2267,9 @@ private:
    }
 
    void onOverlayKey(KeyCommand cmd) override {
-      if (mAddOpen) {
+      if (mAddOpen || mTypeMenuParam >= 0) {
          mAddOpen = false;
+         mTypeMenuParam = -1;
          mDirty = true;
          return;
       }
@@ -1449,6 +2283,8 @@ private:
       const double x = px / mScale;
       const double y = py / mScale;
       settleOverlayTarget();
+      // Whatever is pressed now is not a graph segment until it says so.
+      mEnvSign = 0;
 
       if (mEntryParam >= 0) {
          const bool inside =
@@ -1462,6 +2298,23 @@ private:
       if (baseOverlayOpen()) {
          PluginWindow::onPointerDown(px, py, button, timeMs, shift);
          settleOverlayTarget();
+         return;
+      }
+
+      if (mTypeMenuParam >= 0) {
+         const uint32_t id = static_cast<uint32_t>(mTypeMenuParam);
+         if (button == verdalis::kWheelUp || button == verdalis::kWheelDown) {
+            nudge(id, button == verdalis::kWheelUp ? -1 : 1, false);
+            return;
+         }
+         if (button == verdalis::kButtonLeft) {
+            const int row = typeMenuRowAt(x, y);
+            if (row >= 0)
+               setParamNow(id, static_cast<double>(row));
+            if (row >= 0 || !typeMenuPanel().contains(x, y))
+               mTypeMenuParam = -1;
+         }
+         mDirty = true;
          return;
       }
 
@@ -1493,10 +2346,35 @@ private:
 
    void onOwnDown(const Hit &h, double x, double y, unsigned button, unsigned long timeMs,
                   bool shift) {
+      const bool wheel = button == verdalis::kWheelUp || button == verdalis::kWheelDown;
+      if (h.kind == kHitScrollLeft || h.kind == kHitScrollRight ||
+          (wheel && h.kind == kHitStripLabel)) {
+         const bool left = h.kind == kHitScrollLeft ||
+                           (h.kind == kHitStripLabel && button == verdalis::kWheelUp);
+         if (button == verdalis::kButtonLeft || wheel) {
+            mStripFirst += left ? -1 : 1;
+            buildLayout();
+         }
+         return;
+      }
+      if (h.kind == kHitFilterType) {
+         if (wheel) {
+            nudge(h.param, button == verdalis::kWheelUp ? 1 : -1, false);
+         } else if (button == verdalis::kButtonRight) {
+            setParamNow(h.param, mSpec.params[h.param].def);
+         } else if (button == verdalis::kButtonLeft) {
+            const Strip *st = h.slot == kSceneTarget ? &mMaster : stripFor(h.slot);
+            if (st)
+               openTypeMenu(h.param, st->filterType,
+                            h.slot == kSceneTarget ? kTheme.accent : accentOf(slotType(h.slot)));
+         }
+         return;
+      }
       const uint32_t id = hitParam(h);
       if (id != verdalis::kNoParam) {
-         if (button == verdalis::kWheelUp || button == verdalis::kWheelDown) {
-            nudge(id, button == verdalis::kWheelUp ? 1 : -1, shift);
+         if (wheel) {
+            const int sign = h.kind == kHitEnvelope ? envelopeSign(h.segment) : 1;
+            nudge(id, (button == verdalis::kWheelUp ? 1 : -1) * sign, shift);
             return;
          }
          const bool doubleClick = button == verdalis::kButtonLeft &&
@@ -1514,12 +2392,19 @@ private:
          const Rect track = hitTrack(h);
          const ParamDesc &d = mSpec.params[id];
          mDrag = static_cast<int>(id);
-         mDragHoriz = !isFader(h.kind);
          mDragStartX = x;
          mDragStartY = y;
          mDragStartValue = mDelegate.guiParamValue(id);
-         const double travel = mDragHoriz ? track.w : track.h - kHandleH;
-         mDragUnitsPerPx = (d.max - d.min) / std::max(1.0, travel);
+         if (track.w > 0.0 || track.h > 0.0) {
+            mDragHoriz = !isFader(h.kind);
+            const double travel = mDragHoriz ? track.w : track.h - kHandleH;
+            mDragUnitsPerPx = (d.max - d.min) / std::max(1.0, travel);
+         } else {
+            // A knob: dragged up and down at the panels' knobs' own rate.
+            mDragHoriz = false;
+            mDragUnitsPerPx = 0.0;
+         }
+         mEnvSign = h.kind == kHitEnvelope ? envelopeSign(h.segment) : 0;
          mDelegate.guiBeginEdit(id);
          return;
       }
@@ -1529,7 +2414,21 @@ private:
       switch (h.kind) {
       case kHitTab:
       case kHitStripLabel:
+         mFxChannel = -1;
+         mPage = h.slot == mPage ? -2 : mPage;
          showPage(h.slot);
+         break;
+      case kHitStripFx:
+         openFx(h.slot < 0 ? kMasterFx : h.slot);
+         break;
+      case kHitLayerFx:
+         openFx(h.slot);
+         break;
+      case kHitFxBack:
+         closeFx();
+         break;
+      case kHitFxPower:
+         toggleFx(mFxChannel, h.segment);
          break;
       case kHitTabClose:
       case kHitLayerRemove:
@@ -1578,8 +2477,28 @@ private:
    }
 
    void onMotion(double x, double y, bool shift) override {
+      if (mDrag >= 0 && mEnvSign != 0) {
+         // A graph segment follows the hand, which for a falling stage is the
+         // opposite way to its parameter.
+         const uint32_t id = static_cast<uint32_t>(mDrag);
+         const ParamDesc &d = mSpec.params[id];
+         const double fine = shift ? 0.2 : 1.0;
+         double v = mDragStartValue + mEnvSign * (mDragStartY - y) * (d.max - d.min) / 140.0 * fine;
+         v = std::min(d.max, std::max(d.min, v));
+         mDelegate.guiSetParam(id, v);
+         mDirty = true;
+         return;
+      }
       if (mDrag >= 0 || baseOverlayOpen()) {
          PluginWindow::onMotion(x, y, shift);
+         return;
+      }
+      if (mTypeMenuParam >= 0) {
+         const int hover = typeMenuRowAt(x, y);
+         if (hover != mTypeMenuHover) {
+            mTypeMenuHover = hover;
+            mDirty = true;
+         }
          return;
       }
       if (mAddOpen) {
@@ -1616,6 +2535,11 @@ private:
 
    bool needsRepaint() override {
       syncLayers(false);
+      const bool gate = mScene.sceneGateOpen();
+      if (gate != mGateShown) {
+         mGateShown = gate;
+         mDirty = true;
+      }
       if (PluginWindow::needsRepaint())
          return true;
       float l = 0.0f, r = 0.0f;
@@ -1657,7 +2581,29 @@ private:
    Rect mAddStrip;
    double mStripW = kStripMaxW;
 
-   Rect mLayerPrev, mLayerName, mLayerNext, mLayerSave;
+   int mStripFirst = 0;  // the first strip on screen, when they do not all fit
+   int mStripsShown = 0;
+   Rect mScrollLeft, mScrollRight;
+   // Which way a drag on an envelope graph moves its parameter; 0 when the
+   // drag is anything else.
+   int mEnvSign = 0;
+   int mTypeMenuParam = -1; // a filter type whose list is open, or -1
+   Rect mTypeMenuAnchor;
+   Rgb mTypeMenuAccent = kTheme.accent;
+   int mTypeMenuHover = -1;
+   bool mGateShown = false;
+
+   Rect mLayerPrev, mLayerName, mLayerNext, mLayerSave, mLayerEnv, mLayerFx;
+
+   // The effects view: whose effects it shows (a layer's slot, or kMasterFx),
+   // or -1 when it is closed.
+   int mFxChannel = -1;
+   std::vector<std::vector<uint32_t>> mFxIds;
+   std::vector<PanelSpec> mFxSpecs;
+   std::vector<int> mFxPanelKind; // which effect each panel is
+   Rect mFxBack;
+   Rect mFxChain[kNumFxKinds];
+   Rect mFxPower[kNumFxKinds];
    Rect mLayerLevel, mLayerPan, mLayerStereo, mLayerShot, mLayerMute, mLayerSolo, mLayerRemove;
 
    bool mAddOpen = false;

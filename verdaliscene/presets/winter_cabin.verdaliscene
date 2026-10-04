@@ -6,7 +6,7 @@ description = A gale and driving snow outside, a hearth glowing in the room, and
 features = ambient, nature, winter, wind, fire, indoor
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 4000
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = SkyHowl
 layer_from = Winter Gale

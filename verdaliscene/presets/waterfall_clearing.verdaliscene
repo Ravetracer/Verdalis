@@ -6,7 +6,7 @@ description = A clearing beside a waterfall on a spring morning: the roar of the
 features = ambient, nature, water, birds, insects, morning
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 2500
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = RiverFlow
 layer_from = Big Falls

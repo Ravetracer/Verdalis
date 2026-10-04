@@ -6,7 +6,7 @@ description = Rain drumming on a tin roof while the stove ticks over inside, win
 features = ambient, nature, rain, fire, indoor, thunder
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 2500
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = RainyDay
 layer_from = Tin Roof

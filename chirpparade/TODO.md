@@ -1,7 +1,20 @@
 # ChirpParade TODO
 
-Current as of 0.5.0: 88 references, 6991 segmented syllables, 5749 usable
-(82 %), 72 archetypes (8 per species), 9 species, 19 presets.
+Current as of 0.8.0: 88 references, 6991 segmented syllables, 5749 usable
+(82 %), 72 archetypes (8 per species), 9 species -- plus the cuckoo, appended
+from 4 references of its own: 80 archetypes, 10 species, 20 presets.
+
+## The reference library is not on this machine any more
+
+- [ ] Only the four cuckoo recordings are in `!dev/references` now. The other 88
+      are needed to regenerate the archetype table (`contours.py --emit`),
+      `species.py` and `fit.py --species`. Until they are back, a new species
+      can only be appended (`contours.py --append <Species>`), which is how
+      Cuckoo went in -- every earlier archetype is byte for byte what it was.
+- [ ] Cuckoo was measured against the call only, not against the files'
+      background birds, so `species.py` will not reproduce its row: the files
+      carry other birds above 1.7 kHz. Teach `species.py` the `BANDS` table in
+      `contours.py` before trusting it on those files.
 
 ## The VST3
 

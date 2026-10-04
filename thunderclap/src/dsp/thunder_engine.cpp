@@ -499,7 +499,8 @@ void ThunderEngine::setParams(const EngineParams &p) {
    updateFilters();
 
    for (auto &v : mVoices)
-      v.env.setParams(mP.attackSec, 0.01f, 1.0f, mP.releaseSec, mSampleRate);
+      v.env.setParams(mP.attackSec, 0.01f, 1.0f, mP.releaseSec, mSampleRate, mP.attackCurve,
+                      mP.decayCurve, mP.releaseCurve);
 }
 
 void ThunderEngine::updateEchoes() {
@@ -600,7 +601,8 @@ void ThunderEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t n
    slot->velocity = static_cast<float>(clampv(velocity, 0.0, 1.0));
    slot->mode = clampv(mP.mode, 0, kNumModes - 1);
    slot->flashesLit = 0;
-   slot->env.setParams(mP.attackSec, 0.01f, 1.0f, mP.releaseSec, mSampleRate);
+   slot->env.setParams(mP.attackSec, 0.01f, 1.0f, mP.releaseSec, mSampleRate, mP.attackCurve,
+                       mP.decayCurve, mP.releaseCurve);
    slot->env.gateOn();
    // The first flash comes at once in every mode; Storm then keeps going.
    slot->stormTimer = 0.0;

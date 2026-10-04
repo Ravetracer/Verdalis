@@ -30,7 +30,13 @@ public:
       mEngine.prepare(sampleRate, maxFrames);
    }
    void reset() override { mEngine.reset(); }
-   void setParams(const double *real) override { mEngine.setParams(rainyday::engineParams(real)); }
+   void setParams(const double *real, const EnvelopeCurves &curves) override {
+      rainyday::EngineParams p = rainyday::engineParams(real);
+      p.attackCurve = curves.attack;
+      p.decayCurve = curves.decay;
+      p.releaseCurve = curves.release;
+      mEngine.setParams(p);
+   }
    void noteOn(double velocity) override { mEngine.noteOn(0, 0, 60, -1, velocity); }
    void noteOff() override { mEngine.noteOff(0, 0, 60, -1); }
    void allSoundOff() override { mEngine.allSoundOff(); }

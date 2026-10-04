@@ -36,6 +36,7 @@ struct FullTable {
          entries[i] = scene[i];
          hostIds.push_back(i);
       }
+      addFx(kMasterFx, "Scene", "scene_");
 
       for (int slot = 0; slot < kNumSlots; ++slot) {
          const LayerType &t = layerType(slotType(slot));
@@ -63,7 +64,7 @@ struct FullTable {
 
          const ParamDesc *mix = slotParamTable();
          for (uint32_t p = 0; p < kNumSlotParams; ++p) {
-            if (p == kSlotShotRate && t.shotLevelParam == kNoLayerParam)
+            if (!slotParamApplies(t, p))
                continue;
             const uint32_t id = slotMixId(slot, p);
             ParamDesc d = mix[p];
@@ -74,6 +75,22 @@ struct FullTable {
             entries[id] = d;
             hostIds.push_back(id);
          }
+         addFx(slot, prefix, keyPrefix);
+      }
+   }
+
+   // A channel's effects: "Rain 1 Reverb Decay", grouped as "Rain 1/Reverb".
+   void addFx(int channel, const char *prefix, const char *keyPrefix) {
+      const ParamDesc *fx = fxParamTable();
+      for (uint32_t p = 0; p < kNumFxParams; ++p) {
+         const uint32_t id = fxParamId(channel, p);
+         ParamDesc d = fx[p];
+         d.id = id;
+         d.key = keep(std::string(keyPrefix) + fx[p].key);
+         d.name = keep(std::string(prefix) + " " + fx[p].module + " " + fx[p].name);
+         d.module = keep(std::string(prefix) + "/" + fx[p].module);
+         entries[id] = d;
+         hostIds.push_back(id);
       }
    }
 };
@@ -84,6 +101,17 @@ const FullTable &table() {
 }
 
 } // namespace
+
+bool slotParamApplies(const LayerType &t, uint32_t p) {
+   switch (p) {
+   case kSlotShotRate:
+      return t.shotLevelParam != kNoLayerParam;
+   case kSlotDecayCurve:
+      return layerParamByKey(t, "decay") != kNoLayerParam;
+   default:
+      return p < kNumSlotParams;
+   }
+}
 
 const ParamDesc *fullTable() { return table().entries.data(); }
 

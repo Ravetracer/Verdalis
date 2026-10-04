@@ -123,6 +123,7 @@ enum SpeciesKind {
    kSpeciesGoose,        // honking: 570 Hz, the widest sweeps in the library
    kSpeciesScreech,      // no reference: the top of every range at once, for effect
    kSpeciesPiper,        // oystercatchers: fast, clean, mid-pitched piping
+   kSpeciesCuckoo,       // the common cuckoo: two notes, 665 Hz falling a major third
    kNumSpecies
 };
 

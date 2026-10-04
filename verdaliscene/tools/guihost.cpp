@@ -5,7 +5,9 @@
 //   ./verdaliscene-guihost [plugin.clap] [scene.verdaliscene] [seconds]
 //
 // It processes audio on a timer thread as well, because the editor reads its
-// parameter values back through the same path a host would.
+// parameter values back through the same path a host would, and it holds middle
+// C down for as long as it runs, so a scene gated on Notes plays. Set
+// VERDALISCENE_GUIHOST_NO_KEY to leave the key up.
 
 #include <clap/clap.h>
 
@@ -190,10 +192,22 @@ int main(int argc, char **argv) {
       clap_audio_buffer_t ab{};
       ab.data32 = chans;
       ab.channel_count = 2;
+      // The held key: sent once, on the first block, and never let go.
+      static clap_event_note_t key{};
+      key.header.size = sizeof(key);
+      key.header.time = 0;
+      key.header.space_id = CLAP_CORE_EVENT_SPACE_ID;
+      key.header.type = CLAP_EVENT_NOTE_ON;
+      key.note_id = -1;
+      key.port_index = 0;
+      key.channel = 0;
+      key.key = 60;
+      key.velocity = 0.9;
+      static bool keyPending = std::getenv("VERDALISCENE_GUIHOST_NO_KEY") == nullptr;
       clap_input_events_t in{};
-      in.size = [](const clap_input_events_t *) -> uint32_t { return 0; };
+      in.size = [](const clap_input_events_t *) -> uint32_t { return keyPending ? 1 : 0; };
       in.get = [](const clap_input_events_t *, uint32_t) -> const clap_event_header_t * {
-         return nullptr;
+         return &key.header;
       };
       clap_output_events_t out{};
       out.try_push = [](const clap_output_events_t *, const clap_event_header_t *) { return true; };
@@ -205,6 +219,7 @@ int main(int argc, char **argv) {
          pr.in_events = &in;
          pr.out_events = &out;
          plug->process(plug, &pr);
+         keyPending = false;
          std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
    });

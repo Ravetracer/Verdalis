@@ -453,7 +453,8 @@ void NightEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t not
    mLastKey = key;
 
    const float sr = static_cast<float>(mSampleRate);
-   v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, sr);
+   v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, sr, mP.attackCurve,
+                   mP.decayCurve, mP.releaseCurve);
    v.env.gateOn();
    v.restlessLp.reset();
    v.modCounter = 0;

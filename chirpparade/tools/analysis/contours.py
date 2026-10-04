@@ -146,8 +146,15 @@ def track(x, sr, nfft=256, pad=1024, hop=16):
     return freq, amp, hop / sr
 
 
-def extract(x, sr):
-    """One syllable's pitch and amplitude contour, and its duration."""
+def extract(x, sr, floor=0.08, contiguous=False):
+    """One syllable's pitch and amplitude contour, and its duration.
+
+    `contiguous` keeps only the unbroken run around the loudest frame rather
+    than everything between the first and last frame above the floor. That is
+    for references recorded in a reverberant place, where the echo of the note
+    before -- or a second bird further off -- sits above the floor inside the
+    segment and would otherwise be fitted as part of the note.
+    """
     got = track(x, sr)
     if not got:
         return None
@@ -156,7 +163,19 @@ def extract(x, sr):
     if peak <= 0.0:
         return None
     # Trim to where it is sounding, or the fit spends its terms on silence.
-    live = np.nonzero(amp > 0.08 * peak)[0]
+    above = amp > floor * peak
+    if contiguous:
+        # On a 5 ms smoothed level, so a single quiet frame does not split it.
+        above = smooth(amp, max(3, int(round(0.005 / dt)))) > floor * peak
+        a = b = int(np.argmax(amp))
+        while a > 0 and above[a - 1]:
+            a -= 1
+        while b < len(amp) - 1 and above[b + 1]:
+            b += 1
+        if b - a + 1 < 6:
+            return None
+        return freq[a:b + 1], amp[a:b + 1], dt
+    live = np.nonzero(above)[0]
     if len(live) < 6:
         return None
     a, b = live[0], live[-1]
@@ -504,19 +523,68 @@ PITCH_TERMS = 96
 LEVEL_TERMS = 24
 PER_SPECIES = 8
 
+# Where a species' own call sits, for references that hold more than that bird.
+# The cuckoo recordings are the cuckoo over a wood full of other birds: its
+# call measures 503 to 719 Hz across 38 calls, and everything above 1.7 kHz in
+# those files is somebody else. Segmenter f0 and duration, so the fragments the
+# segmenter cuts off the call's edges stay out as well.
+BANDS = {"Cuckoo": (420.0, 900.0, 0.15)}
+
+# Species whose notes are cut at 15 dB below their peak, as one unbroken run,
+# rather than at 22 dB with gaps allowed -- with the shortest note that counts.
+# The cuckoo references are a wood: a "cu" is about 100 ms of tone followed by
+# 170 ms of its own echo at -15 to -30 dB, which the default trim fitted as part
+# of the note -- and in the wettest file, the echo of the previous note at the
+# start of the next one. The echo is the preset's Space, not the bird. 12 dB
+# was tried first and split the "coo"s that start with an accent and hold a
+# plateau 12 dB under it into 40 ms pieces.
+NOTE_ONLY = {"Cuckoo": (0.18, 0.06)}
+
+# Stricter gates for a species whose references are fewer and wetter than the
+# library's, as (minimum HNR dB, most octaves of fitted path per second). A
+# cuckoo's notes are steady: the clean archetypes travel 2.6 to 4.9 oct/s. The
+# wettest file's "coo"s measure 1 to 2 dB of HNR against 20 to 30 dB in the
+# others, and their tracks travelled 13 to 54 oct/s -- the tracker following
+# the wood's echo of the note, not the note. Without this, two of the four
+# "coo" archetypes were exactly that.
+STRICT = {"Cuckoo": (10.0, 10.0)}
+
+# Species whose call is a fixed sequence of different notes rather than a run
+# of one kind of syllable. Their archetypes are stored as that many equal
+# groups, one per note in calling order, and the engine plays the groups in
+# turn across a phrase -- see ContourRange::parts. A cuckoo's "cu-coo" is two
+# notes that do not resemble each other: an arching or falling "cu" of 284 ms
+# at 665 Hz, then a flat "coo" of 358 ms at 524 Hz. Clustered together they
+# would be picked at random, and the call would come out backwards half the
+# time.
+PARTS = {"Cuckoo": 2}
+
 
 def harvest(groups, seconds=30.0, verbose=True):
     """Every usable syllable contour in the library, grouped by species."""
     out = {}
     for species, files in groups:
         got = []
+        band = BANDS.get(species)
+        parts = PARTS.get(species, 1)
         for name in files:
             path = os.path.join(REFS, name)
             if not os.path.exists(path):
                 continue
             segs, sr = syllables_of(path, seconds)
-            for seg, syl in segs:
-                ex = extract(seg, sr)
+            if band:
+                segs = [(seg, syl) for seg, syl in segs
+                        if band[0] <= syl.f0_med <= band[1] and syl.dur >= band[2]]
+            tags = [0] * len(segs)
+            if parts > 1:
+                tags = call_parts([syl for _seg, syl in segs], parts)
+            for (seg, syl), part in zip(segs, tags):
+                if part is None:
+                    continue
+                note = NOTE_ONLY.get(species)
+                ex = extract(seg, sr, note[0], True) if note else extract(seg, sr)
+                if ex and note and len(ex[0]) * ex[2] < note[1]:
+                    continue
                 if not ex:
                     continue
                 freq, amp, dt = ex
@@ -527,6 +595,12 @@ def harvest(groups, seconds=30.0, verbose=True):
                     amp / max(amp.max(), 1e-12), 1e-4)), LEVEL_TERMS)
                 if not usable(freq, amp, dt, syl, ec, fc):
                     continue
+                strict = STRICT.get(species)
+                if strict:
+                    v = eval_series(fc, max(512, 8 * len(fc)))
+                    if (syl.hnr < strict[0]
+                            or float(np.abs(np.diff(v)).sum()) / (len(freq) * dt) > strict[1]):
+                        continue
                 centre = float(2.0 ** np.median(np.log2(np.maximum(freq, 20.0))))
                 # The harmonic balance, and how much of the energy it actually
                 # accounts for. A syllable whose comb captures little is either
@@ -543,6 +617,7 @@ def harvest(groups, seconds=30.0, verbose=True):
                     "pitch": fc, "level": acl, "centre": centre,
                     "dur": len(freq) * dt, "err": ec, "file": name,
                     "shape": shape(fc), "harm": harm, "harmFit": hfit,
+                    "part": part,
                 })
         out[species] = got
         if verbose:
@@ -551,10 +626,43 @@ def harvest(groups, seconds=30.0, verbose=True):
     return out
 
 
-def pick(got, k=PER_SPECIES):
-    """The k archetypes of one species: medoids of its contour shapes."""
+def call_parts(syls, parts):
+    """Which note of a call each syllable is, or None outside a whole call.
+
+    A call is `parts` syllables in a row, each starting within 50 ms of the end
+    of the one before and sitting at least 1.3 semitones below it -- the
+    cuckoo's notes are 2.6 to 5.0 semitones apart across all 38 calls in its
+    references. Read from the sequence rather than from pitch alone, because a
+    bird's register is its own and one cuckoo's "coo" sits where another's "cu"
+    does; and a syllable that is not part of a whole call is left out, since
+    there is no telling which note it was.
+    """
+    tags = [None] * len(syls)
+    i = 0
+    while i + parts <= len(syls):
+        run = syls[i:i + parts]
+        if all(b.t0 - a.t1 < 0.05 and a.f0_med > 1.08 * b.f0_med
+               for a, b in zip(run, run[1:])):
+            for j in range(parts):
+                tags[i + j] = j
+            i += parts
+        else:
+            i += 1
+    return tags
+
+
+def pick(got, k=PER_SPECIES, parts=1):
+    """The k archetypes of one species: medoids of its contour shapes.
+
+    With more than one part, k / parts of each, in calling order.
+    """
     if not got:
         return []
+    if parts > 1:
+        out = []
+        for p in range(parts):
+            out.extend(pick([g for g in got if g["part"] == p], k // parts))
+        return out
     idx = kmedoids([g["shape"] for g in got], min(k, len(got)))
     # Ordered by centre pitch, so that the Contour control sweeps from the
     # lowest-sitting shape to the highest rather than in an arbitrary order.
@@ -562,14 +670,124 @@ def pick(got, k=PER_SPECIES):
 
 
 # Must match the engine's SpeciesKind enum, in order: kContourRange is indexed
-# by it. Piper is last because the enum appends -- inserting it anywhere else
-# would shift every index below it and break saved state, which is what
-# removing Crow and Raven did in 0.4.0.
+# by it. Piper and Cuckoo are last because the enum appends -- inserting one
+# anywhere else would shift every index below it and break saved state, which
+# is what removing Crow and Raven did in 0.4.0.
 SPECIES_ORDER = ["Whistler", "Sparrow", "Warbler", "Budgie", "Woodpecker",
-                 "Crane", "Goose", "Screech", "Piper"]
+                 "Crane", "Goose", "Screech", "Piper", "Cuckoo"]
 # Crow and Raven are measured by species.py -- they are still in the reference
 # library and still part of its census -- but they are not species the engine
 # offers, so no archetypes are extracted for them. See TODO.md.
+
+
+def arr(v):
+    out, line = [], "     "
+    for x in v:
+        t = "%+.6ff," % x
+        if len(line) + len(t) > 96:
+            out.append(line)
+            line = "     "
+        line += " " + t
+    out.append(line)
+    return "\n".join(out)
+
+
+def entry_text(c):
+    """One archetype as a kContours[] initialiser."""
+    pc = np.array(c["pitch"], float).copy()
+    pc[0] = 0.0
+    # Anchor the curve at the syllable's loudest moment rather than at its
+    # mean, so that transposing it puts *the pitch you hear* where Pitch says.
+    # Anchored at the mean, an arching contour read 31 % high, because the loud
+    # part of an arch sits above its average.
+    n = 256
+    t = (np.arange(n) + 0.5) / n
+    curve = sum(pc[k] * np.cos(np.pi * k * t) for k in range(len(pc)))
+    lvl = sum(c["level"][k] * np.cos(np.pi * k * t) for k in range(len(c["level"])))
+    pc[0] = -float(curve[int(np.argmax(lvl))])
+    harm = ",\n".join("     {\n%s\n     }" % arr(h) for h in c["harm"])
+    return ("   {%.6ff, %.1ff, %.3ff,\n    {\n%s\n    },\n    {\n%s\n    },\n"
+            "    {\n%s\n    }},\n"
+            % (c["dur"], c["centre"], c["harmFit"], arr(pc), arr(c["level"]), harm))
+
+
+CONTOUR_RANGE_STRUCT = """struct ContourRange {
+   int first;
+   int count;
+   // How many different notes one call is made of. 1 for nearly everything;
+   // more for a bird whose call is a fixed sequence, like a cuckoo's two. The
+   // range is then that many equal groups in calling order, and the engine
+   // plays syllable i of a phrase from group i % parts.
+   int parts;
+};
+"""
+
+RANGE_HEAD = "// One range per SpeciesKind, in enum order: first, count, parts.\n" \
+             "constexpr ContourRange kContourRange[] = {\n"
+
+
+def range_text(name, first, count):
+    return "   {%3d, %2d, %d},  // %s\n" % (first, count, PARTS.get(name, 1), name)
+
+
+def harvest_species(name, seconds=25.0):
+    """The references of one species, harvested on their own."""
+    import species as SP
+    files = sorted(f for f in os.listdir(REFS)
+                   if f.lower().endswith(".wav") and SP.group_of(f) == name)
+    return harvest([(name, files)], seconds)[name]
+
+
+def append(path, name, seconds=25.0):
+    """Adds one species' archetypes to the end of an existing table.
+
+    The whole table is regenerated from the whole reference library, and that
+    library does not have to be on the machine: it is not part of this
+    repository. A species added later is appended instead -- its archetypes
+    after everyone else's, its range after the last one -- which leaves every
+    entry already shipping byte for byte as it was. It must be the next
+    species in SPECIES_ORDER, because the ranges are indexed by the engine's
+    enum.
+    """
+    import re
+    text = open(path).read()
+    if "--append <Species>" not in text:
+        text = text.replace('//     cd tools/analysis && python3 contours.py --emit\n//\n', '//     cd tools/analysis && python3 contours.py --emit\n//\n// A species added since is appended rather than regenerated, which leaves every\n// entry above it as it was:\n//\n//     cd tools/analysis && python3 contours.py --append <Species>\n//\n')
+    ranges = re.findall(r"^   \{\s*(\d+),\s*(\d+)(?:,\s*\d+)?\},  // (\w+)$", text, re.M)
+    have = [r[2] for r in ranges]
+    if name in have:
+        raise SystemExit("%s is already in %s" % (name, path))
+    if SPECIES_ORDER[len(have)] != name:
+        raise SystemExit("the next species in the table is %s, not %s"
+                         % (SPECIES_ORDER[len(have)], name))
+    total = int(re.search(r"constexpr int kNumContours = (\d+);", text).group(1))
+
+    print("harvesting %s:" % name)
+    chosen = pick(harvest_species(name, seconds), parts=PARTS.get(name, 1))
+    if not chosen:
+        raise SystemExit("no usable %s contours in %s" % (name, REFS))
+
+    # The table and the ranges, in the current layout. A table written before
+    # ContourRange had parts gets them, as 1, on every existing range.
+    body = "".join(entry_text(c) for c in chosen)
+    text = text.replace("};\n\nconstexpr int kNumContours = %d;" % total,
+                        body + "};\n\nconstexpr int kNumContours = %d;" % (total + len(chosen)))
+    head = re.search(r"// One range per SpeciesKind.*?\n.*?\{\n", text).group(0)
+    text = text.replace(head, RANGE_HEAD)
+    lines = "".join(range_text(n, int(f), int(c)) for f, c, n in ranges)
+    lines += range_text(name, total, len(chosen))
+    text = re.sub(r"(constexpr ContourRange kContourRange\[\] = \{\n).*?(\};)",
+                  lambda m: m.group(1) + lines + m.group(2), text, flags=re.S)
+    text = re.sub(r"struct ContourRange \{.*?\n\};\n",
+                  lambda m: CONTOUR_RANGE_STRUCT, text, count=1, flags=re.S)
+    open(path, "w").write(text)
+
+    print("\nappended %d %s archetypes to %s, %d in all" % (len(chosen), name, path,
+                                                          total + len(chosen)))
+    for c in chosen:
+        print("   part %d  %4.0f ms  %4.0f Hz  fit %3.0f c  comb %.2f  %s"
+              % (c["part"], 1000 * c["dur"], c["centre"], c["err"], c["harmFit"], c["file"]))
+    print("median archetype duration: %.3f s" % float(np.median([c["dur"] for c in chosen])))
 
 
 def emit(path, seconds=25.0):
@@ -596,7 +814,8 @@ def emit(path, seconds=25.0):
     table, ranges = [], []
     print("\narchetypes:")
     for name in SPECIES_ORDER:
-        chosen = got.get(name, []) if name == "Screech" else pick(got.get(name, []))
+        chosen = (got.get(name, []) if name == "Screech"
+                  else pick(got.get(name, []), parts=PARTS.get(name, 1)))
         ranges.append((len(table), len(chosen)))
         table.extend(chosen)
         if chosen:
@@ -608,17 +827,6 @@ def emit(path, seconds=25.0):
                      max(np.abs(np.diff(c["shape"])).sum() for c in chosen)))
         else:
             print("   %-11s none -- falls back to the species below it" % name)
-
-    def arr(v, per=6):
-        out, line = [], "     "
-        for i, x in enumerate(v):
-            t = "%+.6ff," % x
-            if len(line) + len(t) > 96:
-                out.append(line)
-                line = "     "
-            line += " " + t
-        out.append(line)
-        return "\n".join(out)
 
     with open(path, "w") as f:
         f.write('''// Generated by tools/analysis/contours.py -- do not edit.
@@ -650,6 +858,11 @@ def emit(path, seconds=25.0):
 //
 //     cd tools/analysis && python3 contours.py --emit
 //
+// A species added since is appended rather than regenerated, which leaves every
+// entry above it as it was:
+//
+//     cd tools/analysis && python3 contours.py --append <Species>
+//
 #pragma once
 
 namespace chirpparade {
@@ -674,35 +887,16 @@ struct Contour {
    float harm[kHarmonics][kHarmTerms];
 };
 
-struct ContourRange {
-   int first;
-   int count;
-};
-
-''' % (PITCH_TERMS, LEVEL_TERMS, HARMONICS, HARM_TERMS))
+%s
+''' % (PITCH_TERMS, LEVEL_TERMS, HARMONICS, HARM_TERMS, CONTOUR_RANGE_STRUCT))
         f.write("constexpr Contour kContours[] = {\n")
         for c in table:
-            pc = np.array(c["pitch"], float).copy()
-            pc[0] = 0.0
-            # Anchor the curve at the syllable's loudest moment rather than at
-            # its mean, so that transposing it puts *the pitch you hear* where
-            # Pitch says. Anchored at the mean, an arching contour read 31 %
-            # high, because the loud part of an arch sits above its average.
-            n = 256
-            t = (np.arange(n) + 0.5) / n
-            curve = sum(pc[k] * np.cos(np.pi * k * t) for k in range(len(pc)))
-            lvl = sum(c["level"][k] * np.cos(np.pi * k * t) for k in range(len(c["level"])))
-            pc[0] = -float(curve[int(np.argmax(lvl))])
-            harm = ",\n".join("     {\n%s\n     }" % arr(h) for h in c["harm"])
-            f.write("   {%.6ff, %.1ff, %.3ff,\n    {\n%s\n    },\n    {\n%s\n    },\n"
-                    "    {\n%s\n    }},\n"
-                    % (c["dur"], c["centre"], c["harmFit"], arr(pc), arr(c["level"]), harm))
+            f.write(entry_text(c))
         f.write("};\n\n")
         f.write("constexpr int kNumContours = %d;\n\n" % len(table))
-        f.write("// One range per SpeciesKind, in enum order.\n")
-        f.write("constexpr ContourRange kContourRange[] = {\n")
+        f.write(RANGE_HEAD)
         for name, (first, count) in zip(SPECIES_ORDER, ranges):
-            f.write("   {%3d, %2d},  // %s\n" % (first, count, name))
+            f.write(range_text(name, first, count))
         f.write("};\n\n} // namespace chirpparade\n")
     per = PITCH_TERMS + LEVEL_TERMS + HARMONICS * HARM_TERMS
     print("\nwrote %s: %d archetypes, %d floats (%.0f kB)" %
@@ -720,9 +914,13 @@ struct ContourRange {
 
 
 def main():
+    out = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                       "../../src/dsp/contours_generated.h"))
     if "--emit" in sys.argv:
-        out = os.path.join(os.path.dirname(__file__), "../../src/dsp/contours_generated.h")
-        emit(os.path.abspath(out))
+        emit(out)
+        return 0
+    if "--append" in sys.argv:
+        append(out, sys.argv[sys.argv.index("--append") + 1])
         return 0
 
     outdir = None

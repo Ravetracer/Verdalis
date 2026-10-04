@@ -1,8 +1,42 @@
 # ChirpParade status
 
-Version 0.5.0. The reference library was **cleaned rather than grown** — every
+Version 0.8.0. As of 0.5.0, the reference library was **cleaned rather than grown** — every
 file isolated to a single bird by hand, the dense multi-bird recordings dropped
 — and that one change did more for the plugin than any fitting so far.
+
+## The cuckoo (0.8.0)
+
+A tenth species, **`Cuckoo`**, from four recordings of the common cuckoo calling
+in a wood, and two presets for it, **Cuckoo Call** and **Cuckoo Valley**.
+20 factory presets ship.
+
+- **Measured on the call, not the file.** The recordings carry other birds above
+  1.7 kHz; the cuckoo is the loudest thing in them and sits at 420 to 900 Hz, so
+  that band is what was measured. 38 whole calls: a "cu" at **665 Hz** falling
+  **4.2 semitones** -- a major third -- to a "coo" at **524 Hz**, one call every
+  **1.2 s**, one harmonic, and **-37 dB** of spectral flatness, the purest voice
+  in the library.
+- **A call of two different notes.** Every other species is a run of one kind
+  of syllable, so its archetypes are one set and `Contour` picks from it. A
+  cuckoo's "cu" and "coo" do not resemble each other, and picked from one set
+  half the calls would come out backwards. Its archetypes are stored as two
+  groups in calling order -- `ContourRange::parts` -- and syllable *i* of a
+  phrase plays from group *i* mod 2. `Motif` sets the fall between them.
+- **The note, not its echo.** A "cu" is about 100 ms of tone followed by 170 ms
+  of the wood's echo at -15 to -30 dB, which the default trim fitted as part of
+  the note. The cuckoo's notes are cut 15 dB below their peak, and the wettest
+  file's "coo"s -- 1 to 2 dB of HNR, tracks travelling 13 to 54 oct/s -- are
+  gated out. What is left is four "cu"s of 80 to 109 ms and four flat "coo"s of
+  130 to 178 ms, every one within 5 cents of its tracked curve. The echo is the
+  preset's `Space`, set between the driest and the wettest reference.
+- **Rendered back and measured with the same segmenter:** "cu" 678 Hz against
+  665, "coo" 523 against 524, a fall of 4.38 semitones against 4.19, a call
+  every 1.17 s against 1.20, flatness -36.8 dB against -36.5.
+- **Appended, not regenerated.** The rest of the reference library is not on
+  this machine, so `contours.py --append Cuckoo` adds its eight archetypes after
+  the other 72 and leaves those byte for byte as they were. Every one of the 18
+  existing presets renders bit-identical to 0.7.1, at two sample rates and two
+  seeds. `Cuckoo` is appended to the enum, so saved state is unaffected.
 
 ## The VST3 loads on its own (0.7.1)
 

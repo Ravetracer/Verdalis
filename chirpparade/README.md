@@ -12,7 +12,7 @@ Play a note and one bird sings once. Hold it and a flock carries on by itself.
 
 - 62 parameters covering the syllable, the voice and the tube above it, the
   phrase, the flock, woodpecker drumming, distance and a full ADSR
-- 18 factory presets, each checked by rendering it back and measuring it
+- 20 factory presets, each checked by rendering it back and measuring it
 - **A bird syllable *is* its frequency contour.** 72 contours measured off real
   recordings — the medoids of 5749 clustered syllables out of 88 field
   recordings, every one isolated to a single bird — ship as cosine coefficients
@@ -25,8 +25,10 @@ Play a note and one bird sings once. Hold it and a flock carries on by itself.
   the measured balance between its first six partials *across* the syllable —
   because that balance moves 4.4 dB over one syllable, and a fixed valve through
   a fixed tract cannot do that at all
-- Nine species, each a measurement: pitch register, syllable length, harmonic
-  richness, roughness and rate are the medians of the recordings of that bird
+- Ten species, each a measurement: pitch register, syllable length, harmonic
+  richness, roughness and rate are the medians of the recordings of that bird.
+  Cuckoo is the one whose call is two different notes, and it plays its
+  measured "cu" and "coo" in turn
 - Woodpecker drumming as a separate layer, because it is sonation rather than
   voice: a bill against wood, in a roll that accelerates
 - One shot and drone at once: a note fires a deliberate phrase that always

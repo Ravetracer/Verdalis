@@ -216,11 +216,14 @@ sine. Somewhere in the middle a second harmonic appears, then a third, and by
 the top it is a rasping stack. Nothing was filtered — the valve is closing, and
 air only passes while it is open.
 
-**Change *Species*.** Eight of them, and each carries its own set of measured
+**Change *Species*.** Ten of them, and each carries its own set of measured
 contours as well as its own pitch register, length, richness, roughness and
 rate — because in the recordings those move together. *Pitch* at its default is
 the median of the whole library, so selecting Goose at the default lands at
-743 Hz, which is a goose.
+743 Hz, which is a goose. Cuckoo is the odd one out: its call is two
+different notes, so a phrase plays its measured "cu" and then its "coo", and
+*Motif* sets the fall between them -- 4.2 semitones in the recordings. Load
+**Cuckoo Call** to hear it.
 
 **Play a chord, then a melody.** Each note is its own bird with its own flock.
 For melodies, load **Melody Bird**: one syllable a note, almost no variation, a
@@ -265,8 +268,10 @@ work, whatever its physics said.
    being avoided.
 
 5749 syllables passed the quality gate; 72 became archetypes, eight for each
-of the nine species. What ships is **13824 numbers, 54 KB, and no audio at
-all.**
+of the first nine species. The cuckoo was added later from four recordings of
+its own: 38 whole calls, and eight archetypes again -- four of each note, kept
+as two groups so that a phrase can play them in calling order. What ships is
+**80 archetypes, 15360 numbers, 60 KB, and no audio at all.**
 
 Each archetype keeps its own measured duration as well as its shape, and the
 engine plays it at that duration rather than stretching every curve to one
@@ -358,7 +363,7 @@ three groups that barely overlap:
 | rich, ≥ 6 harmonics | 17 % | median 399 Hz | −22 dB |
 
 Harmonic richness, roughness and pitch move together and downwards: the rich
-voices are the low ones. So the nine species are not nine presets of the same
+voices are the low ones. So the ten species are not ten presets of the same
 thing — they sit in genuinely different places, and choosing one moves pitch,
 length, richness, roughness, rate and the whole archetype set at once, because
 in the recordings those move together.

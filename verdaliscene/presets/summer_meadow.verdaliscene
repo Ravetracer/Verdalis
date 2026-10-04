@@ -6,7 +6,7 @@ description = Midday in open grassland: crickets and bees in the grass, sparrows
 features = ambient, nature, meadow, insects, birds, wind, day
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 2500
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = InsectSwarm
 layer_from = Summer Meadow

@@ -6,7 +6,7 @@ description = A fire burning down in a clearing at night: crickets in the grass,
 features = ambient, nature, fire, night, owls, insects
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 2500
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = CrackleBlaze
 layer_from = Forest Campfire

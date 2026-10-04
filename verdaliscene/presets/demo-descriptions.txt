@@ -17,3 +17,6 @@ Waterfall Clearing = The roar of a waterfall, a dawn chorus around it and dragon
 Beach Bonfire = A bonfire on the sand, small waves breaking and crickets in the dunes.
 Rain in the Woods = Steady rain on the canopy, a swollen creek, a robin singing through it and the odd rumble of thunder.
 Dawn Chorus = The hour before sunrise: the chorus building, a blackbird and a robin close by, a woodpecker further off.
+Cave Mouth = Water dripping into dark pools inside a cave, every drop carrying the cave's long reverb, and the wind dry outside.
+Canyon Echo = A bird calling across a desert canyon, its song bouncing back off the far wall, with wind along the rim.
+Cuckoo Wood = A wood in late spring with a cuckoo calling close by and two more answering from across the valley, small birds in the canopy and a breeze in the leaves.

@@ -1,0 +1,59 @@
+# VerdaliScene preset
+format = 1
+name = Cave Mouth
+author = VerdaliScene
+description = Just inside the mouth of a cave: water dripping into pools in the dark, a trickle running down the rock, and the wind outside moaning across the entrance.
+features = ambient, nature, cave, water, wind, reverb
+
+# Envelope
+gate = Notes
+attack = 3000
+decay = 1000
+sustain = 1
+release = 6000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+tails = Ring Out
+
+layer = RainyDay
+layer_from = Cave Drips
+layer_level = 2
+fx_reverb_on = On
+fx_reverb_size = 0.85
+fx_reverb_diffusion = 0.8
+fx_reverb_damping = 0.55
+fx_reverb_damp_freq = 3500
+fx_reverb_mod_depth = 0.4
+fx_reverb_low_cut = 140
+fx_reverb_high_cut = 7000
+fx_reverb_decay = 7000
+fx_reverb_predelay = 35
+fx_reverb_mix = 0.5
+
+layer = RiverFlow
+layer_from = Hanging Trickle
+layer_level = 7.5
+fx_reverb_on = On
+fx_reverb_size = 0.85
+fx_reverb_diffusion = 0.8
+fx_reverb_damping = 0.55
+fx_reverb_damp_freq = 3500
+fx_reverb_mod_depth = 0.4
+fx_reverb_low_cut = 140
+fx_reverb_high_cut = 7000
+fx_reverb_decay = 6000
+fx_reverb_predelay = 22
+fx_reverb_mix = 0.4
+layer_pan = 0.35
+
+layer = SkyHowl
+layer_from = Cave Mouth
+layer_level = -9

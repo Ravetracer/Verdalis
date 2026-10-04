@@ -1,0 +1,86 @@
+# ChirpParade preset
+format = 1
+name = Cuckoo Valley
+author = ChirpParade
+description = Two cuckoos a long way off, answering each other across open ground. The same measured call as Cuckoo Call, further away and wetter: distance takes the level and the top, and the space carries the call down the valley. No note-fired call; hold a note and they keep it up on their own.
+# fit harmonics=1 rough=-37
+
+# Syllable
+pitch = 2580
+sweep = 100
+contour = 0.5
+detail = 1
+length = 96
+skew = 0.5
+jitter = 0.04
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Cuckoo
+voice = 0
+breath = 0.05
+tract = 13
+beak = 0.15
+formant = 0.4
+rasp = 0
+radiate = 0.12
+partials = 0.6
+
+# Phrase
+syllables = 2
+syllable_rate = 3.45
+rate_drift = 0
+legato = 0
+motif = -4.2
+variation = 0.08
+phrase_gap = 0.89
+repeats = 8
+
+# Flock
+shot_level = -60
+flock_level = 0
+flock_rate = 26
+birds = 2
+pitch_spread = 0.2
+voice_spread = 0.15
+answer = 0.6
+restless = 0.35
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.7
+distance_spread = 0.5
+air = 0.6
+width = 0.8
+space_amount = 0.45
+space_size = 0.8
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 0
+seed = 0

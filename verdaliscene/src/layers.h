@@ -49,6 +49,15 @@ constexpr int kNumSlots = kNumLayerTypes * kInstancesPerType;
 
 constexpr uint32_t kNoLayerParam = 0xFFFFFFFFu;
 
+// How the scene bends a layer's own envelope: -1 to +1 per stage, 0 being the
+// plugin's natural shape (see verdalis/dsp/adsr.h). These are the scene's, not
+// the plugin's -- a layer saved as a plugin preset does not carry them.
+struct EnvelopeCurves {
+   float attack = 0.0f;
+   float decay = 0.0f;
+   float release = 0.0f;
+};
+
 // One running instance of a layer's engine, driven the way the plugin itself
 // drives it: parameters as real-world values, and one note held for as long
 // as the layer exists. Created and prepared on the main thread; everything
@@ -60,8 +69,8 @@ public:
    virtual void prepare(double sampleRate, uint32_t maxFrames) = 0;
    virtual void reset() = 0;
    // `real` is paramToReal() of every one of the plugin's parameters, indexed
-   // by the plugin's own ParamId.
-   virtual void setParams(const double *real) = 0;
+   // by the plugin's own ParamId; `curves` bend its envelope.
+   virtual void setParams(const double *real, const EnvelopeCurves &curves) = 0;
 
    // The drone note: middle C, so every note-tracking control sits at its
    // neutral point, at the velocity plugin.cpp explains.
@@ -150,5 +159,11 @@ const LayerType &layerType(int type);
 
 // The pinned entry for one of the plugin's own ParamIds, or null.
 const PinnedParam *pinnedParam(const LayerType &t, uint32_t id);
+
+// One of the plugin's own ParamIds by its preset key, or kNoLayerParam. Every
+// plugin in the suite names its envelope and its output filter alike
+// ("attack", "filter_cutoff", ...), which is what lets a mixer strip carry them
+// for any layer.
+uint32_t layerParamByKey(const LayerType &t, const char *key);
 
 } // namespace verdaliscene

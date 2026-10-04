@@ -321,6 +321,33 @@ taking them away. One consequence is worth knowing: `Pitch` at its default *is*
 the library median, so every species at the default sings in its own register —
 Crow at 2600 Hz gives 812 Hz, which is a crow.
 
+### The cuckoo, appended later
+
+`Cuckoo` came after the table above, from four recordings of its own, and was
+added with `contours.py --append Cuckoo` because the rest of the library was no
+longer on the machine. Appending leaves every earlier archetype byte for byte as
+it was; `--emit` still regenerates the whole table when the library is back.
+
+Three things in `contours.py` exist for it, each a per-species table:
+
+- `BANDS` -- the recordings have other birds above 1.7 kHz, so only syllables
+  between 420 and 900 Hz and at least 150 ms long are the cuckoo.
+- `PARTS` -- its call is two different notes, so its archetypes are two groups
+  in calling order, a note is tagged by its place in a whole call (an adjacent
+  pair falling at least 1.3 semitones), and a syllable outside a whole call is
+  left out.
+- `NOTE_ONLY` and `STRICT` -- the files are reverberant. A note is cut 15 dB
+  below its peak as one unbroken run, and kept only with 10 dB of HNR and under
+  10 oct/s of fitted path; the wettest file's tracks otherwise followed the echo.
+
+| | n | f0 | fall | note length | period | harm | rough |
+|---|---|---|---|---|---|---|---|
+| "cu" | 38 | 665 Hz | | 80 … 109 ms | | 1 | |
+| "coo" | 38 | 524 Hz | 4.2 st | 130 … 178 ms | 1.20 s | 1 | −37 |
+
+The species row is the call's: pitch is the "cu", since a phrase starts there
+and `Motif` steps down to the "coo".
+
 ## Two calibrations, measured on the plugin's own output
 
 Both fitted by rendering the engine and measuring the result with the same

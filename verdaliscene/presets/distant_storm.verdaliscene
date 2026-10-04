@@ -6,7 +6,7 @@ description = A storm passing far off across open country: a wall of rain on the
 features = ambient, nature, rain, thunder, wind, distant
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 4000
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = RainyDay
 layer_from = Distant Rain Wall

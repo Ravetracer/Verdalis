@@ -6,7 +6,7 @@ description = A tropical forest under a monsoon downpour: thunder overhead, scre
 features = ambient, nature, rain, thunder, jungle, birds, insects
 
 # Envelope
-gate = Always
+gate = Notes
 attack = 3000
 decay = 1000
 sustain = 1
@@ -21,6 +21,7 @@ filter_reso = 0.1
 # Output
 width = 1
 gain = 0
+tails = Ring Out
 
 layer = RainyDay
 layer_from = Tropical Monsoon

@@ -58,7 +58,17 @@ constexpr SpeciesTraits kSpecies[kNumSpecies] = {
    // lengthSec follows its archetypes, because those did change.
    /* Screech    */ {1800.0f, 0.208f, 6.0f, -16.0f, 150.0f},
    /* Piper      */ {2559.0f, 0.059f, 2.0f, -33.0f, 527.0f},
+   // Cuckoo's pitch is its first note's, the "cu": a phrase starts there and
+   // Motif steps down to the "coo". Measured over the 38 whole calls in its four
+   // references rather than over every syllable in them, because those files
+   // carry other birds above 1.7 kHz; the call is 665 Hz falling 4.2 semitones
+   // to 524, one harmonic, and the cleanest voice in the library at -37 dB.
+   // Rate is two notes every 1.2 s.
+   /* Cuckoo     */ {665.0f, 0.119f, 1.0f, -37.0f, 100.0f},
 };
+
+static_assert(sizeof(kContourRange) / sizeof(kContourRange[0]) == kNumSpecies,
+              "contours_generated.h needs one range per SpeciesKind");
 
 // How much of each cycle the valve is shut, for a given harmonic count.
 //
@@ -136,13 +146,22 @@ const ContourTables &contourTables() {
 // The archetype an index lands on, within one species' own set. Species with
 // too few usable references to cluster fall back to Sparrow's, which is the
 // group with 1282 of them.
-inline int archetypeFor(int species, float where) {
+//
+// A species whose call is a fixed sequence of different notes -- the cuckoo's
+// "cu-coo" -- stores its set as one group per note, in calling order, and
+// syllable `note` of a phrase picks from group note % parts. Clustered as one
+// set, its two notes would be drawn at random and half the calls would come out
+// backwards.
+inline int archetypeFor(int species, float where, int note) {
    const int sp = clampi(species, 0, kNumSpecies - 1);
    ContourRange r = kContourRange[sp];
    if (r.count <= 0)
       r = kContourRange[kSpeciesSparrow];
-   const int k = static_cast<int>(clampf(where, 0.0f, 0.99999f) * static_cast<float>(r.count));
-   return r.first + clampi(k, 0, r.count - 1);
+   const int parts = clampi(r.parts, 1, r.count);
+   const int per = r.count / parts;
+   const int first = r.first + (note % parts) * per;
+   const int k = static_cast<int>(clampf(where, 0.0f, 0.99999f) * static_cast<float>(per));
+   return first + clampi(k, 0, per - 1);
 }
 
 // Bends a syllable's own time axis. The standard bias curve: one divide, and
@@ -417,7 +436,8 @@ void ChirpEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t not
    mLastKey = key;
 
    const float sr = static_cast<float>(mSampleRate);
-   v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, sr);
+   v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, sr, mP.attackCurve,
+                   mP.decayCurve, mP.releaseCurve);
    v.env.gateOn();
    v.restlessLp.reset();
    v.modCounter = 0;
@@ -719,7 +739,7 @@ void ChirpEngine::spawnChirp(const Voice &v, Phrase &ph) {
    // and Variation lets a phrase wander off it -- which is what stops a phrase
    // being one shape repeated.
    const float where = clampf(mP.contour + 0.45f * var * rc, 0.0f, 1.0f);
-   c.archetype = archetypeFor(mP.species, where);
+   c.archetype = archetypeFor(mP.species, where, ph.index);
    const Contour &ct = kContours[c.archetype];
 
    // Motif: the pitch steps by a fixed interval from one syllable to the next.

@@ -447,7 +447,8 @@ void RainEngine::setParams(const EngineParams &p) {
    updateFilters();
 
    for (auto &v : mVoices) {
-      v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, mSampleRate);
+      v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, mSampleRate,
+                      mP.attackCurve, mP.decayCurve, mP.releaseCurve);
       if (v.active) {
          v.bedLpL.setCutoff(mBedCutoff, mP.bedBody * 0.9f, mSampleRate);
          v.bedLpR.setCutoff(mBedCutoff, mP.bedBody * 0.9f, mSampleRate);
@@ -520,7 +521,8 @@ void RainEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t note
    slot->key = key;
    slot->noteId = noteId;
    slot->velocity = static_cast<float>(clampv(velocity, 0.0, 1.0));
-   slot->env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, mSampleRate);
+   slot->env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, mSampleRate,
+                       mP.attackCurve, mP.decayCurve, mP.releaseCurve);
    slot->env.gateOn();
    slot->bedLpL.reset();
    slot->bedLpR.reset();

@@ -399,7 +399,8 @@ void WindEngine::noteOn(int16_t port, int16_t channel, int16_t key, int32_t note
 
    const float sr = static_cast<float>(mSampleRate);
    const float ctrl = sr / static_cast<float>(kModInterval);
-   v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, sr);
+   v.env.setParams(mP.attackSec, mP.decaySec, mP.sustain, mP.releaseSec, sr, mP.attackCurve,
+                   mP.decayCurve, mP.releaseCurve);
    v.env.gateOn();
 
    for (auto &t : v.turb)
