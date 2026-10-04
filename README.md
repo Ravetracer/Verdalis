@@ -52,7 +52,7 @@ suite.
 | **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.3.0 |
 | **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.5.0 |
 | **[NightLife](nightlife/)** — a night, from one wolf on a ridge to a pond full of frogs | night animals | 0.3.0 |
-| **[VerdaliScene](verdaliscene/)** — every nature instrument above at once, layered and mixed into one scene | whole scenes | 0.5.1 |
+| **[VerdaliScene](verdaliscene/)** — every nature instrument above at once, layered and mixed into one scene | whole scenes | 0.6.0 |
 | **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.4.0 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,

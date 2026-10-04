@@ -11,6 +11,9 @@ attack = 2500
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,20 +26,310 @@ width = 1
 gain = 0
 tails = Ring Out
 
+# Rain 1
 layer = RainyDay
-layer_from = Tin Roof
+layer_preset = Tin Roof
 layer_level = -1
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
+# Output
+gain = 1.49
+
+# Rain
+density = 514
+clumping = 0.365
+drop_pitch = 1623
+pitch_spread = 3.65
+drop_decay = 2.57
+decay_spread = 0.817
+tonality = 0.268
+impact = 0.977
+splash = 0.899
+slosh = 0.5
+level_spread = 1
+chirp = 0.35
+surface = Metal
+note_tracking = 0.5
+bubble = 0.327
+
+# Distant
+bed_level = -25
+bed_tone = 0.433
+bed_body = 0.023
+bed_drift = 0.193
+bed_width = 0.85
+bed_pan = 0
+
+# Close
+width = 0.85
+drop_pan = 0
+
+# Space
+distance = 0.128
+air = 0.892
+space_amount = 0.25
+space_size = 0.35
+space_damping = 0.3
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 448
+filter_reso = 0.1
+filter_key_track = 0
+highpass = 20
+
+# Envelope
+attack = 300
+decay = 600
+sustain = 1
+release = 1800
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# System
+max_droplets = 512
+seed = 0
+
+# Trickle
+trickle_level = -36
+trickle_rate = 20
+trickle_size = 0.95
+trickle_spread = 1.2
+trickle_decay = 9
+trickle_impact = 0.45
+stone_tone = 6200
+trickle_splash = 0.2
+
+# Thunder 1
+layer = ThunderClap
+layer_preset = Distant Rumble
+layer_level = -5.78
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_release_curve = 0
+
+# Output
+gain = -2
+
+# Strike
+distance = 1
+height = 6
+cloud_spread = 8
+tortuosity = 0.5
+branching = 0.3
+strokes = 3
+stroke_gap = 80
+variation = 0.5
+
+# Sound
+crack = 0.42
+weight = 0.6
+swell = 0.6
+rumble = 0.66
+rumble_tone = 0.59
+air = 0.5
+scatter = 0.5
+focus = 0.265
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -10
+echo_count = 4
+echo_spread = 3
+echo_damping = 0.7
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+ground = 0.45
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 1026
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 2000
+storm_rate = 3.48
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# System
+max_shocks = 4096
+seed = 0
+
+# Dynamics
+compress = 0.435
+comp_attack = 3.16
+comp_release = 250
+
+# Impact
+impact = 0.355
+bloom = 0.5
+
+# Wind 1
+layer = SkyHowl
+layer_preset = Between Houses
+layer_level = -13
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Wind
+wind_speed = 13
+turbulence = 4
+gust_rate = 33
+gust_depth = 0.35
+gust_length = 1200
+gust_shape = 0.5
+squall = 0.02
+squall_rate = 6
+
+# Airflow
+flow_level = -20
+flow_tone = 110
+flow_tilt = -6
+buffet = -9
+buffet_tone = 70
+hiss = 0.3
+speed_law = 1
+
+# Howl
+howl_amount = 0.35
+obstacle = Gap
+howl_size = 6.5
+howl_spread = 0.6
+howl_voices = 4
+howl_reso = 0.5
+howl_track = 0.2
+howl_threshold = 0.3
+warble = 0.3
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Street
+distance = 0.2
+air = 0.5
+width = 0.6
+space_amount = 0.35
+space_size = 0.35
+space_damping = 0.35
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 973
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# Fire 1
 layer = CrackleBlaze
-layer_from = Wood Stove
+layer_preset = Wood Stove
 layer_level = -5
 layer_pan = -0.25
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
-layer = SkyHowl
-layer_from = Between Houses
-layer_level = -13
+# Blaze
+fire_type = Stove Draught
+fire_blend = 0
+roar_level = -28
+roar_tilt = 0
+roar_body = 0.5
+flare = 0.55
+flare_rate = 0.55
+draught = 0.55
 
-layer = ThunderClap
-layer_from = Distant Rumble
-layer_level = -9.5
-storm_rate = 2
+# Crackle
+crackle_rate = 29
+crackle_level = -16
+crackle_decay = 1.8
+crackle_tone = 7000
+crackle_spread = 6
+burst = 2
+snap = 0.6
+crackle_body = 0.12
+
+# Sizzle
+sap = 0.21
+sizzle_level = -23
+sizzle_decay = 19
+sizzle_tone = 7000
+steam = 0.25
+
+# Settle
+settle_rate = 0.1
+settle_level = -25
+settle_tone = 150
+settle_decay = 8
+
+# Hearth
+hearth_type = Stove
+distance = 0.15
+air = 0.5
+width = 0.7
+roar_width = 0.45
+space_amount = 0.3
+space_size = 0.4
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 499
+sustain = 1
+release = 1505
+vel_to_level = 0.4
+vel_to_fire = 0.3
+
+# Output
+gain = -3
+max_events = 1024
+seed = 0

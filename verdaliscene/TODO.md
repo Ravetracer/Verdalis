@@ -1,11 +1,12 @@
 # VerdaliScene TODO
 
-Current as of 0.4.0: nine layer types, four of each, 4,484 parameters, nineteen
-scenes.
+Current as of 0.6.0: nine layer types, four of each, 4,484 parameters, nineteen
+scenes, mixed by ear.
 
 ## The thing that has not been done
 
-- [ ] **Listen to the scenes.** Every fader in the factory scenes was set from a
+- [x] **Listen to the scenes.** Done in 0.6.0: the author re-mixed all nineteen
+      by ear. What follows is why it was needed. Every fader in the factory scenes was set from a
       measured level and a target by role. That puts a layer where a number says
       it should be, not where it sounds right — a bird can measure exactly at
       −33.5 dBFS and still be too loud for a scene that is meant to be about the
@@ -40,12 +41,8 @@ scenes.
 - [ ] Dim a delay's Time or Note knob while the other one is the one in use.
 - [ ] The effects view leaves the lower third of the page empty: room for a
       decay display or the delay's repeats drawn out.
-- [ ] **The factory scenes, mixed by ear.** The author will refine the nineteen
-      scenes for the best mix and hand them over as a preset pack. Take them as
-      they come: unpack into `presets/`, check they still load cleanly (the
-      self-test does), and retire `tools/analysis/make_scenes.py` -- hand-mixed
-      files written out in full become the source. Re-render the website demos
-      from them.
+- [x] **The factory scenes, mixed by ear** (0.6.0): taken from the author's pack
+      as they came, `make_scenes.py` retired, demos re-rendered.
 
 ## Scenes
 

@@ -15,7 +15,7 @@ using namespace verdalis;
 constexpr char kPluginId[] = "de.ravetracer.verdaliscene";
 constexpr char kPluginName[] = "VerdaliScene";
 constexpr char kPluginVendor[] = "Ravetracer";
-constexpr char kPluginVersion[] = "0.5.1";
+constexpr char kPluginVersion[] = "0.6.0";
 
 #ifdef VERDALISCENE_CMAKE_VERSION
 constexpr bool sameString(const char *a, const char *b) {

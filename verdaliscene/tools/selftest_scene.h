@@ -1,0 +1,56 @@
+#pragma once
+
+// The scene the self-test's envelope, effects and seed checks run on. Fixed
+// here rather than taken from the factory set, so the checks measure the
+// plugin and not whatever the factory scenes are mixed like this release:
+// they assume a first layer that sounds from the start and carries no effects
+// of its own, and a hand-mixed factory scene owes them neither. It is the
+// generated Beach Bonfire of 0.5.x, which every one of those checks was
+// written against.
+
+namespace verdaliscene {
+
+constexpr const char *kSelfTestScene = R"SCENE(# VerdaliScene preset
+format = 1
+name = Self-Test Scene
+author = VerdaliScene
+description = A bonfire on the sand on a warm night: small waves breaking on the beach, crickets in the dunes and a soft wind off the sea.
+features = ambient, nature, fire, sea, night, insects
+
+# Envelope
+gate = Notes
+attack = 2500
+decay = 1000
+sustain = 1
+release = 4000
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+
+# Output
+width = 1
+gain = 0
+tails = Ring Out
+
+layer = CrackleBlaze
+layer_from = Bonfire
+layer_level = 1.5
+layer_pan = -0.15
+
+layer = ShoreBreak
+layer_from = Gentle Waves
+layer_level = 9.5
+
+layer = NightLife
+layer_from = Cricket Field
+layer_level = -9
+
+layer = SkyHowl
+layer_from = Beach Grass
+layer_level = -14.5
+)SCENE";
+
+} // namespace verdaliscene

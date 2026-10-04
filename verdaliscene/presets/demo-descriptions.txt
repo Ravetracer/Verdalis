@@ -1,7 +1,7 @@
 # What the website says about each scene's demo. One line per scene,
 # "Scene Name = text". The scene's own description stays in its file; this is
 # the sentence a musician reads next to the player.
-Forest River = A stream through a summer wood, with birds overhead, leaves moving in the wind and bees along the bank.
+Forest River = A stream through a summer wood, with a cuckoo and a robin in the trees, leaves moving in the wind and bees along the bank.
 Stormy Shore = Heavy surf, driving rain, a gale along the beach and thunder rolling over the water.
 Campfire Night = A fire burning down under the stars, crickets in the grass and an owl in the trees.
 Rain on the Cabin = Rain drumming on a tin roof, the stove ticking over inside and a storm far off.
@@ -15,8 +15,8 @@ Distant Storm = A storm passing far away: a wall of rain on the horizon and slow
 Wolf Valley = Wolves answering each other across a moonlit valley, a river far below.
 Waterfall Clearing = The roar of a waterfall, a dawn chorus around it and dragonflies over the pool.
 Beach Bonfire = A bonfire on the sand, small waves breaking and crickets in the dunes.
-Rain in the Woods = Steady rain on the canopy, a swollen creek, a robin singing through it and the odd rumble of thunder.
-Dawn Chorus = The hour before sunrise: the chorus building, a blackbird and a robin close by, a woodpecker further off.
+Rain in the Woods = Steady rain on the canopy, a swollen creek, wind in the wet leaves, a robin and a cuckoo calling through it and the odd rumble of thunder.
+Dawn Chorus = The hour before sunrise: the chorus building, a blackbird and a robin close by, a woodpecker further off and the first breeze in the leaves.
 Cave Mouth = Water dripping into dark pools inside a cave, every drop carrying the cave's long reverb, and the wind dry outside.
-Canyon Echo = A bird calling across a desert canyon, its song bouncing back off the far wall, with wind along the rim.
-Cuckoo Wood = A wood in late spring with a cuckoo calling close by and two more answering from across the valley, small birds in the canopy and a breeze in the leaves.
+Canyon Echo = A bird calling across a desert canyon, its song bouncing back off the far wall, a cuckoo along it and wind along the rim.
+Cuckoo Wood = A wood in late spring with a cuckoo calling close by and two more answering from across the valley, small birds in the canopy and wind in the leaves.

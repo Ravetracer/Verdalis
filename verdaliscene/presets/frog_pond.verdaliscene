@@ -11,6 +11,9 @@ attack = 2500
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,21 +26,376 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = NightLife
-layer_from = Pond Chorus
-layer_level = 4
+# River 1
+layer = RiverFlow
+layer_preset = Bubbling Creek
+layer_level = -9
+layer_pan = -0.5
+layer_stereo = Mono
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
+# Flow
+water_type = Creek
+water_blend = 0.05
+flow_level = -24
+flow_tilt = 0.47
+flow_body = 0.21
+turbulence = 0.54
+surge_rate = 0.31
+flow_grain = 0
+
+# Stones
+dabble_rate = 11
+dabble_level = -19.6
+dabble_size = 3.3
+dabble_spread = 0.3
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 37.7
+trickle_level = -13.6
+trickle_size = 0.69
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -52
+plunge_tone = 200
+plunge_depth = 0.3
+plunge_q = 0.4
+
+# Reach
+bank_type = Forest
+distance = 0.1
+air = 0.5
+width = 0
+flow_width = 0
+space_amount = 0.2
+space_size = 0.4
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = -8.9
+max_events = 512
+seed = 0
+
+# Insects 1
+layer = InsectSwarm
+layer_preset = Mosquito Night
+layer_level = -17.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Swarm
+species = Mosquito
+rate_shift = 0
+count = 4
+swarm_level = -26
+spread = 110
+wander = 25
+wander_rate = 4.46
+rasp = 0.4
+roam = 8.08
+roam_rate = 0.201
+
+# Wing
+tilt = 0
+formant = 0
+resonance = 0
+stroke = 0
+bite = 0.45
+flutter = 0.25
+
+# Flyby
+flyby_rate = 0.55
+flyby_level = -12
+flyby_rise = 13.3
+flyby_pass = 1.1
+flyby_speed = 3.2
+flyby_sweep = 0.95
+
+# Stridulate
+strid_level = -60
+carrier = 5549
+carrier_q = 13.2
+pulse_rate = 268
+echeme_rate = 12.5
+duty = 0.48
+chorus = 6
+strid_spread = 0.5
+scrape = 0.45
+
+# Air
+distance = 0.1
+air = 0.5
+width = 0.75
+space_amount = 0.12
+space_size = 0.55
+space_damping = 0.5
+
+# Bed
+bed_level = -60
+bed_tone = 1200
+bed_tilt = -0.2
+
+# Filter
+filter_type = Lowpass
+highpass = 80
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 300
+decay = 400
+sustain = 1
+release = 900
+vel_to_level = 0.4
+vel_to_swarm = 0.3
+
+# Output
+gain = -3
+max_voices = 128
+seed = 0
+
+# Night 1
 layer = NightLife
-layer_from = Spring Peepers
+layer_preset = Pond Chorus
+layer_level = 1.52
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Call
+pitch = 893
+contour = 0.5
+detail = 1
+sweep = 100
+length = 490
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Wolf
+voice = 0.3
+breath = 0.06
+throat = 19
+muzzle = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+calls = 3
+call_rate = 0.98
+rate_drift = 0
+legato = 0.32
+motif = 0
+variation = 0.3
+phrase_gap = 3.7
+repeats = 1
+
+# Pack
+shot_level = -60
+pack_level = -60
+pack_rate = 30
+animals = 3
+pitch_spread = 0.5
+voice_spread = 0.35
+answer = 0.45
+restless = 0.4
+max_voices = 24
+
+# Chorus
+chorus_level = -2
+croak = 0.44
+croak_pitch = 1535
+pulse_rate = 20
+pulses = 13
+croak_length = 608
+frogs = 16
+croak_rate = 48
+regularity = 0.95
+chorus_spread = 0.8
+chorus_width = 0.95
+
+# Insects
+insect_level = -26
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -24
+bed_tilt = 0
+bed_motion = 0.3
+
+# Place
+distance = 0.3
+distance_spread = 0.45
+air = 0.55
+width = 0.7
+space_amount = 0.35
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 400
+decay = 400
+sustain = 1
+release = 2500
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = -3
+seed = 0
+
+# Night 2
+layer = NightLife
+layer_preset = Spring Peepers
 layer_level = 3.5
 layer_pan = 0.3
+layer_stereo = Stereo
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
-layer = RiverFlow
-layer_from = Bubbling Creek
-layer_level = -9
-layer_stereo = Mono
-layer_pan = -0.5
+# Call
+pitch = 893
+contour = 0.5
+detail = 1
+sweep = 100
+length = 490
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
 
-layer = InsectSwarm
-layer_from = Mosquito Night
-layer_level = -17.5
+# Voice
+caller = Wolf
+voice = 0.3
+breath = 0.06
+throat = 19
+muzzle = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+calls = 3
+call_rate = 0.98
+rate_drift = 0
+legato = 0.32
+motif = 0
+variation = 0.3
+phrase_gap = 3.7
+repeats = 1
+
+# Pack
+shot_level = -60
+pack_level = -60
+pack_rate = 30
+animals = 3
+pitch_spread = 0.5
+voice_spread = 0.35
+answer = 0.45
+restless = 0.4
+max_voices = 24
+
+# Chorus
+chorus_level = -4
+croak = 0.56
+croak_pitch = 3299
+pulse_rate = 33
+pulses = 8
+croak_length = 60
+frogs = 24
+croak_rate = 300
+regularity = 0.9
+chorus_spread = 0.5
+chorus_width = 1
+
+# Insects
+insect_level = -24
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -26
+bed_tilt = 0
+bed_motion = 0.3
+
+# Place
+distance = 0.4
+distance_spread = 0.45
+air = 0.6
+width = 0.9
+space_amount = 0.3
+space_size = 0.6
+space_damping = 0.65
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 600
+decay = 400
+sustain = 1
+release = 2000
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 0
+seed = 0

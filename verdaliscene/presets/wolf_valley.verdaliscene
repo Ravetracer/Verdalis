@@ -11,6 +11,9 @@ attack = 2500
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,14 +26,281 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = NightLife
-layer_from = Wolf Valley
-layer_level = -5
-
-layer = RiverFlow
-layer_from = Distant River
-layer_level = -11.5
-
+# Wind 1
 layer = SkyHowl
-layer_from = Spooky Wind
+layer_preset = Spooky Wind
 layer_level = -0.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Wind
+wind_speed = 7
+turbulence = 5
+gust_rate = 3.5
+gust_depth = 0.3
+gust_length = 6000
+gust_shape = 0.5
+squall = 0.5
+squall_rate = 1.1
+
+# Airflow
+flow_level = -26
+flow_tone = 500
+flow_tilt = -18
+buffet = -20
+buffet_tone = 70
+hiss = 0
+speed_law = 1
+
+# Howl
+howl_amount = 0.35
+obstacle = Gap
+howl_size = 1.2
+howl_spread = 0.5
+howl_voices = 3
+howl_reso = 0.9
+howl_track = 0.35
+howl_threshold = 0.2
+warble = 0.6
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Mountain
+distance = 0.15
+air = 0.5
+width = 0.55
+space_amount = 0.45
+space_size = 0.6
+space_damping = 0.3
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# River 1
+layer = RiverFlow
+layer_preset = Distant River
+layer_level = -14.6
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Flow
+water_type = Creek
+water_blend = 0.95
+flow_level = -24
+flow_tilt = 0.04
+flow_body = 0.47
+turbulence = 0.1
+surge_rate = 2.58
+flow_grain = 0
+
+# Stones
+dabble_rate = 11
+dabble_level = -58
+dabble_size = 3.3
+dabble_spread = 0.3
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 32
+trickle_level = -51.1
+trickle_size = 1.24
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -44
+plunge_tone = 120
+plunge_depth = 0.3
+plunge_q = 0.4
+
+# Reach
+bank_type = Open
+distance = 0.32
+air = 0.5
+width = 0.7
+flow_width = 0.59
+space_amount = 0.3
+space_size = 0.85
+space_damping = 0.45
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 2192
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 6
+max_events = 512
+seed = 0
+
+# Night 1
+layer = NightLife
+layer_preset = Wolf Valley
+layer_level = -13.7
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 5.27
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.9
+fx_reverb_decay = 17973
+fx_reverb_diffusion = 0.8
+fx_reverb_damping = 0.825
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Call
+pitch = 1678
+contour = 0.55
+detail = 1
+sweep = 100
+length = 1290
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Wolf
+voice = 0.395
+breath = 0.265
+throat = 44.3
+muzzle = 0.55
+formant = 0.755
+rasp = 0.345
+radiate = 0.35
+partials = 0.435
+
+# Phrase
+calls = 1
+call_rate = 0.98
+rate_drift = 0
+legato = 0
+motif = 0
+variation = 0.35
+phrase_gap = 3.7
+repeats = 1
+
+# Pack
+shot_level = 6
+pack_level = -14
+pack_rate = 6
+animals = 2
+pitch_spread = 0.35
+voice_spread = 0.35
+answer = 0.25
+restless = 0.5
+max_voices = 24
+
+# Chorus
+chorus_level = -60
+croak = 0.5
+croak_pitch = 2063
+pulse_rate = 27
+pulses = 10
+croak_length = 325
+frogs = 12
+croak_rate = 121
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.85
+
+# Insects
+insect_level = -30.3
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -26
+bed_tilt = -0.2
+bed_motion = 0.3
+
+# Place
+distance = 0.62
+distance_spread = 0.4
+air = 0.45
+width = 0.6
+space_amount = 0.5
+space_size = 0.85
+space_damping = 0.45
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 80
+decay = 400
+sustain = 1
+release = 3000
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 12
+seed = 0

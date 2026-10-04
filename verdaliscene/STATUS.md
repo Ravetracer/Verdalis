@@ -1,8 +1,38 @@
 # VerdaliScene status
 
-Version 0.5.1, the suite's eleventh plugin and the first one that synthesises
+Version 0.6.0, the suite's eleventh plugin and the first one that synthesises
 nothing of its own: every sound comes from one of the nine nature instruments,
 run as a layer. 0.1.0 shipped in suite 0.25.0.
+
+## What changed in 0.6.0
+
+- **The factory scenes are mixed by ear.** All nineteen were re-mixed by the
+  author in the plugin -- faders, envelopes, filters, effects -- and handed over
+  as one preset pack; they ship exactly as mixed, with only their author,
+  description and feature lines restored, since a scene saved from the plugin
+  does not carry the factory ones. Five changed their line-up as well as their
+  balance, and their descriptions now say so: Canyon Echo and Rain in the Woods
+  gained a cuckoo, Forest River's birds are now a cuckoo and a robin, Cuckoo
+  Wood gained a second wind layer and Dawn Chorus's breeze became Autumn Leaves.
+  Measured over 30 s the scenes sit at -22 to -33 dBFS RMS.
+- **The scene files are the source now.** `tools/analysis/make_scenes.py` and
+  `levels.tsv`, which generated the factory scenes from measured levels and a
+  role per layer, are retired: run again, they would overwrite the mix. They are
+  in the history for the record.
+- **A fixed seed now replays the effects too.** An effect fades in over 20 ms
+  when it is switched on, and a scene's own effects counted as switched on in the
+  first block after it loaded or the host reset it -- so the first take faded its
+  reverb in and every take after a reset did not, and *fixed layer seeds render
+  identically after reset* did not hold for a scene with effects. No factory
+  scene had an effect on the layer the check used until the hand mix. A chain
+  that has played nothing since it was prepared or cleared now takes its
+  switches at once (`fx::Chain::mFresh`); the self-test checks it on a scene
+  carrying a reverb and a delay, and fails without the fix.
+- **The self-test has a scene of its own.** The envelope-curve, effects and seed
+  checks used to borrow the first factory scene and assumed a first layer that
+  sounds from the start and is dry. They now run on a fixed copy of the
+  generated Beach Bonfire in `tools/selftest_scene.h`, so a re-mix can no longer
+  move what they measure.
 
 ## What changed in 0.5.1
 
@@ -142,16 +172,17 @@ run as a layer. 0.1.0 shipped in suite 0.25.0.
   same way to be deleted once a removed layer has faded out on its own release
   (capped at 30 s). The self-test switches all 36 slots on and off through host
   parameter events with no NaN, no overflow and nothing leaked.
-- **Nineteen factory scenes**, written by `tools/analysis/make_scenes.py` from one
-  table and balanced by measurement (below).
+- **Nineteen factory scenes**, mixed by ear by the author (0.6.0). The first
+  versions were generated and balanced by measurement (below).
 - **Repeatable with a seed.** With every layer's *Random Seed* fixed, a scene
   renders identically after a reset — the engines' randomness and the scene's
   own (first flash, shot clock) alike.
 
 ## What is measured
 
-- **Levels.** `verdaliscene-render --layers` renders a scene whole and each layer
-  alone. Every start preset used by a factory scene was measured solo at 0 dB
+- **Levels**, as the generated scenes before 0.6.0 were balanced -- the hand mix
+  replaced the result. `verdaliscene-render --layers` renders a scene whole and
+  each layer alone. Every start preset used by a factory scene was measured solo at 0 dB
   (`tools/analysis/levels.tsv`, 30 s each, 90 s for thunder), and each layer's
   fader is the distance from that level to a target set by its role: bed −27,
   second −30.5, texture −33.5, accent −37, faint −40 dBFS RMS; thunder by its

@@ -11,6 +11,9 @@ attack = 4000
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,19 +26,309 @@ width = 1
 gain = 0
 tails = Ring Out
 
+# Wind 1
 layer = SkyHowl
-layer_from = Winter Gale
+layer_preset = Winter Gale
 layer_level = 7
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
+# Wind
+wind_speed = 14
+turbulence = 22
+gust_rate = 4.7
+gust_depth = 0.7
+gust_length = 3000
+gust_shape = 0.5
+squall = 0.2
+squall_rate = 2
+
+# Airflow
+flow_level = -34
+flow_tone = 500
+flow_tilt = -11
+buffet = -4
+buffet_tone = 45
+hiss = 0.55
+speed_law = 1
+
+# Howl
+howl_amount = 0.395
+obstacle = Reeds
+howl_size = 10.3
+howl_spread = 0.64
+howl_voices = 3
+howl_reso = 0.92
+howl_track = 0.6
+howl_threshold = 0.3
+warble = 0.2
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Tundra
+distance = 0.2
+air = 0.5
+width = 0.55
+space_amount = 0.16
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 617
+filter_reso = 0.345
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# Wind 2
+layer = SkyHowl
+layer_preset = Snow Storm
+layer_level = -3
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Wind
+wind_speed = 16
+turbulence = 11
+gust_rate = 0.6
+gust_depth = 0.65
+gust_length = 15000
+gust_shape = 0.5
+squall = 0.6
+squall_rate = 0.8
+
+# Airflow
+flow_level = -16
+flow_tone = 400
+flow_tilt = -7
+buffet = -10
+buffet_tone = 70
+hiss = 0.5
+speed_law = 1
+
+# Howl
+howl_amount = 0.2
+obstacle = Open
+howl_size = 2.5
+howl_spread = 2.5
+howl_voices = 8
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.1
+foliage = Conifer
+rustle_size = 52
+rustle_density = 200
+rustle_spread = 1
+rustle_decay = 6
+rustle_threshold = 0.25
+clatter = 0.05
+
+# Place
+terrain = Tundra
+distance = 0.2
+air = 0.5
+width = 1
+space_amount = 0.22
+space_size = 0.85
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 713
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# River 1
+layer = RiverFlow
+layer_preset = Winter River
+layer_level = -14
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Flow
+water_type = Creek
+water_blend = 0.35
+flow_level = -24
+flow_tilt = -0.19
+flow_body = 0.26
+turbulence = 0.4
+surge_rate = 2.11
+flow_grain = 0
+
+# Stones
+dabble_rate = 4.5
+dabble_level = -24.9
+dabble_size = 4.45
+dabble_spread = 0.3
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 14.4
+trickle_level = -16.8
+trickle_size = 1.8
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -42
+plunge_tone = 150
+plunge_depth = 0.4
+plunge_q = 0.45
+
+# Reach
+bank_type = Forest
+distance = 0.26
+air = 0.5
+width = 0.05
+flow_width = 0.04
+space_amount = 0.2
+space_size = 0.55
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = -3.6
+max_events = 512
+seed = 0
+
+# Fire 1
 layer = CrackleBlaze
-layer_from = Hearth Glow
+layer_preset = Hearth Glow
 layer_level = 5
 layer_pan = 0.2
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
-layer = SkyHowl
-layer_from = Snow Storm
-layer_level = -3
+# Blaze
+fire_type = Log Fire
+fire_blend = 0
+roar_level = -33
+roar_tilt = 0
+roar_body = 0.5
+flare = 0.42
+flare_rate = 0.3
+draught = 0.15
 
-layer = RiverFlow
-layer_from = Winter River
-layer_level = -14
+# Crackle
+crackle_rate = 12
+crackle_level = -19
+crackle_decay = 1.8
+crackle_tone = 4000
+crackle_spread = 6
+burst = 2
+snap = 0.6
+crackle_body = 0.3
+
+# Sizzle
+sap = 0.28
+sizzle_level = -23
+sizzle_decay = 19
+sizzle_tone = 4500
+steam = 0.25
+
+# Settle
+settle_rate = 0.1
+settle_level = -25
+settle_tone = 150
+settle_decay = 8
+
+# Hearth
+hearth_type = Stone Hearth
+distance = 0.28
+air = 0.5
+width = 0.7
+roar_width = 0.45
+space_amount = 0.34
+space_size = 0.45
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 499
+sustain = 1
+release = 1505
+vel_to_level = 0.4
+vel_to_fire = 0.3
+
+# Output
+gain = -3
+max_events = 1024
+seed = 0

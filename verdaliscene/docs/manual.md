@@ -416,7 +416,8 @@ A scene is a text file in the suite's preset format with layers in it. Each
 `layer =` line opens a section for one layer, named by its plugin, and what
 follows is that plugin's own preset keys in its own units — a section copied out
 of a scene is a working preset of that plugin. A section may also start from one
-of the plugin's presets by name, which is how the factory scenes are written:
+of the plugin's presets by name, which is the short way to write one by hand --
+the factory scenes, saved from the plugin, carry every value in full instead:
 
 ```
 layer = ThunderClap

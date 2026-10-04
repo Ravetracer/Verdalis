@@ -70,6 +70,8 @@ const char *dlerrorCompat() { return "see GetLastError()"; }
 
 #include <filesystem>
 
+#include "selftest_scene.h"
+
 #include "verdalis/testing/preset_library_check.h"
 #include <fstream>
 
@@ -1112,6 +1114,19 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
    // --- every factory scene: loads cleanly, is silent until a key opens it,
    // plays on the key, stays bounded
    const std::vector<PresetEntry> scenes = discoverPresets(entry);
+   // The scene the envelope, effects and seed checks run on: fixed in
+   // selftest_scene.h, loaded from a file the way a host loads one.
+   PresetEntry fixture;
+   fixture.name = "Self-Test Scene";
+   fixture.locationKind = CLAP_PRESET_DISCOVERY_LOCATION_FILE;
+   fixture.location = (std::filesystem::temp_directory_path() /
+                       ("verdaliscene-selftest-" + std::to_string(static_cast<long>(getpid())) +
+                        ".verdaliscene"))
+                         .string();
+   {
+      std::ofstream out(fixture.location, std::ios::binary);
+      out << kSelfTestScene;
+   }
    check(!scenes.empty(), "factory scenes are discovered");
    for (const PresetEntry &p : scenes) {
       const clap_plugin_t *pl = createPlugin(entry);
@@ -1137,7 +1152,7 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
    // all again
    if (!scenes.empty()) {
       const clap_plugin_t *pl = createPlugin(entry);
-      loadPreset(pl, scenes.front());
+      loadPreset(pl, fixture);
       pl->activate(pl, sampleRate, 1, 512);
       const RenderResult held = renderPlugin(pl, sampleRate, 512, 3.0, 0.0, 60, 0.9);
       // The note-off goes out with the first block of the next render.
@@ -1160,7 +1175,7 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
    if (!scenes.empty()) {
       auto releaseEnergy = [&](const std::vector<std::pair<clap_id, double>> &curves) {
          const clap_plugin_t *pl = createPlugin(entry);
-         loadPreset(pl, scenes.front());
+         loadPreset(pl, fixture);
          pl->activate(pl, sampleRate, 1, 512);
          resolveParamOverrides(pl, {"random seed=7"});
          for (const auto &c : curves)
@@ -1181,16 +1196,8 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
       Scene first;
       std::string err;
       int slot = -1;
-      // The scene the energy was measured on, from wherever discovery found it.
-      std::string text;
-      if (scenes.front().locationKind == CLAP_PRESET_DISCOVERY_LOCATION_FILE) {
-         std::ifstream in(scenes.front().location, std::ios::binary);
-         text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
-      } else {
-         for (unsigned i = 0; i < kNumBuiltinPresets; ++i)
-            if (scenes.front().loadKey == kBuiltinPresets[i].loadKey)
-               text = kBuiltinPresets[i].text;
-      }
+      // The scene the energy was measured on.
+      const std::string text = kSelfTestScene;
       if (parseScene(text.c_str(), text.size(), first, err) && !first.layers.empty())
          slot = slotIndex(first.layers.front().type, 0);
       bool ok = false;
@@ -1216,18 +1223,14 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
    if (!scenes.empty()) {
       Scene first;
       std::string err;
-      std::string text;
-      if (scenes.front().locationKind == CLAP_PRESET_DISCOVERY_LOCATION_FILE) {
-         std::ifstream in(scenes.front().location, std::ios::binary);
-         text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
-      }
+      const std::string text = kSelfTestScene;
       const int slot = parseScene(text.c_str(), text.size(), first, err) && !first.layers.empty()
                           ? slotIndex(first.layers.front().type, 0)
                           : 0;
       auto take = [&](const std::vector<std::pair<clap_id, double>> &extra, double hold,
                       double tail) {
          const clap_plugin_t *pl = createPlugin(entry);
-         loadPreset(pl, scenes.front());
+         loadPreset(pl, fixture);
          pl->activate(pl, sampleRate, 1, 512);
          resolveParamOverrides(pl, {"random seed=7"});
          for (const auto &e : extra)
@@ -1345,8 +1348,21 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
    }
 
    // --- with every layer's seed fixed, a scene is the same scene every time
+   //     -- effects included: a scene that carries a reverb and a delay on a
+   //     layer plays them the same in every take, the first one too
    if (!scenes.empty()) {
-      loadPreset(plugin, scenes.front());
+      Scene fixed;
+      std::string ferr;
+      PresetEntry wet = fixture;
+      wet.location += ".wet.verdaliscene";
+      if (parseScene(kSelfTestScene, std::strlen(kSelfTestScene), fixed, ferr) &&
+          !fixed.layers.empty()) {
+         fixed.layers.front().fx[kFxReverbOn] = 1.0;
+         fixed.layers.front().fx[kFxDelayOn] = 1.0;
+         std::ofstream out(wet.location, std::ios::binary);
+         out << formatScene(fixed);
+      }
+      loadPreset(plugin, wet);
       resolveParamOverrides(plugin, {"random seed=7"});
       const auto overrides = gParamOverrides;
       plugin->reset(plugin);
@@ -1726,6 +1742,10 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
 
    plugin->deactivate(plugin);
    plugin->destroy(plugin);
+
+   std::error_code fixtureEc;
+   std::filesystem::remove(fixture.location, fixtureEc);
+   std::filesystem::remove(fixture.location + ".wet.verdaliscene", fixtureEc);
 
    std::printf("\nselftest: %d failure(s)\n", failures);
    return failures == 0 ? 0 : 1;

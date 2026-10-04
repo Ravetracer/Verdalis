@@ -53,6 +53,7 @@ public:
          mApplied[k] = false;
       }
       mQuietRun = 0;
+      mFresh = true;
    }
 
    // [main thread, audio not running]
@@ -171,7 +172,14 @@ public:
       mAutoPanS.shape = static_cast<int>(real[kFxAutoPanShape] + 0.5);
 
       for (int k = 0; k < kNumFxKinds; ++k) {
-         mActive[k].set(mOn[k] ? 1.0f : 0.0f);
+         // A switch fades over 20 ms so it does not click into what is
+         // playing. A chain that has played nothing since it was cleared has
+         // nothing to click into, and takes its state at once: otherwise the
+         // first take after a reset fades its effects in and no other does.
+         if (mFresh)
+            mActive[k].snap(mOn[k] ? 1.0f : 0.0f);
+         else
+            mActive[k].set(mOn[k] ? 1.0f : 0.0f);
          mApplied[k] = false;
       }
    }
@@ -207,14 +215,20 @@ public:
    // [audio thread] Forgets every tail, as if the effects had just been
    // switched on.
    void clear() {
-      for (int k = 0; k < kNumFxKinds; ++k)
+      for (int k = 0; k < kNumFxKinds; ++k) {
          if (ready(k))
             mNeedsClear[k] = true;
+         // Starting over is not the middle of a switch: an effect fading in or
+         // out lands where it was going.
+         mActive[k].snap(mActive[k].target());
+      }
       mQuietRun = 0;
+      mFresh = true;
    }
 
    // [audio thread] In place, stereo, frames <= the prepared block size.
    void process(float *left, float *right, uint32_t frames) {
+      mFresh = false;
       if (!running()) {
          mQuietRun = 0;
          return;
@@ -357,6 +371,7 @@ private:
    bool mNeedsClear[kNumFxKinds] = {};
    bool mApplied[kNumFxKinds] = {};
    Smoother mActive[kNumFxKinds];
+   bool mFresh = true; // nothing processed since prepare() or clear()
    uint32_t mQuietRun = 0;
    std::vector<float> mDryL, mDryR;
 

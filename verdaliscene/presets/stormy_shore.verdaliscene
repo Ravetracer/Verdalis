@@ -11,6 +11,9 @@ attack = 3000
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,19 +26,317 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = ShoreBreak
-layer_from = Big Waves Crashing
-layer_level = 3.5
-
+# Rain 1
 layer = RainyDay
-layer_from = Storm Front
+layer_preset = Storm Front
 layer_level = -7.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
-layer = SkyHowl
-layer_from = Howling Storm
-layer_level = -6
+# Output
+gain = 0.144
 
+# Rain
+density = 3600
+clumping = 0.5
+drop_pitch = 711
+pitch_spread = 4.63
+drop_decay = 28.7
+decay_spread = 0.7
+tonality = 0.035
+impact = 1
+splash = 0.93
+slosh = 0.5
+level_spread = 0.8
+chirp = 0.02
+surface = Water
+note_tracking = 0.5
+bubble = 1
+
+# Distant
+bed_level = -13.7
+bed_tone = 0.722
+bed_body = 0
+bed_drift = 0.75
+bed_width = 1
+bed_pan = 0
+
+# Close
+width = 1
+drop_pan = 0
+
+# Space
+distance = 0.482
+air = 0.252
+space_amount = 0.3
+space_size = 0.65
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+highpass = 20
+
+# Envelope
+attack = 1500
+decay = 600
+sustain = 1
+release = 3500
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# System
+max_droplets = 1536
+seed = 0
+
+# Trickle
+trickle_level = -38
+trickle_rate = 26
+trickle_size = 1.2
+trickle_spread = 1.3
+trickle_decay = 12
+trickle_impact = 0.42
+stone_tone = 3800
+trickle_splash = 0.32
+
+# Thunder 1
 layer = ThunderClap
-layer_from = Rolling Thunder
+layer_preset = Rolling Thunder
 layer_level = 0.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_release_curve = 0
+
+# Output
+gain = -7.5
+
+# Strike
+distance = 1.5
+height = 6
+cloud_spread = 8
+tortuosity = 0.7
+branching = 0.7
+strokes = 4
+stroke_gap = 60
+variation = 0.5
+
+# Sound
+crack = 0.5
+weight = 0.55
+swell = 0.3
+rumble = 0.6
+rumble_tone = 0.5
+air = 0.5
+scatter = 0.5
+focus = 0.2
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -10
+echo_count = 5
+echo_spread = 2.5
+echo_damping = 0.6
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+ground = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = One Shot
+attack = 1
+release = 1200
 storm_rate = 3
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# System
+max_shocks = 4096
+seed = 0
+
+# Dynamics
+compress = 0.35
+comp_attack = 5
+comp_release = 400
+
+# Impact
+impact = 0.45
+bloom = 0.35
+
+# Waves 1
+layer = ShoreBreak
+layer_preset = Big Waves Crashing
+layer_level = 3.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Surf
+wave_period = 3800
+set_variation = 0.8
+wave_size = 0.9
+size_variation = 0.7
+break_attack = 400
+break_decay = 800
+break_tone = 900
+break_body = 0.16
+crest_sweep = 0.42
+breaker_type = Plunging
+precursor = 0.4
+bubble_mix = 0.1
+
+# Foam
+foam_level = -12
+foam_decay = 2200
+foam_tone = 1800
+foam_delay = 340
+fizz = 0.28
+foam_bubbles = 0.22
+
+# Swell
+swell_level = -16
+swell_tone = 380
+swell_depth = 0.4
+swell_rate = 6
+swell_width = 0.9
+
+# Bubbles
+bubble_rate = 24
+bubble_radius = 3.58
+bubble_spread = 1.1
+bubble_damping = 1
+
+# Wash
+wash_level = -13
+wash_decay = 1900
+wash_tone = 1100
+sand = 0.45
+
+# Shore
+shore_type = Sand
+distance = 0.2
+air = 0.6
+width = 0.9
+space_amount = 0.38
+space_size = 0.82
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.05
+filter_keytrack = 0
+
+# Envelope
+attack = 1500
+decay = 800
+sustain = 1
+release = 3000
+vel_to_level = 0.5
+vel_to_size = 0.45
+
+# Output
+gain = 0
+max_waves = 160
+seed = 0
+
+# Wind 1
+layer = SkyHowl
+layer_preset = Howling Storm
+layer_level = -6
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Wind
+wind_speed = 18
+turbulence = 6
+gust_rate = 13
+gust_depth = 0.25
+gust_length = 2500
+gust_shape = 0.5
+squall = 0.12
+squall_rate = 3
+
+# Airflow
+flow_level = -18
+flow_tone = 500
+flow_tilt = -7
+buffet = -17
+buffet_tone = 70
+hiss = 0.06
+speed_law = 1
+
+# Howl
+howl_amount = 0.3
+obstacle = Rocks
+howl_size = 2
+howl_spread = 2
+howl_voices = 8
+howl_reso = 0.35
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.2
+foliage = Bare Branches
+rustle_size = 25
+rustle_density = 18
+rustle_spread = 1
+rustle_decay = 50
+rustle_threshold = 0.25
+clatter = 0.7
+
+# Place
+terrain = Mountain
+distance = 0.2
+air = 0.5
+width = 1
+space_amount = 0.25
+space_size = 0.8
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

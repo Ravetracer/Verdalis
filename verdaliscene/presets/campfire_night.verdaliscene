@@ -11,6 +11,9 @@ attack = 2500
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,20 +26,386 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = CrackleBlaze
-layer_from = Forest Campfire
-layer_level = 2.5
-
-layer = NightLife
-layer_from = Summer Night
-layer_level = -4.5
-
-layer = NightLife
-layer_from = Tawny Wood
-layer_level = -5.5
-layer_stereo = Mono
-layer_pan = -0.55
-
+# Wind 1
 layer = SkyHowl
-layer_from = Soft Breath
+layer_preset = Soft Breath
 layer_level = -8
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Wind
+wind_speed = 2.5
+turbulence = 22
+gust_rate = 14
+gust_depth = 0.45
+gust_length = 900
+gust_shape = 0.5
+squall = 0.1
+squall_rate = 4
+
+# Airflow
+flow_level = -30
+flow_tone = 4000
+flow_tilt = -1
+buffet = -8
+buffet_tone = 40
+hiss = 1
+speed_law = 1
+
+# Howl
+howl_amount = 0.06
+obstacle = Reeds
+howl_size = 1.8
+howl_spread = 0.2
+howl_voices = 2
+howl_reso = 0.83
+howl_track = 0.1
+howl_threshold = 0.1
+warble = 0.12
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Coast
+distance = 0.05
+air = 0.5
+width = 0.8
+space_amount = 0.08
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 1200
+decay = 800
+sustain = 1
+release = 2500
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# Fire 1
+layer = CrackleBlaze
+layer_preset = Forest Campfire
+layer_level = 2.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Blaze
+fire_type = Camp Fire
+fire_blend = 0
+roar_level = -31
+roar_tilt = 0
+roar_body = 0.5
+flare = 0.45
+flare_rate = 0.138
+draught = 0.15
+
+# Crackle
+crackle_rate = 24
+crackle_level = -16
+crackle_decay = 1.8
+crackle_tone = 4000
+crackle_spread = 6
+burst = 2
+snap = 0.6
+crackle_body = 0.3
+
+# Sizzle
+sap = 0.26
+sizzle_level = -23
+sizzle_decay = 19
+sizzle_tone = 4500
+steam = 0.25
+
+# Settle
+settle_rate = 0.1
+settle_level = -25
+settle_tone = 150
+settle_decay = 8
+
+# Hearth
+hearth_type = Fire Ring
+distance = 0.18
+air = 0.5
+width = 0.82
+roar_width = 0.45
+space_amount = 0.26
+space_size = 0.62
+space_damping = 0.72
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 499
+sustain = 1
+release = 1505
+vel_to_level = 0.4
+vel_to_fire = 0.3
+
+# Output
+gain = -3.5
+max_events = 1024
+seed = 0
+
+# Night 1
+layer = NightLife
+layer_preset = Summer Night
+layer_level = -4.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 11
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.77
+fx_reverb_decay = 11124
+fx_reverb_diffusion = 0.82
+fx_reverb_damping = 0.685
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Call
+pitch = 1113
+contour = 0.4
+detail = 1
+sweep = 100
+length = 181
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Owl
+voice = 0.3
+breath = 0.265
+throat = 32
+muzzle = 0.5
+formant = 0.55
+rasp = 0.325
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+calls = 2
+call_rate = 2.85
+rate_drift = 0
+legato = 0.1
+motif = 0
+variation = 0.3
+phrase_gap = 6.3
+repeats = 1
+
+# Pack
+shot_level = -4
+pack_level = -16
+pack_rate = 8
+animals = 2
+pitch_spread = 0.5
+voice_spread = 0.35
+answer = 0.45
+restless = 0.6
+max_voices = 24
+
+# Chorus
+chorus_level = -14
+croak = 0.69
+croak_pitch = 2016
+pulse_rate = 48
+pulses = 18
+croak_length = 373
+frogs = 12
+croak_rate = 90
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.9
+
+# Insects
+insect_level = -14
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -18
+bed_tilt = 0
+bed_motion = 0.35
+
+# Place
+distance = 0.5
+distance_spread = 0.5
+air = 0.5
+width = 0.8
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 700
+decay = 400
+sustain = 1
+release = 3500
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 4
+seed = 0
+
+# Night 2
+layer = NightLife
+layer_preset = Tawny Wood
+layer_level = -5.5
+layer_pan = -0.55
+layer_stereo = Mono
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Call
+pitch = 497
+contour = 0.4
+detail = 1
+sweep = 100
+length = 181
+skew = 0.5
+jitter = 0.1
+vibrato = 0
+vibrato_rate = 3.4
+
+# Voice
+caller = Owl
+voice = 0.2
+breath = 0.04
+throat = 22
+muzzle = 0.35
+formant = 0.7
+rasp = 0
+radiate = 0.35
+partials = 0.7
+
+# Phrase
+calls = 2
+call_rate = 2.85
+rate_drift = 0
+legato = 0.1
+motif = -1.5
+variation = 0.2
+phrase_gap = 6.3
+repeats = 2
+
+# Pack
+shot_level = 6
+pack_level = -12
+pack_rate = 30
+animals = 2
+pitch_spread = 0.25
+voice_spread = 0.35
+answer = 0.5
+restless = 0.4
+max_voices = 24
+
+# Chorus
+chorus_level = -60
+croak = 0.5
+croak_pitch = 2063
+pulse_rate = 27
+pulses = 10
+croak_length = 325
+frogs = 12
+croak_rate = 121
+regularity = 0.95
+chorus_spread = 0.7
+chorus_width = 0.85
+
+# Insects
+insect_level = -34
+insect_pitch = 2982
+insect_width = 0.35
+trill_rate = 49.2
+trill_depth = 0.7
+shimmer = 0.5
+
+# Bed
+bed_level = -28
+bed_tilt = 0
+bed_motion = 0.3
+
+# Place
+distance = 0.4
+distance_spread = 0.35
+air = 0.5
+width = 0.55
+space_amount = 0.45
+space_size = 0.6
+space_damping = 0.7
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 9.76
+decay = 400
+sustain = 1
+release = 2500
+vel_to_level = 0.6
+vel_to_pitch = 0.15
+
+# Output
+gain = 6
+seed = 0

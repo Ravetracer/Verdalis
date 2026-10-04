@@ -2,7 +2,7 @@
 format = 1
 name = Dawn Chorus
 author = VerdaliScene
-description = The hour before sunrise in a wood: the chorus building, a blackbird and a robin singing close by, a woodpecker drumming further off.
+description = The hour before sunrise in a wood: the chorus building, a blackbird and a robin singing close by, a woodpecker drumming further off, and leaves stirring in the first breeze.
 features = ambient, nature, birds, forest, morning
 
 # Envelope
@@ -11,6 +11,9 @@ attack = 4000
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,30 +26,515 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = ChirpParade
-layer_from = Dawn Chorus
-layer_level = 6
-
-layer = ChirpParade
-layer_from = Blackbird Song
-layer_level = -0.5
-layer_stereo = Mono
-layer_pan = -0.35
-layer_shot_rate = 4
-
-layer = ChirpParade
-layer_from = Robin Whistle
-layer_level = -1.5
-layer_stereo = Mono
-layer_pan = 0.4
-layer_shot_rate = 3
-
-layer = ChirpParade
-layer_from = Woodpecker Drum
-layer_level = 2.5
-layer_stereo = Mono
-layer_pan = 0.7
-
+# Wind 1
 layer = SkyHowl
-layer_from = Soft Breath
+layer_preset = Autumn Leaves
 layer_level = -8
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.55
+fx_reverb_decay = 5000
+fx_reverb_diffusion = 0.75
+fx_reverb_damping = 0.45
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Widener
+fx_widener_on = On
+fx_widener_width = 1.5
+fx_widener_decorrelation = 0.795
+fx_widener_bass_mono = 20
+
+# Wind
+wind_speed = 3.5
+turbulence = 10
+gust_rate = 4.7
+gust_depth = 0.45
+gust_length = 2500
+gust_shape = 0.5
+squall = 0.2
+squall_rate = 2.5
+
+# Airflow
+flow_level = -26
+flow_tone = 1600
+flow_tilt = -4
+buffet = -12
+buffet_tone = 45
+hiss = 0.85
+speed_law = 1
+
+# Howl
+howl_amount = 0.08
+obstacle = Open
+howl_size = 2.5
+howl_spread = 2
+howl_voices = 4
+howl_reso = 0.68
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.55
+foliage = Dry Leaves
+rustle_size = 42
+rustle_density = 30
+rustle_spread = 1.5
+rustle_decay = 35
+rustle_threshold = 0.12
+clatter = 0.7
+
+# Place
+terrain = Meadow
+distance = 0.2
+air = 0.5
+width = 0.05
+space_amount = 0.12
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# Birds 1
+layer = ChirpParade
+layer_preset = Dawn Chorus
+layer_level = 6
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Syllable
+pitch = 2600
+sweep = 100
+contour = 0.5
+detail = 1
+length = 96
+skew = 0.5
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Sparrow
+voice = 0.3
+breath = 0.05
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+syllables = 4
+syllable_rate = 8.5
+rate_drift = 0
+legato = 0.7
+motif = 0
+variation = 0.5
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -60
+flock_level = -6
+flock_rate = 700
+birds = 12
+pitch_spread = 2.2
+voice_spread = 0.6
+answer = 0.5
+restless = 0.55
+max_voices = 48
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.45
+distance_spread = 0.7
+air = 0.5
+width = 0.8
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = -2.9
+seed = 0
+
+# Birds 2
+layer = ChirpParade
+layer_preset = Blackbird Song
+layer_level = -14.2
+layer_pan = -0.35
+layer_stereo = Mono
+layer_shot_rate = 4
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.865
+fx_reverb_decay = 10774
+fx_reverb_diffusion = 0.815
+fx_reverb_damping = 0.79
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Syllable
+pitch = 1999
+sweep = 140
+contour = 0.7
+detail = 1
+length = 180
+skew = 0.5
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Warbler
+voice = 0.3
+breath = 0.05
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+syllables = 5
+syllable_rate = 4
+rate_drift = 0
+legato = 0.35
+motif = 3
+variation = 0.5
+phrase_gap = 1.2
+repeats = 2
+
+# Flock
+shot_level = 0
+flock_level = -60
+flock_rate = 273
+birds = 5
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.2
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.35
+space_size = 0.65
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = -0.4
+seed = 0
+
+# Birds 3
+layer = ChirpParade
+layer_preset = Robin Whistle
+layer_level = -7.09
+layer_pan = 0.4
+layer_stereo = Mono
+layer_shot_rate = 3
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.685
+fx_reverb_decay = 8342
+fx_reverb_diffusion = 0.75
+fx_reverb_damping = 0.795
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Syllable
+pitch = 2560
+sweep = 100
+contour = 0.25
+detail = 1
+length = 96
+skew = 0.5
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Whistler
+voice = 0
+breath = 0.015
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+syllables = 4
+syllable_rate = 5
+rate_drift = 0
+legato = 0.4
+motif = -2
+variation = 0.3
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = 0
+flock_level = -60
+flock_rate = 273
+birds = 5
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.15
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.3
+space_size = 0.6
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = -0.1
+seed = 0
+
+# Birds 4
+layer = ChirpParade
+layer_preset = Woodpecker Drum
+layer_level = 2.5
+layer_pan = 0.7
+layer_stereo = Mono
+layer_shot_rate = 8.82
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.815
+fx_reverb_decay = 7340
+fx_reverb_diffusion = 0.75
+fx_reverb_damping = 0.805
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Syllable
+pitch = 2600
+sweep = 100
+contour = 0.5
+detail = 1
+length = 96
+skew = 0.5
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Sparrow
+voice = 0.3
+breath = 0.05
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+syllables = 3
+syllable_rate = 7.5
+rate_drift = 0
+legato = 0.7
+motif = 0
+variation = 0.35
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -60
+flock_level = -60
+flock_rate = 273
+birds = 5
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = 6
+drum_rate = 0
+strikes = 14
+strike_rate = 17
+drum_accel = 0.25
+knock = 900
+ring = 10
+
+# Place
+distance = 0.25
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.35
+space_size = 0.6
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 4.3
+seed = 0

@@ -2,8 +2,8 @@
 format = 1
 name = Forest River
 author = VerdaliScene
-description = A stream running through a summer wood: birds in the canopy, wind moving the leaves overhead, and bees working the bank.
-features = ambient, nature, forest, water, birds, day
+description = A stream running through a summer wood: a cuckoo and a robin in the trees, wind moving the leaves overhead, and bees working the bank.
+features = ambient, nature, forest, water, birds, day, cuckoo
 
 # Envelope
 gate = Notes
@@ -11,6 +11,9 @@ attack = 2500
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,19 +26,453 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = RiverFlow
-layer_from = Forest Stream
-layer_level = -1
-
-layer = ChirpParade
-layer_from = Forest Morning
-layer_level = 1
-
+# Wind 1
 layer = SkyHowl
-layer_from = Wind In Birches
+layer_preset = Wind In Birches
 layer_level = 0
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
+# Wind
+wind_speed = 8
+turbulence = 4
+gust_rate = 5.9
+gust_depth = 0.25
+gust_length = 4000
+gust_shape = 0.5
+squall = 0.5
+squall_rate = 1.2
+
+# Airflow
+flow_level = -20
+flow_tone = 150
+flow_tilt = -9
+buffet = -17
+buffet_tone = 70
+hiss = 0.07
+speed_law = 1
+
+# Howl
+howl_amount = 0.08
+obstacle = Twigs
+howl_size = 3.5
+howl_spread = 1
+howl_voices = 6
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.22
+foliage = Broadleaf
+rustle_size = 50
+rustle_density = 40
+rustle_spread = 1.1
+rustle_decay = 22
+rustle_threshold = 0.2
+clatter = 0.3
+
+# Place
+terrain = Forest
+distance = 0.2
+air = 0.5
+width = 0.6
+space_amount = 0.3
+space_size = 0.55
+space_damping = 0.65
+
+# Filter
+filter_type = Lowpass
+highpass = 70
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# Birds 1
+layer = ChirpParade
+layer_preset = Cuckoo Call
+layer_level = 1
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.835
+fx_reverb_decay = 8342
+fx_reverb_diffusion = 0.88
+fx_reverb_damping = 0.855
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Syllable
+pitch = 2580
+sweep = 100
+contour = 0.5
+detail = 1
+length = 96
+skew = 0.5
+jitter = 0.04
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Cuckoo
+voice = 0
+breath = 0.05
+tract = 13
+beak = 0.15
+formant = 0.4
+rasp = 0
+radiate = 0.12
+partials = 0.6
+
+# Phrase
+syllables = 2
+syllable_rate = 3.45
+rate_drift = 0
+legato = 0
+motif = -4.2
+variation = 0.08
+phrase_gap = 0.89
+repeats = 4
+
+# Flock
+shot_level = -0
+flock_level = -6
+flock_rate = 22
+birds = 2
+pitch_spread = 0.12
+voice_spread = 0.1
+answer = 0.2
+restless = 0.2
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.3
+distance_spread = 0.3
+air = 0.5
+width = 0.5
+space_amount = 0.15
+space_size = 0.5
+space_damping = 0.55
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 0
+seed = 0
+
+# Birds 2
+layer = ChirpParade
+layer_preset = Robin Whistle
+layer_level = -9.93
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.815
+fx_reverb_decay = 10774
+fx_reverb_diffusion = 0.79
+fx_reverb_damping = 0.755
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Syllable
+pitch = 2560
+sweep = 100
+contour = 0.25
+detail = 1
+length = 96
+skew = 0.5
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Whistler
+voice = 0
+breath = 0.015
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+syllables = 4
+syllable_rate = 5
+rate_drift = 0
+legato = 0.4
+motif = -2
+variation = 0.3
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = 0
+flock_level = -60
+flock_rate = 273
+birds = 5
+pitch_spread = 0.8
+voice_spread = 0.3
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.15
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.3
+space_size = 0.6
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = -0.1
+seed = 0
+
+# River 1
+layer = RiverFlow
+layer_preset = Forest Stream
+layer_level = -1
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Flow
+water_type = Creek
+water_blend = 0.5
+flow_level = -24
+flow_tilt = 0.07
+flow_body = 0.63
+turbulence = 0.28
+surge_rate = 0.7
+flow_grain = 0
+
+# Stones
+dabble_rate = 1.72
+dabble_level = -26.2
+dabble_size = 3.3
+dabble_spread = 0.3
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 2.54
+trickle_level = -18.8
+trickle_size = 1.64
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -48
+plunge_tone = 170
+plunge_depth = 0.3
+plunge_q = 0.4
+
+# Reach
+bank_type = Forest
+distance = 0.18
+air = 0.5
+width = 1
+flow_width = 1
+space_amount = 0.22
+space_size = 0.45
+space_damping = 0.62
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = -2.7
+max_events = 512
+seed = 0
+
+# Insects 1
 layer = InsectSwarm
-layer_from = Bumblebee Garden
-layer_level = -20
+layer_preset = Bumblebee Garden
+layer_level = -18.1
 layer_pan = 0.3
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Swarm
+species = Bumblebee
+rate_shift = 0
+count = 1
+swarm_level = -13
+spread = 90
+wander = 18
+wander_rate = 3
+rasp = 0.5
+roam = 4
+roam_rate = 0.4
+
+# Wing
+tilt = 0
+formant = 0
+resonance = 0
+stroke = 0
+bite = 0.45
+flutter = 0.25
+
+# Flyby
+flyby_rate = 0.35
+flyby_level = -20
+flyby_rise = 13.3
+flyby_pass = 1.37
+flyby_speed = 3.2
+flyby_sweep = 0.8
+
+# Stridulate
+strid_level = -60
+carrier = 5549
+carrier_q = 13.2
+pulse_rate = 268
+echeme_rate = 12.5
+duty = 0.48
+chorus = 6
+strid_spread = 0.5
+scrape = 0.45
+
+# Air
+distance = 0.12
+air = 0.5
+width = 0.75
+space_amount = 0.12
+space_size = 0.55
+space_damping = 0.5
+
+# Bed
+bed_level = -60
+bed_tone = 1200
+bed_tilt = -0.2
+
+# Filter
+filter_type = Lowpass
+highpass = 80
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 300
+decay = 400
+sustain = 1
+release = 900
+vel_to_level = 0.4
+vel_to_swarm = 0.3
+
+# Output
+gain = -3
+max_voices = 128
+seed = 0

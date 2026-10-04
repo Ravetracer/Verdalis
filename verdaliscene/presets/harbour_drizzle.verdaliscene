@@ -11,6 +11,9 @@ attack = 2500
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,14 +26,239 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = ShoreBreak
-layer_from = Harbour Lapping
-layer_level = 10.5
-
+# Rain 1
 layer = RainyDay
-layer_from = Light Drizzle
+layer_preset = Light Drizzle
 layer_level = -2
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
+# Output
+gain = 0.819
+
+# Rain
+density = 57.2
+clumping = 0.712
+drop_pitch = 9000
+pitch_spread = 0
+drop_decay = 6.5
+decay_spread = 0.173
+tonality = 0.995
+impact = 0.023
+splash = 0.488
+slosh = 0.25
+level_spread = 1
+chirp = 0.35
+surface = Concrete
+note_tracking = 0.5
+bubble = 0.893
+
+# Distant
+bed_level = -20
+bed_tone = 0.72
+bed_body = 0
+bed_drift = 0.273
+bed_width = 0.95
+bed_pan = 0
+
+# Close
+width = 0.95
+drop_pan = 0
+
+# Space
+distance = 0.865
+air = 0.327
+space_amount = 0.18
+space_size = 0.5
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+highpass = 20
+
+# Envelope
+attack = 900
+decay = 600
+sustain = 1
+release = 2200
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# System
+max_droplets = 512
+seed = 0
+
+# Trickle
+trickle_level = -30.2
+trickle_rate = 5.53
+trickle_size = 1.2
+trickle_spread = 1.1
+trickle_decay = 12
+trickle_impact = 0.745
+stone_tone = 1603
+trickle_splash = 0.93
+
+# Waves 1
+layer = ShoreBreak
+layer_preset = Harbour Lapping
+layer_level = 10.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Surf
+wave_period = 1600
+set_variation = 0.2
+wave_size = 0.4
+size_variation = 0.35
+break_attack = 180
+break_decay = 420
+break_tone = 210
+break_body = 1
+crest_sweep = 0.12
+breaker_type = Collapsing
+precursor = 0.15
+bubble_mix = 0.1
+
+# Foam
+foam_level = -22
+foam_decay = 900
+foam_tone = 1500
+foam_delay = 220
+fizz = 0.28
+foam_bubbles = 0.18
+
+# Swell
+swell_level = -13
+swell_tone = 100
+swell_depth = 0.2
+swell_rate = 14
+swell_width = 0.35
+
+# Bubbles
+bubble_rate = 16
+bubble_radius = 6.94
+bubble_spread = 0.8
+bubble_damping = 1
+
+# Wash
+wash_level = -26
+wash_decay = 800
+wash_tone = 400
+sand = 0.25
+
+# Shore
+shore_type = Harbour
+distance = 0.05
+air = 0.5
+width = 0.3
+space_amount = 0.44
+space_size = 0.28
+space_damping = 0.3
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 7500
+filter_reso = 0.08
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 400
+sustain = 1
+release = 1800
+vel_to_level = 0.45
+vel_to_size = 0.3
+
+# Output
+gain = 0
+max_waves = 112
+seed = 0
+
+# Wind 1
 layer = SkyHowl
-layer_from = Beach Grass
+layer_preset = Beach Grass
 layer_level = -11.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Wind
+wind_speed = 8
+turbulence = 3
+gust_rate = 5.3
+gust_depth = 0.2
+gust_length = 4000
+gust_shape = 0.5
+squall = 0.25
+squall_rate = 1.5
+
+# Airflow
+flow_level = -17
+flow_tone = 500
+flow_tilt = -4
+buffet = -12
+buffet_tone = 70
+hiss = 0
+speed_law = 1
+
+# Howl
+howl_amount = 0.12
+obstacle = Grass
+howl_size = 3
+howl_spread = 1.8
+howl_voices = 8
+howl_reso = 0.3
+howl_track = 0.8
+howl_threshold = 0.3
+warble = 0.25
+
+# Rustle
+rustle_amount = 0.08
+foliage = Grass
+rustle_size = 90
+rustle_density = 200
+rustle_spread = 0.9
+rustle_decay = 3
+rustle_threshold = 0.15
+clatter = 0
+
+# Place
+terrain = Coast
+distance = 0.2
+air = 0.5
+width = 0.85
+space_amount = 0.12
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0

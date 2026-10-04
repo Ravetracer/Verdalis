@@ -136,8 +136,9 @@ verdaliscene-render --all --outdir /tmp/scenes     # every factory scene
 verdaliscene-render --selftest                     # what install.sh runs
 ```
 
-`tools/analysis/make_scenes.py` writes the factory scenes from one table, placing
-each layer by the level `--layers` measured for it.
+The factory scenes are plain scene files in `presets/`, mixed by ear in the
+plugin itself; `--layers` measures each layer's level in one when a mix needs
+checking.
 
 ## Licence
 

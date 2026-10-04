@@ -11,6 +11,9 @@ attack = 2500
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,15 +26,267 @@ width = 1
 gain = 0
 tails = Ring Out
 
-layer = RiverFlow
-layer_from = Big Falls
-layer_level = -6.5
-
+# Birds 1
 layer = ChirpParade
-layer_from = Dawn Chorus
+layer_preset = Dawn Chorus
 layer_level = -0.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.3
+fx_reverb_predelay = 20
+fx_reverb_size = 0.27
+fx_reverb_decay = 8079
+fx_reverb_diffusion = 0.885
+fx_reverb_damping = 0.9
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Syllable
+pitch = 2600
+sweep = 100
+contour = 0.5
+detail = 1
+length = 96
+skew = 0.5
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Sparrow
+voice = 0.3
+breath = 0.05
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0
+radiate = 0.35
+partials = 0.6
+
+# Phrase
+syllables = 4
+syllable_rate = 8.5
+rate_drift = 0
+legato = 0.7
+motif = 0
+variation = 0.5
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -60
+flock_level = -6
+flock_rate = 700
+birds = 12
+pitch_spread = 2.2
+voice_spread = 0.6
+answer = 0.5
+restless = 0.55
+max_voices = 48
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.45
+distance_spread = 0.7
+air = 0.5
+width = 0.8
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = -2.9
+seed = 0
+
+# River 1
+layer = RiverFlow
+layer_preset = Big Falls
+layer_level = -10.2
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Flow
+water_type = Deep Rush
+water_blend = 0.95
+flow_level = -24
+flow_tilt = -0.04
+flow_body = 0.69
+turbulence = 0.13
+surge_rate = 4.14
+flow_grain = 0
+
+# Stones
+dabble_rate = 11
+dabble_level = -58
+dabble_size = 3.3
+dabble_spread = 0.3
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 32
+trickle_level = -51.1
+trickle_size = 1.24
+trickle_spread = 1.2
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 3500
+splash = 0.25
+
+# Plunge
+plunge_level = -26
+plunge_tone = 90
+plunge_depth = 0.55
+plunge_q = 0.65
+
+# Reach
+bank_type = Gorge
+distance = 0.3
+air = 0.5
+width = 0.11
+flow_width = 0.1
+space_amount = 0.36
+space_size = 0.7
+space_damping = 0.38
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = 3
+max_events = 512
+seed = 0
+
+# Insects 1
 layer = InsectSwarm
-layer_from = Dragonfly Pond
-layer_level = -18.5
+layer_preset = Dragonfly Pond
+layer_level = -11.7
 layer_pan = 0.4
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Swarm
+species = Dragonfly
+rate_shift = 0
+count = 2
+swarm_level = -12
+spread = 60
+wander = 51
+wander_rate = 3
+rasp = 0.765
+roam = 7.18
+roam_rate = 0.104
+
+# Wing
+tilt = 0.18
+formant = 0
+resonance = 0
+stroke = 0
+bite = 0.7
+flutter = 0.475
+
+# Flyby
+flyby_rate = 0.25
+flyby_level = -18
+flyby_rise = 13.3
+flyby_pass = 1.37
+flyby_speed = 3.2
+flyby_sweep = 0.8
+
+# Stridulate
+strid_level = -60
+carrier = 5549
+carrier_q = 13.2
+pulse_rate = 268
+echeme_rate = 12.5
+duty = 0.48
+chorus = 6
+strid_spread = 0.5
+scrape = 0.45
+
+# Air
+distance = 0.22
+air = 0.5
+width = 0.75
+space_amount = 0.12
+space_size = 0.55
+space_damping = 0.5
+
+# Bed
+bed_level = -60
+bed_tone = 1200
+bed_tilt = -0.2
+
+# Filter
+filter_type = Lowpass
+highpass = 80
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 300
+decay = 400
+sustain = 1
+release = 900
+vel_to_level = 0.4
+vel_to_swarm = 0.3
+
+# Output
+gain = -3
+max_voices = 128
+seed = 0

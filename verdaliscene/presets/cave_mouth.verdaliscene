@@ -11,6 +11,9 @@ attack = 3000
 decay = 1000
 sustain = 1
 release = 6000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,37 +26,267 @@ width = 1
 gain = 0
 tails = Ring Out
 
+# Rain 1
 layer = RainyDay
-layer_from = Cave Drips
+layer_preset = Cave Drips
 layer_level = 2
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
 fx_reverb_on = On
-fx_reverb_size = 0.85
-fx_reverb_diffusion = 0.8
-fx_reverb_damping = 0.55
-fx_reverb_damp_freq = 3500
-fx_reverb_mod_depth = 0.4
-fx_reverb_low_cut = 140
-fx_reverb_high_cut = 7000
-fx_reverb_decay = 7000
-fx_reverb_predelay = 35
 fx_reverb_mix = 0.5
-
-layer = RiverFlow
-layer_from = Hanging Trickle
-layer_level = 7.5
-fx_reverb_on = On
+fx_reverb_predelay = 35
 fx_reverb_size = 0.85
+fx_reverb_decay = 7000
 fx_reverb_diffusion = 0.8
 fx_reverb_damping = 0.55
 fx_reverb_damp_freq = 3500
 fx_reverb_mod_depth = 0.4
+fx_reverb_mod_rate = 0.5
 fx_reverb_low_cut = 140
 fx_reverb_high_cut = 7000
-fx_reverb_decay = 6000
-fx_reverb_predelay = 22
-fx_reverb_mix = 0.4
-layer_pan = 0.35
+fx_reverb_width = 1
+fx_reverb_freeze = Off
 
+# Output
+gain = 3.95
+
+# Rain
+density = 1.49
+clumping = 0.326
+drop_pitch = 1300
+pitch_spread = 1.2
+drop_decay = 72
+decay_spread = 0
+tonality = 0.6
+impact = 0.347
+splash = 0.3
+slosh = 0.5
+level_spread = 0.53
+chirp = 1
+surface = Puddle
+note_tracking = 0.5
+bubble = 0.76
+
+# Distant
+bed_level = -40
+bed_tone = 0.083
+bed_body = 0.5
+bed_drift = 0.3
+bed_width = 0.9
+bed_pan = 0
+
+# Close
+width = 0.9
+drop_pan = 0
+
+# Space
+distance = 0.44
+air = 0.099
+space_amount = 0.897
+space_size = 0.851
+space_damping = 0.55
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+highpass = 40
+
+# Envelope
+attack = 20
+decay = 120
+sustain = 1
+release = 2600
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# System
+max_droplets = 512
+seed = 0
+
+# Trickle
+trickle_level = -60
+trickle_rate = 2
+trickle_size = 1.6
+trickle_spread = 0.8
+trickle_decay = 26
+trickle_impact = 0.4
+stone_tone = 3000
+trickle_splash = 0.55
+
+# Wind 1
 layer = SkyHowl
-layer_from = Cave Mouth
+layer_preset = Cave Mouth
 layer_level = -9
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Wind
+wind_speed = 6
+turbulence = 5
+gust_rate = 4.7
+gust_depth = 0.2
+gust_length = 4000
+gust_shape = 0.5
+squall = 0.15
+squall_rate = 2
+
+# Airflow
+flow_level = -22
+flow_tone = 420
+flow_tilt = -20
+buffet = -10
+buffet_tone = 70
+hiss = 0.02
+speed_law = 1
+
+# Howl
+howl_amount = 0.7
+obstacle = Cave
+howl_size = 0.6
+howl_spread = 0.2
+howl_voices = 2
+howl_reso = 0.36
+howl_track = 0.2
+howl_threshold = 0.15
+warble = 0.35
+
+# Rustle
+rustle_amount = 0
+foliage = None
+rustle_size = 41
+rustle_density = 25
+rustle_spread = 1
+rustle_decay = 18
+rustle_threshold = 0.25
+clatter = 0.4
+
+# Place
+terrain = Mountain
+distance = 0.1
+air = 0.5
+width = 0.5
+space_amount = 0.55
+space_size = 0.75
+space_damping = 0.25
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2500
+decay = 800
+sustain = 1
+release = 4000
+vel_to_level = 0.5
+vel_to_speed = 0.4
+
+# Output
+gain = 0
+max_gusts = 64
+seed = 0
+
+# River 1
+layer = RiverFlow
+layer_preset = Hanging Trickle
+layer_level = 7.5
+layer_pan = 0.35
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.4
+fx_reverb_predelay = 22
+fx_reverb_size = 0.85
+fx_reverb_decay = 6000
+fx_reverb_diffusion = 0.8
+fx_reverb_damping = 0.55
+fx_reverb_damp_freq = 3500
+fx_reverb_mod_depth = 0.4
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 140
+fx_reverb_high_cut = 7000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Flow
+water_type = Trickle
+water_blend = 0.2
+flow_level = -24
+flow_tilt = 0.13
+flow_body = 0.74
+turbulence = 0.87
+surge_rate = 4.22
+flow_grain = 0
+
+# Stones
+dabble_rate = 11
+dabble_level = -30
+dabble_size = 3.3
+dabble_spread = 0.3
+dabble_cluster = 4
+dabble_spill = 25
+dabble_damping = 1
+dabble_glug = 0.35
+
+# Trickle
+trickle_rate = 5.31
+trickle_level = -9.7
+trickle_size = 2.12
+trickle_spread = 2.73
+trickle_decay = 13
+trickle_impact = 0.45
+stone_tone = 1153
+splash = 0.155
+
+# Plunge
+plunge_level = -56
+plunge_tone = 240
+plunge_depth = 0.25
+plunge_q = 0.7
+
+# Reach
+bank_type = Cavern
+distance = 0.05
+air = 0.5
+width = 0.2
+flow_width = 0.17
+space_amount = 0.4
+space_size = 0.5
+space_damping = 0.35
+
+# Filter
+filter_type = Lowpass
+highpass = 60
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 800
+decay = 500
+sustain = 1
+release = 1500
+vel_to_level = 0.4
+vel_to_flow = 0.3
+
+# Output
+gain = -15
+max_events = 512
+seed = 0

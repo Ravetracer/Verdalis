@@ -11,6 +11,9 @@ attack = 3000
 decay = 1000
 sustain = 1
 release = 4000
+attack_curve = 0
+decay_curve = 0
+release_curve = 0
 
 # Filter
 filter_type = Lowpass
@@ -23,19 +26,347 @@ width = 1
 gain = 0
 tails = Ring Out
 
+# Rain 1
 layer = RainyDay
-layer_from = Tropical Monsoon
+layer_preset = Tropical Monsoon
 layer_level = -2.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
 
-layer = ChirpParade
-layer_from = Jungle Screech
-layer_level = 4
+# Output
+gain = 11.2
 
-layer = InsectSwarm
-layer_from = Cicada Noon
-layer_level = -13.5
+# Rain
+density = 2663
+clumping = 0.185
+drop_pitch = 1640
+pitch_spread = 2.42
+drop_decay = 1.86
+decay_spread = 0.58
+tonality = 0.303
+impact = 0.233
+splash = 0.887
+slosh = 0.725
+level_spread = 0.75
+chirp = 0.02
+surface = Water
+note_tracking = 0.5
+bubble = 0.863
 
+# Distant
+bed_level = -51.2
+bed_tone = 0.706
+bed_body = 1
+bed_drift = 0.5
+bed_width = 1
+bed_pan = 0
+
+# Close
+width = 1
+drop_pan = 0
+
+# Space
+distance = 1
+air = 1
+space_amount = 0.3
+space_size = 0.6
+space_damping = 0.5
+
+# Filter
+filter_type = Lowpass
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+highpass = 20
+
+# Envelope
+attack = 1200
+decay = 600
+sustain = 1
+release = 3000
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# System
+max_droplets = 1536
+seed = 0
+
+# Trickle
+trickle_level = -40.8
+trickle_rate = 11.6
+trickle_size = 1.25
+trickle_spread = 2.41
+trickle_decay = 5.67
+trickle_impact = 0.81
+stone_tone = 1395
+trickle_splash = 0.675
+
+# Thunder 1
 layer = ThunderClap
-layer_from = Under The Rain
+layer_preset = Under The Rain
 layer_level = -7.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_release_curve = 0
+
+# Output
+gain = 10.8
+
+# Strike
+distance = 7
+height = 6
+cloud_spread = 8
+tortuosity = 0.5
+branching = 0.4
+strokes = 3
+stroke_gap = 70
+variation = 0.7
+
+# Sound
+crack = 0.3
+weight = 0.6
+swell = 0.5
+rumble = 0.6
+rumble_tone = 0.4
+air = 0.55
+scatter = 0.5
+focus = 0.7
+
+# Stereo
+width = 0.85
+pan = 0
+rumble_width = 0.9
+drift = 0.3
+
+# Echoes
+echo_level = -14
+echo_count = 3
+echo_spread = 3
+echo_damping = 0.7
+
+# Space
+space_amount = 0.12
+space_size = 0.5
+space_damping = 0.5
+ground = 0.5
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+mode = Storm
+attack = 1
+release = 3000
 storm_rate = 3
+vel_to_level = 0.5
+vel_to_distance = 0.5
+
+# System
+max_shocks = 2048
+seed = 0
+
+# Dynamics
+compress = 0.265
+comp_attack = 3.16
+comp_release = 250
+
+# Impact
+impact = 0.2
+bloom = 0
+
+# Birds 1
+layer = ChirpParade
+layer_preset = Jungle Screech
+layer_level = 4
+layer_pan = 0
+layer_stereo = Stereo
+layer_shot_rate = 2
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Reverb
+fx_reverb_on = On
+fx_reverb_mix = 0.35
+fx_reverb_predelay = 20
+fx_reverb_size = 0.88
+fx_reverb_decay = 11859
+fx_reverb_diffusion = 0.9
+fx_reverb_damping = 0.9
+fx_reverb_damp_freq = 4000
+fx_reverb_mod_depth = 0.35
+fx_reverb_mod_rate = 0.5
+fx_reverb_low_cut = 20
+fx_reverb_high_cut = 20000
+fx_reverb_width = 1
+fx_reverb_freeze = Off
+
+# Syllable
+pitch = 3400
+sweep = 160
+contour = 0.8
+detail = 1
+length = 260
+skew = 0.5
+jitter = 0.12
+pulse_rate = 13.2
+pulse_depth = 0
+
+# Timbre
+species = Screech
+voice = 0.45
+breath = 0.073
+tract = 4.9
+beak = 0.5
+formant = 0.55
+rasp = 0.5
+radiate = 0.35
+partials = 0.3
+
+# Phrase
+syllables = 2
+syllable_rate = 3
+rate_drift = 0
+legato = 0.7
+motif = 0
+variation = 0.35
+phrase_gap = 0.31
+repeats = 1
+
+# Flock
+shot_level = -4
+flock_level = -10
+flock_rate = 90
+birds = 4
+pitch_spread = 1.8
+voice_spread = 0.5
+answer = 0.35
+restless = 0.4
+max_voices = 24
+
+# Drum
+drum_level = -60
+drum_rate = 6
+strikes = 10
+strike_rate = 15
+drum_accel = 0.23
+knock = 1000
+ring = 13
+
+# Place
+distance = 0.3
+distance_spread = 0.4
+air = 0.5
+width = 0.6
+space_amount = 0.4
+space_size = 0.7
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 2
+decay = 400
+sustain = 1
+release = 600
+vel_to_level = 0.6
+vel_to_pitch = 0.2
+
+# Output
+gain = 6.6
+seed = 0
+
+# Insects 1
+layer = InsectSwarm
+layer_preset = Cicada Noon
+layer_level = -13.5
+layer_pan = 0
+layer_stereo = Stereo
+layer_attack_curve = 0
+layer_decay_curve = 0
+layer_release_curve = 0
+
+# Swarm
+species = Honeybee
+rate_shift = 0
+count = 12
+swarm_level = -60
+spread = 150
+wander = 18
+wander_rate = 3
+rasp = 0.5
+roam = 4
+roam_rate = 0.4
+
+# Wing
+tilt = 0
+formant = 0
+resonance = 0
+stroke = 0
+bite = 0.45
+flutter = 0.25
+
+# Flyby
+flyby_rate = 0.2
+flyby_level = -60
+flyby_rise = 13.3
+flyby_pass = 1.37
+flyby_speed = 3.2
+flyby_sweep = 0.8
+
+# Stridulate
+strid_level = -2
+carrier = 5549
+carrier_q = 13.2
+pulse_rate = 268
+echeme_rate = 12.5
+duty = 0.48
+chorus = 16
+strid_spread = 0.55
+scrape = 0.15
+
+# Air
+distance = 0.25
+air = 0.5
+width = 0.9
+space_amount = 0.15
+space_size = 0.55
+space_damping = 0.5
+
+# Bed
+bed_level = -60
+bed_tone = 1200
+bed_tilt = -0.2
+
+# Filter
+filter_type = Lowpass
+highpass = 80
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_keytrack = 0
+
+# Envelope
+attack = 300
+decay = 400
+sustain = 1
+release = 900
+vel_to_level = 0.4
+vel_to_swarm = 0.3
+
+# Output
+gain = -3
+max_voices = 128
+seed = 0
