@@ -358,9 +358,10 @@ void RainEngine::reset() {
    // A non-zero Seed promises the same rain every time, so starting over has to
    // start the sequence over too. Seed 0 deliberately keeps running, which is
    // what makes it the setting that never repeats.
-   if (mP.seed != 0)
+   if (mP.seed != 0) {
       mRng.reseed(rngStateForSeed(mP.seed));
       mTrickleRng.reseed(rngStateForSeed(mP.seed) ^ 0x5BF03635u);
+   }
 }
 
 void RainEngine::setParams(const EngineParams &p) {
@@ -371,9 +372,10 @@ void RainEngine::setParams(const EngineParams &p) {
       // Seed 0 keeps the per-instance random seed chosen in prepare(), so two
       // instances of the plugin never generate identical rain. Any other value
       // is reproducible and renders identically every time.
-      if (mP.seed != 0)
+      if (mP.seed != 0) {
          mRng.reseed(rngStateForSeed(mP.seed));
          mTrickleRng.reseed(rngStateForSeed(mP.seed) ^ 0x5BF03635u);
+      }
    }
 
    const uint32_t newLimit =

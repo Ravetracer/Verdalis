@@ -1,8 +1,14 @@
 # VerdaliScene status
 
-Version 0.5.0, the suite's eleventh plugin and the first one that synthesises
+Version 0.5.1, the suite's eleventh plugin and the first one that synthesises
 nothing of its own: every sound comes from one of the nine nature instruments,
 run as a layer. 0.1.0 shipped in suite 0.25.0.
+
+## What changed in 0.5.1
+
+- Rain layers carry RainyDay 1.10.1's fix: with a layer's *Random Seed* at 0,
+  its trickle no longer falls back to the same drips whenever the host resets
+  the plugin.
 
 ## What changed in 0.5.0
 

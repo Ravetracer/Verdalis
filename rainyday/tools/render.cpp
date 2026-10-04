@@ -1001,6 +1001,45 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
             "a fixed Random Seed renders identically after reset");
    }
 
+   // --- and Seed 0 has to mean rain that never repeats, trickle included. The
+   // trickle's generator was reseeded to one fixed state on every reset with
+   // Seed at 0 -- an unbraced if -- so every take, and every instance, dripped
+   // the same trickle in the same places.
+   {
+      auto idOf = [&](const char *name) {
+         const uint32_t n = params->count(plugin);
+         for (uint32_t i = 0; i < n; ++i) {
+            clap_param_info_t info{};
+            if (params->get_info(plugin, i, &info) && std::strcmp(info.name, name) == 0)
+               return info.id;
+         }
+         return static_cast<clap_id>(CLAP_INVALID_ID);
+      };
+      // Trickle only, as near as the plugin goes: the fewest drops, no bed.
+      gParamOverrides.clear();
+      gParamOverrides.emplace_back(idOf("Random Seed"), 0.0);
+      gParamOverrides.emplace_back(idOf("Density"), 0.0);
+      gParamOverrides.emplace_back(idOf("Bed Level"), -60.0);
+      gParamOverrides.emplace_back(idOf("Trickle Level"), 0.0);
+      gParamOverrides.emplace_back(idOf("Trickle Rate"), 1.0);
+      plugin->reset(plugin);
+      const RenderResult a = renderPlugin(plugin, sampleRate, 512, 0.8, 0.2, 60, 1.0);
+      plugin->reset(plugin);
+      const RenderResult b = renderPlugin(plugin, sampleRate, 512, 0.8, 0.2, 60, 1.0);
+      gParamOverrides.clear();
+      size_t sounding = 0, same = 0;
+      for (size_t i = 0; i < a.interleaved.size() && i < b.interleaved.size(); ++i) {
+         if (a.interleaved[i] == 0.0f && b.interleaved[i] == 0.0f)
+            continue;
+         ++sounding;
+         same += a.interleaved[i] == b.interleaved[i] ? 1 : 0;
+      }
+      const std::string what = "Random Seed 0 never repeats the trickle after a reset (" +
+                               std::to_string(same) + " of " + std::to_string(sounding) +
+                               " samples alike)";
+      check(sounding > 0 && same < sounding / 10, what.c_str());
+   }
+
    // --- parameter events must be reflected by get_value, which is how a host
    // reads back what automation did.
    {

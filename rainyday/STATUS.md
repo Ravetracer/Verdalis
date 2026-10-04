@@ -3,6 +3,18 @@
 Written 2026-09-03, brought up to date 2026-09-12. See `README.md` for the
 design and parameter reference, and `TODO.md` for what is still open.
 
+## Seed 0 trickle repeated itself (1.10.1)
+
+With *Random Seed* at 0 -- the setting that promises rain that never repeats --
+the Trickle layer's generator was reseeded to one fixed state on every reset and
+whenever the seed was set back to 0: two of the reseeds sat under an `if` with no
+braces, so only the first statement was conditional. Every take and every
+instance dripped the same trickle in the same places. Since Trickle came in
+(1.7.0). The self-test now renders Seed 0 twice across a reset and checks the
+trickle does not repeat; it measured 47,349 of 96,000 samples alike before the
+fix and 2,416 after. A fixed seed renders bit-identical to 1.10.0: every preset,
+two seeds, two sample rates.
+
 ## Preset collections (1.10.0)
 
 Your own presets are filed in **collections**, managed in the window's browser
