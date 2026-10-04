@@ -794,16 +794,9 @@ private:
       return "My Transition";
    }
 
-   bool guiSavePreset(const std::string &input, std::string &error) override {
-      // "Folder/Name" saves into a folder, creating it if it is not there; a
-      // name with no slash in it saves into the library's root, which is what
-      // every save did before folders existed.
-      std::string folder, name;
-      verdalis::splitPresetFolder(input, folder, name);
-      if (name.empty()) {
-         error = "Give the preset a name after the folder.";
-         return false;
-      }
+   bool guiSavePreset(const std::string &folder, const std::string &name,
+                      const std::string &description, std::string &error) override {
+      // Into a collection, or the library's root when `folder` is empty.
       const std::string path = verdalis::userPresetPathIn(presetContext(), folder, name);
       if (path.empty()) {
          error = "No user preset directory: neither XDG_CONFIG_HOME nor HOME is set.";
@@ -811,10 +804,11 @@ private:
       }
 
       // Everything the engine is currently using, written as the user's own
-      // preset. Author and description are left out: they belong to whoever
-      // wrote the preset this was derived from, not to this copy.
+      // preset, with the description the user gave it. The author is left out:
+      // it belongs to whoever wrote the preset this was derived from.
       PresetData data;
       data.name = name;
+      data.description = description;
       for (uint32_t i = 0; i < kNumParams; ++i) {
          const uint32_t id = paramTable()[i].id;
          data.values.emplace_back(id, mValues[id].load(std::memory_order_relaxed));
@@ -868,6 +862,81 @@ private:
       mPresets.clear();
       mPresetsScanned = false;
       ensurePresetList();
+      return true;
+   }
+
+   // --------------------------------------------- collections and editing
+   //
+   // Shared as well: each call changes the library on disk and rescans it,
+   // following the current preset to wherever the change put it.
+
+   std::vector<std::string> guiPresetCollections() const override {
+      return verdalis::presetCollections(presetLibrary());
+   }
+
+   bool guiCreateCollection(const std::string &name, std::string &folder,
+                            std::string &error) override {
+      return verdalis::createPresetCollection(presetLibrary(), name, folder, error);
+   }
+
+   bool guiRenameCollection(const std::string &folder, const std::string &name,
+                            std::string &renamed, std::string &error) override {
+      const verdalis::PresetLibrarySpec lib = presetLibrary();
+      if (!verdalis::renamePresetCollection(lib, folder, name, renamed, error))
+         return false;
+      ensurePresetList();
+      mCurrentPreset =
+         verdalis::rescanFollowing(lib, mPresets, mCurrentPreset,
+                                   verdalis::presetCollectionDir(lib, folder),
+                                   verdalis::presetCollectionDir(lib, renamed));
+      return true;
+   }
+
+   bool guiDeleteCollection(const std::string &folder, std::string &error) override {
+      const verdalis::PresetLibrarySpec lib = presetLibrary();
+      const bool ok = verdalis::deletePresetCollection(lib, folder, error);
+      ensurePresetList();
+      mCurrentPreset = verdalis::rescanFollowing(lib, mPresets, mCurrentPreset,
+                                                 verdalis::presetCollectionDir(lib, folder), {});
+      return ok;
+   }
+
+   bool guiMovePreset(int index, const std::string &folder, std::string &error) override {
+      ensurePresetList();
+      if (index < 0 || index >= static_cast<int>(mPresets.size()))
+         return false;
+      const GuiPreset preset = mPresets[static_cast<size_t>(index)];
+      std::string moved;
+      if (!verdalis::movePresetToCollection(presetLibrary(), preset, folder, moved, error))
+         return false;
+      mCurrentPreset =
+         verdalis::rescanFollowing(presetLibrary(), mPresets, mCurrentPreset, preset.path, moved);
+      return true;
+   }
+
+   bool guiEditPreset(int index, const std::string &name, const std::string &description,
+                      std::string &error) override {
+      ensurePresetList();
+      if (index < 0 || index >= static_cast<int>(mPresets.size()))
+         return false;
+      const GuiPreset preset = mPresets[static_cast<size_t>(index)];
+      std::string edited;
+      if (!verdalis::editPreset(presetLibrary(), preset, name, description, edited, error))
+         return false;
+      mCurrentPreset =
+         verdalis::rescanFollowing(presetLibrary(), mPresets, mCurrentPreset, preset.path, edited);
+      return true;
+   }
+
+   bool guiDeletePreset(int index, std::string &error) override {
+      ensurePresetList();
+      if (index < 0 || index >= static_cast<int>(mPresets.size()))
+         return false;
+      const GuiPreset preset = mPresets[static_cast<size_t>(index)];
+      if (!verdalis::deletePreset(presetLibrary(), preset, error))
+         return false;
+      mCurrentPreset =
+         verdalis::rescanFollowing(presetLibrary(), mPresets, mCurrentPreset, preset.path, {});
       return true;
    }
 

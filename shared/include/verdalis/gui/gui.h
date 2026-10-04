@@ -70,9 +70,12 @@ public:
 
    // The name to offer when the save field opens.
    virtual std::string guiSuggestedPresetName() const = 0;
-   // Writes the current parameter values into the user preset directory and
-   // rescans it. Returns false and fills `error` if that did not work.
-   virtual bool guiSavePreset(const std::string &name, std::string &error) = 0;
+   // Writes the current parameter values as a user preset called `name`, into
+   // collection `folder` -- "" is the library's root, and the only place a
+   // plugin without folders saves -- with `description` as its description,
+   // and rescans. Returns false and fills `error` if that did not work.
+   virtual bool guiSavePreset(const std::string &folder, const std::string &name,
+                              const std::string &description, std::string &error) = 0;
 
    // ------------------------------------------------------- folders and packs
    //
@@ -110,6 +113,66 @@ public:
       (void)path;
       (void)folder;
       error = "this plugin has no preset packs";
+      return false;
+   }
+
+   // ------------------------------------------------ collections and editing
+   //
+   // A collection is a folder of the user's presets. Factory presets are not
+   // in one and every call below refuses them. All default to "not here".
+
+   // Every collection, empty ones too, by directory name, sorted.
+   virtual std::vector<std::string> guiPresetCollections() const { return {}; }
+
+   // Makes a collection; its directory name comes back in `folder`.
+   virtual bool guiCreateCollection(const std::string &name, std::string &folder,
+                                    std::string &error) {
+      (void)name;
+      (void)folder;
+      error = "this plugin has no preset collections";
+      return false;
+   }
+
+   // Renames collection `folder` to `name`; the new directory name comes back
+   // in `renamed`.
+   virtual bool guiRenameCollection(const std::string &folder, const std::string &name,
+                                    std::string &renamed, std::string &error) {
+      (void)folder;
+      (void)name;
+      (void)renamed;
+      error = "this plugin has no preset collections";
+      return false;
+   }
+
+   // Deletes a collection and the presets in it.
+   virtual bool guiDeleteCollection(const std::string &folder, std::string &error) {
+      (void)folder;
+      error = "this plugin has no preset collections";
+      return false;
+   }
+
+   // Moves preset `index` of guiPresets() into collection `folder`.
+   virtual bool guiMovePreset(int index, const std::string &folder, std::string &error) {
+      (void)index;
+      (void)folder;
+      error = "this plugin has no preset collections";
+      return false;
+   }
+
+   // Renames preset `index` and sets its description.
+   virtual bool guiEditPreset(int index, const std::string &name, const std::string &description,
+                              std::string &error) {
+      (void)index;
+      (void)name;
+      (void)description;
+      error = "this plugin cannot edit presets";
+      return false;
+   }
+
+   // Deletes preset `index`.
+   virtual bool guiDeletePreset(int index, std::string &error) {
+      (void)index;
+      error = "this plugin cannot delete presets";
       return false;
    }
 

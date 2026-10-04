@@ -1,8 +1,24 @@
 # ChirpParade status
 
-Version 0.8.0. As of 0.5.0, the reference library was **cleaned rather than grown** — every
+Version 0.9.0. As of 0.5.0, the reference library was **cleaned rather than grown** — every
 file isolated to a single bird by hand, the dense multi-bird recordings dropped
 — and that one change did more for the plugin than any fitting so far.
+
+## Preset collections (0.9.0)
+
+Your own presets are filed in **collections**, managed in the window's browser
+rather than by typing `Folder/Name`. `NEW`, `RENAME` and `DELETE` sit under the
+browser's list of collections, an empty collection is listed as soon as it is
+made, a preset dragged onto a collection moves there, and a right-click on one of
+your presets renames it, changes its description or deletes it. `SAVE` picks the
+collection from a list -- *New collection...* makes one and comes back -- and
+takes a description, which the browser shows while the pointer is over the
+preset. Factory presets are locked against all of it. `EXPORT` writes the
+collection on screen and nothing else.
+
+It is all shared (`shared/src/preset_library.cpp`, the browser and dialogs in
+`plugin_window.h`), and the self-test checks every operation against this
+plugin's own preset format in a throwaway library.
 
 ## The cuckoo (0.8.0)
 

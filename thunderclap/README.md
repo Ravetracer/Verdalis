@@ -140,9 +140,10 @@ The browser lists the factory library followed by anything in
 way. A `*` after the preset name means a parameter has been touched since it
 was loaded.
 
-Saving as `Folder/Name` puts the preset in a folder of that name, and the
-browser then lists the library by shelf rather than as one flat grid. A whole
-folder can be written out as one **preset pack** file (`.thunderclappack`) with
+Your presets are filed in collections: `SAVE` asks which one, with a name and a
+description, and the browser makes, renames and deletes them, moves a preset by
+dragging it onto another, and renames or describes one on a right-click. A whole
+collection can be written out as one **preset pack** file (`.thunderclappack`) with
 `EXPORT` in the browser's footer and read back with `IMPORT...`, which is how a
 library travels to another machine or another person. See the manual for the
 whole of it.

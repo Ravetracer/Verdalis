@@ -57,6 +57,8 @@ const char *dlerrorCompat() { return "see GetLastError()"; }
 
 #include <filesystem>
 
+#include "verdalis/testing/preset_library_check.h"
+
 // Setting an environment variable is spelled differently on each platform, and
 // the self-test needs it to point the preset directory somewhere disposable.
 namespace {
@@ -1270,6 +1272,14 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
                "a packed preset's text survives the round trip byte for byte");
          check(!verdalis::parsePresetPack(presetContext(), text, packName, packOut, packErr),
                "a plain preset is not mistaken for a pack");
+
+         // Collections, moving, renaming, describing and deleting, against
+         // this plugin's own preset format -- with the preset above standing in
+         // for its factory set.
+         const verdalis::BuiltinPreset stand[] = {{"selftest_factory", text.c_str()}};
+         verdalis::testing::checkPresetLibrary(
+            {presetContext(), stand, 1},
+            [&](bool ok, const std::string &what) { check(ok, what.c_str()); });
          std::error_code rmec;
          std::filesystem::remove_all(tmpdir, rmec);
          setEnvVar("XDG_CONFIG_HOME", nullptr);

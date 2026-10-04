@@ -3,6 +3,22 @@
 Version 0.1.0, the suite's ninth plugin and the first with **four sounding
 layers**. Nothing has been released yet.
 
+## Preset collections (0.3.0)
+
+Your own presets are filed in **collections**, managed in the window's browser
+rather than by typing `Folder/Name`. `NEW`, `RENAME` and `DELETE` sit under the
+browser's list of collections, an empty collection is listed as soon as it is
+made, a preset dragged onto a collection moves there, and a right-click on one of
+your presets renames it, changes its description or deletes it. `SAVE` picks the
+collection from a list -- *New collection...* makes one and comes back -- and
+takes a description, which the browser shows while the pointer is over the
+preset. Factory presets are locked against all of it. `EXPORT` writes the
+collection on screen and nothing else.
+
+It is all shared (`shared/src/preset_library.cpp`, the browser and dialogs in
+`plugin_window.h`), and the self-test checks every operation against this
+plugin's own preset format in a throwaway library.
+
 ## The VST3 loads on its own (0.2.1)
 
 On Linux the `.vst3` never found the plugin inside itself: the clap-wrapper's

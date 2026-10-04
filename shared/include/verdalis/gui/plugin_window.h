@@ -672,7 +672,7 @@ protected:
    // value, which is the case where a grab is defensible.
    // Both window systems reduce a keystroke to the same few commands plus some
    // text, so the fields do not need to know which one they are on.
-   enum class KeyCommand { NoCommand, Escape, Accept, Backspace, Up, Down };
+   enum class KeyCommand { NoCommand, Escape, Accept, Backspace, Up, Down, Tab };
 
    Rect valueRect(const Rect &cell) const { return {cell.x + 6, cell.y + 74, cell.w - 12, 22}; }
 
@@ -1078,7 +1078,24 @@ protected:
       cairo_stroke(cr);
    }
 
-   // ------------------------------------------------------------ save dialog
+   // ---------------------------------------------------------------- dialogs
+   //
+   // One modal dialog, in several modes: saving a preset, editing one of the
+   // user's presets, making or renaming a collection, and confirming a delete.
+   // They share the panel, the text fields, the keyboard grab and the buttons;
+   // what differs is which rows a mode has and what its OK does. mSaveOpen is
+   // "a dialog is open", whichever it is, which is what everything outside
+   // this section needs to know.
+
+   enum class Dialog {
+      NoDialog,
+      SavePreset,
+      EditPreset,
+      DeletePreset,
+      NewCollection,
+      RenameCollection,
+      DeleteCollection
+   };
 
    // What the two overlays call themselves. A window whose preset bar can serve
    // more than one library says which one is open.
@@ -1086,28 +1103,106 @@ protected:
    virtual const char *browserTitle() const { return "PRESETS"; }
    virtual const char *presetBarLabel() const { return "PRESET"; }
 
-   Rect savePanel() const {
-      Rect r;
-      r.w = 420;
-      r.h = 156;
-      r.x = (mWindowW - r.w) * 0.5;
-      r.y = kHeaderH + 130;
+   struct DialogLayout {
+      Rect panel, folder, name, desc, ok, cancel, extra;
+      bool hasFolder = false, hasName = false, hasDesc = false, hasExtra = false;
+      double messageY = 0.0, statusY = 0.0;
+   };
+
+   DialogLayout dialogLayout() const {
+      DialogLayout l;
+      const Dialog d = mDialog;
+      l.hasFolder = d == Dialog::SavePreset && hasFolders();
+      l.hasName = d == Dialog::SavePreset || d == Dialog::EditPreset ||
+                  d == Dialog::NewCollection || d == Dialog::RenameCollection;
+      l.hasDesc = d == Dialog::SavePreset || d == Dialog::EditPreset;
+      l.hasExtra = d == Dialog::EditPreset;
+      const double w = 480.0, pad = 20.0, rowH = 58.0;
+      const int rows = (l.hasFolder ? 1 : 0) + (l.hasName ? 1 : 0) + (l.hasDesc ? 1 : 0);
+      const double body = rows > 0 ? rows * rowH : 46.0;
+      const double h = 44.0 + body + 28.0 + 48.0;
+      l.panel = {(mWindowW - w) * 0.5, std::max(static_cast<double>(kHeaderH) + 20.0,
+                                                (mSpec.windowH - h) * 0.5 - 40.0),
+                 w, h};
+      double y = l.panel.y + 44.0;
+      auto row = [&](Rect &r) {
+         r = {l.panel.x + pad, y + 16.0, w - 2 * pad, 28.0};
+         y += rowH;
+      };
+      if (l.hasFolder)
+         row(l.folder);
+      if (l.hasName)
+         row(l.name);
+      if (l.hasDesc)
+         row(l.desc);
+      if (rows == 0) {
+         l.messageY = y + 18.0;
+         y += body;
+      }
+      l.statusY = y + 14.0;
+      const double by = l.panel.y + h - pad - 28.0;
+      l.ok = {l.panel.x + w - pad - 92.0, by, 92.0, 28.0};
+      l.cancel = {l.ok.x - 10.0 - 92.0, by, 92.0, 28.0};
+      l.extra = {l.panel.x + pad, by, 92.0, 28.0};
+      return l;
+   }
+
+   // The collections a save can go into, as the dropdown lists them: the
+   // library's root first, then every collection, then "New collection...".
+   int folderMenuCount() const { return static_cast<int>(mDialogFolders.size()) + 2; }
+   static constexpr int kFolderMenuRows = 10;
+
+   Rect folderMenuRect(int row) const {
+      const DialogLayout l = dialogLayout();
+      Rect r = l.folder;
+      r.h = kMenuRowH;
+      r.y = l.folder.y + l.folder.h + 4.0 + (row - mFolderMenuScroll) * kMenuRowH;
       return r;
    }
 
-   Rect saveFieldRect() const {
-      const Rect p = savePanel();
-      return {p.x + 20, p.y + 54, p.w - 40, 30};
+   int folderMenuVisible() const { return std::min(folderMenuCount(), kFolderMenuRows); }
+
+   int folderMenuAt(double x, double y) const {
+      if (!mFolderMenuOpen)
+         return -1;
+      for (int row = mFolderMenuScroll; row < mFolderMenuScroll + folderMenuVisible(); ++row)
+         if (folderMenuRect(row).contains(x, y))
+            return row;
+      return -1;
    }
 
-   Rect saveOkRect() const {
-      const Rect p = savePanel();
-      return {p.x + p.w - 20 - 92, p.y + p.h - 20 - 28, 92, 28};
+   // What a collection is called on screen. Its directory name is made safe
+   // for every filesystem, which turns spaces into underscores; they are shown
+   // as spaces again.
+   static std::string shelfLabel(const std::string &folder) {
+      if (folder.empty())
+         return "Unfiled";
+      std::string out = folder;
+      for (char &c : out)
+         if (c == '_')
+            c = ' ';
+      return out;
    }
 
-   Rect saveCancelRect() const {
-      const Rect p = savePanel();
-      return {p.x + p.w - 20 - 92 - 10 - 92, p.y + p.h - 20 - 28, 92, 28};
+   bool isCollection(const std::string &folder) const {
+      return !folder.empty() &&
+             std::find(mCollections.begin(), mCollections.end(), folder) != mCollections.end();
+   }
+
+   // The keyboard is grabbed for as long as any dialog is up, and handed back
+   // only when the last one closes -- one dialog can open another.
+   void openDialog(Dialog d) {
+      mDialog = d;
+      mSaveOpen = true;
+      mDialogField = 0;
+      mFolderMenuOpen = false;
+      mSaveStatus.clear();
+      mSaveFailed = false;
+      grabKeyboard();
+      if (!mKeyboardGrabbed && (d == Dialog::SavePreset || d == Dialog::EditPreset ||
+                                d == Dialog::NewCollection || d == Dialog::RenameCollection))
+         mSaveStatus = "Cannot reach the keyboard. The buttons still work.";
+      mDirty = true;
    }
 
    void openSaveDialog() {
@@ -1119,14 +1214,458 @@ protected:
       // silent layer into the file, so every hold is released first and what
       // goes out is what the preset really is.
       clearHolds();
-      mSaveOpen = true;
+      mCollections = mDelegate.guiPresetCollections();
+      mDialogFolders = mCollections;
+      // Into the collection the current preset is in, when it is one of the
+      // user's; otherwise wherever the last save went. Saving over a preset of
+      // your own keeps its description; a factory preset's is not yours.
       mSaveName = mDelegate.guiSuggestedPresetName();
-      mSaveStatus.clear();
-      mSaveFailed = false;
-      grabKeyboard();
-      if (!mKeyboardGrabbed)
-         mSaveStatus = "Cannot reach the keyboard. SAVE stores it under this name.";
+      mSaveDesc.clear();
+      std::string folder = mLastSaveFolder;
+      const auto &list = mDelegate.guiPresets();
+      const int cur = mDelegate.guiCurrentPreset();
+      if (cur >= 0 && cur < static_cast<int>(list.size()) &&
+          list[static_cast<size_t>(cur)].userContent) {
+         folder = list[static_cast<size_t>(cur)].folder;
+         mSaveDesc = list[static_cast<size_t>(cur)].description;
+      }
+      mSaveFolder = isCollection(folder) ? folder : std::string();
+      mReturnToSave = false;
+      openDialog(Dialog::SavePreset);
+   }
+
+   // From the browser. The browser stays open underneath, and is where every
+   // one of these returns to.
+   void openEditDialog(int index) {
+      const auto &list = mDelegate.guiPresets();
+      if (index < 0 || index >= static_cast<int>(list.size()))
+         return;
+      const GuiPreset &p = list[static_cast<size_t>(index)];
+      if (!p.userContent) {
+         mBrowserStatus = "Factory presets are locked. Save one as your own to change it.";
+         mDirty = true;
+         return;
+      }
+      mDialogIndex = index;
+      mSaveName = p.name;
+      mSaveDesc = p.description;
+      openDialog(Dialog::EditPreset);
+   }
+
+   void openCollectionDialog(Dialog d) {
+      mDialogCollection = selectedFolder();
+      if (d != Dialog::NewCollection && !isCollection(mDialogCollection)) {
+         mBrowserStatus = "Pick one of your collections first.";
+         mDirty = true;
+         return;
+      }
+      mSaveName = d == Dialog::RenameCollection ? shelfLabel(mDialogCollection) : std::string();
+      openDialog(d);
+   }
+
+   // Every path that leaves a dialog has to come through here. A keyboard grab
+   // that outlives its dialog would leave the whole desktop unable to type
+   // until the plugin is unloaded.
+   void closeSaveDialog() {
+      // A collection made from the save dialog's list goes back to the save,
+      // with what had been typed there still in it.
+      if (mDialog == Dialog::NewCollection && mReturnToSave) {
+         mReturnToSave = false;
+         mSaveName = mStashName;
+         mSaveDesc = mStashDesc;
+         mDialogFolders = mCollections;
+         const bool grabbed = mKeyboardGrabbed;
+         openDialog(Dialog::SavePreset);
+         if (!grabbed)
+            mSaveStatus.clear();
+         return;
+      }
+      mDialog = Dialog::NoDialog;
+      mSaveOpen = false;
+      mFolderMenuOpen = false;
+      releaseKeyboard();
       mDirty = true;
+   }
+
+   void dialogFailed(const std::string &error, const char *fallback) {
+      mSaveStatus = error.empty() ? std::string(fallback) : error;
+      mSaveFailed = true;
+      mDirty = true;
+   }
+
+   static std::string trimmedText(std::string s) {
+      while (!s.empty() && s.front() == ' ')
+         s.erase(s.begin());
+      while (!s.empty() && s.back() == ' ')
+         s.pop_back();
+      return s;
+   }
+
+   // The browser again after a change to the library: the shelves rebuilt and
+   // the given collection on screen, or All when it is gone.
+   void showShelf(const std::string &folder, bool all) {
+      rebuildFolders();
+      mBrowserFolder = -1;
+      if (!all) {
+         const auto it = std::find(mFolders.begin(), mFolders.end(), folder);
+         if (it != mFolders.end())
+            mBrowserFolder = static_cast<int>(it - mFolders.begin());
+      }
+      mBrowserScroll = std::min(mBrowserScroll, browserMaxScroll());
+      mDirty = true;
+   }
+
+   void commitSave() {
+      const Dialog d = mDialog;
+      const std::string name = trimmedText(mSaveName);
+      const std::string desc = trimmedText(mSaveDesc);
+      std::string error;
+      switch (d) {
+      case Dialog::SavePreset:
+         if (name.empty())
+            return dialogFailed({}, "Give the preset a name.");
+         if (!mDelegate.guiSavePreset(mSaveFolder, name, desc, error))
+            return dialogFailed(error, "Could not save the preset.");
+         mLastSaveFolder = mSaveFolder;
+         closeSaveDialog();
+         return;
+      case Dialog::EditPreset: {
+         if (name.empty())
+            return dialogFailed({}, "Give the preset a name.");
+         if (!mDelegate.guiEditPreset(mDialogIndex, name, desc, error))
+            return dialogFailed(error, "Could not change the preset.");
+         const std::string keep = selectedFolder();
+         const bool all = mBrowserFolder < 0;
+         closeSaveDialog();
+         showShelf(keep, all);
+         mBrowserStatus = "Changed \"" + name + "\".";
+         return;
+      }
+      case Dialog::DeletePreset: {
+         const std::string gone = mSaveName;
+         if (!mDelegate.guiDeletePreset(mDialogIndex, error))
+            return dialogFailed(error, "Could not delete the preset.");
+         const std::string keep = selectedFolder();
+         const bool all = mBrowserFolder < 0;
+         closeSaveDialog();
+         showShelf(keep, all);
+         mBrowserStatus = "Deleted \"" + gone + "\".";
+         return;
+      }
+      case Dialog::NewCollection: {
+         std::string folder;
+         if (!mDelegate.guiCreateCollection(name, folder, error))
+            return dialogFailed(error, "Could not make the collection.");
+         mCollections = mDelegate.guiPresetCollections();
+         if (mReturnToSave) {
+            mStashFolder = folder;
+            closeSaveDialog(); // back to the save, which takes the new one
+            mSaveFolder = mStashFolder;
+            return;
+         }
+         closeSaveDialog();
+         showShelf(folder, false);
+         mBrowserStatus = "Made \"" + shelfLabel(folder) + "\". Drag presets onto it, or save into it.";
+         return;
+      }
+      case Dialog::RenameCollection: {
+         std::string renamed;
+         if (!mDelegate.guiRenameCollection(mDialogCollection, name, renamed, error))
+            return dialogFailed(error, "Could not rename the collection.");
+         closeSaveDialog();
+         showShelf(renamed, false);
+         mBrowserStatus = "Renamed to \"" + shelfLabel(renamed) + "\".";
+         return;
+      }
+      case Dialog::DeleteCollection: {
+         const bool ok = mDelegate.guiDeleteCollection(mDialogCollection, error);
+         closeSaveDialog();
+         showShelf({}, true);
+         mBrowserStatus = ok ? "Deleted \"" + shelfLabel(mDialogCollection) + "\"."
+                             : (error.empty() ? std::string("Could not delete the collection.")
+                                              : error);
+         return;
+      }
+      case Dialog::NoDialog:
+      default:
+         closeSaveDialog();
+         return;
+      }
+   }
+
+   // The edit dialog's DELETE asks first, in a dialog of its own.
+   void askDeletePreset() {
+      mSaveName = trimmedText(mDelegate.guiPresets()[static_cast<size_t>(mDialogIndex)].name);
+      openDialog(Dialog::DeletePreset);
+   }
+
+   const char *dialogTitle() const {
+      switch (mDialog) {
+      case Dialog::EditPreset:
+         return "EDIT PRESET";
+      case Dialog::DeletePreset:
+         return "DELETE PRESET";
+      case Dialog::NewCollection:
+         return "NEW COLLECTION";
+      case Dialog::RenameCollection:
+         return "RENAME COLLECTION";
+      case Dialog::DeleteCollection:
+         return "DELETE COLLECTION";
+      case Dialog::SavePreset:
+      case Dialog::NoDialog:
+      default:
+         return saveTitle();
+      }
+   }
+
+   const char *dialogOkLabel() const {
+      switch (mDialog) {
+      case Dialog::NewCollection:
+         return "CREATE";
+      case Dialog::RenameCollection:
+         return "RENAME";
+      case Dialog::DeletePreset:
+      case Dialog::DeleteCollection:
+         return "DELETE";
+      case Dialog::EditPreset:
+         return "APPLY";
+      default:
+         return "SAVE";
+      }
+   }
+
+   std::string dialogHint() const {
+      switch (mDialog) {
+      case Dialog::SavePreset:
+         return "Pick a collection, type a name. Tab moves to the description, Enter saves.";
+      case Dialog::EditPreset:
+         return "Tab moves between the fields. Enter applies, Esc cancels.";
+      case Dialog::NewCollection:
+      case Dialog::RenameCollection:
+         return "Type a name, then Enter. Esc cancels.";
+      default:
+         return "This cannot be undone.";
+      }
+   }
+
+   std::string dialogMessage() const {
+      if (mDialog == Dialog::DeletePreset)
+         return "Delete the preset \"" + mSaveName + "\"?";
+      if (mDialog == Dialog::DeleteCollection) {
+         int count = 0;
+         for (const auto &p : mDelegate.guiPresets())
+            if (p.folder == mDialogCollection)
+               ++count;
+         return "Delete \"" + shelfLabel(mDialogCollection) + "\" and the " +
+                std::to_string(count) + (count == 1 ? " preset" : " presets") + " in it?";
+      }
+      return {};
+   }
+
+   // A one-line text field. The end of a long text stays in view, since that
+   // is where the caret is.
+   void drawTextField(cairo_t *cr, const Rect &f, const std::string &text, bool focused,
+                      bool failed, const char *placeholder) {
+      setColor(cr, mSpec.theme.knobFace);
+      roundedRect(cr, f.x, f.y, f.w, f.h, 3);
+      cairo_fill_preserve(cr);
+      setColor(cr, failed && focused ? mSpec.theme.accent
+                   : focused         ? mSpec.theme.accent
+                                     : mSpec.theme.panelEdge,
+               focused ? 0.8 : 1.0);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+      cairo_save(cr);
+      cairo_rectangle(cr, f.x + 4, f.y, f.w - 8, f.h);
+      cairo_clip(cr);
+      if (text.empty() && !focused && placeholder) {
+         setColor(cr, mSpec.theme.textMute);
+         drawText(cr, f.x + 9, f.y + 19, placeholder, 11, false, Align::Left);
+      } else {
+         std::string shown = text;
+         if (focused)
+            shown += "_"; // a plain caret; the window has no blinking anywhere else
+         const double tw = textWidth(cr, shown.c_str(), 11, false);
+         const double room = f.w - 18.0;
+         setColor(cr, mSpec.theme.text);
+         drawText(cr, f.x + 9 - std::max(0.0, tw - room), f.y + 19, shown.c_str(), 11, false,
+                  Align::Left);
+      }
+      cairo_restore(cr);
+   }
+
+   void drawSaveDialog(cairo_t *cr) {
+      setColor(cr, mSpec.theme.bgBottom, 0.88);
+      cairo_rectangle(cr, 0, 0, mWindowW, mSpec.windowH);
+      cairo_fill(cr);
+
+      const DialogLayout l = dialogLayout();
+      const Rect &p = l.panel;
+      setColor(cr, mSpec.theme.panelFill);
+      roundedRect(cr, p.x, p.y, p.w, p.h, 6);
+      cairo_fill_preserve(cr);
+      setColor(cr, mSpec.theme.accent, 0.5);
+      cairo_set_line_width(cr, 1.0);
+      cairo_stroke(cr);
+
+      setColor(cr, mSpec.theme.accent);
+      drawText(cr, p.x + 20, p.y + 26, dialogTitle(), 11, true, Align::Left);
+      setColor(cr, mSpec.theme.textMute);
+      drawText(cr, p.x + p.w - 20, p.y + 26,
+               mDialog == Dialog::SavePreset ? "to your own preset library"
+                                             : "in your own preset library",
+               9, false, Align::Right);
+
+      auto label = [&](const Rect &field, const char *text) {
+         setColor(cr, mSpec.theme.textDim);
+         drawText(cr, field.x, field.y - 5, text, 8.5, true, Align::Left);
+      };
+      if (l.hasFolder) {
+         label(l.folder, "COLLECTION");
+         const Rect &f = l.folder;
+         setColor(cr, mSpec.theme.knobFace);
+         roundedRect(cr, f.x, f.y, f.w, f.h, 3);
+         cairo_fill_preserve(cr);
+         setColor(cr, mFolderMenuOpen ? mSpec.theme.accent : mSpec.theme.panelEdge,
+                  mFolderMenuOpen ? 0.8 : 1.0);
+         cairo_set_line_width(cr, 1.0);
+         cairo_stroke(cr);
+         setColor(cr, mSpec.theme.text);
+         drawText(cr, f.x + 9, f.y + 19, shelfLabel(mSaveFolder).c_str(), 11, false, Align::Left);
+         setColor(cr, mSpec.theme.textDim);
+         drawTriangle(cr, f.x + f.w - 14, f.y + f.h * 0.5, 8, 0);
+      }
+      if (l.hasName)
+         label(l.name, mDialog == Dialog::NewCollection || mDialog == Dialog::RenameCollection
+                          ? "COLLECTION NAME"
+                          : "NAME");
+      if (l.hasName)
+         drawTextField(cr, l.name, mSaveName, mDialogField == 0, mSaveFailed, nullptr);
+      if (l.hasDesc) {
+         label(l.desc, "DESCRIPTION");
+         drawTextField(cr, l.desc, mSaveDesc, mDialogField == 1, false,
+                       "What it is, for whoever loads it next. Optional.");
+      }
+      if (l.messageY > 0.0) {
+         setColor(cr, mSpec.theme.text);
+         drawText(cr, p.x + 20, l.messageY, dialogMessage().c_str(), 11, false, Align::Left);
+      }
+
+      setColor(cr, mSaveFailed ? mSpec.theme.accent : mSpec.theme.textMute);
+      drawText(cr, p.x + 20, l.statusY,
+               mSaveStatus.empty() ? dialogHint().c_str() : mSaveStatus.c_str(), 9, false,
+               Align::Left);
+
+      auto dialogButton = [&](const Rect &r, const char *text, bool accent) {
+         setColor(cr, mSpec.theme.panelFill);
+         roundedRect(cr, r.x, r.y, r.w, r.h, 4);
+         cairo_fill_preserve(cr);
+         setColor(cr, accent ? mSpec.theme.accent : mSpec.theme.panelEdge, accent ? 0.7 : 1.0);
+         cairo_set_line_width(cr, 1.0);
+         cairo_stroke(cr);
+         setColor(cr, accent ? mSpec.theme.accent : mSpec.theme.textDim);
+         drawText(cr, r.x + r.w * 0.5, r.y + 18, text, 10, true, Align::Center);
+      };
+      dialogButton(l.cancel, "CANCEL", false);
+      dialogButton(l.ok, dialogOkLabel(), true);
+      if (l.hasExtra)
+         dialogButton(l.extra, "DELETE", false);
+
+      // The collection list goes over everything else in the dialog.
+      if (mFolderMenuOpen) {
+         const int rows = folderMenuVisible();
+         const Rect first = folderMenuRect(mFolderMenuScroll);
+         setColor(cr, mSpec.theme.bgTop, 0.98);
+         roundedRect(cr, first.x - 4.0, first.y - 4.0, first.w + 8.0, rows * kMenuRowH + 8.0, 4.0);
+         cairo_fill_preserve(cr);
+         setColor(cr, mSpec.theme.accent, 0.6);
+         cairo_set_line_width(cr, 1.0);
+         cairo_stroke(cr);
+         for (int row = mFolderMenuScroll; row < mFolderMenuScroll + rows; ++row) {
+            const Rect r = folderMenuRect(row);
+            const bool hot = mFolderMenuHover == row;
+            const bool last = row == folderMenuCount() - 1;
+            const std::string folder =
+               row == 0 || last ? std::string() : mDialogFolders[static_cast<size_t>(row - 1)];
+            const bool sel = !last && folder == mSaveFolder;
+            if (hot || sel) {
+               setColor(cr, mSpec.theme.accent, hot ? 0.2 : 0.1);
+               roundedRect(cr, r.x, r.y, r.w, r.h, 3.0);
+               cairo_fill(cr);
+            }
+            setColor(cr, last ? mSpec.theme.accent : sel ? mSpec.theme.accent : mSpec.theme.text,
+                     hot ? 1.0 : 0.85);
+            drawText(cr, r.x + 8, r.y + r.h - 6.0,
+                     last ? "New collection..." : shelfLabel(folder).c_str(), 10, sel || last,
+                     Align::Left);
+         }
+      }
+   }
+
+   void pickFolder(int row) {
+      mFolderMenuOpen = false;
+      if (row < 0)
+         return;
+      if (row == folderMenuCount() - 1) {
+         mStashName = mSaveName;
+         mStashDesc = mSaveDesc;
+         mReturnToSave = true;
+         mSaveName.clear();
+         mDialogCollection.clear();
+         openDialog(Dialog::NewCollection);
+         return;
+      }
+      mSaveFolder = row == 0 ? std::string() : mDialogFolders[static_cast<size_t>(row - 1)];
+      mDirty = true;
+   }
+
+   void onDialogPointer(double x, double y, unsigned button) {
+      const DialogLayout l = dialogLayout();
+      if (mFolderMenuOpen) {
+         if (button == kWheelUp || button == kWheelDown) {
+            const int top = std::max(0, folderMenuCount() - folderMenuVisible());
+            mFolderMenuScroll =
+               std::min(top, std::max(0, mFolderMenuScroll + (button == kWheelUp ? -1 : 1)));
+            mDirty = true;
+            return;
+         }
+         if (button == kButtonLeft)
+            pickFolder(folderMenuAt(x, y));
+         mDirty = true;
+         return;
+      }
+      if (button != kButtonLeft)
+         return;
+      if (l.ok.contains(x, y)) {
+         commitSave();
+      } else if (l.hasExtra && l.extra.contains(x, y)) {
+         askDeletePreset();
+      } else if (l.cancel.contains(x, y) || !l.panel.contains(x, y)) {
+         closeSaveDialog();
+      } else if (l.hasFolder && l.folder.contains(x, y)) {
+         mFolderMenuOpen = true;
+         mFolderMenuHover = -1;
+         const int at = mSaveFolder.empty()
+                           ? 0
+                           : static_cast<int>(std::find(mDialogFolders.begin(),
+                                                        mDialogFolders.end(), mSaveFolder) -
+                                              mDialogFolders.begin()) + 1;
+         mFolderMenuScroll = std::max(
+            0, std::min(at - folderMenuVisible() / 2, folderMenuCount() - folderMenuVisible()));
+      } else if (l.hasName && l.name.contains(x, y)) {
+         mDialogField = 0;
+      } else if (l.hasDesc && l.desc.contains(x, y)) {
+         mDialogField = 1;
+      }
+      mDirty = true;
+   }
+
+   void onDialogMotion(double x, double y) {
+      const int hover = folderMenuAt(x, y);
+      if (hover != mFolderMenuHover) {
+         mFolderMenuHover = hover;
+         mDirty = true;
+      }
    }
 
    // An embedded plugin window is not given the input focus by every host, and
@@ -1140,8 +1679,7 @@ protected:
    // behaved of the two and leaves the host's own shortcuts alone.
    //
    // Failing to get the grab is not an error worth propagating: another client
-   // may hold one. The dialog says so and saving under the offered name still
-   // works with the mouse.
+   // may hold one. The dialog says so and its buttons still work.
    void grabKeyboard() {
       if (!mWindow || mKeyboardGrabbed)
          return;
@@ -1182,94 +1720,26 @@ protected:
       mKeyboardGrabbed = false;
    }
 
-   // Every path that leaves the dialog has to come through here. A keyboard
-   // grab that outlives its dialog would leave the whole desktop unable to type
-   // until the plugin is unloaded.
-   void closeSaveDialog() {
-      mSaveOpen = false;
-      releaseKeyboard();
-      mDirty = true;
-   }
-
-   void commitSave() {
-      std::string name = mSaveName;
-      while (!name.empty() && name.front() == ' ')
-         name.erase(name.begin());
-      while (!name.empty() && name.back() == ' ')
-         name.pop_back();
-      if (name.empty()) {
-         mSaveStatus = "Give the preset a name.";
-         mSaveFailed = true;
-         mDirty = true;
-         return;
-      }
-      std::string error;
-      if (!mDelegate.guiSavePreset(name, error)) {
-         mSaveStatus = error.empty() ? std::string("Could not save the preset.") : error;
-         mSaveFailed = true;
-         mDirty = true;
-         return;
-      }
-      closeSaveDialog();
-   }
-
-   void drawSaveDialog(cairo_t *cr) {
-      setColor(cr, mSpec.theme.bgBottom, 0.88);
-      cairo_rectangle(cr, 0, 0, mWindowW, mSpec.windowH);
-      cairo_fill(cr);
-
-      const Rect p = savePanel();
-      setColor(cr, mSpec.theme.panelFill);
-      roundedRect(cr, p.x, p.y, p.w, p.h, 6);
-      cairo_fill_preserve(cr);
-      setColor(cr, mSpec.theme.accent, 0.5);
-      cairo_set_line_width(cr, 1.0);
-      cairo_stroke(cr);
-
-      setColor(cr, mSpec.theme.accent);
-      drawText(cr, p.x + 20, p.y + 26, saveTitle(), 11, true, Align::Left);
-      setColor(cr, mSpec.theme.textMute);
-      drawText(cr, p.x + p.w - 20, p.y + 26,
-               hasFolders() ? "to your own preset library" : "to your own preset folder", 9, false,
-               Align::Right);
-
-      const Rect f = saveFieldRect();
-      setColor(cr, mSpec.theme.knobFace);
-      roundedRect(cr, f.x, f.y, f.w, f.h, 3);
-      cairo_fill_preserve(cr);
-      setColor(cr, mSaveFailed ? mSpec.theme.accent : mSpec.theme.panelEdge, 1.0);
-      cairo_set_line_width(cr, 1.0);
-      cairo_stroke(cr);
-
-      std::string shown = mSaveName;
-      shown += "_"; // a plain caret; the window has no blinking anywhere else
-      setColor(cr, mSpec.theme.text);
-      drawText(cr, f.x + 9, f.y + 20, shown.c_str(), 12, false, Align::Left);
-
-      setColor(cr, mSpec.theme.textMute);
-      drawText(cr, p.x + 20, f.y + f.h + 20,
-               !mSaveStatus.empty() ? mSaveStatus.c_str()
-               : hasFolders() ? "Type a name, then Enter. \"Folder/Name\" saves into a folder."
-                              : "Type a name, then Enter. Esc cancels.",
-               9, false, Align::Left);
-
-      auto dialogButton = [&](const Rect &r, const char *label, bool accent) {
-         setColor(cr, mSpec.theme.panelFill);
-         roundedRect(cr, r.x, r.y, r.w, r.h, 4);
-         cairo_fill_preserve(cr);
-         setColor(cr, accent ? mSpec.theme.accent : mSpec.theme.panelEdge, accent ? 0.7 : 1.0);
-         cairo_set_line_width(cr, 1.0);
-         cairo_stroke(cr);
-         setColor(cr, accent ? mSpec.theme.accent : mSpec.theme.textDim);
-         drawText(cr, r.x + r.w * 0.5, r.y + 18, label, 10, true, Align::Center);
-      };
-      dialogButton(saveCancelRect(), "CANCEL", false);
-      dialogButton(saveOkRect(), "SAVE", true);
-   }
-
    // `None` is taken: X11 defines it as a macro, the same trap as Widget.
 
    void onSaveKey(KeyCommand cmd, const char *text, int textLen) {
+      if (mFolderMenuOpen) {
+         if (cmd == KeyCommand::Up || cmd == KeyCommand::Down) {
+            const int n = folderMenuCount();
+            mFolderMenuHover = std::min(n - 1, std::max(0, mFolderMenuHover +
+                                                              (cmd == KeyCommand::Up ? -1 : 1)));
+            if (mFolderMenuHover < mFolderMenuScroll)
+               mFolderMenuScroll = mFolderMenuHover;
+            if (mFolderMenuHover >= mFolderMenuScroll + folderMenuVisible())
+               mFolderMenuScroll = mFolderMenuHover - folderMenuVisible() + 1;
+         } else if (cmd == KeyCommand::Accept) {
+            pickFolder(mFolderMenuHover);
+         } else {
+            mFolderMenuOpen = false;
+         }
+         mDirty = true;
+         return;
+      }
       if (cmd == KeyCommand::Escape) {
          closeSaveDialog();
          return;
@@ -1278,18 +1748,29 @@ protected:
          commitSave();
          return;
       }
-      if (cmd == KeyCommand::Backspace) {
-         if (!mSaveName.empty())
-            mSaveName.pop_back();
-         mSaveStatus.clear();
-         mSaveFailed = false;
+      const DialogLayout l = dialogLayout();
+      if (cmd == KeyCommand::Tab || cmd == KeyCommand::Up || cmd == KeyCommand::Down) {
+         if (l.hasName && l.hasDesc)
+            mDialogField = cmd == KeyCommand::Up ? 0 : cmd == KeyCommand::Down ? 1 : 1 - mDialogField;
          mDirty = true;
          return;
       }
-      for (int i = 0; i < textLen; ++i) {
-         const unsigned char c = static_cast<unsigned char>(text[i]);
-         if (c >= 0x20 && c != 0x7F && mSaveName.size() < 48)
-            mSaveName.push_back(static_cast<char>(c));
+      if (!l.hasName)
+         return; // a confirmation has nothing to type into
+      std::string &field = mDialogField == 1 && l.hasDesc ? mSaveDesc : mSaveName;
+      const size_t limit = &field == &mSaveDesc ? 240 : 48;
+      if (cmd == KeyCommand::Backspace) {
+         // Whole UTF-8 characters, not bytes.
+         while (!field.empty() && (static_cast<unsigned char>(field.back()) & 0xC0) == 0x80)
+            field.pop_back();
+         if (!field.empty())
+            field.pop_back();
+      } else {
+         for (int i = 0; i < textLen; ++i) {
+            const unsigned char c = static_cast<unsigned char>(text[i]);
+            if (c >= 0x20 && c != 0x7F && field.size() < limit)
+               field.push_back(static_cast<char>(c));
+         }
       }
       mSaveStatus.clear();
       mSaveFailed = false;
@@ -1382,15 +1863,23 @@ protected:
       mFolders.clear();
       if (!hasFolders())
          return;
+      // The factory shelf first, then the user's collections -- listed from
+      // the disk, so one just made or emptied is still there to drop into --
+      // then the library's root when anything is in it.
+      mCollections = mDelegate.guiPresetCollections();
       bool root = false;
+      std::vector<std::string> user = mCollections;
       for (const auto &preset : mDelegate.guiPresets()) {
          if (preset.folder.empty()) {
-            root = true;
+            root = root || preset.userContent;
             continue;
          }
-         if (std::find(mFolders.begin(), mFolders.end(), preset.folder) == mFolders.end())
-            mFolders.push_back(preset.folder);
+         std::vector<std::string> &into = preset.userContent ? user : mFolders;
+         if (std::find(into.begin(), into.end(), preset.folder) == into.end())
+            into.push_back(preset.folder);
       }
+      std::sort(user.begin(), user.end());
+      mFolders.insert(mFolders.end(), user.begin(), user.end());
       if (root)
          mFolders.push_back(std::string()); // the root, drawn as "Unfiled"
       if (mBrowserFolder >= static_cast<int>(mFolders.size()))
@@ -1466,6 +1955,9 @@ protected:
       mFooterHover = -1;
       mImportOpen = false;
       mBrowserStatus.clear();
+      mPressItem = -1;
+      mDraggingPreset = false;
+      mDropFolder = -2;
       rebuildFolders();
       // Open with the current preset in view, on its own shelf rather than in
       // the flat list: the folder a preset is in is part of where it is.
@@ -1537,13 +2029,23 @@ protected:
    // Where the status line starts: after whichever button is the last one on.
    int lastFooter() const { return canReveal() ? 3 : 2; }
 
+   // 0 EXPORT, 1 EXPORT AS..., 2 IMPORT..., 3 REVEAL, beside the presets; and
+   // under the shelves, the collection buttons: 4 NEW, 5 RENAME, 6 DELETE.
+   enum { kFooterNew = 4, kFooterRename = 5, kFooterDelete = 6 };
+
    Rect browserFooterRect(int which) const {
       const Rect p = browserPanel();
-      const double w = 108.0;
       Rect r;
       r.h = 22.0;
       r.y = p.y + p.h - kBrowserFooterH + 6.0;
-      r.x = p.x + kBrowserPad + which * (w + 8.0);
+      if (which >= kFooterNew) {
+         const double gap = 5.0;
+         r.w = (kBrowserFolderW - kBrowserPad - 2 * gap) / 3.0;
+         r.x = p.x + kBrowserPad + (which - kFooterNew) * (r.w + gap);
+         return r;
+      }
+      const double w = 108.0;
+      r.x = p.x + kBrowserPad + browserFolderW() + 10.0 + which * (w + 8.0);
       r.w = w;
       return r;
    }
@@ -1551,13 +2053,37 @@ protected:
    int browserFooterAt(double x, double y) const {
       if (!hasFolders())
          return -1;
-      for (int which = 0; which <= lastFooter(); ++which) {
+      for (int which = 0; which <= kFooterDelete; ++which) {
          if (which == 1 && !fileDialogAvailable())
+            continue;
+         if (which == 3 && !canReveal())
             continue;
          if (browserFooterRect(which).contains(x, y))
             return which;
       }
       return -1;
+   }
+
+   // Whether the shelf on screen is one of the user's collections, which is
+   // what RENAME and DELETE need -- not All, not the factory set, not Unfiled.
+   bool collectionSelected() const {
+      return mBrowserFolder >= 0 && isCollection(selectedFolder());
+   }
+
+   // Where a preset being dragged would go: a collection, or Unfiled, and not
+   // the one it is already in. -2 when there is nowhere under the pointer.
+   int dropFolderAt(double x, double y) const {
+      if (mPressItem < 0)
+         return -2;
+      const int folder = browserFolderAt(x, y);
+      if (folder < 0)
+         return -2;
+      const std::string &target = mFolders[static_cast<size_t>(folder)];
+      const auto &list = mDelegate.guiPresets();
+      if (mPressItem >= static_cast<int>(list.size()) ||
+          list[static_cast<size_t>(mPressItem)].folder == target)
+         return -2;
+      return target.empty() || isCollection(target) ? folder : -2;
    }
 
    // The list of packs the plugin can see, shown under IMPORT. The last entry
@@ -1771,8 +2297,12 @@ protected:
       drawText(cr, p.x + kBrowserPad, p.y + 24, browserTitle(), 11, true, Align::Left);
       setColor(cr, mSpec.theme.textMute);
       drawText(cr, p.x + p.w - kBrowserPad, p.y + 24,
-               browserMaxScroll() > 0 ? "click to load, wheel to scroll, click outside to close"
-                                      : "click to load, or click outside to close",
+               hasFolders()
+                  ? "click to load, drag onto a collection to move, right-click to rename or "
+                    "describe"
+                  : browserMaxScroll() > 0
+                     ? "click to load, wheel to scroll, click outside to close"
+                     : "click to load, or click outside to close",
                9, false, Align::Right);
 
       const auto &list = mDelegate.guiPresets();
@@ -1794,18 +2324,23 @@ protected:
                break;
             const int folder = row - 1;
             const bool sel = folder == mBrowserFolder;
-            const bool hot = mFolderHover == folder;
-            if (sel || hot) {
-               setColor(cr, mSpec.theme.accent, sel ? 0.18 : 0.10);
+            const bool hot = mFolderHover == folder && !mDraggingPreset;
+            const bool drop = mDraggingPreset && mDropFolder == folder;
+            if (sel || hot || drop) {
+               setColor(cr, mSpec.theme.accent, drop ? 0.32 : sel ? 0.18 : 0.10);
                roundedRect(cr, r.x, r.y + 1, r.w, r.h - 2, 3);
                cairo_fill(cr);
             }
-            const char *label = row == 0 ? "All"
-                                : mFolders[static_cast<size_t>(folder)].empty()
-                                   ? "Unfiled"
-                                   : mFolders[static_cast<size_t>(folder)].c_str();
-            setColor(cr, sel ? mSpec.theme.accent : mSpec.theme.text, hot ? 1.0 : 0.8);
-            drawText(cr, r.x + 8, r.y + r.h * 0.5 + 4, label, 10.5, sel, Align::Left);
+            if (drop) {
+               setColor(cr, mSpec.theme.accent, 0.9);
+               cairo_set_line_width(cr, 1.0);
+               roundedRect(cr, r.x + 0.5, r.y + 1.5, r.w - 1, r.h - 3, 3);
+               cairo_stroke(cr);
+            }
+            const std::string label =
+               row == 0 ? std::string("All") : shelfLabel(mFolders[static_cast<size_t>(folder)]);
+            setColor(cr, sel || drop ? mSpec.theme.accent : mSpec.theme.text, hot ? 1.0 : 0.8);
+            drawText(cr, r.x + 8, r.y + r.h * 0.5 + 4, label.c_str(), 10.5, sel, Align::Left);
             // How many presets are on it, which is the one thing a shelf can
             // say about itself without being opened.
             int count = 0;
@@ -1853,18 +2388,38 @@ protected:
          drawFooterButton(cr, browserFooterRect(2), "IMPORT...", true, mFooterHover == 2);
          if (canReveal())
             drawFooterButton(cr, browserFooterRect(3), "REVEAL", true, mFooterHover == 3);
+         drawFooterButton(cr, browserFooterRect(kFooterNew), "NEW", true,
+                          mFooterHover == kFooterNew);
+         drawFooterButton(cr, browserFooterRect(kFooterRename), "RENAME", collectionSelected(),
+                          mFooterHover == kFooterRename);
+         drawFooterButton(cr, browserFooterRect(kFooterDelete), "DELETE", collectionSelected(),
+                          mFooterHover == kFooterDelete);
 
+         // What just happened, or what the preset under the pointer is: its
+         // description is the one thing about it the grid has no room for.
+         std::string line = mBrowserStatus;
+         bool described = false;
+         if (mDraggingPreset) {
+            line = mDropFolder >= 0
+                      ? "Drop to move it to " +
+                           shelfLabel(mFolders[static_cast<size_t>(mDropFolder)]) + "."
+                      : std::string("Drop it on one of your collections, or on Unfiled.");
+         } else if (mBrowserHover >= 0 && mBrowserHover < static_cast<int>(list.size()) &&
+                    !list[static_cast<size_t>(mBrowserHover)].description.empty() &&
+                    mBrowserStatus.empty()) {
+            line = list[static_cast<size_t>(mBrowserHover)].description;
+            described = true;
+         } else if (line.empty()) {
+            line = "A pack is one file holding a whole collection; EXPORT writes the one on "
+                   "screen.";
+         }
          const Rect last = browserFooterRect(lastFooter());
          cairo_save(cr);
          cairo_rectangle(cr, p.x, last.y - 4.0, p.w - kBrowserPad, last.h + 8.0);
          cairo_clip(cr);
-         setColor(cr, mSpec.theme.textMute);
-         drawText(cr, last.x + last.w + 12.0, last.y + last.h - 6.0,
-                  mBrowserStatus.empty()
-                     ? "A pack is one file holding a whole folder. Save as \"Folder/Name\" to "
-                       "put a preset on a shelf."
-                     : mBrowserStatus.c_str(),
-                  9, false, Align::Left);
+         setColor(cr, described ? mSpec.theme.textDim : mSpec.theme.textMute);
+         drawText(cr, last.x + last.w + 12.0, last.y + last.h - 6.0, line.c_str(), 9, false,
+                  Align::Left);
          cairo_restore(cr);
 
          if (mImportOpen && browserImportCount() > 0) {
@@ -1909,6 +2464,21 @@ protected:
          setColor(cr, mSpec.theme.accent, 0.55);
          roundedRect(cr, sb.x, thumbY, sb.w, thumbH, 3);
          cairo_fill(cr);
+      }
+
+      // The preset in the hand, under the pointer.
+      if (mDraggingPreset && mPressItem >= 0 && mPressItem < static_cast<int>(list.size())) {
+         const char *name = list[static_cast<size_t>(mPressItem)].name.c_str();
+         const double w = textWidth(cr, name, 10.5, true) + 20.0;
+         const double gx = mPointerX + 12.0, gy = mPointerY + 6.0;
+         setColor(cr, mSpec.theme.bgTop, 0.95);
+         roundedRect(cr, gx, gy, w, 22.0, 4.0);
+         cairo_fill_preserve(cr);
+         setColor(cr, mSpec.theme.accent, 0.8);
+         cairo_set_line_width(cr, 1.0);
+         cairo_stroke(cr);
+         setColor(cr, mSpec.theme.accent);
+         drawText(cr, gx + 10.0, gy + 15.0, name, 10.5, true, Align::Left);
       }
    }
 
@@ -2456,6 +3026,8 @@ protected:
             cmd = KeyCommand::Up;
          else if (wp == VK_DOWN)
             cmd = KeyCommand::Down;
+         else if (wp == VK_TAB)
+            cmd = KeyCommand::Tab;
          if (!mSaveOpen && mEntryParam < 0) {
             onOverlayKey(cmd);
             return 0;
@@ -2527,6 +3099,8 @@ protected:
                cmd = KeyCommand::Up;
             else if (sym == XK_Down || sym == XK_KP_Down)
                cmd = KeyCommand::Down;
+            else if (sym == XK_Tab || sym == XK_ISO_Left_Tab)
+               cmd = KeyCommand::Tab;
             if (mSaveOpen)
                onSaveKey(cmd, buf, n);
             else if (mEntryParam >= 0)
@@ -2565,13 +3139,7 @@ protected:
       } be{button, timeMs};
 
       if (mSaveOpen) {
-         if (be.button == kButtonLeft) {
-            if (saveOkRect().contains(x, y))
-               commitSave();
-            else if (saveCancelRect().contains(x, y) || !savePanel().contains(x, y))
-               closeSaveDialog();
-         }
-         mDirty = true;
+         onDialogPointer(x, y, be.button);
          return;
       }
 
@@ -2644,6 +3212,15 @@ protected:
                   return;
                }
                const int footer = browserFooterAt(x, y);
+               if (footer == kFooterNew) {
+                  openCollectionDialog(Dialog::NewCollection);
+                  return;
+               }
+               if (footer == kFooterRename || footer == kFooterDelete) {
+                  openCollectionDialog(footer == kFooterRename ? Dialog::RenameCollection
+                                                               : Dialog::DeleteCollection);
+                  return;
+               }
                if (footer == 0 || footer == 1) {
                   exportPack(footer == 1);
                   return;
@@ -2664,11 +3241,22 @@ protected:
                }
             }
 
+            // A preset loads when the button comes up on it, not when it
+            // goes down: between the two it may be dragged onto a collection.
+            const int item = browserItemAt(x, y);
+            if (item >= 0) {
+               mPressItem = item;
+               mPressX = x;
+               mPressY = y;
+               mDraggingPreset = false;
+            } else if (!browserPanel().contains(x, y)) {
+               mBrowserOpen = false;
+            }
+         }
+         if (be.button == kButtonRight && hasFolders()) {
             const int item = browserItemAt(x, y);
             if (item >= 0)
-               loadPreset(item);
-            if (item >= 0 || !browserPanel().contains(x, y))
-               mBrowserOpen = false;
+               openEditDialog(item);
          }
          mDirty = true;
          return;
@@ -2770,7 +3358,34 @@ protected:
       mDirty = true;
    }
 
-   void onButtonRelease() {
+   virtual void onButtonRelease() {
+      if (mPressItem >= 0) {
+         const int item = mPressItem;
+         const int drop = mDropFolder;
+         const bool dragged = mDraggingPreset;
+         mPressItem = -1;
+         mDraggingPreset = false;
+         mDropFolder = -2;
+         if (!dragged) {
+            if (mBrowserOpen && browserItemAt(mPointerX, mPointerY) == item) {
+               loadPreset(item);
+               mBrowserOpen = false;
+            }
+         } else if (drop >= 0 && drop < static_cast<int>(mFolders.size())) {
+            const std::string folder = mFolders[static_cast<size_t>(drop)];
+            const std::string name = mDelegate.guiPresets()[static_cast<size_t>(item)].name;
+            std::string error;
+            if (mDelegate.guiMovePreset(item, folder, error)) {
+               const std::string keep = selectedFolder();
+               showShelf(keep, mBrowserFolder < 0);
+               mBrowserStatus = "Moved \"" + name + "\" to " + shelfLabel(folder) + ".";
+            } else {
+               mBrowserStatus = error.empty() ? std::string("Could not move the preset.") : error;
+            }
+         }
+         mDirty = true;
+         return;
+      }
       if (mDrag >= 0) {
          mDelegate.guiEndEdit(static_cast<uint32_t>(mDrag));
          mDrag = -1;
@@ -2800,8 +3415,10 @@ protected:
          return;
       }
 
-      if (mSaveOpen)
+      if (mSaveOpen) {
+         onDialogMotion(x, y);
          return;
+      }
 
       if (mMenuParam >= 0) {
          const int item = menuItemAt(x, y);
@@ -2810,6 +3427,25 @@ protected:
             mDirty = true;
          }
          return;
+      }
+
+      mPointerX = x;
+      mPointerY = y;
+      if (mBrowserOpen && mPressItem >= 0) {
+         if (!mDraggingPreset && hasFolders() &&
+             std::fabs(x - mPressX) + std::fabs(y - mPressY) > 6.0) {
+            const auto &list = mDelegate.guiPresets();
+            if (mPressItem < static_cast<int>(list.size()) &&
+                list[static_cast<size_t>(mPressItem)].userContent)
+               mDraggingPreset = true;
+            else
+               mBrowserStatus = "Factory presets are locked. Save one as your own to file it.";
+         }
+         if (mDraggingPreset)
+            mDropFolder = dropFolderAt(x, y);
+         mDirty = true;
+         if (mDraggingPreset)
+            return;
       }
 
       if (mBrowserOpen) {
@@ -3011,6 +3647,13 @@ protected:
    std::vector<std::string> mImportPacks;
    bool mImportOpen = false;
    int mImportHover = -1;
+   // A preset pressed in the browser: loaded on release where it was pressed,
+   // or dragged onto a collection to move it there.
+   int mPressItem = -1;
+   double mPressX = 0.0, mPressY = 0.0;
+   bool mDraggingPreset = false;
+   int mDropFolder = -2;
+   double mPointerX = 0.0, mPointerY = 0.0;
    // What the last export or import had to say. Cleared when the browser
    // opens, so a message never outlives the gesture that produced it.
    std::string mBrowserStatus;
@@ -3027,6 +3670,24 @@ protected:
    bool mSaveFailed = false;
    std::string mSaveName;
    std::string mSaveStatus;
+   // Which dialog mSaveOpen is, and what it is about.
+   Dialog mDialog = Dialog::NoDialog;
+   int mDialogField = 0;           // the text field typing goes into: 0 name, 1 description
+   std::string mSaveDesc;
+   std::string mSaveFolder;        // the collection a save goes into; "" is the root
+   std::string mLastSaveFolder;    // where the last save went, offered next time
+   std::vector<std::string> mDialogFolders; // what the collection list offers
+   bool mFolderMenuOpen = false;
+   int mFolderMenuHover = -1;
+   int mFolderMenuScroll = 0;
+   int mDialogIndex = -1;          // the preset being edited or deleted
+   std::string mDialogCollection;  // the collection being renamed or deleted
+   // A collection made from the save dialog returns to the save, with what had
+   // been typed there.
+   bool mReturnToSave = false;
+   std::string mStashName, mStashDesc, mStashFolder;
+   // The user's collections, empty ones too, as the plugin last listed them.
+   std::vector<std::string> mCollections;
    int mMenuParam = -1; // enum parameter whose dropdown is open, or -1
    int mMenuHover = -1;
 

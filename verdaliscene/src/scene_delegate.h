@@ -63,13 +63,27 @@ public:
    virtual bool presetEdited(int target) const = 0;
    virtual void loadPreset(int target, int index) = 0;
    virtual std::string suggestedPresetName(int target) = 0;
-   virtual bool savePreset(int target, const std::string &name, std::string &error) = 0;
+   virtual bool savePreset(int target, const std::string &folder, const std::string &name,
+                           const std::string &description, std::string &error) = 0;
    virtual std::vector<std::string> presetPacks(int target) = 0;
    virtual std::string packPathFor(int target, const std::string &folder) = 0;
    virtual bool exportPack(int target, const std::string &folder, const std::string &path,
                            std::string &error) = 0;
    virtual bool importPack(int target, const std::string &path, std::string &folder,
                            std::string &error) = 0;
+
+   // Collections and editing, on the library `target` addresses. See GuiDelegate.
+   virtual std::vector<std::string> presetCollections(int target) = 0;
+   virtual bool createCollection(int target, const std::string &name, std::string &folder,
+                                 std::string &error) = 0;
+   virtual bool renameCollection(int target, const std::string &folder, const std::string &name,
+                                 std::string &renamed, std::string &error) = 0;
+   virtual bool deleteCollection(int target, const std::string &folder, std::string &error) = 0;
+   virtual bool movePreset(int target, int index, const std::string &folder,
+                           std::string &error) = 0;
+   virtual bool editPreset(int target, int index, const std::string &name,
+                           const std::string &description, std::string &error) = 0;
+   virtual bool deletePreset(int target, int index, std::string &error) = 0;
 };
 
 } // namespace verdaliscene

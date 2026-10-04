@@ -391,8 +391,9 @@ public:
    std::string guiSuggestedPresetName() const override {
       return mScene->suggestedPresetName(target);
    }
-   bool guiSavePreset(const std::string &name, std::string &error) override {
-      return mScene->savePreset(target, name, error);
+   bool guiSavePreset(const std::string &folder, const std::string &name,
+                      const std::string &description, std::string &error) override {
+      return mScene->savePreset(target, folder, name, description, error);
    }
    bool guiPresetFoldersSupported() const override { return true; }
    std::vector<std::string> guiPresetPacks() const override { return mScene->presetPacks(target); }
@@ -405,6 +406,30 @@ public:
    }
    bool guiImportPack(const std::string &path, std::string &folder, std::string &error) override {
       return mScene->importPack(target, path, folder, error);
+   }
+   std::vector<std::string> guiPresetCollections() const override {
+      return mScene->presetCollections(target);
+   }
+   bool guiCreateCollection(const std::string &name, std::string &folder,
+                            std::string &error) override {
+      return mScene->createCollection(target, name, folder, error);
+   }
+   bool guiRenameCollection(const std::string &folder, const std::string &name,
+                            std::string &renamed, std::string &error) override {
+      return mScene->renameCollection(target, folder, name, renamed, error);
+   }
+   bool guiDeleteCollection(const std::string &folder, std::string &error) override {
+      return mScene->deleteCollection(target, folder, error);
+   }
+   bool guiMovePreset(int index, const std::string &folder, std::string &error) override {
+      return mScene->movePreset(target, index, folder, error);
+   }
+   bool guiEditPreset(int index, const std::string &name, const std::string &description,
+                      std::string &error) override {
+      return mScene->editPreset(target, index, name, description, error);
+   }
+   bool guiDeletePreset(int index, std::string &error) override {
+      return mScene->deletePreset(target, index, error);
    }
 
 private:
@@ -2474,6 +2499,13 @@ private:
       default:
          break;
       }
+   }
+
+   // A preset in the browser loads when the button comes up, and that can
+   // close the browser, after which the overlays are about the scene again.
+   void onButtonRelease() override {
+      PluginWindow::onButtonRelease();
+      settleOverlayTarget();
    }
 
    void onMotion(double x, double y, bool shift) override {

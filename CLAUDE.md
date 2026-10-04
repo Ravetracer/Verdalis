@@ -696,13 +696,24 @@ held fader releases rather than fights it, and the preset bar carries a
 `SOLO ON` / `MUTE ON` chip for as long as a hold is active, because a
 forced-down layer that looks like a saved one is the whole trap.
 
-**The preset library has folders, and a folder is a file.** Saving a preset as
-`Folder/Name` puts it one level under the user preset directory; a name with no
-slash saves into the root, as every save did before. One level only, and typing
-the folder is the whole of the "make a folder" gesture -- a folder with nothing
-in it cannot be made, which is right for something whose only purpose is to hold
-presets. The browser then draws a column of shelves: *All*, the plugin's own
-factory set, each user folder, and *Unfiled* for the root.
+**The preset library has collections, and a collection is a folder.** A user
+preset lives one level under the user preset directory, in a collection's
+directory or in the root, which the browser calls *Unfiled*. One level only. The
+browser draws a column of shelves -- *All*, the plugin's own factory set, every
+collection (listed from the disk, so an empty one shows), *Unfiled* -- with
+`NEW`, `RENAME` and `DELETE` under it; a preset dragged onto a shelf moves there,
+and a right-click on one opens an edit dialog for its name and description, with
+a delete. `SAVE` picks the collection from a list (*New collection...* makes one
+and comes back), and takes a description. Factory presets are refused by every
+one of these. The dialogs are one modal dialog with modes (`Dialog` in
+`plugin_window.h`); `mSaveOpen` means "a dialog is open", whichever.
+
+Editing a preset rewrites only its `name` and `description` lines
+(`withPresetHeader()`), never re-serialises it, so a VerdaliScene scene keeps its
+layer sections. A plugin tracking its current preset by path follows a move or a
+rename with `rescanFollowing()`. The operations are checked end to end by
+`shared/include/verdalis/testing/preset_library_check.h`, which every plugin's
+self-test runs against its own preset format in a throwaway `XDG_CONFIG_HOME`.
 
 A whole shelf can be written out as a **preset pack**: one text file, extension
 `<presetext>pack`, kept in a `packs` directory beside `presets`. It is the preset
@@ -716,16 +727,19 @@ All of it is shared. `shared/src/preset_library.cpp` has the scan, the folder
 split and the pack read and write; the browser's shelves, footer and import list
 are in `window.cpp`; `shared/src/gui/filedialog.cpp` is the only place that
 talks to the desktop, and it reports honestly when there is no chooser rather
-than offering a button that does nothing. A plugin opts in by implementing five
-`GuiDelegate` methods that all default to "this plugin does not do that", so the
-flat browser is still what a plugin gets for free -- see any plugin's
-`guiPresetFoldersSupported()`.
+than offering a button that does nothing. A plugin opts in by implementing the
+folder, pack and collection `GuiDelegate` methods, which all default to "this
+plugin does not do that", so the flat browser is still what a plugin gets for
+free -- see any plugin's `guiPresetFoldersSupported()`. Every plugin's
+implementation is the same thin layer over `preset_library.h`.
 
 The feature was taken from **SäureKiste** in `Ravetracer/audio-plugins`, whose
 `shared/` is a fork of this one. Its browser lives in its own
 `src/gui/seqwindow.cpp` rather than the shared window, so the backend ported
 across unchanged and the browser UI had to be transplanted. If either copy
 changes here, the other is worth a look -- there is no submodule between them.
+The collections, the save dialog's list and preset editing came after the port
+and are not in SäureKiste yet.
 
 **Not every layer can have a strip.** A strip is its fader, so a layer with no
 level parameter of its own gets none: RainyDay's close droplets are loudness

@@ -101,40 +101,55 @@ User presets appear in the browser immediately, listed after the factory ones.
 They are plain text, so they can be copied between machines, kept in version
 control, or edited in any editor.
 
-### Folders
+### Collections
 
-A preset library is a shelf, and a long one is worth tidying. Saving a preset as
-`Folder/Name` puts it in a folder of that name under the user preset directory,
-creating the folder if it is not there; a name with no slash in it saves into the
-library's root, as every save did before. Typing the folder is the whole gesture
-— there is no separate "new folder" step, and a folder with nothing in it cannot
-be made.
+A preset library is a shelf, and a long one is worth tidying. Your own presets
+are filed in **collections**: folders one level under the user preset directory.
+The browser lists the library down its left side — *All*, the factory presets,
+each of your collections, and *Unfiled* for presets saved into none — each with
+the number of presets in it. Clicking one lists just that one.
 
-Folders are one level deep on purpose: a preset library is a shelf rather than a
-filesystem, and a tree deep enough to get lost in is one somebody will get lost
-in. The browser then grows a column of shelves down its left side — *All*, the
-factory library, each of your own folders, and *Unfiled* for anything saved
-without one — each with the number of presets on it. Clicking a shelf lists just
-that shelf.
+| In the browser | What it does |
+|---|---|
+| `NEW` | Makes a collection. It is listed at once, empty until something goes into it |
+| `RENAME` | Renames the selected collection; its presets go with it |
+| `DELETE` | Deletes the selected collection and every preset in it, after asking |
+| Drag a preset onto a collection | Moves it there — or onto *Unfiled* to take it out of one |
+| Right-click one of your presets | Renames it, changes its description, or deletes it |
+
+`SAVE` asks where a preset goes: pick a collection from the list — or *New
+collection...* to make one on the spot — then give the preset a name and, if you
+like, a **description**. The description is what the browser shows while the
+pointer is over the preset and what the help line shows while it is loaded: a
+sentence for whoever loads it next. Saving over one of your own presets offers
+its collection and its description again.
+
+The factory presets are locked. They are part of the plugin, not files of yours,
+so they cannot be moved, renamed or deleted; to change one, load it, adjust it
+and save it as your own.
+
+Collections are one level deep on purpose: a preset library is a shelf rather
+than a filesystem, and a tree deep enough to get lost in is one somebody will get
+lost in.
 
 ### Preset packs
 
-A whole folder can be written out as a single file — a **preset pack**, extension
+A whole collection can be written out as a single file — a **preset pack**, extension
 `.rainydaypack` — so a library can be handed to somebody else, or moved between
 machines, as one file rather than a directory.
 
-With a folder selected in the browser:
+With a collection selected in the browser:
 
 | Button | What it does |
 |---|---|
-| `EXPORT` | Writes the selected folder as a pack into the `packs` directory beside `presets` |
+| `EXPORT` | Writes the selected collection — its presets and nothing else — as a pack into the `packs` directory beside `presets` |
 | `EXPORT AS...` | The same, to a location you choose |
 | `IMPORT...` | Lists the packs already in `packs`, plus *Other file...* for one from anywhere |
 | `REVEAL` | Opens the folder the pack was just written to in the system's file browser |
 
-Importing adds the pack's presets to the library as a new folder named after the
-pack. Nothing is ever overwritten: importing the same pack twice gives two
-folders rather than a mixture of both versions in one.
+Importing adds the pack's presets to the library as a new collection named after
+the pack. Nothing is ever overwritten: importing the same pack twice gives two
+collections rather than a mixture of both versions in one.
 
 A pack is the preset format again with a separator line between the presets, so
 it can be read, diffed and edited by hand like everything else here. It carries

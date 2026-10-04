@@ -1,8 +1,20 @@
 # VerdaliScene status
 
-Version 0.4.0, the suite's eleventh plugin and the first one that synthesises
+Version 0.5.0, the suite's eleventh plugin and the first one that synthesises
 nothing of its own: every sound comes from one of the nine nature instruments,
 run as a layer. 0.1.0 shipped in suite 0.25.0.
+
+## What changed in 0.5.0
+
+- **Preset collections**, in the scene library and in every layer's: `NEW`,
+  `RENAME` and `DELETE` in the browser, a preset dragged onto a collection moves
+  there, a right-click renames, describes or deletes one of your own, and `SAVE`
+  picks the collection from a list and takes a description. Renaming a scene
+  rewrites only its name and description lines, so every layer section stays as
+  it was; the scene's and each layer's current preset follow a move or a rename.
+  Same code as every other plugin; the self-test runs the shared checks on the
+  scene library and a birds layer's, and checks that a renamed scene keeps every
+  layer.
 
 ## What changed in 0.4.0
 

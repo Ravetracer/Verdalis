@@ -1723,13 +1723,8 @@ public:
       return std::string("My ") + layerType(slotType(target)).label;
    }
 
-   bool savePreset(int target, const std::string &input, std::string &error) override {
-      std::string folder, name;
-      verdalis::splitPresetFolder(input, folder, name);
-      if (name.empty()) {
-         error = "Give the preset a name after the folder.";
-         return false;
-      }
+   bool savePreset(int target, const std::string &folder, const std::string &name,
+                   const std::string &description, std::string &error) override {
       const verdalis::PresetLibrarySpec lib = librarySpec(target);
       const std::string path = verdalis::userPresetPathIn(lib.ctx, folder, name);
       if (path.empty()) {
@@ -1749,6 +1744,9 @@ public:
          }
          text = formatLayerPreset(slotLayer(target), name);
       }
+      // The description the user gave it, in place of whatever the preset it
+      // was derived from said.
+      text = verdalis::withPresetHeader(text, name, description);
       if (!writePresetFile(path, text, error))
          return false;
       rescanLibrary(target);
@@ -1783,6 +1781,103 @@ public:
       if (!verdalis::importPresetPack(librarySpec(target), path, folder, error))
          return false;
       rescanLibrary(target);
+      return true;
+   }
+
+   // --------------------------------------------- collections and editing
+   //
+   // The current preset of the scene and of every layer is held by its path
+   // and its name, so a change that moves or renames a file has to carry them
+   // along: every slot of the same plugin shares that plugin's library.
+
+   void followPreset(int target, const std::string &from, const std::string &to,
+                     const std::string &newName) {
+      auto follow = [&](std::string &key, std::string &name) {
+         if (key.empty() || from.empty())
+            return;
+         const bool under = key == from || (key.size() > from.size() &&
+                                            key.compare(0, from.size(), from) == 0 &&
+                                            (key[from.size()] == '/' || key[from.size()] == '\\'));
+         if (!under)
+            return;
+         key = to.empty() ? std::string() : to + key.substr(from.size());
+         if (!newName.empty() && key == to)
+            name = newName;
+      };
+      if (target < 0 || target >= kNumSlots) {
+         follow(mScene.key, mScene.name);
+      } else {
+         const int type = slotType(target);
+         for (int s = 0; s < kNumSlots; ++s)
+            if (slotType(s) == type)
+               follow(mSlotPreset[s].key, mSlotPreset[s].name);
+      }
+      rescanLibrary(target);
+   }
+
+   std::vector<std::string> presetCollections(int target) override {
+      return verdalis::presetCollections(librarySpec(target));
+   }
+
+   bool createCollection(int target, const std::string &name, std::string &folder,
+                         std::string &error) override {
+      if (!verdalis::createPresetCollection(librarySpec(target), name, folder, error))
+         return false;
+      rescanLibrary(target);
+      return true;
+   }
+
+   bool renameCollection(int target, const std::string &folder, const std::string &name,
+                         std::string &renamed, std::string &error) override {
+      const verdalis::PresetLibrarySpec lib = librarySpec(target);
+      if (!verdalis::renamePresetCollection(lib, folder, name, renamed, error))
+         return false;
+      followPreset(target, verdalis::presetCollectionDir(lib, folder),
+                   verdalis::presetCollectionDir(lib, renamed), {});
+      return true;
+   }
+
+   bool deleteCollection(int target, const std::string &folder, std::string &error) override {
+      const verdalis::PresetLibrarySpec lib = librarySpec(target);
+      const bool ok = verdalis::deletePresetCollection(lib, folder, error);
+      followPreset(target, verdalis::presetCollectionDir(lib, folder), {}, {});
+      return ok;
+   }
+
+   bool movePreset(int target, int index, const std::string &folder,
+                   std::string &error) override {
+      const std::vector<GuiPreset> &list = libraryList(target);
+      if (index < 0 || index >= static_cast<int>(list.size()))
+         return false;
+      const GuiPreset preset = list[static_cast<size_t>(index)];
+      std::string moved;
+      if (!verdalis::movePresetToCollection(librarySpec(target), preset, folder, moved, error))
+         return false;
+      followPreset(target, preset.path, moved, {});
+      return true;
+   }
+
+   bool editPreset(int target, int index, const std::string &name, const std::string &description,
+                   std::string &error) override {
+      const std::vector<GuiPreset> &list = libraryList(target);
+      if (index < 0 || index >= static_cast<int>(list.size()))
+         return false;
+      const GuiPreset preset = list[static_cast<size_t>(index)];
+      std::string edited;
+      if (!verdalis::editPreset(librarySpec(target), preset, name, description, edited, error))
+         return false;
+      followPreset(target, preset.path, edited, name);
+      return true;
+   }
+
+   bool deletePreset(int target, int index, std::string &error) override {
+      const std::vector<GuiPreset> &list = libraryList(target);
+      if (index < 0 || index >= static_cast<int>(list.size()))
+         return false;
+      const GuiPreset preset = list[static_cast<size_t>(index)];
+      if (!verdalis::deletePreset(librarySpec(target), preset, error))
+         return false;
+      followPreset(target, preset.path, {}, {});
       return true;
    }
 

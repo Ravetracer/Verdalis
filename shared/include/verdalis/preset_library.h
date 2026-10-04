@@ -64,4 +64,66 @@ bool exportPresetPack(const PresetLibrarySpec &spec, const std::vector<GuiPreset
 bool importPresetPack(const PresetLibrarySpec &spec, const std::string &path, std::string &folder,
                       std::string &error);
 
+// ------------------------------------------------------------- collections
+//
+// A collection is a folder one level under the user preset directory, which
+// is all a folder ever was here; what this adds is managing them directly
+// rather than only by typing "Folder/Name" into the save field. `folder` is
+// always the directory's own name, and "" is the library's root, which the
+// browser calls Unfiled. The factory presets are in the binary, not in a
+// folder, so nothing below can touch them.
+
+// Every collection, empty ones included, sorted. An empty collection exists
+// as a directory -- one just made, or one whose presets were all moved out --
+// so it is listed from the disk rather than from the presets in it.
+std::vector<std::string> presetCollections(const PresetLibrarySpec &spec);
+
+// Makes a collection called `name`, whose directory name comes back in
+// `folder`. A name is turned into a safe directory name the way a preset's is.
+bool createPresetCollection(const PresetLibrarySpec &spec, const std::string &name,
+                            std::string &folder, std::string &error);
+
+// Renames collection `folder` to `name`; the new directory name comes back in
+// `renamed`. Never merges into a collection that is already there.
+bool renamePresetCollection(const PresetLibrarySpec &spec, const std::string &folder,
+                            const std::string &name, std::string &renamed, std::string &error);
+
+// Deletes collection `folder` and every preset in it.
+bool deletePresetCollection(const PresetLibrarySpec &spec, const std::string &folder,
+                            std::string &error);
+
+// Moves one of the user's presets into collection `folder` ("" is the root),
+// keeping its name. Its new path comes back in `moved`. A collection that
+// already has a preset of that name is left alone rather than overwritten.
+bool movePresetToCollection(const PresetLibrarySpec &spec, const GuiPreset &preset,
+                            const std::string &folder, std::string &moved, std::string &error);
+
+// Renames one of the user's presets and sets its description, in place in its
+// collection. Only the preset's `name` and `description` lines change, so a
+// file holding lines the shared format knows nothing about -- a VerdaliScene
+// scene's layers -- keeps them. Its new path comes back in `edited`.
+bool editPreset(const PresetLibrarySpec &spec, const GuiPreset &preset, const std::string &name,
+                const std::string &description, std::string &edited, std::string &error);
+
+// Deletes one of the user's presets.
+bool deletePreset(const PresetLibrarySpec &spec, const GuiPreset &preset, std::string &error);
+
+// A preset's text with its `name` and `description` lines replaced, the
+// description added after the name if there was none and removed if it is
+// empty. Both are single lines.
+std::string withPresetHeader(const std::string &text, const std::string &name,
+                             const std::string &description);
+
+// Rescans `presets` after one of the changes above and returns where the
+// preset at `current` is now. A preset whose path started with `from` is
+// looked for under `to` instead -- a file or a whole collection's directory --
+// and one that is not found any more, because it was deleted, gives -1. A
+// factory preset is found again by its load key.
+int rescanFollowing(const PresetLibrarySpec &spec, std::vector<GuiPreset> &presets, int current,
+                    const std::string &from, const std::string &to);
+
+// The directory a collection lives in, or the library's root for "". Empty
+// when there is no user preset directory at all.
+std::string presetCollectionDir(const PresetLibrarySpec &spec, const std::string &folder);
+
 } // namespace verdalis

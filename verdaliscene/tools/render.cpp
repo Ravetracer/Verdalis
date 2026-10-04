@@ -69,6 +69,8 @@ const char *dlerrorCompat() { return "see GetLastError()"; }
 #include "verdalis/preset_library.h"
 
 #include <filesystem>
+
+#include "verdalis/testing/preset_library_check.h"
 #include <fstream>
 
 // Setting an environment variable is spelled differently on each platform, and
@@ -1672,6 +1674,49 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
          if (!same)
             std::printf("       %s\n", perr.c_str());
          check(same, "a scene exported as a pack and imported again is the same scene");
+
+         // A scene renamed and described in the browser keeps every layer:
+         // only its name and description lines change.
+         {
+            const std::string editPath =
+               verdalis::userPresetPathIn(sceneLib.ctx, "Edits", "Mixed By Ear");
+            writePresetFile(editPath, written, perr);
+            int at = -1;
+            const std::vector<GuiPreset> lib = verdalis::scanPresetLibrary(sceneLib);
+            for (size_t i = 0; i < lib.size(); ++i)
+               if (lib[i].path == editPath)
+                  at = static_cast<int>(i);
+            std::string edited;
+            Scene renamed;
+            std::string text;
+            bool kept = at >= 0 && verdalis::editPreset(sceneLib, lib[static_cast<size_t>(at)],
+                                                        "Evening Mix", "Mixed for the evening.",
+                                                        edited, perr);
+            if (kept) {
+               std::ifstream in(edited, std::ios::binary);
+               text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+               kept = parseScene(text.c_str(), text.size(), renamed, perr);
+            }
+            if (kept) {
+               renamed.name = mixed.name;
+               renamed.description = mixed.description;
+               kept = renamed.layers.size() == mixed.layers.size() &&
+                      formatScene(renamed) == written && text.find("Evening Mix") != std::string::npos &&
+                      text.find("Mixed for the evening.") != std::string::npos;
+            }
+            check(kept, "a scene renamed and described keeps every layer and value");
+            std::filesystem::remove_all(std::filesystem::path(editPath).parent_path(), dirEc);
+         }
+         // Collections, moving, renaming, describing and deleting: on the
+         // scene library, with its real factory scenes, and on a layer's,
+         // which is its plugin's own.
+         auto checkFn = [&](bool ok, const std::string &what) {
+            check(ok, ("scenes: " + what).c_str());
+         };
+         verdalis::testing::checkPresetLibrary(sceneLib, checkFn);
+         verdalis::testing::checkPresetLibrary(
+            layerType(kLayerBirds).library(),
+            [&](bool ok, const std::string &what) { check(ok, ("birds layer: " + what).c_str()); });
          std::error_code rmec;
          std::filesystem::remove_all(tmpdir, rmec);
          setEnvVar("XDG_CONFIG_HOME", nullptr);

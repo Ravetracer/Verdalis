@@ -91,9 +91,13 @@ ones in use are easy to find for automation.
 | Linux | `$XDG_CONFIG_HOME/{{PLUGIN}}/presets`, or `~/.config/{{PLUGIN}}/presets` |
 | Windows | `%APPDATA%\{{PLUGIN}}\presets` |
 
-Saving as `Folder/Name` files it in a folder. The browser lists the library by
-folder, and a whole folder can be exported as one **preset pack** and imported
-again, exactly as in every other Verdalis plugin.
+The browser files the library in **collections**, exactly as in every other
+Verdalis plugin: `NEW`, `RENAME` and `DELETE` under its list of collections, a
+preset dragged onto one moves there, and a right-click on one of your own renames
+it, describes it or deletes it. `SAVE` asks which collection a scene goes into,
+with a name and a description for whoever loads it next. A whole collection --
+only the scenes in it -- exports as one **preset pack** and imports again as a
+collection of its own. The same goes for every layer's library.
 
 ## Your own layer presets
 
