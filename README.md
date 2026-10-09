@@ -170,8 +170,9 @@ Or build the whole suite and pack the release archive:
 
 That produces one `.zip`: every plugin, in both formats, for Linux and Windows
 together. It is self-contained — the plugins, their presets, every manual as a
-PDF, and install instructions for both platforms. Pass `--tarball` to get a
-`.tar.gz` alongside.
+PDF, and install instructions for both platforms. Beside it go one `.zip` per
+platform, which are what the [GitHub releases](https://github.com/Ravetracer/Verdalis/releases)
+carry. Pass `--tarball` to get a `.tar.gz` alongside each.
 
 ## Documentation
 
@@ -219,6 +220,10 @@ needs one small patch to compile against 3.8, kept in `shared/patches/`.
 VST is a trademark of Steinberg Media Technologies GmbH.
 
 ## Installing
+
+Prebuilt plugins are on the [releases page](https://github.com/Ravetracer/Verdalis/releases):
+one archive for Linux and one for Windows, each with every plugin as CLAP and
+VST3, the presets, the manuals and an `INSTALL.txt`.
 
 CLAP plugins are loaded from `~/.clap` on Linux and
 `%COMMONPROGRAMFILES%\CLAP` on Windows; VST3 bundles from `~/.vst3` and

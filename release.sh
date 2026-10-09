@@ -5,7 +5,9 @@
 # them.
 #
 # One archive: the whole suite, both platforms. The plugins are free, so the
-# site offers the suite on every page rather than a download per plugin.
+# site offers the suite on every page rather than a download per plugin. Beside
+# it go one archive per platform, the same tree with the other platform left
+# out, which is what publish-release.sh attaches to a GitHub release.
 #
 #   ./release.sh 0.1.0                  Linux + Windows (needs cross-built Cairo)
 #   ./release.sh 0.1.0 --linux-only     skip the Windows half
@@ -390,6 +392,15 @@ build_info() {
    local plugin
    echo "Verdalis Plugin Suite ${version}"
    echo "built $(date -u '+%Y-%m-%d %H:%M UTC') on $(uname -srm)"
+   # The commit the binaries came from. publish-release.sh reads this line to
+   # refuse attaching archives to a tag they were not built from.
+   if [ "$in_git_tree" = 1 ]; then
+      if [ -n "$(git -C "$here" status --porcelain --untracked-files=no)" ]; then
+         echo "commit $(git -C "$here" rev-parse HEAD) (uncommitted changes)"
+      else
+         echo "commit $(git -C "$here" rev-parse HEAD)"
+      fi
+   fi
    echo
    echo "plugins:"
    for plugin in "${plugins[@]}"; do
@@ -406,14 +417,16 @@ build_info() {
    fi
    echo
    echo "targets:"
-   echo "  linux/    x86_64, GUI via X11 + Cairo"
-   if [ "$build_windows" = 1 ]; then
+   if has_target linux; then
+      echo "  linux/    x86_64, GUI via X11 + Cairo"
+   fi
+   if has_target windows; then
       if [ -n "$win_cairo" ]; then
          echo "  windows/  x86_64 (mingw-w64), GUI via win32 + Cairo"
       else
          echo "  windows/  x86_64 (mingw-w64), NO PLUGIN WINDOW"
       fi
-   else
+   elif [ "$build_windows" = 0 ]; then
       echo "  windows/  not built"
    fi
 }
@@ -501,6 +514,38 @@ fi
 if [ "$tarball" = 1 ]; then
    rm -f "${base}.tar.gz"; tar czf "${base}.tar.gz" "$base"; made+=("${base}.tar.gz")
 fi
+
+# --- one archive per platform: the same tree with the other platform left out,
+# and its own INSTALL.txt and BUILD-INFO.txt describing only what is in it. The
+# tree is hard-linked rather than copied, so the two text files are unlinked
+# before they are rewritten -- writing through the link would change the suite
+# archive's copies too.
+for os in "${targets[@]}"; do
+   step="packing ${os}"
+   pbase="${base}-${os}-x86_64"
+   rm -rf "$pbase"
+   mkdir "$pbase"
+   cp -al "${base}/." "${pbase}/"
+   for other in linux windows; do
+      [ "$other" = "$os" ] || rm -rf "${pbase:?}/${other}"
+   done
+   rm -f "${pbase}/INSTALL.txt" "${pbase}/BUILD-INFO.txt"
+   (
+      targets=("$os")
+      install_note "Verdalis Plugin Suite ${version} (${os^})" \
+         "every <Name>/ folder in linux/" "every <Name>\\ folder in windows\\" \
+         "every <Name>.vst3 folder in linux/" "every <Name>.vst3 folder in windows\\" \
+         > "${pbase}/INSTALL.txt"
+      build_info > "${pbase}/BUILD-INFO.txt"
+   )
+   if command -v zip >/dev/null 2>&1; then
+      rm -f "${pbase}.zip"; zip -qr "${pbase}.zip" "$pbase"; made+=("${pbase}.zip")
+   fi
+   if [ "$tarball" = 1 ]; then
+      rm -f "${pbase}.tar.gz"; tar czf "${pbase}.tar.gz" "$pbase"; made+=("${pbase}.tar.gz")
+   fi
+   rm -rf "$pbase"
+done
 rm -rf "$work"
 
 echo

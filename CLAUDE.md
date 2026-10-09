@@ -18,6 +18,7 @@ Verdalis/
 ├── LICENSE            MIT, suite-wide
 ├── .gitignore
 ├── release.sh         builds every plugin and packs the suite archive
+├── publish-release.sh tags a built release and publishes it on GitHub
 ├── setup-winbuild.sh  one-time Windows cross-build setup
 ├── _designs/          brand assets (logo, emblem; SVG + PNG) — committed,
 │                      the README renders the logo from here
@@ -299,11 +300,38 @@ is no list to update. It reads each plugin's display name and version from its
 tree, and writes `BUILD-INFO.txt` recording what went in.
 
 It produces **one archive: the suite, both platforms in it**, so the visitor
-never has to pick an operating system first:
+never has to pick an operating system first -- plus one archive per platform,
+which is what a GitHub release carries:
 
 ```
-verdalis-suite-0.2.0.zip        every plugin, Linux + Windows
+verdalis-suite-0.2.0.zip                  every plugin, Linux + Windows (the site)
+verdalis-suite-0.2.0-linux-x86_64.zip     the same tree, linux/ only   (GitHub)
+verdalis-suite-0.2.0-windows-x86_64.zip   the same tree, windows/ only (GitHub)
 ```
+
+A per-platform archive is the suite tree with the other platform's folder left
+out and its own `INSTALL.txt` and `BUILD-INFO.txt` describing only what is in it.
+`BUILD-INFO.txt` records the commit the binaries came from, marked
+`(uncommitted changes)` when the tree was dirty.
+
+### GitHub releases
+
+```sh
+./release.sh 0.31.0                  # build, from a clean, pushed commit
+./publish-release.sh 0.31.0          # tag v0.31.0, push it, create the release
+./publish-release.sh 0.31.0 --draft  # or as a draft, to review on GitHub first
+```
+
+The release gets the two per-platform archives; GitHub adds the source code
+zip and tarball for the tag itself. The notes are generated: the plugin versions
+from the archive's `BUILD-INFO.txt`, and the commit subjects since the previous
+`v*` tag (`--notes-file` replaces them).
+
+The binaries are built locally, not in CI -- they need the gitignored `CLAP/`
+checkouts, the patched clap-wrapper and the cross-built Windows Cairo. So
+`publish-release.sh` refuses unless the tree is clean, HEAD is on `origin`, and
+both archives' `BUILD-INFO.txt` name exactly HEAD as their commit. Commit first,
+then build, then publish.
 
 There used to be a per-plugin archive beside it. The plugins are free and the
 site offers the suite on every page, so a download per plugin was a second link
