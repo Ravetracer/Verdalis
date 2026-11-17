@@ -1,6 +1,6 @@
 ---
 tagline: A synthesised night
-subtitle: CLAP instrument for Linux and Windows
+subtitle: CLAP instrument for Linux, Windows and macOS
 accent: #9FB4E8
 ---
 
@@ -80,6 +80,30 @@ C:\Program Files\Common Files\VST3\{{PLUGIN}}.vst3
 Copy the whole `{{PLUGIN}}` folder so that `{{PLUGIN}}.clap` and `presets\` sit
 inside it, and rescan.
 
+## macOS
+
+The macOS archive holds {{PLUGIN}} three times, as a CLAP, a VST3 and an Audio
+Unit; Logic Pro and GarageBand use the Audio Unit. Copy whichever your host
+uses:
+
+```
+~/Library/Audio/Plug-Ins/CLAP/{{PLUGIN}}.clap
+~/Library/Audio/Plug-Ins/VST3/{{PLUGIN}}.vst3
+~/Library/Audio/Plug-Ins/Components/{{PLUGIN}}.component
+```
+
+Each is a bundle with the factory presets inside it, so there is nothing to
+keep beside it. The plugins are universal (Apple Silicon and Intel) and need
+macOS 10.15 or later. They are free and not notarized by Apple, so macOS
+refuses to load them until the quarantine flag the download set is cleared;
+in Terminal:
+
+```
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/{{PLUGIN}}.clap
+```
+
+and the same for the `.vst3` and the `.component`. Then rescan.
+
 ## Hosts
 
 Any CLAP host: Bitwig Studio, Reaper, Qtractor, or the reference `clap-host`.
@@ -93,6 +117,7 @@ presets there too, though the host's own browser will not.
 
 | Linux | `$XDG_CONFIG_HOME/{{PLUGIN}}/presets`, or `~/.config/{{PLUGIN}}/presets` |
 | Windows | `%APPDATA%\{{PLUGIN}}\presets` |
+| macOS | `~/Library/Application Support/{{PLUGIN}}/presets` |
 
 They are plain text — parameter names and values — and can be edited, copied
 between machines and kept in version control.

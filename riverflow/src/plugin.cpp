@@ -23,6 +23,10 @@
 #include <chrono>
 #include <thread>
 
+#if defined(__APPLE__)
+#   include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #include <filesystem>
 
 #include "gui/gui.h"
@@ -663,6 +667,11 @@ private:
    static uintptr_t nativeHandle(const clap_window_t &w) {
       return reinterpret_cast<uintptr_t>(w.win32);
    }
+#elif defined(__APPLE__)
+   static constexpr const char *kWindowApi = CLAP_WINDOW_API_COCOA;
+   static uintptr_t nativeHandle(const clap_window_t &w) {
+      return reinterpret_cast<uintptr_t>(w.cocoa);
+   }
 #else
    static constexpr const char *kWindowApi = CLAP_WINDOW_API_X11;
    static uintptr_t nativeHandle(const clap_window_t &w) {
@@ -912,11 +921,19 @@ private:
    }
 
    static bool guiSetScale(const clap_plugin_t *p, double scale) {
+#if defined(__APPLE__)
+      // The cocoa API works in logical sizes and has no scale to set; the view
+      // applies the Retina factor itself. Host resizing still zooms.
+      (void)p;
+      (void)scale;
+      return false;
+#else
       RiverFlowPlugin *plug = self(p);
       if (!plug->mGui)
          return false;
       plug->mGui->setScale(scale);
       return true;
+#endif
    }
 
    static bool guiGetSize(const clap_plugin_t *p, uint32_t *width, uint32_t *height) {
@@ -1003,7 +1020,8 @@ private:
    // The window is repainted from the host's timer, which is the main thread
    // and so the only place CLAP allows GUI work. Hosts are not required to
    // offer timers, though, and a window that never repaints is useless -- so
-   // there is a fallback thread with its own X11 connection for those.
+   // there is a fallback thread with its own X11 connection for those (on
+   // macOS a timer on the main run loop instead).
 
    static void guiOnTimer(const clap_plugin_t *p, clap_id timerId) {
       RiverFlowPlugin *plug = self(p);
@@ -1019,6 +1037,24 @@ private:
             return;
       }
       mTimerId = CLAP_INVALID_ID;
+#if defined(__APPLE__)
+      // Not a thread on macOS: AppKit may only be touched from the main
+      // thread, so the fallback is a timer on the main run loop, which is
+      // what a host timer would have been.
+      CFRunLoopTimerContext context{};
+      context.info = this;
+      mGuiTimer = CFRunLoopTimerCreate(
+         kCFAllocatorDefault, CFAbsoluteTimeGetCurrent() + 0.033, 0.033, 0, 0,
+         [](CFRunLoopTimerRef, void *info) {
+            auto *plug = static_cast<RiverFlowPlugin *>(info);
+            if (plug->mGui)
+               plug->mGui->tick();
+         },
+         &context);
+      if (mGuiTimer)
+         CFRunLoopAddTimer(CFRunLoopGetMain(), mGuiTimer, kCFRunLoopCommonModes);
+      return;
+#endif
       mGuiThreadRun.store(true, std::memory_order_release);
       mGuiThread = std::thread([this] {
          while (mGuiThreadRun.load(std::memory_order_acquire)) {
@@ -1030,6 +1066,14 @@ private:
    }
 
    void stopGuiClock() {
+#if defined(__APPLE__)
+      if (mGuiTimer) {
+         CFRunLoopTimerInvalidate(mGuiTimer);
+         CFRelease(mGuiTimer);
+         mGuiTimer = nullptr;
+         return;
+      }
+#endif
       if (mGuiThreadRun.exchange(false, std::memory_order_acq_rel)) {
          if (mGuiThread.joinable())
             mGuiThread.join();
@@ -1116,6 +1160,9 @@ private:
    clap_id mTimerId = CLAP_INVALID_ID;
    std::thread mGuiThread;
    std::atomic<bool> mGuiThreadRun{false};
+#if defined(__APPLE__)
+   CFRunLoopTimerRef mGuiTimer = nullptr; // the fallback clock on macOS
+#endif
 #endif
 
    RiverEngine mEngine;

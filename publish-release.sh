@@ -14,7 +14,10 @@
 # The release carries the two per-platform archives release.sh writes,
 # verdalis-suite-<version>-linux-x86_64.zip and -windows-x86_64.zip, each
 # holding every plugin as CLAP and VST3. GitHub adds the source code archives
-# for the tag by itself.
+# for the tag by itself. The macOS archive cannot be built here: publishing the
+# release starts .github/workflows/macos.yml, which builds it on GitHub's macOS
+# runners and attaches verdalis-suite-<version>-macos-universal.zip to the
+# release a few minutes later (to a draft only once it is published).
 #
 # The binaries are built locally, not in CI: they need the gitignored CLAP SDK,
 # the patched clap-wrapper and the cross-built Windows Cairo. So this script
@@ -103,13 +106,14 @@ else
    info="$(unzip -p "${assets[0]}" "${base}-linux-x86_64/BUILD-INFO.txt")"
    prev="$(git -C "$here" describe --tags --abbrev=0 --match 'v*' "${tag}^" 2>/dev/null || true)"
    {
-      echo "Every Verdalis plugin as CLAP and VST3, in one archive per platform."
+      echo "Every Verdalis plugin as CLAP and VST3 (and Audio Unit on macOS), in one archive per platform."
       echo "Install instructions are in \`INSTALL.txt\` inside the archive; the PDF manuals are in \`manuals/\`."
       echo
       echo "| Download | Platform |"
       echo "|---|---|"
       echo "| \`${base}-linux-x86_64.zip\` | Linux x86_64 -- CLAP + VST3 |"
       echo "| \`${base}-windows-x86_64.zip\` | Windows x86_64 -- CLAP + VST3 |"
+      echo "| \`${base}-macos-universal.zip\` | macOS 10.15+, Apple Silicon and Intel -- CLAP + VST3 + AU (attached by the macOS workflow a few minutes after publishing) |"
       echo
       echo "## Plugins"
       echo

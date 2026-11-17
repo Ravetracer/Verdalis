@@ -1,6 +1,6 @@
 ---
 tagline: Synthesised transitions and impacts
-subtitle: CLAP instrument for Linux and Windows
+subtitle: CLAP instrument for Linux, Windows and macOS
 accent: #FF3C97
 ---
 
@@ -104,6 +104,30 @@ so that `{{PLUGIN}}.clap` and `presets\` sit inside it, and rescan. There are no
 DLLs to install beside it — the window and its Cairo are linked in. The VST3
 bundle goes into `C:\Program Files\Common Files\VST3\`.
 
+## macOS
+
+The macOS archive holds {{PLUGIN}} three times, as a CLAP, a VST3 and an Audio
+Unit; Logic Pro and GarageBand use the Audio Unit. Copy whichever your host
+uses:
+
+```
+~/Library/Audio/Plug-Ins/CLAP/{{PLUGIN}}.clap
+~/Library/Audio/Plug-Ins/VST3/{{PLUGIN}}.vst3
+~/Library/Audio/Plug-Ins/Components/{{PLUGIN}}.component
+```
+
+Each is a bundle with the factory presets inside it, so there is nothing to
+keep beside it. The plugins are universal (Apple Silicon and Intel) and need
+macOS 10.15 or later. They are free and not notarized by Apple, so macOS
+refuses to load them until the quarantine flag the download set is cleared;
+in Terminal:
+
+```
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/{{PLUGIN}}.clap
+```
+
+and the same for the `.vst3` and the `.component`. Then rescan.
+
 > **Keep the plugin and its presets together.** The plugin finds its factory
 > presets by looking for a `presets` directory next to its own binary. Moving
 > the `.clap` file on its own leaves it with no factory presets in the *host's*
@@ -128,6 +152,7 @@ first use:
 |---|---|
 | Linux | `$XDG_CONFIG_HOME/{{PLUGIN}}/presets`, or `~/.config/{{PLUGIN}}/presets` |
 | Windows | `%APPDATA%\{{PLUGIN}}\presets` |
+| macOS | `~/Library/Application Support/{{PLUGIN}}/presets` |
 
 User presets appear in the browser immediately, listed after the factory ones.
 They are plain text, so they can be copied between machines, kept in version

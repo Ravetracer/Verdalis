@@ -79,7 +79,8 @@ std::string factoryPresetDir(const PresetContext &ctx) {
    // Installed layout is <dir>/<Name>.clap + <dir>/presets, but a bundle-like
    // layout is also checked so a build tree works too. A VST3 bundle puts the
    // binary in Contents/<arch>-<os>/ and its data in Contents/Resources/, which
-   // is the third candidate.
+   // is the second candidate -- and so does every macOS bundle, the .clap and
+   // the .component included, with the binary in Contents/MacOS/.
    const std::string candidates[] = {dir + "/presets", dir + "/../Resources/presets",
                                      dir + "/../presets",
                                      dir + "/" + ctx.pluginName + ".clap/presets"};
@@ -102,6 +103,13 @@ std::string userPresetDir(const PresetContext &ctx) {
    if (xdg && xdg[0] == '/')
       return std::string(xdg) + "/" + ctx.pluginName + "/presets";
    const char *home = std::getenv("HOME");
+#   if defined(__APPLE__)
+   // Where macOS applications keep their data. XDG_CONFIG_HOME above still
+   // wins when it is set, which nothing on a Mac does by itself but the
+   // self-tests do, to keep their files out of the real folder.
+   if (home && home[0] == '/')
+      return std::string(home) + "/Library/Application Support/" + ctx.pluginName + "/presets";
+#   endif
    if (home && home[0] == '/')
       return std::string(home) + "/.config/" + ctx.pluginName + "/presets";
    return {};

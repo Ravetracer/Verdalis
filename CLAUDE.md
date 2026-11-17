@@ -20,10 +20,12 @@ Verdalis/
 ├── release.sh         builds every plugin and packs the suite archive
 ├── publish-release.sh tags a built release and publishes it on GitHub
 ├── setup-winbuild.sh  one-time Windows cross-build setup
+├── .github/workflows/ macos.yml -- the macOS build; see *The macOS builds*
 ├── _designs/          brand assets (logo, emblem; SVG + PNG) — committed,
 │                      the README renders the logo from here
 ├── CLAP/              CLAP SDK checkouts       — GITIGNORED, see below
 ├── winbuild/          meson venv + Windows Cairo — GITIGNORED, see below
+├── macbuild/          macOS Cairo (on a Mac or in CI only) — GITIGNORED
 ├── dist/              release archives         — GITIGNORED
 ├── rainyday/          RainyDay — synthesised rain
 ├── thunderclap/       ThunderClap — synthesised thunder
@@ -333,7 +335,9 @@ out and its own `INSTALL.txt` and `BUILD-INFO.txt` describing only what is in it
 ```
 
 The release gets the two per-platform archives; GitHub adds the source code
-zip and tarball for the tag itself. The notes are generated: the plugin versions
+zip and tarball for the tag itself. Publishing it starts the macOS workflow,
+which attaches the third, `-macos-universal.zip` (see *The macOS builds*); a
+`--draft` gets it only once it is published. The notes are generated: the plugin versions
 from the archive's `BUILD-INFO.txt`, and the commit subjects since the previous
 `v*` tag (`--notes-file` replaces them).
 
@@ -576,6 +580,76 @@ Only system DLLs may appear. `libgcc`, `libstdc++` or `libwinpthread` in that
 list means the runtime is not linked in and the plugin will not load on a
 machine without a compiler.
 
+## The macOS builds
+
+**Every plugin builds for macOS as a CLAP, a VST3 and an Audio Unit (AUv2),
+universal (arm64 + x86_64), macOS 10.15 or later** -- but never on this
+machine: the macOS SDK may only be used on Apple hardware. They are made by
+`.github/workflows/macos.yml` on GitHub's macOS runners, ported from the
+ReSIDent and SäureKiste workflows in `Ravetracer/audio-plugins`.
+
+The workflow finds the plugins the way `release.sh` does, so a new plugin joins
+by existing. One job per plugin builds, runs `render --selftest` on arm64 and
+under Rosetta, checks that each bundle is universal, exports `clap_entry` and
+carries its presets, signs ad hoc and runs `auval`. A last job packs
+`verdalis-suite-<version>-macos-universal.zip` (`macos/` with every plugin's
+three bundles, README, LICENSE, `LICENSE-SkyHowl`, INSTALL.txt, BUILD-INFO.txt).
+Every run uploads it as an artifact; a published `v*` release
+(`publish-release.sh`) gets it attached beside the Linux and Windows archives.
+It is not in `release.sh`'s combined suite archive, which is built here.
+
+What it is made of:
+
+- **The window has a third backend.** `shared/include/verdalis/gui/cocoaview.h`
+  and `shared/src/gui/cocoaview.mm`: an NSView child that puts the window's
+  Cairo image surface on screen at the Retina factor and hands the events back
+  through `CocoaViewListener`, which `PluginWindow` implements under
+  `__APPLE__`. Everything above that is the same shared window. The view's
+  Objective-C class is registered at run time under a name carrying the
+  module's load address -- the macOS form of the Windows window-class bug: one
+  class name across the CLAP, VST3 and AU of eleven plugins would hand one
+  binary's windows to another's code. No ARC; every retain is released by hand.
+- `shared/src/gui/filedialog_mac.mm` replaces `filedialog.cpp`: NSOpenPanel,
+  NSSavePanel, and the Finder for a reveal.
+- `shared/cmake/macos.cmake`, included by every plugin's CMakeLists.txt, holds
+  all of the CMake: `enable_language(OBJCXX)`, the static Cairo
+  (`verdalis_macos_gui`), the `.clap` bundle (`verdalis_macos_clap_bundle`) and
+  the Audio Unit (`verdalis_add_auv2`). Each plugin only sets
+  `CMAKE_OSX_DEPLOYMENT_TARGET` before `project()` and calls these.
+- Cairo is static and universal, built from upstream by
+  `shared/cmake/build-macos-cairo.sh` (Quartz for fonts, nothing else), cached
+  in the workflow under a key that changes with the script.
+- In `plugin.cpp`: `CLAP_WINDOW_API_COCOA`, `set_scale` returns false (CLAP's
+  cocoa API is in logical sizes; the view applies the Retina factor), and the
+  fallback GUI clock is a CFRunLoopTimer on the main run loop rather than a
+  thread, because AppKit may only be touched from the main thread.
+- **`STATICALLY_LINKED_CLAP_ENTRY` is Linux and Windows only.** On macOS the
+  wrapper finds `clap_entry` in its own bundle through CFBundle, which works,
+  and the AU's build helper links the same wrapper library into an executable
+  that has no `clap_entry` at all. The workflow checks each bundle exports it.
+- User presets live in `~/Library/Application Support/<Name>/presets`;
+  `XDG_CONFIG_HOME` still wins, which is what keeps the self-test out of the
+  real folder. Factory presets are staged into every bundle's
+  `Contents/Resources/presets` for the discovery provider.
+- `ScopedNoDenormals` sets FPCR.FZ on arm64, the counterpart of MXCSR on x86.
+
+**AU codes are permanent**, like the CLAP ids: manufacturer `Rvtr` (shared with
+`Ravetracer/audio-plugins`, whose ReSIDent and SäureKiste hold `Rsid` and
+`Saek`), type `aumu`, and per plugin: RainyDay `Rndy`, ThunderClap `Thcl`,
+ShoreBreak `Shbr`, SkyHowl `Skhw`, ChirpParade `Chpd`, RiverFlow `Rvfl`,
+CrackleBlaze `Crbz`, InsectSwarm `Inss`, NightLife `Nlif`, WhooshPact `Whpt`,
+VerdaliScene `Vdsc`. A new plugin picks an unused one in its `verdalis_add_auv2`
+call.
+
+**What has been checked, and what has not.** The workflow is the only build;
+nothing macOS runs here. The C++ side of the macOS branch (`plugin_window.h`,
+every `plugin.cpp` and `gui.cpp`) can be syntax-checked on Linux with clang,
+`-D__APPLE__` and a stub CoreFoundation header; the `.mm` files cannot. No
+Mac window has been opened by a person yet -- `auval` instantiates the AU but
+never opens its view, exactly as Steinberg's validator never opens a VST3
+editor -- so the first time one is opened in a real host is the first real
+test of the Cocoa view.
+
 ### Still open
 
 - The VST3 class id (TUID) is hashed from the CLAP id by the wrapper. That is
@@ -602,6 +676,7 @@ shared/
 │   ├── preset_provider.h       PresetProviderSpec, the discovery factory
 │   ├── dsp/{adsr,biquad,bubble,denormals,fastmath,filters,pocket,reverb,rng}.h
 │   └── gui/
+│       ├── cocoaview.h         the macOS backend's NSView, without Objective-C
 │       ├── filedialog.h        the desktop's file chooser, and reveal-in-files
 │       ├── gui.h               Gui + GuiDelegate, the plugin/window contract
 │       ├── toolkit.h           Cairo drawing primitives, Rect, Align
@@ -612,8 +687,10 @@ shared/
 ├── src/{params,preset,preset_library,preset_provider}.cpp
 ├── src/gui/window.cpp          createWindow(), and the Win32 window procedure
 ├── src/gui/filedialog.cpp      zenity/kdialog on Linux, commdlg on Windows
+├── src/gui/{cocoaview,filedialog_mac}.mm   the macOS view and file panels
 ├── cmake/                      embed_presets, mingw toolchain, Windows Cairo,
-│                               clap_entry.version
+│                               clap_entry.version, macos.cmake and the macOS
+│                               Cairo (build-macos-cairo.sh)
 ├── patches/                    fixes for the gitignored CLAP/ checkouts
 └── tools/                      install-plugin.sh, fithost.cpp, analysis/wavio.py,
                                 make-demos.sh (the website demo audio), and the
@@ -1090,11 +1167,11 @@ brand surfaces only: README, site, packaging.
 
 - **Shared visual identity.** One window design across the suite, distinguished
   only by accent colour; brand assets in `_designs/`.
-- **No toolkit dependency.** GUI is X11/Win32 plus Cairo, drawn by hand.
+- **No toolkit dependency.** GUI is X11/Win32/Cocoa plus Cairo, drawn by hand.
 - **Measured, not guessed.** Presets and DSP are fitted against references and
   verified by the offline render self-test.
 - **Bounded CPU cost** and sample-accurate note/parameter handling.
-- Linux first, Windows via mingw cross-build.
+- Linux first, Windows via mingw cross-build, macOS via the GitHub workflow.
 
 ## Working notes
 

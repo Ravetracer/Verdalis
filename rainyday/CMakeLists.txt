@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
+# macOS: std::filesystem needs 10.15. Set before project(), ignored elsewhere.
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS version")
 project(RainyDay VERSION 1.11.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -13,14 +15,25 @@ endif()
 option(RAINYDAY_BUILD_TOOLS "Build the offline render/verification host" ON)
 option(RAINYDAY_BUILD_GUI "Build the plugin window (needs X11 and Cairo)" ON)
 option(RAINYDAY_BUILD_VST3 "Also build a VST3 via the clap-wrapper" OFF)
+option(RAINYDAY_BUILD_AUV2 "Also build an Audio Unit via the clap-wrapper (macOS only)" OFF)
+if(NOT APPLE)
+   set(RAINYDAY_BUILD_AUV2 OFF)
+endif()
 
 # CLAP plugins live in ~/.clap on Linux, so default there rather than /usr/local.
+# On macOS, where CLAP hosts look for them.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.clap" CACHE PATH "Install prefix" FORCE)
+   if(APPLE)
+      set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/Library/Audio/Plug-Ins/CLAP" CACHE PATH "Install prefix" FORCE)
+   else()
+      set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.clap" CACHE PATH "Install prefix" FORCE)
+   endif()
 endif()
 
 # The suite's shared code, beside this plugin at the repository root.
 get_filename_component(VERDALIS_SHARED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../shared" ABSOLUTE)
+# The macOS window, bundles and Audio Unit; nothing on other platforms.
+include("${VERDALIS_SHARED_DIR}/cmake/macos.cmake")
 
 # ---------------------------------------------------------------- CLAP headers
 #
@@ -103,7 +116,13 @@ if(RAINYDAY_BUILD_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
    endif()
 endif()
 
-if(RAINYDAY_BUILD_GUI AND NOT RAINYDAY_GUI_FOUND_WIN)
+# macOS: a static Cairo from shared/cmake/build-macos-cairo.sh and the Cocoa
+# view in shared/; see shared/cmake/macos.cmake.
+if(RAINYDAY_BUILD_GUI AND APPLE)
+   verdalis_macos_gui(RAINYDAY)
+endif()
+
+if(RAINYDAY_BUILD_GUI AND NOT RAINYDAY_GUI_FOUND_WIN AND NOT RAINYDAY_GUI_FOUND_MAC)
    find_package(PkgConfig QUIET)
    if(PkgConfig_FOUND)
       pkg_check_modules(RAINYDAY_GUI_DEPS QUIET x11 cairo)
@@ -202,7 +221,7 @@ if(WIN32)
       "-static-libgcc" "-static-libstdc++"
       "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic"
    )
-else()
+elseif(NOT APPLE)
    target_link_options(RainyDay PRIVATE
       "-Wl,--version-script=${VERDALIS_SHARED_DIR}/cmake/clap_entry.version"
       "-Wl,--no-undefined"
@@ -214,6 +233,10 @@ set_target_properties(RainyDay PROPERTIES
    OUTPUT_NAME "RainyDay"
    SUFFIX ".clap"
 )
+if(APPLE)
+   # RainyDay.clap/Contents/MacOS/RainyDay, exporting clap_entry only.
+   verdalis_macos_clap_bundle(RainyDay "RainyDay" "de.ravetracer.rainyday" ${RAINYDAY_PRESET_FILES})
+endif()
 
 # ------------------------------------------------------------- offline test host
 if(RAINYDAY_BUILD_TOOLS)
@@ -243,7 +266,7 @@ if(RAINYDAY_BUILD_TOOLS)
          set(GUIHOST_X11_INCLUDE_DIRS "")
          set(GUIHOST_X11_LIBRARIES user32 gdi32)
       endif()
-   else()
+   elseif(NOT APPLE)
       find_package(PkgConfig QUIET)
       if(PkgConfig_FOUND)
          pkg_check_modules(GUIHOST_X11 QUIET x11)
@@ -262,7 +285,7 @@ if(RAINYDAY_BUILD_TOOLS)
 
    # The fitting host and the window host are both part of the Linux analysis
    # workflow and have no reason to exist on Windows.
-   if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+   if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" AND NOT APPLE)
    add_executable(rainyday-fithost "${VERDALIS_SHARED_DIR}/tools/fithost.cpp")
    target_include_directories(rainyday-fithost PRIVATE "${CLAP_INCLUDE_DIR}")
    target_compile_options(rainyday-fithost PRIVATE -Wall -Wextra)
@@ -278,29 +301,44 @@ endif()
 #
 # It is off by default because it needs two more checkouts beside CLAP/clap --
 # CLAP/clap-wrapper and CLAP/vst3sdk (VST 3.8 or newer, which is MIT licensed).
-if(RAINYDAY_BUILD_VST3)
+if(RAINYDAY_BUILD_VST3 OR RAINYDAY_BUILD_AUV2)
    get_filename_component(RAINYDAY_CLAP_DIR "${CLAP_INCLUDE_DIR}/../.." ABSOLUTE)
    set(RAINYDAY_WRAPPER_DIR "${RAINYDAY_CLAP_DIR}/clap-wrapper"
       CACHE PATH "Directory containing a clap-wrapper checkout")
    set(RAINYDAY_VST3_SDK_DIR "${RAINYDAY_CLAP_DIR}/vst3sdk"
       CACHE PATH "Directory containing a VST3 SDK checkout")
+   set(RAINYDAY_AU_SDK_DIR "${RAINYDAY_CLAP_DIR}/AudioUnitSDK"
+      CACHE PATH "Directory containing Apple's AudioUnitSDK checkout")
 
    if(NOT EXISTS "${RAINYDAY_WRAPPER_DIR}/cmake/wrap_vst3.cmake")
       message(FATAL_ERROR "RainyDay: no clap-wrapper at ${RAINYDAY_WRAPPER_DIR}")
    endif()
-   if(NOT EXISTS "${RAINYDAY_VST3_SDK_DIR}/public.sdk/source/main/pluginfactory.cpp")
+   if(RAINYDAY_BUILD_VST3 AND NOT EXISTS "${RAINYDAY_VST3_SDK_DIR}/public.sdk/source/main/pluginfactory.cpp")
       message(FATAL_ERROR "RainyDay: no VST3 SDK at ${RAINYDAY_VST3_SDK_DIR}")
    endif()
 
    # The wrapper resolves both SDKs itself; hand it the checkouts beside this
    # plugin rather than letting it download its own.
    set(CLAP_SDK_ROOT "${RAINYDAY_CLAP_DIR}/clap" CACHE PATH "" FORCE)
-   set(VST3_SDK_ROOT "${RAINYDAY_VST3_SDK_DIR}" CACHE PATH "" FORCE)
+   if(RAINYDAY_BUILD_VST3)
+      set(VST3_SDK_ROOT "${RAINYDAY_VST3_SDK_DIR}" CACHE PATH "" FORCE)
+   endif()
+   if(RAINYDAY_BUILD_AUV2)
+      # Apple's AudioUnitSDK (Apache 2.0), checked out beside the others:
+      #   git clone --branch AudioUnitSDK-1.1.0 https://github.com/apple/AudioUnitSDK.git CLAP/AudioUnitSDK
+      if(NOT EXISTS "${RAINYDAY_AU_SDK_DIR}/src/AudioUnitSDK")
+         message(FATAL_ERROR "RainyDay: no AudioUnitSDK at ${RAINYDAY_AU_SDK_DIR}")
+      endif()
+      set(AUDIOUNIT_SDK_ROOT "${RAINYDAY_AU_SDK_DIR}" CACHE PATH "" FORCE)
+   endif()
    set(CLAP_WRAPPER_DOWNLOAD_DEPENDENCIES FALSE CACHE BOOL "" FORCE)
    set(CLAP_WRAPPER_OUTPUT_NAME "RainyDay" CACHE STRING "" FORCE)
    set(CLAP_WRAPPER_BUILD_TESTS FALSE CACHE BOOL "" FORCE)
 
    add_subdirectory("${RAINYDAY_WRAPPER_DIR}" clap-wrapper EXCLUDE_FROM_ALL)
+endif()
+
+if(RAINYDAY_BUILD_VST3)
 
    # The bundle is assembled in place, so point it somewhere predictable rather
    # than at whatever the generator picks per configuration.
@@ -324,7 +362,13 @@ if(RAINYDAY_BUILD_VST3)
    # keeps clap_entry unexported anyway -- so without this the .vst3 silently
    # loaded whatever .clap of the same name it found in ~/.clap, and nothing at
    # all where there was none. Linked statically, the entry is taken by address.
-   target_compile_definitions(clap-wrapper-shared-detail PRIVATE STATICALLY_LINKED_CLAP_ENTRY=1)
+   #
+   # Not on macOS. There the wrapper finds clap_entry in its own bundle through
+   # CFBundle, which works; and the Audio Unit's build helper links the same
+   # library as a plain executable that has no clap_entry to take.
+   if(NOT APPLE)
+      target_compile_definitions(clap-wrapper-shared-detail PRIVATE STATICALLY_LINKED_CLAP_ENTRY=1)
+   endif()
 
    # Two things the wrapper leaves to the plugin on a mingw cross build.
    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -341,7 +385,7 @@ if(RAINYDAY_BUILD_VST3)
          "-static-libgcc" "-static-libstdc++"
          "-Wl,-Bstatic,--whole-archive" "-lwinpthread" "-Wl,--no-whole-archive,-Bdynamic"
       )
-   else()
+   elseif(NOT APPLE)
       # Every plugin links the same wrapper and SDK sources, so without this the
       # module exports ~1700 identical symbols and a host that uses RTLD_GLOBAL
       # binds one plugin's calls to another's. See vst3_entry.version.
@@ -352,29 +396,49 @@ if(RAINYDAY_BUILD_VST3)
 
    # factoryPresetDir() checks ../Resources/presets, which is where a VST3
    # bundle keeps its data.
-   add_custom_command(TARGET RainyDay-vst3 POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E make_directory
-         "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3/Contents/Resources/presets"
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${RAINYDAY_PRESET_FILES}
-         "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3/Contents/Resources/presets"
-      COMMENT "Staging presets into the VST3 bundle"
-      VERBATIM
-   )
+   if(APPLE)
+      verdalis_stage_presets(RainyDay-vst3 ${RAINYDAY_PRESET_FILES})
+   else()
+      add_custom_command(TARGET RainyDay-vst3 POST_BUILD
+         COMMAND "${CMAKE_COMMAND}" -E make_directory
+            "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3/Contents/Resources/presets"
+         COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${RAINYDAY_PRESET_FILES}
+            "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3/Contents/Resources/presets"
+         COMMENT "Staging presets into the VST3 bundle"
+         VERBATIM
+      )
+   endif()
 
    # VST3s do not live in ~/.clap, so this one is installed on its own rather
    # than through CMAKE_INSTALL_PREFIX.
-   set(RAINYDAY_VST3_INSTALL_DIR "$ENV{HOME}/.vst3"
+   if(APPLE)
+      set(RAINYDAY_VST3_BUNDLE "$<TARGET_BUNDLE_DIR:RainyDay-vst3>")
+      set(RAINYDAY_VST3_DEFAULT_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3")
+   else()
+      set(RAINYDAY_VST3_BUNDLE "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3")
+      set(RAINYDAY_VST3_DEFAULT_DIR "$ENV{HOME}/.vst3")
+   endif()
+   set(RAINYDAY_VST3_INSTALL_DIR "${RAINYDAY_VST3_DEFAULT_DIR}"
       CACHE PATH "Where 'cmake --build . --target RainyDay-vst3-install' puts the bundle")
    add_custom_target(RainyDay-vst3-install
       COMMAND "${CMAKE_COMMAND}" -E make_directory "${RAINYDAY_VST3_INSTALL_DIR}"
       COMMAND "${CMAKE_COMMAND}" -E rm -rf "${RAINYDAY_VST3_INSTALL_DIR}/RainyDay.vst3"
       COMMAND "${CMAKE_COMMAND}" -E copy_directory
-         "${RAINYDAY_VST3_ASSET_DIR}/RainyDay.vst3"
+         "${RAINYDAY_VST3_BUNDLE}"
          "${RAINYDAY_VST3_INSTALL_DIR}/RainyDay.vst3"
       DEPENDS RainyDay-vst3
       COMMENT "Installing RainyDay.vst3 into ${RAINYDAY_VST3_INSTALL_DIR}"
       VERBATIM
    )
+endif()
+
+# ------------------------------------------------------------------------ AUv2
+#
+# macOS only: the same plugin as an Audio Unit instrument, through the
+# clap-wrapper like the VST3. See verdalis_add_auv2() in shared/cmake/macos.cmake;
+# the subtype code is RainyDay's for good.
+if(RAINYDAY_BUILD_AUV2)
+   verdalis_add_auv2(RainyDay "de.ravetracer.rainyday" "Rndy" ${RAINYDAY_PRESET_FILES})
 endif()
 
 # ---------------------------------------------------------------------- install

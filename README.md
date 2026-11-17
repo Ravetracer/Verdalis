@@ -28,9 +28,9 @@ collection.
 Each plugin is a self-contained instrument with its own synthesis engine, its
 own factory presets — fitted against real reference recordings — and a
 hand-drawn plugin window with no toolkit dependency. Every one ships as both a
-**CLAP** and a **VST3**, for Linux and Windows; the two are the same plugin,
-built from one implementation, so they share an engine, a parameter set, a
-preset library and a window.
+**CLAP** and a **VST3**, for Linux, Windows and macOS, and on macOS also as an
+**Audio Unit**; every format is the same plugin, built from one implementation,
+so they share an engine, a parameter set, a preset library and a window.
 
 Your own presets are filed in **collections**: make, rename and delete them in
 the window's browser, pick one from a list when you save, drag a preset from one
@@ -149,7 +149,11 @@ Every trigger comes out slightly different, which is the reason it exists.
 
 Requires a C++17 compiler, CMake ≥ 3.16, and the CLAP headers (see below).
 Linux is the primary target; Windows builds are produced by cross-compiling
-with mingw-w64.
+with mingw-w64. macOS builds (universal, Apple Silicon and Intel) are made by a
+GitHub workflow on Apple's hardware, `.github/workflows/macos.yml`; on a Mac,
+run `shared/cmake/build-macos-cairo.sh macbuild/cairo-macos` once, check out
+Apple's [AudioUnitSDK](https://github.com/apple/AudioUnitSDK) into `CLAP/` for
+the Audio Unit, and configure a plugin as below.
 
 ```sh
 git clone https://github.com/Ravetracer/Verdalis.git
@@ -212,9 +216,9 @@ The first repository is all that is required to build a CLAP. `CLAP/` is
 gitignored. If you keep the CLAP SDK elsewhere, point CMake at it with
 `-DCLAP_INCLUDE_DIR=/path/to/clap/include`.
 
-The VST3 is produced by the [clap-wrapper](https://github.com/free-audio/clap-wrapper),
-which hosts the same plugin behind the VST3 API — there is no separate VST3
-codebase. It needs **VST 3.8 or newer**, the first MIT-licensed release of the
+The VST3 and the Audio Unit are produced by the [clap-wrapper](https://github.com/free-audio/clap-wrapper),
+which hosts the same plugin behind the VST3 and AU APIs — there is no separate
+VST3 or AU codebase. It needs **VST 3.8 or newer**, the first MIT-licensed release of the
 SDK; earlier ones are GPLv3 or a proprietary Steinberg agreement. The wrapper
 needs one small patch to compile against 3.8, kept in `shared/patches/`.
 
@@ -224,11 +228,15 @@ VST is a trademark of Steinberg Media Technologies GmbH.
 
 Prebuilt plugins are on the [releases page](https://github.com/Ravetracer/Verdalis/releases):
 one archive for Linux and one for Windows, each with every plugin as CLAP and
-VST3, the presets, the manuals and an `INSTALL.txt`.
+VST3, the presets, the manuals and an `INSTALL.txt`, and one for macOS with
+every plugin as CLAP, VST3 and Audio Unit. The macOS plugins are signed ad hoc,
+not notarized; its `INSTALL.txt` gives the one Terminal command that lets macOS
+load them.
 
 CLAP plugins are loaded from `~/.clap` on Linux and
 `%COMMONPROGRAMFILES%\CLAP` on Windows; VST3 bundles from `~/.vst3` and
-`%COMMONPROGRAMFILES%\VST3`. Each plugin's `install.sh` installs the CLAP to the
+`%COMMONPROGRAMFILES%\VST3`; on macOS, `~/Library/Audio/Plug-Ins/` holds `CLAP/`,
+`VST3/` and `Components/`. Each plugin's `install.sh` installs the CLAP to the
 right place by default, and `./install.sh --vst3` installs both. Release
 archives ship with the same layout, so copying the folders in by hand works too.
 
@@ -250,7 +258,9 @@ against the reference it imitates — a number agreeing with a number proves
 nothing about how something sounds.
 
 It is also free software given away as-is, tested by one person on Linux and
-Windows in Bitwig Studio and Reaper. Reports from other hosts are welcome.
+Windows in Bitwig Studio and Reaper. The macOS builds are built and checked
+automatically (a self-test on both architectures, Apple's `auval`) but have not
+been played on a Mac by the author. Reports from other hosts are welcome.
 
 ## License
 

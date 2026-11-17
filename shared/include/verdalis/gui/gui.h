@@ -1,8 +1,8 @@
 #pragma once
 
 // The plugin window, shared by the suite. Deliberately toolkit-free: raw X11
-// for the window and Cairo for the drawing, so a plugin stays a single .clap
-// file with no runtime dependencies a Linux audio machine does not already
+// (Win32, Cocoa) for the window and Cairo for the drawing, so a plugin stays a
+// single file with no runtime dependencies an audio machine does not already
 // have.
 //
 // Every Verdalis window is the same window: the same layout engine, the same
@@ -206,7 +206,8 @@ public:
    virtual void show() = 0;
    virtual void hide() = 0;
 
-   // Drains pending X11 events and repaints. Called from a host timer.
+   // Drains pending X11 events and repaints (on Windows and macOS: asks the
+   // system for a repaint). Called from a host timer.
    virtual void tick() = 0;
 };
 

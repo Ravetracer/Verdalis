@@ -17,6 +17,10 @@
 # with ./setup-winbuild.sh.
 /winbuild/
 
+# The macOS counterpart, made by shared/cmake/build-macos-cairo.sh on a Mac or
+# in the GitHub workflow.
+/macbuild/
+
 # Local reference material inside a plugin (recordings, papers, renders).
 # The leading "!" has to be escaped or git reads it as a negation.
 */\!dev/

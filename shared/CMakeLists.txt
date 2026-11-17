@@ -17,7 +17,7 @@
 #
 #   CLAP_INCLUDE_DIR            required, the CLAP headers
 #   VERDALIS_WITH_GUI           ON to build the plugin window
-#   VERDALIS_GUI_INCLUDE_DIRS   X11/Cairo, or a cross-built Cairo
+#   VERDALIS_GUI_INCLUDE_DIRS   X11/Cairo, or a cross-built Cairo (Windows, macOS)
 #   VERDALIS_GUI_LIBRARY_DIRS
 #   VERDALIS_GUI_LIBRARIES
 #   VERDALIS_GUI_DEFINES
@@ -34,7 +34,15 @@ set(VERDALIS_SOURCES
    src/preset_provider.cpp
 )
 
-if(VERDALIS_WITH_GUI)
+if(VERDALIS_WITH_GUI AND APPLE)
+   # The Cocoa view the window draws into, and the system's file panels in
+   # place of filedialog.cpp. The plugin has enabled OBJCXX (cmake/macos.cmake).
+   list(APPEND VERDALIS_SOURCES src/gui/window.cpp src/gui/cocoaview.mm
+        src/gui/filedialog_mac.mm)
+   # Every retain in the .mm files has its release written out.
+   set_source_files_properties(src/gui/cocoaview.mm src/gui/filedialog_mac.mm PROPERTIES
+      COMPILE_OPTIONS "-fno-objc-arc")
+elseif(VERDALIS_WITH_GUI)
    list(APPEND VERDALIS_SOURCES src/gui/window.cpp src/gui/filedialog.cpp)
 endif()
 

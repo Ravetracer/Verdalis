@@ -44,7 +44,9 @@ struct PresetData {
 std::string factoryPresetDir(const PresetContext &ctx);
 
 // Absolute path to the per-user preset directory
-// ($XDG_CONFIG_HOME/<PluginName>/presets). Not created by the plugin.
+// ($XDG_CONFIG_HOME/<PluginName>/presets; on macOS
+// ~/Library/Application Support/<PluginName>/presets unless XDG_CONFIG_HOME is
+// set). Not created by the plugin.
 std::string userPresetDir(const PresetContext &ctx);
 
 // Parses the text preset format. Returns false and fills `error` on malformed

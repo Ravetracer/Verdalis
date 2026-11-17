@@ -7,10 +7,13 @@
 //
 // It points XDG_CONFIG_HOME at a fresh temporary directory for its duration,
 // so it never touches the real user library, and puts the old value back.
-// Linux only, like the self-tests that call it.
+// Linux and macOS only: the Windows self-test skips it.
 
 #include <cstdlib>
 #include <filesystem>
+#if !defined(_WIN32)
+#   include <unistd.h> // mkdtemp, which macOS declares here
+#endif
 #include <fstream>
 #include <functional>
 #include <sstream>
