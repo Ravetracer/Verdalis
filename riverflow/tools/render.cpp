@@ -1001,6 +1001,91 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
             "a fixed Random Seed renders identically after reset");
    }
 
+   // --- a drop on stone is a smack: it leads with a click. That is the one
+   // thing 0.5 changed about the Trickle, it cannot be seen in a level or a
+   // spectrum, and it is one line in spawnTrickle away from being lost, so it is
+   // checked on the drops themselves.
+   {
+      auto infoOf = [&](const char *name, clap_param_info_t &info) {
+         const uint32_t n = params->count(plugin);
+         for (uint32_t i = 0; i < n; ++i)
+            if (params->get_info(plugin, i, &info) && std::strcmp(info.name, name) == 0)
+               return true;
+         return false;
+      };
+      auto set = [&](const char *name, double value) {
+         clap_param_info_t info{};
+         if (infoOf(name, info))
+            gParamOverrides.emplace_back(info.id, value);
+      };
+      auto silence = [&](const char *name) {
+         clap_param_info_t info{};
+         if (infoOf(name, info))
+            gParamOverrides.emplace_back(info.id, info.min_value);
+      };
+      // The Trickle alone, dry, all strike and no wash -- so a drop is the click
+      // and the snap behind it and nothing else -- and far enough under the
+      // output stage that a click is not flattened by it.
+      gParamOverrides.clear();
+      set("Random Seed", 7.0);
+      silence("Flow Level");
+      silence("Dabble Level");
+      silence("Plunge Level");
+      silence("Attack");
+      set("Space Amount", 0.0);
+      set("Distance", 0.0);
+      set("Output Gain", -24.0);
+      set("Trickle Level", -30.0);
+      set("Trickle Rate", 0.53); // about 12 a second
+      set("Impact", 1.0);
+      set("Splash", 0.0);
+      plugin->reset(plugin);
+      const RenderResult r = renderPlugin(plugin, sampleRate, 512, 6.0, 0.2, 60, 1.0);
+      gParamOverrides.clear();
+
+      std::vector<double> e;
+      for (size_t i = static_cast<size_t>(0.5 * sampleRate); i * 2 + 1 < r.interleaved.size();
+           ++i) {
+         const double l = r.interleaved[i * 2], rr = r.interleaved[i * 2 + 1];
+         e.push_back(l * l + rr * rr);
+      }
+      // The energy in the 0.3 ms round each of the loudest strikes against the
+      // millisecond after it. A noise tick, which is what a drop was, measures
+      // about 8 dB; the recordings of rain on wet stone measure 16.
+      const int half = std::max(2, static_cast<int>(0.00015 * sampleRate));
+      const int gap = static_cast<int>(0.0003 * sampleRate);
+      const int after = static_cast<int>(0.001 * sampleRate);
+      const int clear = static_cast<int>(0.02 * sampleRate);
+      std::vector<double> ratios;
+      for (int n = 0; n < 12 && !e.empty(); ++n) {
+         const auto it = std::max_element(e.begin(), e.end());
+         const int p = static_cast<int>(it - e.begin());
+         if (*it <= 0.0)
+            break;
+         if (p > half && p + gap + after < static_cast<int>(e.size())) {
+            double click = 0.0, snap = 0.0;
+            for (int i = p - half; i <= p + half; ++i)
+               click += e[static_cast<size_t>(i)];
+            for (int i = p + gap; i < p + gap + after; ++i)
+               snap += e[static_cast<size_t>(i)];
+            click /= 2 * half + 1;
+            snap /= after;
+            if (snap > 0.0)
+               ratios.push_back(10.0 * std::log10(click / snap));
+         }
+         for (int i = std::max(0, p - clear); i < std::min(static_cast<int>(e.size()), p + clear);
+              ++i)
+            e[static_cast<size_t>(i)] = 0.0;
+      }
+      std::sort(ratios.begin(), ratios.end());
+      const double median = ratios.empty() ? 0.0 : ratios[ratios.size() / 2];
+      char what[160];
+      std::snprintf(what, sizeof what,
+                    "a drop on stone leads with a click (%.1f dB over the snap, %zu strikes)",
+                    median, ratios.size());
+      check(ratios.size() >= 8 && median > 12.0, what);
+   }
+
    // --- parameter events must be reflected by get_value, which is how a host
    // reads back what automation did.
    {

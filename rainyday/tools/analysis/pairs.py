@@ -32,6 +32,9 @@ TONE = 'tone'
 # too. The cave reference has a measured reverberation time and a measured slap;
 # leaving Space Size to taste would be leaving the cave to taste.
 DROP = 'drop'
+# A close recording of rain on a hard wet surface: the one kind of reference
+# that has individual smacks in it, so Slosh and the Trickle are fitted as well.
+CLOSE = 'close'
 
 PAIRS = [
     ('steady_rain',       'rain_on_roof',                FULL),
@@ -50,6 +53,7 @@ PAIRS = [
     ('gutter_trickle',    'sewer',                       FULL),
     ('window_pane',       'window',                      FULL),
     ('under_an_umbrella', 'umbrella',                    FULL),
+    ('wet_pavement',      'rain_on_wet_concrete',        CLOSE),
 ]
 
 # Below 100 Hz a field recording is mostly wind and handling noise, which

@@ -19,14 +19,12 @@ rather than this plugin's:
       in `shared/patches/clap-wrapper-vst3-sdk-3.8.patch`.
 
 
-## The trickle, and three explanations that did not survive
+## The smack: what 1.11.0 settled, and what it left
 
-*Trickle* was added because RiverFlow's layer of the same name was said to have
-the sound RainyDay had always missed for larger drops on concrete. The layer is
-right either way -- RainyDay modelled the drop and not the surface, and now
-models both -- but the *reason* it sounds different was never established. Three
-explanations were measured and discarded, and they are kept here because each
-was plausible:
+*Trickle* came in at 1.7.0 because RiverFlow's layer of the same name was said to
+have the sound RainyDay had always missed for larger drops on concrete, and the
+*reason* it sounded different was never established. Three explanations were
+measured and discarded, and they are kept here because each was plausible:
 
 - [x] ~~RainyDay's impacts are tuned where the reference's are broad, Q 18
       against 5.9.~~ **The Q estimator was unstable**, returning 18 and 7.5 for
@@ -40,15 +38,39 @@ was plausible:
       alike.~~ The real recording has the *widest* per-event pitch spread of the
       three: 1.99 octaves against 1.15 and 0.96.
 
-- [ ] **So it is still unsettled, and the layer is now controllable enough to
-      settle it by ear.** A/B renders are in `!dev/tack-ab/`. Find the settings
-      that sound right and then work backwards to the measurement that would
-      have predicted them; that measurement is the one worth adding.
-- [ ] The per-preset trickle settings are chosen from what each preset is *of* --
-      hard wet surfaces get the layer, water and leaves little -- and then
-      trimmed for headroom. None of them is fitted against a reference, because
-      RainyDay's reference library has no isolated drops-on-stone recording to
-      fit against. RiverFlow's does; borrowing from it would be reasonable.
+- [x] **Settled in 1.11.0, and the measurement worth having was the shape of one
+      strike in time.** All three explanations above were about spectra. What a
+      drop on wet concrete has and neither plugin's drop had is a click: one
+      pulse 0.18 ms wide with everything else at least 9 dB under it a third of
+      a millisecond later. The Trickle's strike was a 2 ms burst of noise and
+      the droplet's was a cascade of them. See `tools/analysis/README.md`.
+- [x] The concrete presets' trickle settings are now what was measured, and
+      **Wet Pavement** is fitted to a close recording outright.
+
+What that left open:
+
+- [x] **RiverFlow took the smack in its 0.5.0** -- the drop, by the same one
+      call, and not the field. Its own open questions are in its TODO.
+- [ ] **The wet tail below 25 dB is unmeasured.** Both isolated recordings
+      carry their processing's smear at about -27 dB round every strike, so the
+      body's 54 ms is its early slope and nothing slower under it could be
+      seen. A close recording that has not been through a separation step would
+      settle it.
+- [ ] **Wood and glass are still concrete's column moved by reasoning.** Same
+      gap as before 1.11.0, one measurement better informed.
+- [ ] **The droplet's own impact on Concrete is still where `v / 2R` puts it**,
+      about 3 kHz, and the measured click is at 8. It was left alone on purpose:
+      the recordings cannot tell a droplet's tick from a smack's click, and
+      every Concrete preset is fitted round the tick as it stands. It is the
+      first thing to try if the close presets still read as dull.
+- [ ] **Eleven presets that are not on Concrete keep trickle
+      settings chosen for a tick** -- *Trickle Impact* around 45 %, *Stone*
+      wherever the surface suggested. They play the new drop at those settings
+      and nothing has asked whether they want different ones.
+- [ ] **No held-out check on the smack's own constants.** The click, snap and
+      body were fitted on the two hundred loudest strikes of two recordings and
+      checked on the same two. A third recording would say whether 4.26 : 2.7 : 1
+      is rain or these two takes.
 
 ## 1. Realism: what two more sources say we are still missing
 

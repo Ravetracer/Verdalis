@@ -1,7 +1,62 @@
 # RiverFlow status
 
-Version 0.1.0. First working version: the engine, the parameter set, the window
-and a first fitted preset library.
+Version 0.5.0. The sections below are newest first; the oldest is 0.1.0, the
+first working version: the engine, the parameter set, the window and a first
+fitted preset library.
+
+## A drop on stone is a smack (0.5.0)
+
+The Trickle's strike was a 2 ms burst of noise through the surface's band. It is
+now what RainyDay 1.11.0 measured a drop on wet stone to be: **one click**
+0.18 ms wide, the snap behind it, the wash, and about once per drop the same
+drop striking again. The measurements are rain on wet concrete and are in
+`rainyday/tools/analysis/README.md`; RiverFlow's own references are of running
+water and never had a strike isolated enough to see one. It is here because the
+author heard it in RainyDay and judged a drop off a ledge to be the same event.
+
+It is one call, `verdalis::askForSmack(spec)` in `spawnTrickle`, and it is the
+suite's one model of the event: `verdalis/dsp/pocket.h`, which RainyDay's
+Trickle and its wet-surface droplets use as well.
+
+**What it takes from rain, and what it leaves.** The click, the snap's 3.2 ms,
+the scatter of the surface band from drop to drop (0.6 octaves, where it was
++-20 %), and the second strike. Not RainyDay's field of near and far drops:
+that is geometry for rain falling all over a pavement, and what this plugin's
+references measured about its own spray is that it is close to smooth, so the
+drops keep their 0.4 octaves of level spread. And nothing that was fitted to
+running water moved -- the rate, the pocket and its Minnaert pitch, the two
+decays, every preset value.
+
+**Verified:**
+
+- *The river is the river it was.* Everything the smack adds is drawn from the
+  drop's own generator, not the engine's, so `mRng` makes the draws it made in
+  0.4.0. With the Trickle silenced all twenty presets render bit-identical to
+  0.4.0 at 44.1, 48 and 96 kHz; with it on, the same drops land at the same
+  moments and only what a drop sounds like has changed.
+- *Levels.* The new drop came out 1.1 dB under the old one at the same Trickle
+  Level, and `kTrickleTrim` takes that back: the layer is within 0.02 dB of
+  0.4.0 on average over the library (-0.34 to +0.58), and every preset's RMS
+  is within 0.34 dB of where it was. No preset comes near the output clipper;
+  the loudest peak in the library is -1.8 dBFS, Bubbly Falls.
+- *The self-test* checks that a drop leads with a click: 18.5 dB over the snap
+  behind it, 7.2 with the call taken out, which is how it was watched failing
+  before it was trusted.
+
+**How much it changes.** Less than in RainyDay, and it is worth being plain
+about why. Every preset holds *Impact* at its default of 45 %, where most of a
+drop is the pocket it traps, so what moved is the leading edge and not the
+body. The Trickle on its own at Hanging Trickle's settings: the click is 0.25 ms
+wide at -6 dB where it was 0.50, its centroid 5.3 kHz where it was 4.6, and the
+drop is 5.2 dB down a third of a millisecond after its peak where it was 3.8.
+Turn *Impact* up and a drop is more smack and less pocket, to all strike at
+100 %.
+
+Not done, and worth knowing: this is unmeasured *for a stream*. A close
+recording of drops coming off a ledge would say whether the click belongs at the
+level rain has it, and whether Impact's default of 45 % still wants to be 45 %
+now that the strike has a click in it.
+
 
 ## Preset collections (0.4.0)
 
@@ -171,7 +226,9 @@ the kind of mistake that is easy to make twice:
 `Pocket`, `TrickleSpec`, `spawnTricklePocket` and `processPocketPool` moved into
 `shared/include/verdalis/dsp/pocket.h`, and RainyDay's Trickle is the same code
 rather than a second implementation of it. Driven identically the two plugins
-render the same event rate, pitch, Q, decay and spectral flatness.
+render the same event rate, pitch, Q, decay and spectral flatness. (Still the
+same code since 0.5.0, and no longer driven identically: RainyDay lays its
+drops out over a surface and this plugin does not. See the top of this file.)
 
 The order in which that function draws its random numbers is part of its
 contract, and the header says so: two plugins render identically from one seed

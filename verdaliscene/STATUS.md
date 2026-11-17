@@ -1,8 +1,26 @@
 # VerdaliScene status
 
-Version 0.6.0, the suite's eleventh plugin and the first one that synthesises
+Version 0.6.1, the suite's eleventh plugin and the first one that synthesises
 nothing of its own: every sound comes from one of the nine nature instruments,
 run as a layer. 0.1.0 shipped in suite 0.25.0.
+
+## What changed in 0.6.1
+
+- **A drop on a hard wet surface is a smack**, in rain layers and river layers
+  alike: one click, the snap behind it, the water it throws, and sometimes the
+  same drop striking again -- measured on close recordings of rain on concrete
+  for RainyDay 1.11.0, and taken by RiverFlow 0.5.0. It replaces a noise tick in
+  both and a cascade of bursts in rain on wet surfaces. A rain layer's trickle
+  is also laid out over the ground, so with *Distance* low the near drops stand
+  out of it.
+- **No scene's balance moved.** A layer plays at the level it played at: the
+  trickle is within 0.14 dB of RainyDay 1.10.1 and 0.02 dB of RiverFlow 0.4.0 at
+  the same settings. Checked on the scenes themselves against 0.6.0, six takes
+  of each: the wet ones moved by 0.2 dB or less, inside a take-to-take spread
+  of 0.1 to 1.4 dB.
+- **The same rain and the same river.** Nothing the smack adds is drawn from a
+  generator the rest of a layer depends on, so a layer with a fixed *Random
+  Seed* puts the same drops at the same moments as before.
 
 ## What changed in 0.6.0
 

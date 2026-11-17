@@ -1,0 +1,70 @@
+# RainyDay preset
+format = 1
+name = Wet Pavement
+author = RainyDay
+description = Close to the ground on a wet street: every drop a smack with water thrown out behind it.
+features = ambient, texture, urban, close
+
+# Rain
+density = 2400
+clumping = 0.1
+drop_pitch = 9000
+pitch_spread = 2.16
+drop_decay = 4
+decay_spread = 0.4
+tonality = 0
+bubble = 0
+impact = 1
+splash = 0.872
+slosh = 0.508
+level_spread = 0.308
+chirp = 0.35
+surface = Concrete
+note_tracking = 0.5
+
+# Bed
+bed_level = -14
+bed_tone = 0.896
+bed_body = 0
+bed_drift = 0.3
+bed_width = 0.9
+bed_pan = 0
+
+# Space
+width = 0.9
+drop_pan = 0
+distance = 0
+air = 0.912
+space_amount = 0.08
+space_size = 0.3
+space_damping = 0.6
+
+# Filter
+filter_type = Lowpass
+highpass = 20
+filter_cutoff = 20000
+filter_reso = 0.1
+filter_key_track = 0
+
+# Envelope
+attack = 600
+decay = 600
+sustain = 1
+release = 2000
+vel_to_level = 0.5
+vel_to_density = 0.3
+
+# Trickle: drops landing on a hard wet surface, as a layer of its own.
+trickle_level = -24
+trickle_rate = 73
+trickle_size = 1.1
+trickle_spread = 1.1
+trickle_decay = 30
+trickle_impact = 0.95
+stone_tone = 5000
+trickle_splash = 0.413
+
+# Output
+gain = -11.8
+max_droplets = 512
+seed = 0

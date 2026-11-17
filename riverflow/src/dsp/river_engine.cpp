@@ -119,6 +119,13 @@ constexpr float kEventGain = 4.0f;
 constexpr float kDabbleLevelSigma = 1.0f;
 constexpr float kTrickleLevelSigma = 0.4f;
 
+// Holds the Trickle where 0.4 had it at the same Trickle Level. A drop is a
+// smack since 0.5 -- a click in front of the tick it was, and less of the
+// pocket under it -- and measured over the twenty presets that came out
+// 1.1 dB under the old drop; this takes it back, so nothing mixed against the
+// old trickle has moved.
+constexpr float kTrickleTrim = 1.13f;
+
 // A cloud of bubbles rings far below any bubble in it. Xue et al.'s Figure 3
 // puts the first three modes of a pour at 386, 589 and 732 Hz -- ratios of
 // 1.00, 1.53 and 1.90. One resonator is a tuned pipe; three are a body of water.
@@ -641,6 +648,15 @@ void RiverEngine::spawnDabble(float envLevel, float flow) {
 // then the tiny pocket it entrained, then -- where the water is deeper -- a
 // short wash. The measured drop decays are bimodal, 8-13 ms against 56-86 ms,
 // and Splash is that second population.
+//
+// The impact is a smack: one click, the snap behind it, and now and then the
+// same drop striking again. That was measured on rain landing on wet concrete
+// (rainyday/tools/analysis/README.md), not on this plugin's references, and it
+// is here on the author's ear: a drop coming off a ledge onto wet rock is the
+// same event. What was measured on running water stays as it was -- the rate,
+// the pocket and its pitch, the two decays, and how alike the drops are in
+// level, which is why this asks for the smack and not for RainyDay's field of
+// near and far drops. The spray of a stream measures close to smooth.
 void RiverEngine::spawnTrickle(float envLevel, float flow) {
    Pocket *slot = allocatePocket();
    if (!slot)
@@ -651,8 +667,9 @@ void RiverEngine::spawnTrickle(float envLevel, float flow) {
    // The generator is shared with RainyDay; only the settings are this
    // plugin's. Note that `logNormal` here and `pocketLogNormal` there are the
    // same function -- the draw order inside spawnTricklePocket is part of its
-   // contract, because two plugins render identically from one seed only while
-   // it holds.
+   // contract. The smack adds nothing to it: its own draws come from the
+   // pocket's generator, so mRng is where it was before 0.5 and a fixed Seed is
+   // still the same river.
    TrickleSpec spec;
    spec.sizeMm = mP.trickleSizeMm;
    spec.spreadOct = mP.trickleSpreadOct;
@@ -663,9 +680,10 @@ void RiverEngine::spawnTrickle(float envLevel, float flow) {
    spec.width = mP.width;
    spec.levelSigma = kTrickleLevelSigma;
    spec.smear = mDistanceSmear;
+   verdalis::askForSmack(spec);
 
    const float levelBase =
-      envLevel * mP.trickleGain * kEventGain * mDistanceLevel * flow;
+      envLevel * mP.trickleGain * kEventGain * mDistanceLevel * flow * kTrickleTrim;
    spawnTricklePocket(*slot, spec, mRng, sr, levelBase);
 }
 

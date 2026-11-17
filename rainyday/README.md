@@ -11,9 +11,9 @@ run time. Two instances never produce the same rain.
 
 Play a MIDI note and it rains for as long as you hold it.
 
-- 42 parameters covering droplet statistics, impact surface, stereo field,
-  distance, space, filter and a full ADSR
-- 17 factory presets from a single drip in a cave to a tropical monsoon, each
+- 50 parameters covering droplet statistics, impact surface, the drops on the
+  ground around you, stereo field, distance, space, filter and a full ADSR
+- 18 factory presets from a single drip in a cave to a tropical monsoon, each
   fitted against a real recording of the thing it is imitating
 - Exposed to the host through CLAP preset discovery, so presets appear in the
   host's own browser
@@ -35,23 +35,41 @@ itself, so a new parameter documents itself.
 
 A drop landing on concrete makes two sounds, and until 1.7.0 RainyDay modelled
 only one of them properly. The drop itself is here in detail — the pocket of air
-it traps, its pitch bend, its splash, the secondary droplets thrown sideways.
-The *surface* was a tuned damped sine at the moment of impact, which gives every
-strike a pitch of its own and reads as a plink rather than as a tack off stone.
+it traps, its pitch bend, its splash. The *surface* was a tuned damped sine at
+the moment of impact, which gives every strike a pitch of its own and reads as
+a plink rather than as a smack off stone.
 
 *Trickle* is that surface, as a layer of its own with eight controls: level,
-rate, size, spread, decay, impact, stone tone and splash. It is **the same
-generator RiverFlow's Trickle layer uses** — `verdalis/dsp/pocket.h`, shared
-between the two plugins — so the same settings give the same sound in both.
-Verified: driven identically, the two render the same event rate, the same event
-pitch, the same Q, the same decay and the same spectral flatness.
+rate, size, spread, decay, impact, stone tone and splash. The generator is the
+suite's — `verdalis/dsp/pocket.h`, which RiverFlow's Trickle uses as well.
+
+**What a drop does when it lands is measured on rain** (1.11.0). A raindrop
+arrives at terminal velocity, and on wet concrete that is a *smack*: one click
+0.18 ms wide, a snap 16 dB under it that is gone in 3 ms, a wet body that takes
+about 54 ms to fall 60 dB, and — about once per drop — a second, smaller strike
+a few milliseconds later. Nothing in it is pitched. RiverFlow's Trickle asks the
+generator for the same smack since its 0.5.0, so a drop on wet stone is one
+model in the suite.
+
+The drops are also *somewhere*, and that part is RainyDay's alone. They land all
+over a surface and you stand at one point above it, so the near ones are far louder than the
+rest: in the
+recordings the loudest strike in a hundred is 21 dB over the median one. *Distance*
+sets how near the nearest can land. Close to the ground a few drops smack right
+beside you over a fine trickle of distant ones; at full Distance every drop is
+as far away as every other.
+
+A droplet of the rain itself that lands in the film of water on *Concrete*,
+*Wood* or *Glass* smacks in the same way — that is what *Slosh* controls — and
+it is the same voice, not a second model of it.
 
 Sizes read in millimetres because that is physically what a pocket's pitch is:
-Minnaert's relation gives f₀ ≈ 3.26/r kHz, and RiverFlow's reference library
-measures drop pockets at 0.42–1.72 mm with a median of 1.24, whose predicted
-2629 Hz matches a measured median of 2625.
+Minnaert's relation gives f₀ ≈ 3.26/r kHz. A pocket is only heard as far as
+*Trickle Impact* leaves it room: at 100 % a drop is all strike, which is what
+rain on stone is.
 
 At minimum level the layer is off and the plugin is droplets and bed alone.
+`tools/analysis/README.md` has the measurements, and what they could not say.
 
 ## Build and install
 
@@ -532,6 +550,7 @@ sounds like rain moving in rather than a fade-in on a finished loop.
 | Light Drizzle | Fine high-frequency mist |
 | Steady Rain | Everyday rain, the reference point |
 | Concrete Alley | Hard flat urban surfaces |
+| Wet Pavement | Close to the ground on a wet street, every drop a smack |
 | Rain On Leaves | Soft, dull forest canopy |
 | Tin Roof | Bright ringing metal impacts |
 | Window Pane | Close, hard, glassy ticks |
@@ -541,6 +560,7 @@ sounds like rain moving in rather than a fade-in on a finished loop.
 | Downpour | Heavy saturated rainfall |
 | Storm Front | Violent gusting squall line |
 | Tropical Monsoon | Dark, dense and relentless |
+| Under an Umbrella | A taut canopy a foot above your head |
 | Distant Rain Wall | A downpour heard from far away |
 
 Nine of these were fitted numerically against a recording of the thing they are

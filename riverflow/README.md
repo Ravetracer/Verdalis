@@ -59,6 +59,11 @@ between them is what the instrument does.
   pocket they entrain. Measured 5-25 a second at 0.42-1.72 mm, ringing 2-8 kHz.
   `Stone` is what they are landing on and `Splash` is the wash where the water
   is deeper — the references' drop decays are bimodal, 8-13 ms against 56-86 ms.
+  Since 0.5.0 the impact is a *smack*: one click 0.18 ms wide, a snap behind it
+  that is gone in 3 ms, and now and then the same drop striking again. That was
+  measured on rain landing on wet concrete for RainyDay 1.11.0, and it is the
+  suite's one model of a drop on wet stone (`verdalis/dsp/pocket.h`), not a
+  second one.
 
 - **Plunge** — the pool under a fall. A cloud of bubbles rings far below any
   bubble in it, and three modes at Xue et al.'s measured 1.00 / 1.53 / 1.90

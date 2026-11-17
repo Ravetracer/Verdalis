@@ -43,26 +43,27 @@ suite.
 
 | Plugin | Simulates | Version |
 |--------|-----------|---------|
-| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | 1.10.1 |
+| **[RainyDay](rainyday/)** — rain, from a single drip to a tropical monsoon | rain | 1.11.0 |
 | **[ThunderClap](thunderclap/)** — thunder, from a distant rumble to an overhead strike | thunder | 1.7.0 |
 | **[ShoreBreak](shorebreak/)** — ocean surf, from a distant roar to a shore in uproar | ocean waves | 0.4.0 |
 | **[SkyHowl](skyhowl/)** — wind, from a soft breath to a howling storm | winds, storms | 0.4.0 |
 | **[ChirpParade](chirpparade/)** — birds, from a single chirp to a dawn chorus | bird chirps | 0.9.0 |
-| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.4.0 |
+| **[RiverFlow](riverflow/)** — running water, from a river's roar to one drop on stone | rivers, streams | 0.5.0 |
 | **[CrackleBlaze](crackleblaze/)** — fire, from a cottage hearth to a burning roof | fire | 0.3.0 |
 | **[InsectSwarm](insectswarm/)** — insects, from one bee to a hive, and cicadas to crickets | insects | 0.5.0 |
 | **[NightLife](nightlife/)** — a night, from one wolf on a ridge to a pond full of frogs | night animals | 0.3.0 |
-| **[VerdaliScene](verdaliscene/)** — every nature instrument above at once, layered and mixed into one scene | whole scenes | 0.6.0 |
+| **[VerdaliScene](verdaliscene/)** — every nature instrument above at once, layered and mixed into one scene | whole scenes | 0.6.1 |
 | **[WhooshPact](whooshpact/)** — transitions and impacts, from a passing whoosh to a cinematic boom | transitions, impacts *(not a natural source)* | 0.4.0 |
 
 Every plugin shares the suite's visual language, its synthesis-only principle,
 and a common DSP and GUI foundation.
 
 **RainyDay** — rain, from one drip in an empty room to a monsoon on a tin roof.
-Rain on leaves, on a windscreen, down a gutter, or heard as a wall of it from
-half a mile away. Hold a note and it keeps falling for as long as you hold it,
-never repeating, because every drop is worked out as it lands. 50 parameters,
-17 presets, each one fitted against a real recording of the thing it imitates.
+Rain on leaves, on a windscreen, down a gutter, smacking off wet pavement at
+your feet, or heard as a wall of it from half a mile away. Hold a note and it
+keeps falling for as long as you hold it, never repeating, because every drop is
+worked out as it lands. 50 parameters, 18 presets, each one fitted against a
+real recording of the thing it imitates.
 
 **ThunderClap** — thunder, from a rumble on the horizon to a strike that lands
 on top of you. Distance is the main control and it does what distance really

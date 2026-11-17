@@ -1,7 +1,118 @@
 # RainyDay — current status
 
-Written 2026-09-03, brought up to date 2026-09-12. See `README.md` for the
+Written 2026-09-03, brought up to date 2026-11-17. See `README.md` for the
 design and parameter reference, and `TODO.md` for what is still open.
+
+## The smack (1.11.0)
+
+A raindrop landing on wet concrete is now what three close recordings of one
+measure: **one click, a snap, a wet body, and often a second strike** -- and the
+drops are laid out over the ground, so the near ones stand far out of the rest.
+`tools/analysis/README.md` has the measurements and `tools/analysis/smack.py`
+is the tool that made them.
+
+Two layers changed, and they are now one voice:
+
+- **Trickle.** The generator is still the suite's, `verdalis/dsp/pocket.h`, and
+  it gained the click it never had and the secondary strikes. It already had the
+  snap and the body. Its drops are placed: a power law in range, driven by
+  *Distance*, in place of a 2.4 dB bell curve.
+- **Slosh.** The cascade is gone -- up to twenty-two bursts 5 ms apart, which
+  measured close in spectrum and rendered as a rattle. A droplet that lands in
+  the film on Concrete, Wood or Glass now starts the same voice the Trickle
+  uses. The cascade's state and its code are deleted from the droplet.
+
+The smack is one call, `verdalis::askForSmack`, and **RiverFlow 0.5.0 makes it
+too**: a drop on wet stone is one model in the suite. What RainyDay keeps for
+itself is where the drops are -- the field of near and far ones -- because that
+is rain on a pavement and not a stream's spray.
+
+Against the references, same analysis for every column. The middle two are
+Concrete Alley close and dry, before and after; the last is the new preset:
+
+                                                               Concrete Alley      Wet
+                                    take 1   take 2  natural   1.10.1   1.11.0   Pavement
+    spectral median, Hz               7074     6794     6035     4219     4805     5678
+    energy at 6.3-12.5 kHz, %         48.5     47.5     38.8     23.5     30.4     36.3
+    strikes a second                   111      118       65       91       81       67
+    strong isolated strikes            142      176        1        0        8        2
+    click width at -6 dB, ms          0.18     0.18     0.25        -     0.15        -
+    click centroid, Hz                8017     7479     8336        -     8282        -
+    median strike 1 ms on, dB        -17.1    -15.9    -11.0    -10.6    -15.9    -12.9
+    median strike 5 ms on, dB        -21.4    -22.9    -13.5    -14.6    -19.4    -14.5
+    strike levels over the floor,
+      p50 / p90 / p99, dB         15/26/36 17/28/37 12/16/21 13/18/24 14/22/26 12/15/20
+    strikes following a strike,
+      over the mean rate: at 3 ms     2.00     1.79     1.23     1.32     1.87     1.75
+                          at 21 ms    1.10     1.02     0.89     1.30     1.07     1.09
+                          at 42 ms    0.98     0.99     0.99     1.18     0.98     1.09
+
+1.10.1 has no strike that stands clear enough of the rest to measure a click
+on. Takes 1 and 2 are strikes with the bed taken out, so they are what the
+Trickle and the smack are read against; the natural take has its bed, and it is
+what a whole preset is read against -- Wet Pavement, which was fitted to it.
+
+**What did not change, verified rather than assumed:**
+
+- *Everything in RainyDay that has no film and no trickle.* With the trickle
+  silenced, the twelve presets that are not on Concrete or Glass with Slosh up
+  render bit-identical to 1.10.1; Cave Drips and Dripping Faucet, which have no
+  trickle, are bit-identical as shipped.
+- *The rain itself, everywhere.* Nothing the smack adds is drawn from a
+  generator the rain depends on. A droplet's smack takes exactly the two draws
+  the cascade took and seeds one of its own from them; a trickle drop's scatter,
+  its second strike and where it landed all come from the generator the drop
+  carries. So a fixed Seed gives the same drops at the same moments as 1.10.1
+  on every preset and in both layers, and what changed is only what a smack
+  sounds like. The first version drew straight from the rain's generator, which
+  moved every drop after the first smack: Distant Rain Wall then differed by
+  4 dB between the two versions at one seed from its drift alone, and the two
+  could not be compared by ear.
+- *Levels.* At the same settings the trickle is within 0.14 dB of 1.10.1 on
+  average over fifteen presets and eight seeds (Inside the Car's is the
+  outlier, 1.5 dB under), and the smack carries what the cascade carried in
+  Concrete Alley to 0.1 dB. Every preset's RMS is within 0.3 dB of where it was
+  but one -- Inside the Car, 0.7 dB down. Peaks are higher, which is the point
+  of a click, and no preset spends more than 0.013 % of its samples over the
+  output clipper's knee: that is Distant Rain Wall, which spent as much there
+  before.
+- *RiverFlow, apart from its drop.* With its Trickle silenced every RiverFlow
+  preset renders bit-identical to 0.4.0. See its own STATUS for the rest.
+
+**Wet Pavement** is new, the eighteenth preset and the first fitted to a close
+recording of the surface it is of. It was fitted twice, and the first one was
+refused. `match.py fit` took its distance to the recording from 37.7 to 11.2 on
+seeds it had not seen, which is the best fit this library has had, and it did
+it by burying the drops: 18 strikes a second against the recording's 65, where
+the hand-set starting point had 70. The objective describes a texture and the
+texture was closer. So the preset was tuned instead on what `smack.py`
+measures -- band energies, strike rate, how far strikes stand over the floor,
+how they cluster, and how far the loudest samples stand over the RMS -- one
+channel against one channel, and rendered 40 dB under the output clipper. That
+last part mattered: a first attempt matched only because the clipper was
+flattening its loudest strikes, and it was that attempt that showed the level
+law's top was 5 dB too hot (see `kTrickleNearest`).
+
+The four presets that were already on Concrete had their Trickle moved to what
+was measured -- *Trickle Impact* up to 90 % and more, *Trickle Decay* to 18 ms,
+and *Stone* to 6.5 kHz on the three that are close enough to hear it -- with
+the layer's level re-trimmed to carry what it carried. The other thirteen keep
+their values and get the new drop.
+
+**The fit tooling had been dropping the Trickle since 1.7.0.** `fitlib.SECTIONS`
+never learned the layer's eight keys, so a preset written back by `fit` or
+`loudness` lost them, and every candidate a fit rendered played the layer's
+defaults instead of the preset's. Fixed; nothing shipped was affected, because
+no fit has been installed since the layer came in.
+
+The self-test gained two checks that look at events rather than at levels: a
+drop leads with a click -- 17.8 dB over the snap behind it, 6.1 with the smack
+not asked for -- and near drops stand out where distant ones do not: the
+loudest strike in fifty is 15.1 dB over the median close by and 10.5 at full
+Distance, against 10.9 and 10.5 with the field taken out. Both were watched
+failing that way before they were trusted. A first version of the second
+compared crest factors and passed with the field removed, because Distance also
+multiplies the rate; it is gone.
 
 ## Seed 0 trickle repeated itself (1.10.1)
 
@@ -144,7 +255,7 @@ trickle level is. Three presets were already clipping before this version.
 ## State: working and playable
 
 A complete, native Linux CLAP instrument that synthesises rain. Builds clean
-with GCC 13 (`-Wall -Wextra`, no warnings), passes 43 self-test checks, and is
+with GCC 13 (`-Wall -Wextra`, no warnings), passes 71 self-test checks, and is
 installed to `~/.clap/RainyDay/`.
 
 ## What is implemented
@@ -226,7 +337,7 @@ what would buy the next factor).
   exactly one panel, no panel may hold more parameters than it has cells, and
   no row may be wider or taller than the window.
 
-**Presets**: 17 factory presets in a documented plain-text format, served both
+**Presets**: 18 factory presets in a documented plain-text format, served both
 from disk and from copies embedded in the binary, exposed via the CLAP
 preset-discovery factory (so they appear in the host's own browser).
 
@@ -276,12 +387,14 @@ nothing else, with the runtimes and Cairo linked in so it imports only KERNEL32,
 USER32, GDI32, MSIMG32, ole32 and msvcrt. It goes in
 `C:\Program Files\Common Files\CLAP\RainyDay\` alongside a `presets` folder.
 
-Verified under Wine rather than assumed: all 45 self-test checks pass against
-the Windows DLL, preset discovery finds all 17 presets, the window renders and
-is pixel-identical to the Linux one everywhere except glyph rasterisation, and
-at a fixed Random Seed the audio matches the Linux build to within 1 LSB on 14
-samples out of 672000, which is the two toolchains' libm rounding differently.
-It has not been run on real Windows.
+Verified under Wine rather than assumed: every self-test check passes against
+the Windows DLL (51 of them there as of 1.11.0, the two event checks of the
+smack among them and reading the same figures as on Linux), preset discovery
+finds every preset, the window renders and is pixel-identical to the Linux one
+everywhere except glyph rasterisation, and at a fixed Random Seed the audio
+matches the Linux build to within 1 LSB on 14 samples out of 672000, which is
+the two toolchains' libm rounding differently. It has not been run on real
+Windows.
 
 The porting work was four POSIX-only spots -- `dladdr` for the plugin's own
 path, `$XDG_CONFIG_HOME` for the preset folder, `dirent.h` for scanning it, and
@@ -292,7 +405,7 @@ a hand-rolled `mkdir -p` -- which are now `std::filesystem` plus
 
 ```sh
 ./install.sh                                        # build, self-test, install
-./build/rainyday-render --selftest                  # 43 checks
+./build/rainyday-render --selftest                  # 71 checks
 ./build/rainyday-render --list                      # preset discovery
 ./build/rainyday-render --all --outdir /tmp/rain    # render the library
 ```

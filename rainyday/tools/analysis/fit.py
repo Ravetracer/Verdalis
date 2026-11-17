@@ -39,6 +39,13 @@ SPACE = {
     'space_size':    ('add', 0.0, 1.0),
     'space_damping': ('add', 0.0, 1.0),
     'filter_reso':   ('add', 0.0, 1.0),
+    'slosh':          ('add', 0.0, 1.0),
+    'trickle_level':  ('add', -60.0, 6.0),
+    'trickle_rate':   ('mul', 0.5, 200.0),
+    'trickle_decay':  ('mul', 2.0, 200.0),
+    'trickle_impact': ('add', 0.0, 1.0),
+    'stone_tone':     ('mul', 800.0, 12000.0),
+    'trickle_splash': ('add', 0.0, 1.0),
 }
 
 # How many droplet realisations a candidate is scored over, per preset.
@@ -153,6 +160,19 @@ PRESET_BOUNDS = {
         'bubble':     ('add', 0.0, 0.5),
         'splash':     ('add', 0.5, 1.0),
     },
+    # Wet Pavement is the one preset fitted to a close recording of rain on
+    # wet concrete, and the bounds are what that recording measures and the
+    # objective cannot see. Nothing in it is pitched -- the body of a strike
+    # is as flat as band noise -- so the bubble stays out, and a strike is all
+    # strike, which is what Trickle Impact near 100 % means.
+    'wet_pavement': {
+        'tonality':       ('add', 0.0, 0.1),
+        'bubble':         ('add', 0.0, 0.2),
+        'trickle_impact': ('add', 0.85, 1.0),
+        'stone_tone':     ('mul', 5000.0, 9000.0),
+        'trickle_decay':  ('mul', 12.0, 30.0),
+        'distance':       ('add', 0.0, 0.35),
+    },
     'cave_drips': {
         'drop_pitch':    ('mul', 1300.0, 3000.0),
         'pitch_spread':  ('add', 0.0, 1.2),
@@ -186,6 +206,11 @@ DROP_PARAMS = ['density', 'clumping', 'drop_pitch', 'pitch_spread', 'drop_decay'
                'air', 'space_amount', 'space_size', 'space_damping', 'filter_cutoff']
 TONE_PARAMS = ['drop_pitch', 'pitch_spread', 'drop_decay', 'tonality', 'bubble',
         'impact', 'splash', 'bed_level', 'bed_tone', 'bed_body', 'distance', 'air']
+# A close recording of a hard wet surface has the smack in it, so the layers
+# that make it are fitted too: Slosh, which the paragraph above keeps out of
+# every other fit for want of exactly such a recording, and the Trickle.
+CLOSE_PARAMS = FULL_PARAMS + ['slosh', 'trickle_level', 'trickle_rate', 'trickle_decay',
+                              'trickle_impact', 'stone_tone', 'trickle_splash']
 
 
 def candidates(name, value, scale, bounds=None):

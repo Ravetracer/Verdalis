@@ -1040,6 +1040,138 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
       check(sounding > 0 && same < sounding / 10, what.c_str());
    }
 
+   // --- a drop on a hard surface is a smack: it leads with a click, and the
+   // near ones stand far out of the rest. Both are what 1.11.0 measured on rain
+   // and built, and neither can be seen in a level or a spectrum, so they are
+   // checked on the events themselves.
+   {
+      auto idOf = [&](const char *name) {
+         const uint32_t n = params->count(plugin);
+         for (uint32_t i = 0; i < n; ++i) {
+            clap_param_info_t info{};
+            if (params->get_info(plugin, i, &info) && std::strcmp(info.name, name) == 0)
+               return info.id;
+         }
+         return static_cast<clap_id>(CLAP_INVALID_ID);
+      };
+      // Trickle only, dry, and far enough under the output clipper that a click
+      // is not flattened by it.
+      auto trickleOnly = [&](double rate, double splash, double distance) {
+         gParamOverrides.clear();
+         gParamOverrides.emplace_back(idOf("Random Seed"), 7.0);
+         gParamOverrides.emplace_back(idOf("Density"), 0.0);
+         gParamOverrides.emplace_back(idOf("Bed Level"), -60.0);
+         gParamOverrides.emplace_back(idOf("Space Amount"), 0.0);
+         gParamOverrides.emplace_back(idOf("Attack"), 0.0);
+         gParamOverrides.emplace_back(idOf("Output Gain"), -24.0);
+         gParamOverrides.emplace_back(idOf("Distance"), distance);
+         gParamOverrides.emplace_back(idOf("Trickle Level"), -30.0);
+         gParamOverrides.emplace_back(idOf("Trickle Rate"), rate);
+         gParamOverrides.emplace_back(idOf("Trickle Impact"), 1.0);
+         gParamOverrides.emplace_back(idOf("Trickle Splash"), splash);
+         plugin->reset(plugin);
+         const RenderResult r = renderPlugin(plugin, sampleRate, 512, 6.0, 0.2, 60, 1.0);
+         gParamOverrides.clear();
+         // Energy per frame, both channels, past the first half second.
+         std::vector<double> e;
+         const size_t skip = static_cast<size_t>(0.5 * sampleRate);
+         for (size_t i = skip; i * 2 + 1 < r.interleaved.size(); ++i) {
+            const double l = r.interleaved[i * 2], rr = r.interleaved[i * 2 + 1];
+            e.push_back(l * l + rr * rr);
+         }
+         return e;
+      };
+
+      // The click. With no splash there is no body and no second strike, so a
+      // strike is the click and the snap behind it and nothing else: the energy
+      // in the 0.3 ms round the peak against the millisecond after it. A noise
+      // tick, which is what this was, has no click to speak of and measures
+      // about 4 dB; the recordings measure the click 16 dB over the snap.
+      {
+         std::vector<double> e = trickleOnly(0.53, 0.0, 0.0); // about 12 a second
+         const int half = std::max(2, static_cast<int>(0.00015 * sampleRate));
+         const int gap = static_cast<int>(0.0003 * sampleRate);
+         const int after = static_cast<int>(0.001 * sampleRate);
+         const int clear = static_cast<int>(0.02 * sampleRate);
+         std::vector<double> ratios;
+         for (int n = 0; n < 12; ++n) {
+            const auto it = std::max_element(e.begin(), e.end());
+            const int p = static_cast<int>(it - e.begin());
+            if (*it <= 0.0)
+               break;
+            if (p > half && p + gap + after < static_cast<int>(e.size())) {
+               double click = 0.0, snap = 0.0;
+               for (int i = p - half; i <= p + half; ++i)
+                  click += e[static_cast<size_t>(i)];
+               for (int i = p + gap; i < p + gap + after; ++i)
+                  snap += e[static_cast<size_t>(i)];
+               click /= 2 * half + 1;
+               snap /= after;
+               if (snap > 0.0)
+                  ratios.push_back(10.0 * std::log10(click / snap));
+            }
+            for (int i = std::max(0, p - clear);
+                 i < std::min(static_cast<int>(e.size()), p + clear); ++i)
+               e[static_cast<size_t>(i)] = 0.0;
+         }
+         std::sort(ratios.begin(), ratios.end());
+         const double median = ratios.empty() ? 0.0 : ratios[ratios.size() / 2];
+         char what[160];
+         std::snprintf(what, sizeof what,
+                       "a drop on a hard surface leads with a click (%.1f dB over the snap, "
+                       "%zu strikes)",
+                       median, ratios.size());
+         check(ratios.size() >= 8 && median > 9.0, what);
+      }
+
+      // The field. Close to the surface the nearest drop is seventeen times
+      // nearer than the furthest and that much louder; at full Distance every
+      // drop is as far away as every other. So the spread of strike levels has
+      // to open up as Distance comes down: the loudest strike in fifty against
+      // the median one, over every strike in the take.
+      //
+      // Crest was tried first and could not tell: with the field taken out it
+      // still read 37 dB close against 30 far, because Distance also multiplies
+      // the rate and a denser trickle has a lower crest whatever its drops do.
+      {
+         auto levelSpreadDb = [&](double distance, double rate, double clearSec) {
+            std::vector<double> e = trickleOnly(rate, 0.0, distance);
+            const int clear = static_cast<int>(clearSec * sampleRate);
+            std::vector<double> peaks;
+            double top = 0.0;
+            for (int n = 0; n < 2000; ++n) {
+               const auto it = std::max_element(e.begin(), e.end());
+               if (n == 0)
+                  top = *it;
+               // Fifty decibels under the loudest is past every real strike.
+               if (*it <= top * 1.0e-5)
+                  break;
+               peaks.push_back(*it);
+               const int p = static_cast<int>(it - e.begin());
+               for (int i = std::max(0, p - clear);
+                    i < std::min(static_cast<int>(e.size()), p + clear); ++i)
+                  e[static_cast<size_t>(i)] = 0.0;
+            }
+            if (peaks.size() < 40)
+               return 0.0;
+            // max_element hands them over loudest first.
+            return 10.0 * std::log10(peaks[peaks.size() / 50] / peaks[peaks.size() / 2]);
+         };
+         // About forty strikes a second in both. Distance multiplies the rate
+         // by twelve and stretches a strike three and a half times, so the far
+         // take asks for a twelfth as many and clears that much further round
+         // each one it has counted.
+         const double nearSpread = levelSpreadDb(0.0, 0.73, 0.003);
+         const double farSpread = levelSpreadDb(1.0, 0.317, 0.012);
+         char what[160];
+         std::snprintf(what, sizeof what,
+                       "near drops stand out of the trickle and distant ones do not "
+                       "(loudest in 50 is %.1f dB over the median close, %.1f dB far)",
+                       nearSpread, farSpread);
+         check(nearSpread > farSpread + 3.0, what);
+      }
+   }
+
    // --- parameter events must be reflected by get_value, which is how a host
    // reads back what automation did.
    {

@@ -144,7 +144,8 @@ struct EngineParams {
 
 // A pocket of air, and the drop that traps one, are the suite's: see
 // verdalis/dsp/pocket.h. RiverFlow's Trickle layer *is* that code, and RainyDay
-// uses the same one so that the two agree.
+// uses the same one, so a drop on wet stone is one model in the suite and not
+// two.
 using verdalis::Pocket;
 using verdalis::TrickleSpec;
 

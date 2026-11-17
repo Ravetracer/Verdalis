@@ -39,11 +39,11 @@ const ParamDesc kParams[kNumParams] = {
    PCT(kParamSplash, "splash", "Splash", "Rain", 0.35,
        "Length and weight of the wet noise burst after the impact."),
    PCT(kParamSlosh, "slosh", "Slosh", "Rain", 0.5,
-       "How long the splash cascades. A drop landing on a hard wet surface -- "
-       "stone, wood or glass -- throws secondary droplets that land a few "
-       "milliseconds apart; this is how many, and so how much it sounds like "
-       "water rather than a hiss. Surfaces that hold no film of water ignore "
-       "it."),
+       "How wet the hard surface is. A drop landing in a film of water -- on stone, "
+       "wood or glass -- smacks: a click, the water it throws out behind it, and "
+       "often a second, smaller strike a few milliseconds on. This is how many "
+       "drops smack and how much each one spatters. Surfaces that hold no film of "
+       "water ignore it."),
    PCT(kParamLevelSpread, "level_spread", "Level Spread", "Rain", 0.6,
        "Skew of the drop-size distribution, which also spreads pitch and decay."),
    BIPCT(kParamChirp, "chirp", "Chirp", "Rain", 0.35,
@@ -119,37 +119,39 @@ const ParamDesc kParams[kNumParams] = {
 
    // ---------------------------------------------------------------- trickle
    //
-   // Drops landing on a hard surface, as a layer of its own, and the same
-   // generator RiverFlow's Trickle uses -- so these eight controls mean exactly
-   // what they mean there and the same settings give the same sound. Every
-   // figure below is measured from RiverFlow's reference library of running
-   // water; see riverflow/tools/analysis/README.md.
+   // Drops landing on a hard wet surface, as a layer of its own. The generator
+   // is the suite's -- verdalis/dsp/pocket.h, which RiverFlow's Trickle uses as
+   // well -- and these are the same eight controls. What a drop does when it
+   // lands is this plugin's own: a raindrop arrives at terminal velocity and
+   // smacks, and every figure below is measured on close recordings of rain on
+   // wet concrete; see tools/analysis/README.md.
    LIN(kParamTrickleLevel, "trickle_level", "Trickle Level", "Trickle", -60.0, 6.0, -30.0, "dB",
        "Level of the drops-on-a-surface layer. At minimum it is off and the plugin is "
        "droplets and bed alone."),
    LOG(kParamTrickleRate, "trickle_rate", "Trickle Rate", "Trickle", 0.578, 0.5, 200.0, "/s",
-       "Drops a second striking the surface. Measured 5-25 a second across the water "
-       "references, median 16."),
+       "Drops a second striking the surface around you. Close recordings of rain on wet "
+       "concrete measure about 110 strikes a second, a third of them a drop striking "
+       "twice. Distance multiplies it: further off there are more, each smaller."),
    LOG(kParamTrickleSize, "trickle_size", "Trickle Size", "Trickle", 0.705, 0.15, 3.0, "mm",
-       "Radius of the pocket of air a drop entrains, which is its pitch: Minnaert gives\n"
-       "       f0 = 3.26/r kHz. Measured 0.42-1.72 mm, median 1.24 -- whose predicted\n"
-       "       2629 Hz matches a measured median of 2625."),
+       "Radius of the pocket of air a drop traps, which is its pitch: Minnaert gives "
+       "f0 = 3.26/r kHz, so 1.24 mm rings at 2.6 kHz. Heard only as far as Trickle "
+       "Impact leaves the pocket room."),
    LIN(kParamTrickleSpread, "trickle_spread", "Trickle Spread", "Trickle", 0.0, 3.0, 1.2, "oct",
-       "Spread of drop sizes. Measured pitches span about 1.25 octaves around the median."),
+       "Spread of pocket sizes, and so of their pitches, from drop to drop."),
    LOG(kParamTrickleDecay, "trickle_decay", "Trickle Decay", "Trickle", 0.407, 2.0, 200.0, "ms",
-       "How long one drop lasts. Measured 8-86 ms to fall 10 dB, median 13; the long end "
-       "of that is splashing rather than ticking."),
+       "How long one drop lasts. The wet body of a strike runs three times this, so "
+       "18 ms is the 54 ms that rain on wet concrete measures."),
    PCT(kParamTrickleImpact, "trickle_impact", "Trickle Impact", "Trickle", 0.45,
-       "The strike itself against the pocket that follows it. A drop landing on rock is "
-       "mostly a broadband tick off the rock; a drop landing in water is mostly the "
-       "bubble."),
+       "The strike itself against the pocket of air under it. At 100 % a drop is all "
+       "strike -- a click and the water it throws, which is what rain on stone is. "
+       "Lower, and more of it is the pitched pocket a drop traps in standing water."),
    LOG(kParamStoneTone, "stone_tone", "Stone", "Trickle", 0.545, 800.0, 12000.0, "Hz",
-       "What the drops are landing on: the centre of the surface's own resonance. Wet "
-       "rock and glass are high and hard, wood and moss lower and duller."),
+       "What the drops are landing on: the centre of the band a strike sounds in. Wet "
+       "concrete measures about 6.5 kHz; glass is higher and harder, wood and moss "
+       "lower and duller."),
    PCT(kParamTrickleSplash, "trickle_splash", "Trickle Splash", "Trickle", 0.25,
-       "How much of a drop is a short wash of water rather than a clean tick. The "
-       "references' drop decays are bimodal -- 8-13 ms for a tick against 56-86 ms where "
-       "the water is deeper -- and this is that second population."),
+       "How wet a strike is: the water thrown out behind the click, and how often a "
+       "drop strikes twice. At 25 % both stand where the recordings have them."),
 
 };
 

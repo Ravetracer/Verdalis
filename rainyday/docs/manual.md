@@ -329,31 +329,53 @@ relations are Minnaert's, from 1933.
 
 ## Trickle: drops landing on a surface
 
-A drop landing on concrete makes two sounds, and until 1.7.0 {{PLUGIN}}
-modelled only one of them properly. The drop itself is here in detail — the
-pocket of air it traps, its pitch bend, its splash, the secondary droplets
-thrown sideways. The *surface* was only a tuned damped sine at the moment of
-impact, which gives every strike a pitch of its own.
+A drop landing on concrete makes two sounds. One is the drop: the pocket of air
+it traps, its pitch bend, its splash. The other is what it landed on, and that
+is *Trickle* — a layer of its own, for the drops that strike the hard wet ground
+around you.
 
-*Trickle* is the surface, as its own layer, and it is **the same generator
-RiverFlow uses** for its Trickle — one file shared between the two plugins — so
-the same settings give the same sound in both. Eight controls, the same eight:
+What such a drop does is measured, on close recordings of rain on wet concrete.
+A raindrop arrives at terminal velocity, and it does not tick, it *smacks*:
+
+| Part | What it is | Measured |
+|---|---|---|
+| the click | the drop arriving | one pulse, 0.18 ms wide |
+| the snap | the drop collapsing | 16 dB under the click, gone in 3 ms |
+| the body | the water it throws out across the wet surface | falls 60 dB in about 54 ms |
+
+and then, about once per drop, the same again smaller a few milliseconds later,
+because what it throws up comes back down. None of it has a pitch.
+
+Eight controls:
 
 | Control | What it is |
 |---|---|
 | *Trickle Level* | how much of the layer there is; at minimum it is off |
-| *Trickle Rate* | drops a second striking the surface; measured 5–25, median 16 |
-| *Trickle Size* | the radius of the pocket of air a drop entrains, in millimetres, which *is* its pitch |
-| *Trickle Spread* | the spread of drop sizes, in octaves |
-| *Trickle Decay* | how long one drop lasts; measured 8–86 ms to fall 10 dB |
-| *Trickle Impact* | the strike itself against the pocket that follows it |
-| *Stone* | what they are landing on: the surface's own resonance |
-| *Trickle Splash* | the wash of water where the surface is deeper |
+| *Trickle Rate* | drops a second striking the surface; the recordings measure about 110 strikes a second close by |
+| *Trickle Impact* | the strike against the pocket of air under it; at 100 % a drop is all strike, which is what rain on stone is |
+| *Stone* | what they are landing on: the centre of the band a strike sounds in. Wet concrete measures about 6.5 kHz |
+| *Trickle Decay* | how long one drop lasts; the wet body runs three times this |
+| *Trickle Splash* | how wet a strike is: the water behind the click, and how often a drop strikes twice |
+| *Trickle Size* | the radius of the pocket of air a drop traps, in millimetres, which *is* its pitch |
+| *Trickle Spread* | the spread of pocket sizes, in octaves |
 
-Sizes read in millimetres because that is physically what a pocket's pitch is.
-Minnaert's relation gives f₀ ≈ 3.26/r kHz, and the reference library of running
-water measures drop pockets at 0.42–1.72 mm with a median of 1.24 — whose
-predicted 2629 Hz matches a measured median pitch of 2625.
+*Trickle Size* reads in millimetres because that is physically what a pocket's
+pitch is: Minnaert's relation gives f₀ ≈ 3.26/r kHz. It only matters as far as
+*Trickle Impact* leaves the pocket room. Turn *Impact* down and a drop becomes
+the pitched plink it makes in standing water; turn it up and it is stone.
+
+**The drops are somewhere.** They land all over the ground and you stand at one
+point above it, so the near ones are far louder than the rest — in the
+recordings the loudest strike in a hundred is 21 dB over the median one, which
+no spread of drop sizes could give. *Distance* sets how near the nearest can
+land. Close to the ground a few drops smack right beside you over a fine trickle
+of distant ones; pull back and they even out, until at full *Distance* every
+drop is as far away as every other. The layer's overall level does not change
+with any of this, only how much the near drops stand out of it.
+
+A droplet of the rain itself that lands in the film of water on *Concrete*,
+*Wood* or *Glass* smacks in the same way. *Slosh* sets how many do and how much
+each one spatters.
 
 The layer has its own event clock rather than firing with the droplets, which is
 deliberate: it is a population of drops landing on one nearby hard surface, not

@@ -112,6 +112,16 @@ retrofitting:
   layer and RainyDay's droplet resonators are already the same idea built twice;
   RiverFlow will make it three. A shared bubble resonator, with Minnaert's
   radius-to-pitch relation in it, is the obvious next extraction.
+
+  Part of it is done. **A drop landing on a wet surface is one model**,
+  `verdalis/dsp/pocket.h`, used by RiverFlow's Trickle, RainyDay's Trickle and
+  RainyDay's wet-surface droplets, with Minnaert in `bubble.h` beside it. Its
+  strike is a *smack* -- measured on rain, `rainyday/tools/analysis/README.md`
+  -- that a plugin asks for with `askForSmack`. Two rules in that header are
+  worth knowing before touching it: the order of draws from the caller's
+  generator is a contract, and nothing the smack adds may be drawn from it.
+  That is what lets a plugin change what a drop sounds like and still render
+  the same rain or the same river at the same Seed.
 - SkyHowl and ThunderClap both need **large-scale air movement** and distance
   modelling; ThunderClap's `Lp2` air-absorption filter generalises directly.
 - **The Fano factor now says three different things in three plugins, and it is
@@ -590,7 +600,7 @@ shared/
 │   ├── preset_library.h        the library as the browser sees it: the scan,
 │   │                            the folder split, export and import
 │   ├── preset_provider.h       PresetProviderSpec, the discovery factory
-│   ├── dsp/{adsr,biquad,denormals,fastmath,filters,reverb,rng}.h
+│   ├── dsp/{adsr,biquad,bubble,denormals,fastmath,filters,pocket,reverb,rng}.h
 │   └── gui/
 │       ├── filedialog.h        the desktop's file chooser, and reveal-in-files
 │       ├── gui.h               Gui + GuiDelegate, the plugin/window contract

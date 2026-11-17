@@ -126,14 +126,16 @@ const ParamDesc kParams[kNumParams] = {
        "end of that is splashing rather than ticking."),
    PCT(kParamTrickleImpact, "trickle_impact", "Impact", "Trickle", 0.45,
        "The strike itself against the pocket that follows it. A drop landing on rock is "
-       "a broadband tick; a drop landing in water is mostly the bubble."),
+       "a smack -- one click and the water it throws -- and at 100 % it is all of that; "
+       "a drop landing in water is mostly the bubble."),
    LOG(kParamStoneTone, "stone_tone", "Stone", "Trickle", 0.545, 800.0, 12000.0, "Hz",
        "What the drops are landing on: the centre of the impact's band. Wet rock is "
        "high and hard, gravel and moss are lower and duller."),
    PCT(kParamSplash, "splash", "Splash", "Trickle", 0.25,
-       "How much of a drop is a short wash of water rather than a clean tick. The "
-       "references' drop decays are bimodal -- 8-13 ms for ticks against 56-86 ms where "
-       "the water is deeper -- and this is that second population."),
+       "How much of a drop is a short wash of water rather than a clean tick, and how "
+       "often it strikes twice. The references' drop decays are bimodal -- 8-13 ms for "
+       "ticks against 56-86 ms where the water is deeper -- and this is that second "
+       "population."),
 
    // ---------------------------------------------------------------- plunge
    LIN(kParamPlungeLevel, "plunge_level", "Plunge Level", "Plunge", -80.0, 6.0, -42.0, "dB",

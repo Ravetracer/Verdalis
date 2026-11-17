@@ -26,7 +26,7 @@ import fit
 import fitlib
 import loudness
 import refs
-from pairs import PAIRS, BAND_WEIGHT, FULL, DROP
+from pairs import PAIRS, BAND_WEIGHT, FULL, DROP, CLOSE
 
 PRESETS = os.path.join(fitlib.ROOT, 'presets')
 
@@ -34,6 +34,8 @@ PRESETS = os.path.join(fitlib.ROOT, 'presets')
 def names_for(mode):
     if mode == DROP:
         return fit.DROP_PARAMS
+    if mode == CLOSE:
+        return fit.CLOSE_PARAMS
     return fit.FULL_PARAMS if mode == FULL else fit.TONE_PARAMS
 
 

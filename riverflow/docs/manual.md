@@ -325,11 +325,19 @@ whatever they hit, then the tiny pocket they entrain. Measured 5 to 25 a second
 at 0.42-1.72 mm, ringing 2-8 kHz — and again Minnaert lands within a per cent of
 the measured median pitch.
 
-*Impact* balances the strike against the pocket: a drop on rock is mostly a
-broadband tick, a drop into water mostly the bubble. *Stone* is what it landed
-on. *Splash* is the wash where the water is deeper, which exists because the
+*Impact* balances the strike against the pocket: a drop on rock is mostly the
+strike, a drop into water mostly the bubble. *Stone* is what it landed on.
+*Splash* is the wash where the water is deeper, which exists because the
 references' drop decays are bimodal — 8-13 ms for a tick against 56-86 ms where
 there is a pool under it.
+
+The strike itself is a *smack*, and it is measured: one click 0.18 ms wide, a
+snap 16 dB under it that is gone in 3 ms, the wash after that, and — about once
+per drop at the default *Splash* — the same drop striking again a few
+milliseconds later, smaller. Those figures come from close recordings of rain on
+wet concrete, where single strikes can be told apart; a drop coming off a ledge
+onto wet rock is the same event, and {{PLUGIN}} and RainyDay share the one model
+of it. With *Impact* at 100 % a drop is all strike and no pocket.
 
 ## The plunge pool
 

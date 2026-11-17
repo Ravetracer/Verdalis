@@ -108,6 +108,24 @@ rather than this plugin's:
 - [ ] Shore/bank traits are six tables of four factors chosen by ear. They
       should be fitted against references that actually name their surroundings.
 
+## The drop, after 0.5.0
+
+- [ ] ***Impact* has never been fitted, and now it means more.** All twenty
+      presets hold it at the default of 45 %. The drop was already too tonal
+      against the stone drops in the references -- a spectral flatness of 0.11
+      against their 0.34, measured for RainyDay's Trickle -- and since 0.5.0 the
+      strike has a click in it, so turning Impact up is a different and better
+      move than it was. Fit it per preset, or at least move the default, once
+      the references are to hand; `rainyday/tools/analysis/smack.py` measures a
+      drop directly.
+- [ ] **The smack is rain's.** Measured on rain landing on wet concrete at
+      terminal velocity and carried over by ear. A close recording of drops off
+      a ledge would say whether a stream's drop has the click at that level.
+- [ ] **No field of near and far drops**, on purpose: the references measure the
+      spray as close to smooth. If a preset is ever meant to be heard from a
+      hand's width off the rock, `scalePocket` and RainyDay's `spawnTrickle`
+      show how.
+
 ## Suite
 
 - [ ] **The bubble resonator is now built three times** — RainyDay's droplets,

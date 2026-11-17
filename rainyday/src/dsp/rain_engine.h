@@ -90,6 +90,10 @@ struct EngineParams {
 //   * the initial impact: a two-cycle damped sine at a frequency drawn afresh
 //     for every droplet,
 //   * the surface's own low mode, where a struck panel or canopy rings.
+//
+// A drop that lands in a film of water on something hard makes a sixth sound,
+// the smack. That one is not here: it is a voice of its own in the pocket pool,
+// the same generator the Trickle layer uses, started by spawnDroplet.
 struct Droplet {
    bool active = false;
    uint32_t startOffset = 0; // sample within the current block where it begins
@@ -146,23 +150,6 @@ struct Droplet {
    // does below its bubble: it is small against the wavelength. Without this
    // the mode's spectral skirts fill the two empty octaves under it.
    Hp2 bodyHp;
-   // The slosh: the sheet of water a drop throws across a hard wet surface.
-   // Broadband noise well above the droplet's own resonance, swelling in over
-   // a few milliseconds rather than striking, and unpitched -- it is water
-   // spreading, not anything ringing. Zero on every surface but concrete, and
-   // skipped for a single comparison when it is.
-   Svf sloshBp;
-   float sloshAmp = 0.0f, sloshDecay = 0.0f;
-   float sloshRise = 0.0f, sloshRiseDecay = 0.0f;
-   // A splat is not one burst. Counted on isolated events in the reference, a
-   // drop landing on wet concrete throws six of them in the first 40 ms about
-   // 5 ms apart, each around 11 dB under the first, and leaves stragglers out
-   // to 300 ms -- secondary droplets thrown up and coming back down. One
-   // smooth burst with the right spectrum and the right decay still sounds
-   // like hiss, because the cascade is the sound.
-   uint32_t sloshNext = 0;   // samples until the next sub-burst
-   uint32_t sloshLeft = 0;   // sub-bursts still to come
-   float sloshSeed = 0.0f;   // level of the first burst, for re-triggering
    OnePoleLp air;
    // A droplet is a small radiator: it cannot put out much energy far below its
    // own resonance, so everything under it is rolled off at 12 dB/oct.
@@ -279,6 +266,11 @@ private:
 
    float mDistanceAtten = 1.0f;
    float mDensityNorm = 1.0f;
+   // How near the nearest drop of the trickle can land, as a fraction of the
+   // patch it lands on, and the factor that keeps the layer's level where it
+   // was however near that is. Both follow from Distance; see setParams().
+   float mTrickleNearSq = 1.0f;
+   float mTrickleNearNorm = 1.0f;
    uint32_t mSilenceCounter = 0;
 };
 

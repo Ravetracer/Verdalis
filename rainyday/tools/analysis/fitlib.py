@@ -21,8 +21,19 @@ SECTIONS = [
                 'filter_key_track']),
     ('Envelope', ['attack', 'decay', 'sustain', 'release', 'vel_to_level',
                   'vel_to_density']),
+    # The Trickle layer was missing from this table from 1.7.0 to 1.10.1, and it
+    # cost more than a fit. A preset written back by anything here lost its
+    # eight trickle lines, and every candidate a fit rendered played the
+    # layer's defaults instead of the preset's own.
+    ('Trickle', ['trickle_level', 'trickle_rate', 'trickle_size', 'trickle_spread',
+                 'trickle_decay', 'trickle_impact', 'stone_tone', 'trickle_splash']),
     ('Output', ['gain', 'max_droplets', 'seed']),
 ]
+
+# A line of explanation under a section's heading, where the file wants one.
+SECTION_NOTES = {
+    'Trickle': 'drops landing on a hard wet surface, as a layer of its own.',
+}
 
 KEYS = [k for _, keys in SECTIONS for k in keys]
 
@@ -61,7 +72,8 @@ def preset_text(params, meta=None):
         if not rows:
             continue
         out.append('')
-        out.append(f'# {title}')
+        note = SECTION_NOTES.get(title)
+        out.append(f'# {title}: {note}' if note else f'# {title}')
         for k, v in rows:
             out.append(f'{k} = {format_value(v)}')
     return '\n'.join(out) + '\n'
