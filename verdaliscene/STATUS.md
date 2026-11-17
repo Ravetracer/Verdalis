@@ -1,8 +1,14 @@
 # VerdaliScene status
 
-Version 0.6.1, the suite's eleventh plugin and the first one that synthesises
+Version 0.6.2, the suite's eleventh plugin and the first one that synthesises
 nothing of its own: every sound comes from one of the nine nature instruments,
 run as a layer. 0.1.0 shipped in suite 0.25.0.
+
+## What changed in 0.6.2
+
+- A river layer with a fixed *Random Seed* renders the same after a reset
+  again: RiverFlow 0.5.1's fix, where a dabble could inherit the strikes of a
+  drop on stone that had used its slot before.
 
 ## What changed in 0.6.1
 

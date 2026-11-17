@@ -1,5 +1,15 @@
 # RiverFlow TODO
 
+## A used instance renders Seed 7 differently from a new one
+
+Found in 0.5.1: with a fixed *Random Seed*, an instance that has played before
+and been reset diverges from a brand-new instance about 21 ms (1024 frames at
+48 kHz) into the take, identically every run. Something survives `reset()` that
+a new instance starts without. The pockets are ruled out (the 0.5.1 fix starts
+every dabble fresh, and the trickle's spawn sets every field), so look at the
+voices' filters and envelopes and at what `updateFilters()` leaves behind. A
+check against a fresh instance belongs in the self-test once it is found.
+
 ## The VST3
 
 RiverFlow builds and ships a VST3 for both platforms. What is left is suite-wide

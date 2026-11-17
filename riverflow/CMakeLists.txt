@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 # macOS: std::filesystem needs 10.15. Set before project(), ignored elsewhere.
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS version")
-project(RiverFlow VERSION 0.5.0 LANGUAGES CXX)
+project(RiverFlow VERSION 0.5.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

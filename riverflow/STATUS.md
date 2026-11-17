@@ -1,8 +1,26 @@
 # RiverFlow status
 
-Version 0.5.0. The sections below are newest first; the oldest is 0.1.0, the
+Version 0.5.1. The sections below are newest first; the oldest is 0.1.0, the
 first working version: the engine, the parameter set, the window and a first
 fitted preset library.
+
+## A fixed Seed is the same river after a reset again (0.5.1)
+
+A dabble took its pocket slot as it found it and set only what a dabble has. A
+drop on stone that had used the slot before could leave its smack behind -- an
+impulse not yet spent, strikes still to come -- and the dabble then struck. Before
+the first reset of an instance those leftovers come from the generator
+`prepare()` seeds from the clock, so with a fixed *Random Seed* the take after a
+reset differed from the next one now and then: the self-test failed about one
+run in five on Linux, and it was the first macOS build that failed on it. A
+dabble now starts from a fresh pocket. Every preset renders bit-identical to
+0.5.0 at Seed 7, so nothing that was already deterministic sounds different. With
+the clock seed pinned the old failures disappear, which is what places them
+there; the self-test now also runs the check in 24 new instances.
+
+**Still open:** an instance that has played before renders Seed 7 slightly
+differently from a brand-new one, from about 21 ms in -- deterministically, the
+same every run. Found while writing the test above; not yet tracked down.
 
 ## A drop on stone is a smack (0.5.0)
 

@@ -599,6 +599,13 @@ void RiverEngine::spawnDabble(float envLevel, float flow) {
       if (!slot)
          break;
       Pocket &p = *slot;
+      // From a fresh pocket, not from whatever last used the slot. A dabble
+      // sets only what a dabble has, and a drop on stone before it may have
+      // left its smack behind -- an impulse not yet spent, strikes still to
+      // come -- which then struck inside the dabble. Before a reset those
+      // leftovers come from the time-seeded generator, so a fixed Seed did not
+      // render the same river after one.
+      p = Pocket{};
       p.active = true;
       p.rng.seed(mRng.next() | 1u);
       p.delaySamples = k == 0 ? 0 : static_cast<int>(mRng.uniform() * spill);

@@ -999,6 +999,48 @@ int runSelfTest(const clap_plugin_entry_t *entry, double sampleRate) {
       gParamOverrides.clear();
       check(firstTake.interleaved == secondTake.interleaved,
             "a fixed Random Seed renders identically after reset");
+
+      // The same promise, from new instances. activate() seeds the generator
+      // from the clock and Seed 0 keeps it running, so what the pockets hold
+      // when the first reset comes is something nobody seeded. 0.5.0's dabbles
+      // inherited whatever smack a drop on stone had left in their slot, and
+      // the check above caught that in some runs and not others. It only ever
+      // showed in an instance's first session, so each round is a new instance
+      // going through the same steps. How often it showed depended on the clock
+      // -- from one instance in eight to one in a hundred -- so this makes a
+      // regression likelier to be seen, not certain: run the self-test a few
+      // times after touching how pockets are spawned or reset.
+      constexpr int kRounds = 24;
+      int differing = 0;
+      for (int round = 0; round < kRounds; ++round) {
+         const clap_plugin_t *fresh = createPlugin(entry);
+         if (!fresh) {
+            ++differing;
+            continue;
+         }
+         fresh->activate(fresh, sampleRate, 1, 512);
+         renderPlugin(fresh, sampleRate, 512, 0.0, 0.5, 60, 0.9);
+         renderPlugin(fresh, sampleRate, 512, 1.0, 2.0, 60, 1.0);
+         renderPlugin(fresh, sampleRate, 37, 0.5, 0.5, 48, 0.5);
+         gParamOverrides.clear();
+         gParamOverrides.emplace_back(seedId, 7.0);
+         fresh->reset(fresh);
+         const RenderResult a = renderPlugin(fresh, sampleRate, 512, 0.4, 0.4, 60, 1.0);
+         renderPlugin(fresh, sampleRate, 512, 0.4, 0.4, 48, 1.0);
+         fresh->reset(fresh);
+         const RenderResult b = renderPlugin(fresh, sampleRate, 512, 0.4, 0.4, 60, 1.0);
+         gParamOverrides.clear();
+         fresh->deactivate(fresh);
+         fresh->destroy(fresh);
+         if (a.interleaved != b.interleaved)
+            ++differing;
+      }
+      char what[96];
+      std::snprintf(what, sizeof(what),
+                    "a fixed Random Seed renders identically after reset in %d new instances "
+                    "(%d differed)",
+                    kRounds, differing);
+      check(differing == 0, what);
    }
 
    // --- a drop on stone is a smack: it leads with a click. That is the one
