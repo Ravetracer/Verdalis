@@ -20,6 +20,8 @@
 // law (DAFX eq. 5.3), as a sine, a triangle or a slow random drift -- a flock
 // passing, wind moving from one side of a valley to the other.
 
+#include <algorithm>
+
 #include "fx_dsp.h"
 #include "verdalis/dsp/rng.h"
 

@@ -19,6 +19,7 @@
 // stops being run once it has faded out, and is cleared before it runs again,
 // so turning a reverb back on does not bring back the tail it had.
 
+#include <algorithm>
 #include <atomic>
 #include <cstring>
 #include <vector>

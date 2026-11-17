@@ -9,6 +9,7 @@
 // so it never touches the real user library, and puts the old value back.
 // Linux and macOS only: the Windows self-test skips it.
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #if !defined(_WIN32)

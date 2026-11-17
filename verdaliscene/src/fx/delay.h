@@ -32,6 +32,8 @@
 // while each one smears further into a cloud. Ducking lowers the echoes while
 // the input is loud and lets them up as it falls (Pirkle 14.7.4).
 
+#include <algorithm>
+
 #include "fx_dsp.h"
 #include "verdalis/dsp/rng.h"
 

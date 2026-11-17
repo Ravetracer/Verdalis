@@ -34,6 +34,8 @@
 // Freeze sets every line's loss to (almost) nothing and closes the input, both
 // over a ramp, so a held tail neither clicks in nor drains away.
 
+#include <algorithm>
+
 #include "fx_dsp.h"
 
 namespace verdaliscene {

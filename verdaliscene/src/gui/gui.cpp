@@ -20,6 +20,7 @@
 #include "verdalis/dsp/adsr.h"
 #include "verdalis/gui/plugin_window.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>

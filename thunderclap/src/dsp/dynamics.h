@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "verdalis/dsp/fastmath.h"
 
 namespace thunderclap {

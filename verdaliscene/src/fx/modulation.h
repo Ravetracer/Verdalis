@@ -23,6 +23,8 @@
 // sweeps together, the output summed with the input so the phase shift turns
 // into notches, with feedback for depth.
 
+#include <algorithm>
+
 #include "fx_dsp.h"
 
 namespace verdaliscene {

@@ -49,6 +49,7 @@
 // what lets a plugin take the smack and still render the same river, or the
 // same rain, at the same Seed, with only the drop changed.
 
+#include <algorithm>
 #include <cmath>
 
 #include "bubble.h"
