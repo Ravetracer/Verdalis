@@ -105,6 +105,11 @@ jobs:
     runs-on: macos-15
     strategy:
       fail-fast: false
+      # A free account gets about five macOS runners at a time. With all eleven
+      # jobs queued at once, the ones at the back waited so long for an arm64
+      # runner that GitHub cancelled them ("not acquired by Runner ... after
+      # multiple attempts"); started five at a time, each one finds a runner.
+      max-parallel: 5
       matrix:
         plugin: ${{ fromJSON(needs.prepare.outputs.plugins) }}
     name: build (${{ matrix.plugin }})
