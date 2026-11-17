@@ -6,18 +6,23 @@
 # hardware. The bundles are signed ad hoc, not notarized; INSTALL.txt in the
 # archive explains the one command that clears the quarantine.
 #
-# Three jobs:
-#   prepare  finds the plugins the way release.sh does (every folder with a
-#            CMakeLists.txt but shared/), so a new plugin joins by existing,
-#            and builds the static universal Cairo once if the cache has none.
-#   build    one job per plugin: build, self-test on arm64 and under Rosetta,
-#            sign, auval.
-#   package  one suite archive, verdalis-suite-<version>-macos-universal.zip,
-#            the macOS counterpart of release.sh's per-platform archives.
+# One job, every plugin in turn. It was a job per plugin first, but GitHub's
+# arm64 runners are scarce enough that several of eleven jobs were regularly
+# cancelled for want of one ("not acquired by Runner of type hosted even after
+# multiple attempts"), and the suite archive needs all eleven in one run. One
+# runner for the whole build takes 20-25 minutes and either runs or does not.
 #
-# Every run uploads the archive as a workflow artifact. When a GitHub release
-# tagged v* is published (publish-release.sh), it is also attached to that
-# release, beside the Linux and Windows archives.
+# The plugins are found the way release.sh finds them (every folder with a
+# CMakeLists.txt but shared/), so a new plugin joins by existing. Each goes
+# through shared/tools/macos-build-plugin.sh: build, self-test on arm64 and
+# under Rosetta, sign ad hoc, auval. A failing plugin does not stop the others,
+# so one run reports every failure; the job fails at the end if any did, and
+# then packs nothing.
+#
+# A successful run uploads verdalis-suite-<version>-macos-universal.zip as a
+# workflow artifact. When a GitHub release tagged v* is published
+# (publish-release.sh), it is also attached to that release, beside the Linux
+# and Windows archives.
 
 name: macOS
 
@@ -50,74 +55,17 @@ env:
   MACOSX_DEPLOYMENT_TARGET: "10.15"
 
 jobs:
-  prepare:
+  suite:
     if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     runs-on: macos-15
-    outputs:
-      plugins: ${{ steps.plugins.outputs.plugins }}
-      cairo-key: ${{ steps.cairo.outputs.cache-primary-key }}
+    timeout-minutes: 90
+    permissions:
+      contents: write # attaching the archive to a release
     steps:
       - uses: actions/checkout@v4
 
-      - name: Plugins
-        id: plugins
-        run: |
-          list=""
-          for f in */CMakeLists.txt; do
-            d="${f%/CMakeLists.txt}"
-            [ "$d" = shared ] && continue
-            grep -q '^project(' "$f" || continue
-            list="${list:+$list,}\"$d\""
-          done
-          echo "plugins=[$list]" | tee -a "$GITHUB_OUTPUT"
-
-      # Restored and saved in two steps, so a Cairo that was built is kept even
-      # when a later step fails.
-      - name: Cairo cache
-        id: cairo
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            macbuild/cairo-macos/include
-            macbuild/cairo-macos/lib
-          key: cairo-macos-${{ env.MACOSX_DEPLOYMENT_TARGET }}-${{ hashFiles('shared/cmake/build-macos-cairo.sh') }}
-          lookup-only: true
-
       - name: Build tools
-        if: steps.cairo.outputs.cache-hit != 'true'
         run: brew install meson ninja pkgconf
-
-      - name: Cairo
-        if: steps.cairo.outputs.cache-hit != 'true'
-        run: shared/cmake/build-macos-cairo.sh macbuild/cairo-macos
-
-      - name: Cairo cache save
-        if: steps.cairo.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            macbuild/cairo-macos/include
-            macbuild/cairo-macos/lib
-          key: ${{ steps.cairo.outputs.cache-primary-key }}
-
-  build:
-    needs: prepare
-    runs-on: macos-15
-    strategy:
-      fail-fast: false
-      # A job GitHub cannot find an arm64 runner for within 15 minutes is
-      # cancelled ("not acquired by Runner of type hosted even after multiple
-      # attempts"). That is GitHub's capacity, not this workflow: limiting the
-      # jobs to five at a time did not prevent it. Re-run the cancelled ones
-      # later with `gh run rerun <id> --failed`; the package job follows.
-      matrix:
-        plugin: ${{ fromJSON(needs.prepare.outputs.plugins) }}
-    name: build (${{ matrix.plugin }})
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build tools
-        run: brew install ninja
 
       # CLAP/ is gitignored (third-party SDKs, see CLAUDE.md): the versions the
       # Linux and Windows builds use, plus Apple's AudioUnitSDK, with the
@@ -134,126 +82,67 @@ jobs:
             git -C clap-wrapper apply "../$p"
           done
 
-      - name: Cairo
+      # Restored and saved in two steps, so a Cairo that was built is kept even
+      # when a later step fails.
+      - name: Cairo cache
+        id: cairo
         uses: actions/cache/restore@v4
         with:
           path: |
             macbuild/cairo-macos/include
             macbuild/cairo-macos/lib
-          key: ${{ needs.prepare.outputs.cairo-key }}
-          fail-on-cache-miss: true
+          key: cairo-macos-${{ env.MACOSX_DEPLOYMENT_TARGET }}-${{ hashFiles('shared/cmake/build-macos-cairo.sh') }}
 
-      - name: Identity
-        id: id
+      - name: Cairo
+        if: steps.cairo.outputs.cache-hit != 'true'
+        run: shared/cmake/build-macos-cairo.sh macbuild/cairo-macos
+
+      - name: Cairo cache save
+        if: steps.cairo.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            macbuild/cairo-macos/include
+            macbuild/cairo-macos/lib
+          key: ${{ steps.cairo.outputs.cache-primary-key }}
+
+      - name: Plugins
+        id: plugins
         run: |
-          p="${{ matrix.plugin }}"
-          name="$(sed -n 's/^project(\([A-Za-z]*\) VERSION.*/\1/p' "$p/CMakeLists.txt")"
-          [ -n "$name" ] || { echo "no project() name in $p/CMakeLists.txt"; exit 1; }
-          echo "name=$name" | tee -a "$GITHUB_OUTPUT"
-          echo "prefix=$(echo "$p" | tr '[:lower:]' '[:upper:]')" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Configure
-        run: >
-          cmake -S ${{ matrix.plugin }} -B ${{ matrix.plugin }}/build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-          -D${{ steps.id.outputs.prefix }}_BUILD_TOOLS=ON
-          -D${{ steps.id.outputs.prefix }}_BUILD_VST3=ON
-          -D${{ steps.id.outputs.prefix }}_BUILD_AUV2=ON
-
-      # -k 0: one run reports every compile error, not the first.
-      - name: Build
-        run: >
-          cmake --build ${{ matrix.plugin }}/build
-          --target ${{ steps.id.outputs.name }} ${{ steps.id.outputs.name }}-vst3
-          ${{ steps.id.outputs.name }}-auv2 ${{ matrix.plugin }}-render
-          -- -k 0
-
-      # The wrapper decides where its bundles land on macOS, so they are looked
-      # up rather than assumed. Each must be universal, and each must export
-      # clap_entry: on macOS the VST3 and the Audio Unit find the plugin in
-      # their own bundle through it, and without it they would look for a
-      # .clap installed elsewhere -- the bug the Linux VST3 once shipped with.
-      - name: Bundles
-        id: bundles
-        working-directory: ${{ matrix.plugin }}/build
-        run: |
-          name="${{ steps.id.outputs.name }}"
-          for ext in clap vst3 component; do
-            b="$(find . -maxdepth 3 -type d -name "${name}.${ext}" -not -path '*/CMakeFiles/*' | head -1)"
-            [ -n "$b" ] || { echo "no ${name}.${ext} in the build tree"; exit 1; }
-            echo "${ext}=$b" | tee -a "$GITHUB_OUTPUT"
-            bin="$b/Contents/MacOS/${name}"
-            lipo "$bin" -verify_arch arm64 x86_64
-            lipo -info "$bin"
-            nm -gU "$bin" | grep -q ' _clap_entry$' || { echo "$bin does not export clap_entry"; exit 1; }
-            [ -d "$b/Contents/Resources/presets" ] || { echo "$b has no presets"; exit 1; }
+          list=""
+          for f in */CMakeLists.txt; do
+            d="${f%/CMakeLists.txt}"
+            [ "$d" = shared ] && continue
+            grep -q '^project(' "$f" || continue
+            list="${list:+$list }$d"
           done
+          echo "list=$list" | tee -a "$GITHUB_OUTPUT"
 
-      # The renderer loads the built .clap as a host does and runs the plugin's
-      # whole self-test through it. The x86_64 half runs under Rosetta.
-      - name: Self-test
-        working-directory: ${{ matrix.plugin }}/build
+      # Every plugin, each in its own log group. One failing does not stop the
+      # rest; the summary says which, and the step fails if any did.
+      - name: Build, test, sign and validate
         run: |
-          render="./${{ matrix.plugin }}-render"
-          plugin="${{ steps.bundles.outputs.clap }}/Contents/MacOS/${{ steps.id.outputs.name }}"
-          lipo -info "$render"
-          echo "--- arm64"
-          "$render" --plugin "$plugin" --selftest
-          if arch -x86_64 /usr/bin/true 2>/dev/null; then
-            echo "--- x86_64 (Rosetta)"
-            arch -x86_64 "$render" --plugin "$plugin" --selftest
-          else
-            echo "no Rosetta on this runner: x86_64 not run"
+          failed=""
+          echo "| Plugin | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for p in ${{ steps.plugins.outputs.list }}; do
+            echo "::group::$p"
+            start=$SECONDS
+            if shared/tools/macos-build-plugin.sh "$p" "$RUNNER_TEMP/macos"; then
+              result="ok"
+            else
+              result="FAILED"
+              failed="$failed $p"
+            fi
+            echo "::endgroup::"
+            echo "$p: $result ($((SECONDS - start)) s)"
+            echo "| $p | $result |" >> "$GITHUB_STEP_SUMMARY"
+            [ "$result" = ok ] || echo "::error title=$p::$p failed; see its log group"
+          done
+          if [ -n "$failed" ]; then
+            echo "failed:$failed"
+            exit 1
           fi
-
-      - name: Sign (ad hoc)
-        working-directory: ${{ matrix.plugin }}/build
-        run: |
-          for b in "${{ steps.bundles.outputs.clap }}" "${{ steps.bundles.outputs.vst3 }}" "${{ steps.bundles.outputs.component }}"; do
-            codesign --force --deep --sign - "$b"
-            codesign --verify --deep --strict --verbose=2 "$b"
-          done
-
-      # Loads the Audio Unit the way Logic does and runs Apple's validation:
-      # instantiation, render at several rates, parameters, state.
-      - name: Audio Unit validation
-        run: |
-          mkdir -p ~/Library/Audio/Plug-Ins/Components
-          cp -R "${{ matrix.plugin }}/build/${{ steps.bundles.outputs.component }}" ~/Library/Audio/Plug-Ins/Components/
-          killall -9 AudioComponentRegistrar 2>/dev/null || true
-          auval -a | grep -i "Rvtr" || true
-          auval -v $(cat "${{ matrix.plugin }}/build/auv2-id.txt")
-
-      # Tarred, because an artifact does not keep the executable bit.
-      - name: Collect
-        working-directory: ${{ matrix.plugin }}/build
-        run: |
-          mkdir -p "$RUNNER_TEMP/out"
-          for b in "${{ steps.bundles.outputs.clap }}" "${{ steps.bundles.outputs.vst3 }}" "${{ steps.bundles.outputs.component }}"; do
-            cp -R "$b" "$RUNNER_TEMP/out/"
-          done
-          tar -C "$RUNNER_TEMP/out" -cf "$RUNNER_TEMP/${{ matrix.plugin }}.tar" .
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos-${{ matrix.plugin }}
-          path: ${{ runner.temp }}/${{ matrix.plugin }}.tar
-          retention-days: 7
-
-  package:
-    needs: [prepare, build]
-    runs-on: macos-15
-    permissions:
-      contents: write # attaching the archive to a release
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: macos-*
-          merge-multiple: true
-          path: ${{ runner.temp }}/plugins
 
       - name: Package
         id: package
@@ -266,18 +155,15 @@ jobs:
           fi
           name="verdalis-suite-${ver}-macos-universal"
           d="dist/${name}"
-          mkdir -p "$d/macos"
-          for t in "$RUNNER_TEMP"/plugins/*.tar; do
-            tar -C "$d/macos" -xf "$t"
-          done
+          mkdir -p "$d"
+          cp -R "$RUNNER_TEMP/macos" "$d/macos"
 
           cp README.md LICENSE "$d/"
           # A plugin whose licence differs from the suite's carries it beside
           # the suite's, exactly as release.sh does (SkyHowl's CC-BY credit).
-          plugins=$(echo '${{ needs.prepare.outputs.plugins }}' | tr -d '[]"' | tr ',' ' ')
           info=""
-          for p in $plugins; do
-            n="$(sed -n 's/^project(\([A-Za-z]*\) VERSION \([0-9.]*\).*/\1/p' "$p/CMakeLists.txt")"
+          for p in ${{ steps.plugins.outputs.list }}; do
+            n="$(sed -n 's/^project(\([A-Za-z]*\) VERSION.*/\1/p' "$p/CMakeLists.txt")"
             v="$(sed -n 's/^project([A-Za-z]* VERSION \([0-9.]*\).*/\1/p' "$p/CMakeLists.txt")"
             info="${info}  ${n} ${v}"$'\n'
             if [ -f "$p/LICENSE" ] && ! cmp -s "$p/LICENSE" LICENSE; then

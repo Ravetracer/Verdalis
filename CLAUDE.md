@@ -589,9 +589,14 @@ machine: the macOS SDK may only be used on Apple hardware. They are made by
 ReSIDent and SäureKiste workflows in `Ravetracer/audio-plugins`.
 
 The workflow finds the plugins the way `release.sh` does, so a new plugin joins
-by existing. One job per plugin builds, runs `render --selftest` on arm64 and
-under Rosetta, checks that each bundle is universal, exports `clap_entry` and
-carries its presets, signs ad hoc and runs `auval`. A last job packs
+by existing. **It is one job for the whole suite**, every plugin in turn through
+`shared/tools/macos-build-plugin.sh`: build, `render --selftest` on arm64 and
+under Rosetta, check that each bundle is universal, exports `clap_entry` and
+carries its presets, sign ad hoc, `auval`. A failing plugin does not stop the
+rest; the job fails at the end if any did. It was a job per plugin at first,
+but GitHub's arm64 runners were scarce enough that several of eleven jobs were
+cancelled in every run for want of one, and the archive needs all eleven in
+one run -- so one runner, 20-25 minutes. Then the same job packs
 `verdalis-suite-<version>-macos-universal.zip` (`macos/` with every plugin's
 three bundles, README, LICENSE, `LICENSE-SkyHowl`, INSTALL.txt, BUILD-INFO.txt).
 Every run uploads it as an artifact; a published `v*` release
