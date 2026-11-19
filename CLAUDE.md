@@ -1054,15 +1054,14 @@ repository — both are gitignored, local to this machine.
 
 **Website copy** goes in `_designs/website-copy.md`, which holds the suite's
 download-page text, the AI disclosure, and then one `## <Plugin>` section per
-instrument carrying **three variants** of 2–3 paragraphs each in a plain product
-register: what the plugin aims to be, then what it features. A new plugin gets
-its own section in the same shape as the existing ones. Where the author has
-given his own description of a plugin, it is kept **verbatim** under *The
-author's own brief* ahead of the variants and the marketing prose is written
-around it rather than replacing it. Every factual claim in a variant comes from
-the plugin's README, STATUS and parameter table, so re-check the numbers when a
-version changes them — including the suite section's instrument, preset and
-parameter totals.
+instrument holding **one short paragraph**: what it sounds like, its preset
+count, and the formats line ("CLAP and VST3 for Linux and Windows, CLAP, VST3
+and AU (Component) for macOS"). No measurements and no DSP explanation -- the
+page carries the demos and the download button, and nobody reads more than an
+excerpt. A new plugin gets its own section in the same shape. Where the author
+has given his own description of a plugin, the paragraph is written in its
+words and spirit. Re-check the preset counts, and the suite section's totals,
+when a version changes them.
 
 **Demo tracks** go in `dist/demos/<Plugin>/`, one MP3 per factory preset, built
 by
