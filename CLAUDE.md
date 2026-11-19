@@ -27,6 +27,8 @@ Verdalis/
 ├── winbuild/          meson venv + Windows Cairo — GITIGNORED, see below
 ├── macbuild/          macOS Cairo (on a Mac or in CI only) — GITIGNORED
 ├── dist/              release archives         — GITIGNORED
+├── website/           the static website (verdalis.ravetracer.de); see
+│                      website/README.md -- builds into dist-website/ (GITIGNORED)
 ├── rainyday/          RainyDay — synthesised rain
 ├── thunderclap/       ThunderClap — synthesised thunder
 ├── ...                one folder per plugin; see the roadmap below

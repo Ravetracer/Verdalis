@@ -1,0 +1,807 @@
+{
+  "groups": {
+    "verdalis": {
+      "title": "The Verdalis suite",
+      "eyebrow": "Synthesised nature",
+      "text": "Nine instruments for the sounds of the world, one that layers them into whole scenes, and one for the hits and whooshes a production needs. Every sound is computed while it plays — nothing is sampled, nothing loops, and no two takes are alike."
+    },
+    "other": {
+      "title": "Beyond nature",
+      "eyebrow": "More free plugins",
+      "text": "Machines, effects and experiments that don't belong in a forest: an acid bass box, a drum machine, a reverb, a kick designer, a drawing effects rack and a whole home computer."
+    }
+  },
+  "plugins": [
+    {
+      "slug": "rainyday",
+      "name": "RainyDay",
+      "wordmark": [
+        "Rainy",
+        "Day"
+      ],
+      "group": "verdalis",
+      "icon": "rain",
+      "accent": "#58B6E8",
+      "tagline": "Rain you can place anywhere.",
+      "card": "From a single cave drip to a tropical monsoon.",
+      "intro": "A single drip in a cave, a drizzle on the window, a downpour on a tin roof or a monsoon in the jungle — close by or across the yard. Every drop is synthesised the moment it lands, so the rain never repeats and has no loop point.",
+      "highlights": [
+        {
+          "title": "Any surface",
+          "text": "Water, leaves, metal, glass, stone or a car roof — each one rings and splashes differently."
+        },
+        {
+          "title": "Near or far",
+          "text": "Move the rain from right above your head to a distant wall of water across the valley."
+        },
+        {
+          "title": "Never loops",
+          "text": "Hold a note for an hour and you still won't hear the same drop twice."
+        }
+      ],
+      "presets": 18,
+      "images": [
+        {
+          "file": "images/rainyday.png",
+          "alt": "The RainyDay plugin window with knob panels for rain, distance, envelope, filter, space, close drops and trickle."
+        }
+      ],
+      "aliases": [
+        "rainyday"
+      ],
+      "spotlight": {
+        "file": "extras/Henry-Solberg-Rain.flac",
+        "title": "Rain",
+        "artist": "Henry Solberg",
+        "description": "A track by Henry Solberg, made with one of the very first versions of RainyDay."
+      }
+    },
+    {
+      "slug": "thunderclap",
+      "name": "ThunderClap",
+      "wordmark": [
+        "Thunder",
+        "Clap"
+      ],
+      "group": "verdalis",
+      "icon": "thunder",
+      "accent": "#B396FA",
+      "tagline": "Thunder, from the lightning bolt outwards.",
+      "card": "A sharp crack overhead or a storm rolling past.",
+      "intro": "Each flash grows its own lightning channel, so every strike sounds different — a tearing crack right above you, a long roll bouncing between the hills, or a whole storm passing while you hold a note.",
+      "highlights": [
+        {
+          "title": "Every bolt is unique",
+          "text": "The shape of the lightning decides the sound, and no two bolts are shaped alike."
+        },
+        {
+          "title": "Distance is a knob",
+          "text": "From the crack next door to a murmur twenty kilometres away."
+        },
+        {
+          "title": "Whole storms",
+          "text": "Hold a key and flashes come and go on their own, near and far."
+        }
+      ],
+      "presets": 18,
+      "images": [
+        {
+          "file": "images/thunderclap.png",
+          "alt": "The ThunderClap plugin window in lightning violet."
+        }
+      ],
+      "aliases": [
+        "thunderclap"
+      ]
+    },
+    {
+      "slug": "shorebreak",
+      "name": "ShoreBreak",
+      "wordmark": [
+        "Shore",
+        "Break"
+      ],
+      "group": "verdalis",
+      "icon": "waves",
+      "accent": "#4FD0BA",
+      "tagline": "Surf without a fixed beach.",
+      "card": "Waves breaking on sand, pebbles or rock.",
+      "intro": "Waves break, foam hisses, water washes back over sand, pebbles or rock — from a calm murmur far out to big waves crashing right in front of you. Hold a note and the sea keeps coming in.",
+      "highlights": [
+        {
+          "title": "Every part of a wave",
+          "text": "The break, the foam, the bubbles and the water running back down the beach."
+        },
+        {
+          "title": "Calm to stormy",
+          "text": "Gentle laps in a harbour or a shore in uproar."
+        },
+        {
+          "title": "Endless tide",
+          "text": "No two waves arrive quite the same."
+        }
+      ],
+      "presets": 17,
+      "images": [
+        {
+          "file": "images/shorebreak.png",
+          "alt": "The ShoreBreak plugin window in sea green."
+        }
+      ],
+      "aliases": [
+        "shorebreak"
+      ]
+    },
+    {
+      "slug": "skyhowl",
+      "name": "SkyHowl",
+      "wordmark": [
+        "Sky",
+        "Howl"
+      ],
+      "group": "verdalis",
+      "icon": "wind",
+      "accent": "#F0845C",
+      "tagline": "Wind with one knob that matters.",
+      "card": "From a soft breath to a howling gale.",
+      "intro": "Turn up the wind speed and it goes from a soft breath at the window to a gale over a ridge, howling through gaps and rustling the trees as it goes. Cave mouths, city streets, dunes and open plains included.",
+      "highlights": [
+        {
+          "title": "Speed is everything",
+          "text": "One control takes you from a breeze to a storm — the gusts, the howl and the rustle all follow."
+        },
+        {
+          "title": "Places, not just wind",
+          "text": "Pines, birches, reeds, a wire fence, a cave, a street between houses."
+        },
+        {
+          "title": "Real howls",
+          "text": "The pitch swoops up as a gust arrives and falls away with it."
+        }
+      ],
+      "presets": 23,
+      "images": [
+        {
+          "file": "images/skyhowl.png",
+          "alt": "The SkyHowl plugin window in dust coral."
+        }
+      ],
+      "aliases": [
+        "skyhowl"
+      ]
+    },
+    {
+      "slug": "chirpparade",
+      "name": "ChirpParade",
+      "wordmark": [
+        "Chirp",
+        "Parade"
+      ],
+      "group": "verdalis",
+      "icon": "bird",
+      "accent": "#F2C744",
+      "tagline": "Birdsong you can play.",
+      "card": "One bird per key, or a whole dawn chorus.",
+      "intro": "Ten kinds of bird, built from the shapes of real syllables, so a phrase never comes out the same way twice. Play one bird per note like an instrument, or hold a key and let a whole flock chatter on its own.",
+      "highlights": [
+        {
+          "title": "Ten voices",
+          "text": "Blackbird, robin, nightingale, cuckoo, geese, woodpeckers, parakeets and more."
+        },
+        {
+          "title": "Play a tune",
+          "text": "Melody Bird follows your keyboard — and sings higher the harder you play."
+        },
+        {
+          "title": "Living flocks",
+          "text": "Birds answer each other across the field, near and far."
+        }
+      ],
+      "presets": 20,
+      "images": [
+        {
+          "file": "images/chirpparade.png",
+          "alt": "The ChirpParade plugin window in finch gold."
+        }
+      ],
+      "aliases": [
+        "chirpparade"
+      ]
+    },
+    {
+      "slug": "riverflow",
+      "name": "RiverFlow",
+      "wordmark": [
+        "River",
+        "Flow"
+      ],
+      "group": "verdalis",
+      "icon": "river",
+      "accent": "#57C77A",
+      "tagline": "From roaring falls to a tickling little creek.",
+      "card": "Rivers, rapids, waterfalls and trickles.",
+      "intro": "Loud, noisy rivers and waterfalls, or a bubbly little creek dabbling between the stones. Drops splash onto wet rock, a roar builds in the distance — and since the river is generated as it plays, it never loops.",
+      "highlights": [
+        {
+          "title": "Bubbles you can count",
+          "text": "Close up, you hear every pocket of air folding through the water."
+        },
+        {
+          "title": "Small to huge",
+          "text": "A single drip off an overhang or a big fall crashing into its pool."
+        },
+        {
+          "title": "Real places",
+          "text": "Gorges, culverts, glaciers and forest streams, each with their own space."
+        }
+      ],
+      "presets": 20,
+      "images": [
+        {
+          "file": "images/riverflow.png",
+          "alt": "The RiverFlow plugin window in river green."
+        }
+      ],
+      "aliases": [
+        "riverflow"
+      ]
+    },
+    {
+      "slug": "crackleblaze",
+      "name": "CrackleBlaze",
+      "wordmark": [
+        "Crackle",
+        "Blaze"
+      ],
+      "group": "verdalis",
+      "icon": "flame",
+      "accent": "#FF5A2C",
+      "tagline": "Fire at any size.",
+      "card": "A cosy hearth, a campfire or a burning roof.",
+      "intro": "A small fire in a cottage hearth, a campfire under the stars, or a building alight across the street. Crackles, hissing damp wood and settling logs over the roar of the flames — never the same twice.",
+      "highlights": [
+        {
+          "title": "Crackle, hiss and roar",
+          "text": "Dry sticks snapping, wet wood steaming, logs collapsing into the embers."
+        },
+        {
+          "title": "Any fireplace",
+          "text": "Open fires, wood stoves, a sauna stove or a furnace."
+        },
+        {
+          "title": "Burns forever",
+          "text": "The fire keeps changing for as long as you hold the note."
+        }
+      ],
+      "presets": 18,
+      "images": [
+        {
+          "file": "images/crackleblaze.png",
+          "alt": "The CrackleBlaze plugin window in ember orange."
+        }
+      ],
+      "aliases": [
+        "crackleblaze"
+      ]
+    },
+    {
+      "slug": "insectswarm",
+      "name": "InsectSwarm",
+      "wordmark": [
+        "Insect",
+        "Swarm"
+      ],
+      "group": "verdalis",
+      "icon": "bug",
+      "accent": "#E6D93B",
+      "tagline": "One bee at the window, or the whole hive.",
+      "card": "Bees, wasps, flies, mosquitoes and cicadas.",
+      "intro": "Insects in any number — a single bee, a hive, wasps around the picnic table, flies against the glass, a mosquito that won't leave, dragonflies, cicadas and crickets. Every wingbeat is synthesised, so the swarm moves and breathes like the real thing.",
+      "highlights": [
+        {
+          "title": "They fly around you",
+          "text": "Insects come close, back off and circle your head."
+        },
+        {
+          "title": "From one to forty-eight",
+          "text": "A single bee or a hive so busy it turns into a roar."
+        },
+        {
+          "title": "Wings and songs",
+          "text": "Buzzing wings, singing cicadas and chirping crickets."
+        }
+      ],
+      "presets": 16,
+      "images": [
+        {
+          "file": "images/insectswarm.png",
+          "alt": "The InsectSwarm plugin window in wasp yellow."
+        }
+      ],
+      "aliases": [
+        "insectswarm"
+      ]
+    },
+    {
+      "slug": "nightlife",
+      "name": "NightLife",
+      "wordmark": [
+        "Night",
+        "Life"
+      ],
+      "group": "verdalis",
+      "icon": "moon",
+      "accent": "#9FB4E8",
+      "tagline": "A whole night, not a recording of one.",
+      "card": "Wolves, owls, foxes, frogs and crickets.",
+      "intro": "Wolves howling across a valley, owls in the wood, a fox in the field, a loon over the lake, a pond full of frogs and crickets everywhere. It runs for as long as you hold the note and never repeats.",
+      "highlights": [
+        {
+          "title": "The night shift",
+          "text": "Wolves, owls, foxes, loons, frogs and crickets — together or one by one."
+        },
+        {
+          "title": "They answer each other",
+          "text": "A pack builds up its howl, a second owl replies from further off."
+        },
+        {
+          "title": "A bed to build on",
+          "text": "The breathing darkness of a forest at night, ready for anything on top."
+        }
+      ],
+      "presets": 16,
+      "images": [
+        {
+          "file": "images/nightlife.png",
+          "alt": "The NightLife plugin window in moonlight blue."
+        }
+      ],
+      "aliases": [
+        "nightlife"
+      ]
+    },
+    {
+      "slug": "verdaliscene",
+      "name": "VerdaliScene",
+      "wordmark": [
+        "Verdali",
+        "Scene"
+      ],
+      "group": "verdalis",
+      "icon": "layers",
+      "accent": "#A6D35A",
+      "tagline": "All of nature in one plugin.",
+      "card": "Layer the nine instruments into whole scenes.",
+      "intro": "Stack rain, thunder, surf, wind, birds, rivers, fire, insects and night animals as layers, mix them, add reverb and delay, and build a whole place — a forest river, a stormy shore, a winter cabin. Your presets from the single plugins load straight into its layers.",
+      "highlights": [
+        {
+          "title": "Nine instruments, one window",
+          "text": "Every layer is the full plugin, with all of its presets."
+        },
+        {
+          "title": "A mixer for nature",
+          "text": "Balance, pan, mute and solo every layer like tracks in a song."
+        },
+        {
+          "title": "Effects on every layer",
+          "text": "Reverb, delay and more per layer and on the whole scene."
+        }
+      ],
+      "presets": 19,
+      "presetNoun": "scenes",
+      "images": [
+        {
+          "file": "images/verdaliscene.png",
+          "alt": "VerdaliScene's scene page: a channel strip for every layer of the Forest River scene."
+        },
+        {
+          "file": "images/verdaliscene-layer.png",
+          "alt": "A VerdaliScene layer page: the full ChirpParade panel playing the scene's cuckoo."
+        },
+        {
+          "file": "images/verdaliscene-fx.png",
+          "alt": "VerdaliScene's effects page: a reverb, a delay and five more effects on one layer."
+        }
+      ],
+      "aliases": [
+        "verdaliscene"
+      ]
+    },
+    {
+      "slug": "whooshpact",
+      "name": "WhooshPact",
+      "wordmark": [
+        "Whoosh",
+        "Pact"
+      ],
+      "group": "verdalis",
+      "icon": "zap",
+      "accent": "#FF3C97",
+      "tagline": "The odd one out.",
+      "card": "Whooshes, impacts, booms and braams.",
+      "intro": "Not nature, but the sounds a production needs — whooshes, impacts, booms, braams, downshifters and stings. Each hit is synthesised fresh, so a cut full of transitions doesn't sound like the same sample twenty times.",
+      "highlights": [
+        {
+          "title": "Six families",
+          "text": "Transitions, impacts, booms, braams, downshifters and accents."
+        },
+        {
+          "title": "Never the same twice",
+          "text": "Every hit comes out a little different, unless you want it identical."
+        },
+        {
+          "title": "Built for picture",
+          "text": "Trailers, games, podcasts and videos — anything that needs a cut to land."
+        }
+      ],
+      "presets": 31,
+      "images": [
+        {
+          "file": "images/whooshpact.png",
+          "alt": "The WhooshPact plugin window in impact magenta."
+        }
+      ],
+      "aliases": [
+        "whooshpact"
+      ]
+    },
+    {
+      "slug": "saeurekiste",
+      "name": "SäureKiste",
+      "wordmark": [
+        "Säure",
+        "Kiste"
+      ],
+      "group": "other",
+      "icon": "acid",
+      "accent": "#9BE31D",
+      "tagline": "Acid, from the schematic up.",
+      "card": "A squelching acid bass box, circuit by circuit.",
+      "intro": "A monophonic acid bass synthesiser, modelled circuit by circuit on a well-known little silver box: the squelching filter, the accent that bites, the slides that glide instead of retriggering. Write lines in its own sequencer or play it from your DAW — then push it through ten drive models and an effects chain.",
+      "highlights": [
+        {
+          "title": "The real squelch",
+          "text": "Filter, accent and slide behave like the original circuit, down to the quirks."
+        },
+        {
+          "title": "Sequencer built in",
+          "text": "64 patterns, a pattern generator, a live mode and MIDI import and export."
+        },
+        {
+          "title": "Then push it",
+          "text": "An advanced mode, ten drive models, delay and a full effects chain."
+        }
+      ],
+      "presets": 30,
+      "images": [
+        {
+          "file": "images/saeurekiste-window.png",
+          "alt": "The SäureKiste plugin window: acid-green knob panels above a piano-roll sequencer and a bank of 64 patterns."
+        },
+        {
+          "file": "images/saeurekiste-window-advanced.png",
+          "alt": "SäureKiste with its advanced section open: unison, filter modulation, slide, vibrato and fine-tuning."
+        },
+        {
+          "file": "images/saeurekiste-window-fx.png",
+          "alt": "SäureKiste's effects page with a saturator, a filter and a reverb in the chain."
+        }
+      ],
+      "release": {
+        "tag": "saeurekiste-v",
+        "asset": "SaeureKiste"
+      },
+      "source": "https://github.com/Ravetracer/audio-plugins/tree/main/saeure-kiste",
+      "notice": "SäureKiste is an independent project and not affiliated with or endorsed by any hardware or software manufacturer. All trademarks belong to their owners.",
+      "aliases": [
+        "saeurekiste"
+      ],
+      "demoText": {
+        "01-Classic-Squelch.flac": "The sound everyone knows: a rubbery, squelching line with the filter swept wide open and back.",
+        "02-Machine-Running.flac": "A driving, slightly overdriven line that just keeps going — the box left running all night.",
+        "03-Basement.flac": "Deep and dark: a low square wave with the filter nearly closed, rumbling under the floor.",
+        "04-Daylight.flac": "Bright, short and happy notes with a little swing. Acid for the afternoon.",
+        "05-Homesick.flac": "A slower, melancholic line with long, singing notes.",
+        "06-Swung-Line.flac": "Heavy shuffle: every second note leans back, so the line bounces rather than marches.",
+        "07-Stompbox.flac": "Pushed through a vintage fuzz pedal model — warm, gritty and loud.",
+        "08-Halo.flac": "A clean line with a bright lead distortion blended in underneath, glowing at the edges.",
+        "09-Teeth.flac": "The angry one: screaming resonance, hard accents and lots of drive.",
+        "10-Squelch-Ping-Pong.flac": "The classic squelch again, now bouncing left and right through the built-in delay."
+      }
+    },
+    {
+      "slug": "rumpelkiste",
+      "name": "RumpelKiste",
+      "wordmark": [
+        "Rumpel",
+        "Kiste"
+      ],
+      "group": "other",
+      "icon": "drum",
+      "accent": "#FF6E1A",
+      "tagline": "The classic drum machine, rebuilt as circuits.",
+      "card": "A legendary drum machine with sequencer and drive.",
+      "intro": "A rhythm composer modelled on a legendary drum machine's voice board — kick, snare, toms, rim shot and clap built as circuits, the cymbals through the original's gritty six-bit path. Program it in its 64-pattern step sequencer, or play it from your DAW, and send the whole kit through a drive bus.",
+      "highlights": [
+        {
+          "title": "Eleven voices",
+          "text": "The punchy kick, the snappy snare, toms, rim, clap, hats, crash and ride."
+        },
+        {
+          "title": "Step sequencer",
+          "text": "Accents, flams, shuffle, 64 patterns and a groove generator."
+        },
+        {
+          "title": "Drive bus",
+          "text": "Ten distortion models for the whole kit or just the drums you choose."
+        }
+      ],
+      "presets": 19,
+      "images": [
+        {
+          "file": "images/rumpelkiste-window.png",
+          "alt": "The RumpelKiste plugin window with drum voice panels and the step sequencer."
+        }
+      ],
+      "release": {
+        "tag": "rumpelkiste-v",
+        "asset": "RumpelKiste"
+      },
+      "source": "https://github.com/Ravetracer/audio-plugins/tree/main/rumpel-kiste",
+      "notice": "RumpelKiste is an independent project and not affiliated with or endorsed by any hardware or software manufacturer. All trademarks belong to their owners.",
+      "aliases": [
+        "rumpelkiste"
+      ],
+      "demoText": {
+        "01-Warehouse.flac": "Straight-ahead warehouse techno: a long kick, rim shots, ride and a tom fill.",
+        "02-Jack-Box.flac": "Chicago house with a shuffle, tight kick and doubled claps.",
+        "03-Motor-City.flac": "Detroit techno with the toms tuned to a chord over the ride.",
+        "04-Planet-Funk.flac": "Old-school electro: a broken, booming kick and a tom run.",
+        "05-Breaks.flac": "A breakbeat with ghost notes, a flam and an open hi-hat at the end of the bar.",
+        "06-Two-Step.flac": "UK garage swing: a skipping kick and rim shots in the gaps.",
+        "07-Big-Room.flac": "Crash on the one and a snare roll building up to the drop.",
+        "08-Hot-Desk.flac": "A house groove with the whole kit warmed up through the tube drive.",
+        "09-Bitcrushed.flac": "A techno groove crushed down to lo-fi grit.",
+        "10-Hardcore-Fuzz.flac": "Hardcore at 172 BPM: only the kick is fuzzed into a distorted thump, the rest stays clean."
+      }
+    },
+    {
+      "slug": "aurum",
+      "name": "Aurum",
+      "wordmark": [
+        "Aurum"
+      ],
+      "group": "other",
+      "icon": "sparkles",
+      "accent": "#C9A66B",
+      "tagline": "A reverb you can shape by frequency.",
+      "card": "Rooms, halls, plates and endless spaces.",
+      "intro": "An algorithmic reverb with three engines — a natural room, a classic digital ring and a plate — and eleven spaces from a tight ambience to a ten-second cathedral. Draw how long each frequency rings, tone the result, and freeze it into an endless pad.",
+      "highlights": [
+        {
+          "title": "Three characters",
+          "text": "Natural, Classic and Plate, from realistic rooms to vintage shimmer."
+        },
+        {
+          "title": "Decay you can draw",
+          "text": "Let the lows die fast and the highs ring on — or the other way round."
+        },
+        {
+          "title": "Learns from real rooms",
+          "text": "Import an impulse response and Aurum sets itself up to match the space."
+        }
+      ],
+      "images": [
+        {
+          "file": "images/aurum-window.png",
+          "alt": "The Aurum reverb window with the room ruler, decay contour and tone curve."
+        }
+      ],
+      "release": {
+        "tag": "aurum-v",
+        "asset": "Aurum"
+      },
+      "source": "https://github.com/Ravetracer/audio-plugins/tree/main/aurum",
+      "aliases": [
+        "aurum-reverb"
+      ],
+      "demoText": {
+        "01-Dry.flac": "The source on its own, without reverb — a short drum and bass phrase, so you can compare.",
+        "02-Drum-Room.flac": "A small, lively room that makes drums sound like they were recorded together.",
+        "03-Small-Chamber.flac": "A warm chamber that adds space without washing anything out.",
+        "04-Concert-Hall.flac": "A big, natural hall with a smooth, long tail.",
+        "05-Cathedral.flac": "Huge stone space: every hit hangs in the air for seconds.",
+        "06-Classic-Plate.flac": "The bright, dense plate sound known from countless vocals and snares.",
+        "07-Shimmer-Wash.flac": "A long, moving wash that turns the phrase into an ambient cloud.",
+        "08-Gated-Drums.flac": "The eighties gated reverb: big, then suddenly cut off.",
+        "09-Ducked-Delay-Space.flac": "The reverb steps aside while the music plays and blooms in the gaps.",
+        "10-Freeze-Pad.flac": "The tail is frozen into an endless pad, then released."
+      }
+    },
+    {
+      "slug": "substrike",
+      "name": "Substrike",
+      "wordmark": [
+        "Substrike"
+      ],
+      "group": "other",
+      "icon": "kick",
+      "accent": "#8F7CF7",
+      "tagline": "Every kick, from the first thump to the last rumble.",
+      "card": "A kick drum designer for every style.",
+      "intro": "A kick drum designer that builds every kick from scratch: the soft thud of deep house, a dusty hip-hop knock, a long tuned sub, the overdriven brick of hard techno with its rumble floor, the zap of hardstyle or the buzzing wall of gabber — or something that was never a kick before.",
+      "highlights": [
+        {
+          "title": "Eight layers",
+          "text": "Body, click, noise, resonator and rumble, each with its own effect chain."
+        },
+        {
+          "title": "Over a hundred presets",
+          "text": "Eighteen styles, a browser that plays as you click."
+        },
+        {
+          "title": "Drag and drop",
+          "text": "Pull the finished hit straight into your arrangement as audio."
+        }
+      ],
+      "presets": 117,
+      "images": [
+        {
+          "file": "images/substrike-window.png",
+          "alt": "The Substrike window with its layer lanes, pitch envelope and effect chains."
+        }
+      ],
+      "release": {
+        "tag": "substrike-v",
+        "asset": "Substrike"
+      },
+      "source": "https://github.com/Ravetracer/audio-plugins/tree/main/substrike",
+      "aliases": [
+        "substrike-kick-drum-designer"
+      ],
+      "demoText": {
+        "01-Concrete-Thump.flac": "Hard techno: a long pitch drop, a saturated body and a sharp click.",
+        "02-Classic-Rumble.flac": "Techno with the rumble: a dark, rolling low end that ducks under every kick.",
+        "03-Berlin-Pressure.flac": "Heavy and long — warehouse pressure, kept dark.",
+        "04-Deep-Round.flac": "Deep house: a soft, round thump.",
+        "05-Boom-Bap-Dust.flac": "Hip-hop: a dusty, crunchy knock with vinyl crackle.",
+        "06-Sub-Boom-Long.flac": "Trap: a long, tuned sub boom you could play as a bassline.",
+        "07-Euphoric-Hardstyle.flac": "Hardstyle: a zap into a long distorted tail.",
+        "08-Gabber-Classic.flac": "Gabber at 180 BPM: a buzzing, distorted wall.",
+        "09-Studio-Kick.flac": "An acoustic-style bass drum with a felt beater in a small room.",
+        "10-Chaos-Engine.flac": "Experimental: every hit is randomised, so no two are alike."
+      }
+    },
+    {
+      "slug": "shapeau",
+      "name": "Shapeau",
+      "wordmark": [
+        "Shapeau"
+      ],
+      "group": "other",
+      "icon": "spline",
+      "accent": "#37D6E0",
+      "tagline": "Draw the shape, hear it on the beat.",
+      "card": "An effects rack you draw, locked to the beat.",
+      "intro": "An effects rack you draw. Every effect follows a shape drawn across a bar, a beat or a sixteenth, locked to your host's tempo: a dip is sidechain ducking, a slope is a filter sweep, a few steps make a trance gate. Three frequency bands, each with its own shapes — and you see the audio behind every line you draw.",
+      "highlights": [
+        {
+          "title": "Seven effects",
+          "text": "Volume, filter, drive, crush, stutter, width and pan, in any order."
+        },
+        {
+          "title": "Per band",
+          "text": "Duck the bass, chop the mids and leave the hats alone."
+        },
+        {
+          "title": "See what you hear",
+          "text": "The incoming and outgoing audio is drawn right behind the shape."
+        }
+      ],
+      "presets": 10,
+      "images": [
+        {
+          "file": "images/shapeau-window.png",
+          "alt": "The Shapeau window: a duck drawn on the low band, over the waveform of the drum loop it ducks."
+        },
+        {
+          "file": "images/shapeau-chain.png",
+          "alt": "Shapeau with a chain of three effects in its effect bar."
+        },
+        {
+          "file": "images/shapeau-filter.png",
+          "alt": "Shapeau's filter shape: a cutoff sweep drawn on the mid band."
+        },
+        {
+          "file": "images/shapeau-sidechain.png",
+          "alt": "A duck started by the kick drum in the sidechain, drawn in amber."
+        }
+      ],
+      "release": {
+        "tag": "shapeau-v",
+        "asset": "Shapeau"
+      },
+      "source": "https://github.com/Ravetracer/audio-plugins/tree/main/shapeau",
+      "aliases": [
+        "shapeau"
+      ],
+      "demoText": {
+        "01-Dry.flac": "The loop on its own — drums, an acid bass and C64 chords — so you can compare.",
+        "02-Kick-Duck.flac": "Bass and chords dip on every beat: sidechain-style pumping without a sidechain.",
+        "03-Sidechain-Duck.flac": "The same pump, this time triggered by the actual kick drum.",
+        "04-Filter-Wobble.flac": "A resonant filter wobbling on the eighth notes.",
+        "05-Gated-Stabs.flac": "A hard trance gate chops the loop into sixteenth notes.",
+        "06-Drive-Pump.flac": "Clean between the hits, saturated on them.",
+        "07-Live-Stutter.flac": "Stutters on the mids and highs while the low end keeps rolling.",
+        "08-Crush-Steps.flac": "A step pattern of bit-crushing that moves with the groove.",
+        "09-Pan-Steps.flac": "The low end jumps from left to right in steps.",
+        "10-Half-Speed-Stop.flac": "Each bar slows down to half speed, like a turntable being stopped."
+      }
+    },
+    {
+      "slug": "resident",
+      "name": "ReSIDent",
+      "wordmark": [
+        "Re",
+        "SID",
+        "ent"
+      ],
+      "group": "other",
+      "icon": "chip",
+      "accent": "#7C70DA",
+      "tagline": "Original C64 MIDI software, live in your DAW.",
+      "card": "A Commodore 64 running its classic synth programs.",
+      "intro": "In the eighties people turned the Commodore 64 and its SID chip into synthesizers you played from a MIDI keyboard. ReSIDent is a C64 inside a plugin that runs those programs exactly as they are: notes go in through an emulated MIDI cartridge, the program plays the SID, and the SID plays into your track.",
+      "highlights": [
+        {
+          "title": "The real programs",
+          "text": "Load Cynthcart, SID Synth, Station64 and friends — unmodified, from disk or cartridge."
+        },
+        {
+          "title": "Up to eight SIDs",
+          "text": "6581 or 8580, each with its own filter, level, pan and output."
+        },
+        {
+          "title": "Play the machine",
+          "text": "Type on its keyboard, use a joystick, and automate its controllers from your DAW."
+        }
+      ],
+      "images": [
+        {
+          "file": "images/resident-window.png",
+          "alt": "The ReSIDent window running Cynthcart: a Commodore 64 screen with the synthesizer's settings."
+        },
+        {
+          "file": "images/resident-sidsynth.png",
+          "alt": "SID Synth running inside ReSIDent."
+        },
+        {
+          "file": "images/resident-machine.png",
+          "alt": "ReSIDent's machine page with two SID chips, a 6581 and an 8580."
+        },
+        {
+          "file": "images/resident-cc.png",
+          "alt": "ReSIDent's CC page with named, automatable MIDI controllers."
+        }
+      ],
+      "release": {
+        "tag": "resident-v",
+        "asset": "ReSIDent"
+      },
+      "source": "https://github.com/Ravetracer/audio-plugins/tree/main/resident",
+      "license": "GPL",
+      "aliases": [
+        "resident",
+        "sidmidi"
+      ],
+      "demoText": {
+        "01-Cynthcart-Chords.flac": "Cynthcart, the classic C64 synth cartridge, playing chords on the newer 8580 SID chip.",
+        "02-Cynthcart-Chords-6581.flac": "The same chords on the original 6581 chip — grittier and darker.",
+        "03-Cynthcart-Arpeggio.flac": "Cynthcart's arpeggiator, with the filter opening up from the DAW.",
+        "04-SID-Synth.flac": "SID Synth, loaded from its disk, playing a bright arpeggio.",
+        "05-Station64-Bass.flac": "A bass line from Station64.",
+        "06-Station64-Filter-Sweep.flac": "The same bass line with a resonant filter sweep automated from the DAW."
+      }
+    }
+  ]
+}

@@ -43,3 +43,8 @@ _designs/website-copy.md
 # Demo tracks. Music rendered with or referenced by the suite, kept locally for
 # listening tests. Large, and not ours to redistribute.
 /DemoTracks/
+
+# Website: build output, rendered demos (large, regenerable) and caches
+/dist-website/
+/website/demos/
+/website/.cache/

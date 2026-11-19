@@ -1,0 +1,43 @@
+# Apache configuration for the static Verdalis website.
+
+Options -Indexes
+DirectoryIndex index.html
+
+AddType audio/flac .flac
+AddType application/json .json
+AddType text/javascript .js .mjs
+AddType image/svg+xml .svg
+AddType image/webp .webp
+AddType font/ttf .ttf
+AddCharset utf-8 .html .css .js .json .svg
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Short German addresses for the legal pages.
+  RewriteRule ^impressum/?$ /imprint.html [R=301,L]
+  RewriteRule ^datenschutz/?$ /privacy.html [R=301,L]
+
+  # Old WordPress permalinks -> the new pages.
+  RewriteRule ^uncategorized/verdalis-synthesised-nature/?$ /#/ [R=301,NE,L]
+  RewriteRule ^non-verdalis/?$ /#/beyond [R=301,NE,L]
+  RewriteRule ^download/ /#/download [R=301,NE,L]
+  # @PLUGIN_REDIRECTS@
+  RewriteRule ^(uncategorized|category|feed|comments|wp-[a-z-]+)(/.*)?$ / [R=301,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Audio, images and fonts rarely change; HTML/JS/CSS/JSON are revalidated.
+  <FilesMatch "\.(flac|webp|png|svg|ttf)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  <FilesMatch "\.(html|js|css|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/json image/svg+xml
+</IfModule>

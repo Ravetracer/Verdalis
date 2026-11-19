@@ -1,0 +1,25 @@
+{
+  "siteTitle": "Verdalis",
+  "artist": "Ravetracer",
+  "locale": "en-US",
+  "theme": {
+    "accent": "#5FC8BF",
+    "accent2": "#9BDC8E",
+    "bg": "#06120f",
+    "text": "#e8f2ec",
+    "radius": 16,
+    "useAlbumAccent": true
+  },
+  "player": {
+    "autoAdvance": true,
+    "rememberPosition": true,
+    "trackDownloads": false,
+    "continueToNextAlbum": false,
+    "visualizer": { "enabled": true, "onMobile": false, "style": "radial", "opacity": 0.7 },
+    "nowPlaying": { "coverShape": "rounded", "spin": false },
+    "trackList": { "layout": "waveform" },
+    "waveform": { "style": "mirror" },
+    "waveformTrackList": { "height": 36, "cursor": false },
+    "waveformNowPlaying": { "style": "reflection", "height": 88 }
+  }
+}
